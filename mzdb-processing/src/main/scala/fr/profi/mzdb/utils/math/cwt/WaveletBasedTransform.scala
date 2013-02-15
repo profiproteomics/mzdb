@@ -1,0 +1,543 @@
+package fr.profi.mzdb.utils.math.cwt
+
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
+import org.apache.commons.math.transform.FastFourierTransformer
+import org.apache.commons.math.complex.Complex
+import scala.collection.mutable.Buffer
+import scala.Numeric
+
+/**
+ * Make input length array to be power of 2
+ * padd with zeros
+ */
+trait PowerOf2Maker {
+  def nextPowerOf2(a: Integer): Integer = {
+
+    var b = 1;
+    while (b < a) {
+      b = b << 1;
+    }
+    if (b == 1 || b == 2)
+      b = 4
+    b;
+  }
+
+  def checkIfItsPowerOf2(n: Integer): Boolean = {
+    if (n == 0 || n == 1 || n == 2)
+      return false
+    ((n & -n) == n)
+  }
+
+  def makePowerOf2(ydata: Array[Double]): Array[Double] = {
+    if (!checkIfItsPowerOf2(ydata.length)) {
+      val diff = nextPowerOf2(ydata.length) - ydata.length
+      var ydatabuff = new ArrayBuffer[Double]()
+      ydata.copyToBuffer[Double](ydatabuff)
+      for (i <- 0 to diff - 1) {
+        ydatabuff += 0
+      }
+      ydatabuff.toArray[Double]
+    } else
+      ydata
+  }
+  
+  def makePowerOf2(ydata: Array[Complex]): Array[Complex] = {
+    if (!checkIfItsPowerOf2(ydata.length)) {
+      val diff = nextPowerOf2(ydata.length) - ydata.length
+      var ydatabuff = new ArrayBuffer[Complex]()
+      ydata.copyToBuffer[Complex](ydatabuff)
+      for (i <- 0 to diff - 1) {
+        ydatabuff += new Complex(0, 0)
+      }
+      ydatabuff.toArray[Complex]
+    } else
+      ydata
+  }
+
+} //end traits
+
+/**
+ *
+ */
+trait WaveletComputer extends PowerOf2Maker {
+  //def transform() = {}
+  //def inverseTransform() = {}
+
+  /**
+   * to avoid boundary effect
+   * tried to test but it is not concluent
+   */
+  def periodicExtend(sig: Buffer[Double], a: Int) : Array[Double] = {
+    var len = sig.length
+
+    for (i <- 0 until a) {
+      var temp1 = sig(2 * i)
+      var temp2 = sig.last//sig(len - 1)
+      sig.insert(0, temp2)
+      //sig.insert(sig.length, temp1)
+      sig  += temp1
+    }
+    sig.toArray
+  }
+  
+  
+  /**
+   * circular convolution using fft
+   */
+  def convfft(y: Array[Complex], wavelet: Array[Complex], transformer: FastFourierTransformer): Array[Double] = {
+	
+    var yComp = makePowerOf2(y)//.map { new Complex(_, 0.) }
+    var yfft = transformer.transform(yComp)
+    
+    var wavepadded = (for (i <- 0 until yfft.length) yield new Complex(0., 0.)).toArray
+    
+
+    for (i <- 0 until wavelet.length) { 
+      wavepadded(i) = wavelet(i)//new Complex(wavelet(i), 0.) 
+    }
+    //do not forget to take the conjugate
+    var waveletfft = transformer.transform(wavepadded).map(_.conjugate())
+    //multiply
+    var x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }.toArray
+    transformer.inversetransform(x.toArray).slice(0, y.length).map(x=> x.getReal)
+    
+  }
+
+}
+
+/**
+ * static object performing continous wavelet transform
+ */
+object cwt extends WaveletComputer {
+	
+  
+  val transformer = new FastFourierTransformer
+  
+  /**
+   * compute the continous wavelet transform of input ydata
+   *
+   * @param ydata
+   * @param wavelet: mother wavelet used, MexicanHat and Morlet implemented
+   * @param scales, scales to perform cwt, scale belongs to R
+   * @return Coefficients matrix
+   */
+  def transform(ydata: Array[Double], wavelet: MotherWavelet = MexicanHat(), scales: Array[Float]): Array[Array[Double]] = {
+
+    //make y data periodic to avoid boundary effect
+    //var ydataf = periodicExtend(ydata.toBuffer, lenWave / 2).map(new Complex(_, 0.))
+	  
+    //var ffdata = transformer.transform(makePowerOf2(ydata))
+
+    var coeffs = Array.ofDim[Double](scales.length, ydata.length)
+
+    var row = 0 //scales.length - 1
+    var waveletValues = wavelet.values()
+
+    var psiXval = wavelet.getPsiXval()
+    var dxval = psiXval(1)
+    var xmax = psiXval.last
+
+    for (scale <- scales) {
+      
+      //build scales wavelet @see MassSpecWavelet
+      //calc indexes of wavelet upSampling
+      var r = (0 to (scale * xmax).toInt).map { x => math.floor(x / (scale * dxval)).toInt }.toArray[Int]
+      var lenWave = r.length
+      //println(lenWave)
+      //var f = (for (i <- 0 until ffdata.length) yield new Complex(0, 0)).toArray[Complex]
+      var array = r.map { waveletValues(_).getReal }.toArray // .getReal
+      
+      var result = fft.convfft(ydata.toBuffer, array, 1)//cwt.convfft(ydata.map(new Complex(_, 0)), array, transformer)//
+   
+      var scaleogram = result.map { x => x * 1 / math.sqrt(scale) }
+      //flip an assign to row
+      coeffs(row) = ((scaleogram.slice(ydata.length - math.floor(lenWave / 2f).toInt, ydata.length)) ++ (scaleogram.slice(0, ydata.length - math.floor(lenWave / 2f).toInt))).toArray
+      row += 1
+    }
+    coeffs
+  }
+
+  def inverseTransform() = {
+
+  }
+
+  /**
+   * denoise coefficients using a median percentile approach
+   * should not be used
+   * implemented in JSci
+   */
+  def denoiseCoeffs(coeffs: Array[Array[Double]], percent: Float = 0.25f) = {
+    for (coeff <- coeffs) {
+      var value = coeff.sortBy(x => x)
+      var thresh = value((percent * coeff.length).toInt)
+      for (i <- 0 until coeff.length) {
+        if (coeff(i) < thresh)
+          coeff(i) = 0
+      }
+    }
+  }
+
+  /**
+   * smooth coefficient wavelet
+   * @see massSpecWavelet: Improved peak detection in mass spectrum by incorporating
+   * continuous wavelet transform-based pattern matching. Du et al
+   */
+  def smoothCoeffs(coeffs: Array[Array[Double]], times: Int = 3) = {
+
+    import mr.go.sgfilter.SGFilter
+    val (nl, nr, order) = (5, 5, 4)
+    val polycoef = SGFilter.computeSGCoefficients(nl, nr, order)
+
+    val sgFilter = new SGFilter(5, 5)
+    for (coeff <- coeffs) {
+      var smoothedValues = coeff
+      for (i <- 1 to times) {
+        smoothedValues = sgFilter.smooth(smoothedValues, polycoef)
+      }
+      for (i <- 0 until coeff.length) {
+        var v = smoothedValues(i)
+        coeff(i) = v
+      }
+    }
+  }
+
+  def smoothSignal(signal: Array[Double], times: Int = 3): Array[Double] = {
+
+    import mr.go.sgfilter.SGFilter
+
+    val (nl, nr, order) = (5, 5, 4)
+    val polycoef = SGFilter.computeSGCoefficients(nl, nr, order)
+
+    val sgFilter = new SGFilter(5, 5)
+    var smoothedValues = signal
+    for (i <- 1 to times) {
+      smoothedValues = sgFilter.smooth(smoothedValues, polycoef)
+    }
+    smoothedValues
+  }
+
+}
+
+
+
+
+
+
+
+object swt extends WaveletComputer {
+
+  /**
+   * possible optimization using periodic extension
+   * see:http://code.google.com/p/wavelet1d/source/browse/trunk/src/wavelet.cpp
+   */
+
+  def transform(signal: Array[Double], J: Int = 6, filter: WaveletFilter = Daub8): Array[Double] = {
+
+   // val transformer = new FastFourierTransformer()
+
+    var N = signal.length
+    var length = N;
+    var sig = signal
+    var lpd = filter.lp1
+    var hpd = filter.hp1
+    
+    var swt_output = new ArrayBuffer[Double]
+
+    for (iter <- 0 until J) {
+      var len = sig.length
+      var low_pass: Array[Double] = null
+      var high_pass: Array[Double] = null
+
+      if (iter > 0) {
+
+        var M = math.pow(2.0, iter).toInt;
+        low_pass = upsamp(lpd, M)
+        high_pass = upsamp(hpd, M)
+
+      } else {
+        low_pass = lpd;
+        high_pass = hpd;
+      }
+
+      var len_filt = low_pass.length
+      sig = periodicExtend(sig.toBuffer, len_filt/2)
+ 
+      var cA = fft.convfft(sig.toBuffer, low_pass)
+      var cD = fft.convfft(sig.toBuffer, high_pass)
+      
+    
+      cA.trimStart(len_filt); cA.trimEnd(cA.length - N )
+      cD.trimStart(len_filt); cD.trimEnd(cD.length - N )
+
+
+      
+      sig = cA.toArray;
+
+      if (iter == J - 1) {
+        cD.reverse.foreach(x => swt_output.insert(0, x))
+        cA.reverse.foreach(x => swt_output.insert(0, x))
+      } else {
+        cD.reverse.foreach(x => swt_output.insert(0, x))
+      }
+
+    }
+    swt_output.toArray
+  }
+
+  def upsamp(sig: Seq[Double], M: Int): Array[Double] = {
+    var len = sig.length;
+    var len_n = (math.ceil(len.toDouble * M.toDouble)).toInt;
+    var sig_u = new ArrayBuffer[Double]
+    for (i <- 0 until len_n) {
+      if (i % M == 0) {
+        var temp = sig(i / M);
+        sig_u += temp;
+
+      } else {
+        sig_u += 0;
+      }
+
+    }
+    sig_u.toArray
+  }
+
+  def downsamp(sig: Seq[Double], M: Int): Array[Double] = {
+    var len = sig.length
+    var len_n = math.ceil(len.toDouble / M.toDouble).toInt;
+    var sig_d = new ArrayBuffer[Double]
+    for (i <- 0 until len_n) {
+      var temp = sig(i * M);
+      sig_d += temp;
+    }
+    sig_d.toArray
+  }
+
+  
+  /**
+   * compute the inverse transform
+   */
+  def inverseTransform(swtop: Array[Double], J: Int = 6, filter: WaveletFilter = Daub8): Array[Double] = { //, vector<double> &iswt_output) {
+
+    //var transformer = new FastFourierTransformer()
+    var N = swtop.length / (J + 1)
+
+    var lpr = filter.lp2
+    var hpr = filter.hp2
+
+    var appx_sig = new ArrayBuffer[Double]
+    var iswt_output = new ArrayBuffer[Double]
+    
+
+    var low_pass = lpr;
+    var high_pass = hpr;
+    var lf = low_pass.length
+
+    for (iter <- 0 until J) {
+      var det_sig = new ArrayBuffer[Double];
+      if (iter == 0) {
+        for (i <- 0 until N) {
+          var temp = swtop(i);
+          appx_sig += temp;
+          var temp1 = swtop((iter + 1) * N + i)
+          det_sig += temp1
+        }
+      } else {
+        for (i <- 0 until N) {
+          var temp1 = swtop((iter + 1) * N + i);
+          det_sig += temp1
+
+        }
+      }
+
+      var value = math.pow(2.0, (J - 1 - iter).toDouble).toInt
+      
+      //println("iswt length before clearing", iswt_output.length)
+      iswt_output = new ArrayBuffer[Double]
+      //println("iswt length after clearing", iswt_output.length)
+
+      for (i <-0 until N) {
+    	  iswt_output += 0.
+      }
+      //iswt_output.assign(N, 0.0);
+
+      for (count <- 0 until value) {
+        var appx1 = new ArrayBuffer[Double]
+        var det1 = new ArrayBuffer[Double]
+        for (index <- count until N by value) {
+          var temp = appx_sig(index);
+          appx1 += temp
+          var temp1 = det_sig(index)
+          det1 += temp1
+
+        }
+        var len = appx1.length
+
+        // Shift = 0
+
+        var appx2 = new ArrayBuffer[Double]
+        var det2 = new ArrayBuffer[Double]
+
+        for (index_shift <- 0 until len by 2) {
+          var temp = appx1(index_shift);
+          appx2 += temp
+          var temp1 = det1(index_shift);
+          det2 += temp1;
+        }
+
+        var U = 2; // Upsampling Factor
+
+        var cL0 = upsamp(appx2, U)
+        var cH0 = upsamp(det2, U)
+        cL0 = periodicExtend(cL0.toBuffer, lf /2)// per_ext(cL0, lf / 2);
+        cH0 = periodicExtend(cH0.toBuffer, lf / 2) // per_ext(cH0, lf / 2);
+        //println("cL0" + cL0.length)
+        var oup00L = fft.convfft(cL0.toBuffer, low_pass)
+        //println("cHO" + cH0.length)
+        var oup00H = fft.convfft(cH0.toBuffer, high_pass)
+
+        //oup00L.erase(oup00L.begin(), oup00L.begin() + lf - 1);
+        oup00L.trimStart(lf - 1); oup00L.trimEnd(oup00L.length - len)
+        //oup00L.erase(oup00L.begin() + len, oup00L.end());
+        
+        //oup00H.erase(oup00H.begin(), oup00H.begin() + lf - 1);
+        oup00H.trimStart(lf - 1); oup00H.trimEnd(oup00H.length - len);
+        //oup00H.erase(oup00H.begin() + len, oup00H.end());
+
+        var oup00 = oup00L.zip(oup00H).map { case (a, b) => a + b }
+        //vecsum(oup00L, oup00H, oup00);
+
+        // Shift = 1
+
+        var appx3 = new ArrayBuffer[Double]
+        var det3 = new ArrayBuffer[Double]
+
+        for (index_shift <- 1 until len by 2) {
+          var temp = appx1(index_shift)
+          appx3 += temp
+          var temp1 = det1(index_shift)
+          det3 += temp1
+        }
+
+        //vector<double> cL1, cH1;
+        var cL1 = upsamp(appx3, U)
+        var cH1 = upsamp(det3, U)
+        cL1 = periodicExtend(cL1.toBuffer, lf / 2)//per_ext(cL1, lf / 2);
+        cH1 = periodicExtend(cH1.toBuffer, lf / 2)//per_ext(cH1, lf / 2);
+
+        var oup01L = fft.convfft(cL1.toBuffer, low_pass)
+        var oup01H = fft.convfft(cH1.toBuffer, high_pass)
+
+        //oup01L.erase(oup01L.begin(), oup01L.begin() + lf - 1);
+        oup01L.trimStart(lf - 1); oup01L.trimEnd(oup01L.length - len)
+        //oup01L.erase(oup01L.begin() + len, oup01L.end());
+        
+        //oup01H.erase(oup01H.begin(), oup01H.begin() + lf - 1);
+        oup01H.trimStart(lf - 1); oup01H.trimEnd(oup01H.length - len)
+        //oup01H.erase(oup01H.begin() + len, oup01H.end());
+        
+        
+        var oup01 = oup01L.zip(oup01H).map { case (a, b) => a + b }.toBuffer[Double]
+        circshift(oup01, -1)
+       // println(oup01.length, oup00.length)
+
+        //   Continue
+        var index2 = 0;
+        for (index <- count until N by value) {
+          //println("index2 fail" + index2)
+          //println(index, N, value)
+          var temp = oup00(index2) + oup01(index2);
+          iswt_output(index) = temp / 2;
+          index2 += 1
+
+        }
+
+      }
+      appx_sig = iswt_output;
+
+    }
+    iswt_output.toArray
+  }
+
+  /**
+   * denoise coefficients using discrete continous transform
+   * should be used in mass peak detection in priority
+   * if we consider spectrometer introduce noise when it calculates wrongly
+   * number of ions entering in the trap, could be used to detect elution peak
+   */
+  def denoiseSoft(coeffs: Array[Double], J:Int = 6) = {
+	  var N = coeffs.length / (J + 1)
+	  var cA  = coeffs.slice(0, N)
+	  //println("CA length : " + cA.length)
+	  //cA.foreach(x=> print( x + "\t"));println()
+	  var firstCD = coeffs.slice(coeffs.length - N, coeffs.length)
+	  //firstCD.foreach(x=>print(x + "\t")); println()
+	  //cA.zip(firstCD).foreach { case (a, b) => if (b > 0) print((a-b)+ "\t") else print(a+"\t")}
+	  var sortedCD = firstCD.sortBy(x=>x)
+	  var med = firstCD((0.5 * firstCD.length).toInt)
+	  var thresh = med / 0.6745 * math.sqrt(2 * math.log(N))
+	  
+	  for (i <-0 until coeffs.length) {
+		  if ( math.abs(coeffs(i)) < thresh) {
+		    coeffs(i) = 0
+		  } else if (coeffs(i) > thresh) {
+		    coeffs(i) -= thresh
+		  } else if (coeffs(i) < 0) {
+		    coeffs(i) += thresh
+		  } else {
+		    println("Weird coeffs, warning")
+		  }
+	  }
+  }
+
+  /**
+   *
+   */
+  def denoiseHard(coeffs: Array[Double], J:Int) = {
+	  var N = coeffs.length / (J + 1)
+	  var cA  = coeffs.slice(0, N)
+	  var firstCD = coeffs.slice(coeffs.length - N, coeffs.length)
+	  var sortedCD = firstCD.sortBy(x=>x)
+	  var med = firstCD((0.5 * firstCD.length).toInt)
+	  var thresh = (med / 0.6745) * math.sqrt(2 * math.log(N))
+	  
+	  for (i <-0 until coeffs.length) {
+		  if ( coeffs(i) < thresh) {
+		    //println("Coeffs changed")
+		    coeffs(i) = 0.
+		  }
+	  }
+  }
+  
+  
+
+  def circshift(sig_cir: Buffer[Double], L: Int) = {
+    var K = L
+    if (math.abs(K) > sig_cir.length) {
+      K = sign(K) * (math.abs(K) % sig_cir.length)
+    }
+
+    if (K < 0) {
+      K = (sig_cir.length + K) % sig_cir.length
+    }
+    for (i <- 0 until K) {
+      sig_cir += sig_cir(0)
+      sig_cir.remove(0)
+    }
+
+  }
+
+  def sign(X: Int): Int = {
+    if (X >= 0)
+      return 1;
+    else
+      return -1;
+  }
+  
+  def sign[T](x: T)(implicit X: Numeric[T]): Int  = {
+    if (X.gt(x, X.zero))
+      return 1
+    return -1
+  }
+
+}
