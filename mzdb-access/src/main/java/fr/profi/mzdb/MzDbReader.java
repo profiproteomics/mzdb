@@ -1,0 +1,1069 @@
+package fr.profi.mzdb;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
+import fr.profi.mzdb.db.model.MzDbHeader;
+import fr.profi.mzdb.db.table.BoundingBoxTable;
+import fr.profi.mzdb.io.reader.*;
+import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
+import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
+import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
+import fr.profi.mzdb.io.reader.iterator.RunSliceIterator;
+import fr.profi.mzdb.model.*;
+import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
+import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
+
+// TODO: Auto-generated Javadoc
+/**
+ * Allows to manipulates data contained in the mzDB file.
+ * 
+ * @author David
+ */
+public class MzDbReader {
+	
+	public enum BBSizesUserParamNames {
+		BB_MZ_HEIGHT_MS1_STR("BB_height_ms1"),
+		BB_MZ_HEIGHT_MSn_STR("BB_height_msn"),
+		BB_RT_WIDTH_MS1_STR("BB_width_ms1"),
+		BB_RT_WIDTH_MSn_STR("BB_width_msn");
+		
+		private final String userParamName;
+		
+		private BBSizesUserParamNames(String val) {
+			userParamName = val;
+		}
+		public String toString() {
+			return userParamName;
+		}
+	};
+	
+	
+	public class BBSizes{
+		
+		public double BB_MZ_HEIGHT_MS1;
+		public double BB_MZ_HEIGHT_MSn;
+		public double BB_RT_WIDTH_MS1;
+		public double BB_RT_WIDTH_MSn;
+	};
+
+	final Logger logger = LoggerFactory.getLogger(MzDbReader.class);
+
+
+	/** The connection. */
+	protected SQLiteConnection connection = null;
+
+	/** The entity cache. */
+	protected MzDbEntityCache entityCache = null;
+
+	/** The is no loss mode. */
+	protected Boolean isNoLossMode;
+
+	/** The _mz db header reader. */
+	private MzDbHeaderReader _mzDbHeaderReader = null;
+
+	/** The _data encoding reader. */
+	private DataEncodingReader _dataEncodingReader = null;
+
+	/** The scan header reader. */
+	private ScanHeaderReader _scanHeaderReader = null;
+
+	/** The _run slice header reader. */
+	private RunSliceHeaderReader _runSliceHeaderReader = null;
+	
+	private BBSizes _boundingBoxSizes = null;
+	
+	/** The xml mapper. */
+	public static XmlMapper xmlMapper = new XmlMapper();
+
+	/**
+	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite
+	 * connection.
+	 * 
+	 * @param dbLocation
+	 *            the db location
+	 * @param cacheEntities
+	 *            the cache entities
+	 * @param logConnections
+	 *            the log connections
+	 * @throws ClassNotFoundException
+	 *             the class not found exception
+	 * @throws FileNotFoundException
+	 *             the file not found exception
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public MzDbReader(File dbLocation, boolean cacheEntities,
+			boolean logConnections) throws ClassNotFoundException,
+			FileNotFoundException, SQLiteException {
+
+		if (cacheEntities) {
+			this.entityCache = new MzDbEntityCache();
+		}
+
+		if (logConnections == false) {
+			java.util.logging.Logger.getLogger("com.almworks.sqlite4java")
+					.setLevel(java.util.logging.Level.OFF);
+		}
+
+		// Check if database exists
+		if (!dbLocation.exists()) {
+			throw (new FileNotFoundException());
+		}
+
+		connection = new SQLiteConnection(dbLocation);
+		connection.open(false);
+
+		// SQLite optimization
+		connection.exec("PRAGMA synchronous=OFF;");
+		connection.exec("PRAGMA journal_mode=OFF;");
+		connection.exec("PRAGMA temp_store=2;");
+		connection.exec("PRAGMA cache_size=8000;");
+
+		this._mzDbHeaderReader = new MzDbHeaderReader(connection);
+		this._dataEncodingReader = new DataEncodingReader(this);
+		this._scanHeaderReader = new ScanHeaderReader(this);
+		this._runSliceHeaderReader = new RunSliceHeaderReader(this);
+		this._boundingBoxSizes = getBBSizes();
+		
+
+	}
+
+	public BBSizes getBBSizes() {
+		if (_boundingBoxSizes == null) {
+			_boundingBoxSizes = new BBSizes();
+			MzDbHeader header = null;
+			try {
+				header = _mzDbHeaderReader.getMzDbHeader();
+			} catch (SQLiteException e) {
+				e.printStackTrace();
+			}
+			_boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_MZ_HEIGHT_MS1_STR.toString()).getValue());
+			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_MZ_HEIGHT_MSn_STR.toString()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_RT_WIDTH_MS1_STR.toString()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_RT_WIDTH_MSn_STR.toString()).getValue());
+		}
+		return _boundingBoxSizes;
+	}
+
+	/**
+	 * Instantiates a new mzDB reader (secondary constructor).
+	 * 
+	 * @param dbLocation
+	 *            the db location
+	 * @param cacheEntities
+	 *            the cache entities
+	 * @throws ClassNotFoundException
+	 *             the class not found exception
+	 * @throws FileNotFoundException
+	 *             the file not found exception
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public MzDbReader(File dbLocation, boolean cacheEntities)
+			throws ClassNotFoundException, FileNotFoundException,
+			SQLiteException {
+		this(dbLocation, cacheEntities, false);
+	}
+
+	/**
+	 * Instantiates a new mzDB reader (secondary constructor).
+	 * 
+	 * @param dbPath
+	 *            the db path
+	 * @param cacheEntities
+	 *            the cache entities
+	 * @throws ClassNotFoundException
+	 *             the class not found exception
+	 * @throws FileNotFoundException
+	 *             the file not found exception
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public MzDbReader(String dbPath, boolean cacheEntities)
+			throws ClassNotFoundException, FileNotFoundException,
+			SQLiteException {
+		this(new File(dbPath), cacheEntities, false);
+	}
+
+	/**
+	 * Gets the connection.
+	 * 
+	 * @return the connection
+	 */
+	public SQLiteConnection getConnection() {
+		return connection;
+	}
+
+	/**
+	 * Gets the entity cache.
+	 * 
+	 * @return the entity cache
+	 */
+	public MzDbEntityCache getEntityCache() {
+		return entityCache;
+	}
+
+	/**
+	 * close the connection to avoid memory leaks.
+	 */
+	public void close() {
+		connection.dispose();
+	}
+
+	public boolean isNoLossMode() throws SQLiteException {
+
+		if (this.isNoLossMode == null) {
+			MzDbHeader p = this._mzDbHeaderReader.getMzDbHeader();
+
+			if (p.getUserParam("is_no_loss").getValue().equals("false"))
+				this.isNoLossMode = false;
+			else
+				this.isNoLossMode = true;
+		}
+
+		return this.isNoLossMode;
+	}
+
+	public XmlMapper getMapper() {
+		return xmlMapper;
+	}
+
+	/**
+	 * Gets the last time.
+	 * 
+	 * @return float the rt of the last scan
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public float getLastTime() throws SQLiteException {
+		// Retrieve the number of scans
+		String sqlString = "SELECT time FROM scan ORDER BY id DESC LIMIT 1";
+		return (float) new SQLiteQuery(connection, sqlString)
+				.extractSingleDouble();
+	}
+
+	/**
+	 * Gets the max ms level.
+	 * 
+	 * @return the max ms level
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getMaxMsLevel() throws SQLiteException {
+		return new SQLiteQuery(connection,
+				"SELECT max(ms_level) FROM run_slice").extractSingleInt();
+	}
+
+	/**
+	 * Gets the mz range.
+	 * 
+	 * @param msLevel
+	 *            the ms level
+	 * @return runSlice min mz and runSlice max mz
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int[] getMzRange(int msLevel) throws SQLiteException {
+
+		SQLiteStatement stmt = connection
+				.prepare("SELECT min(begin_mz), max(end_mz) FROM run_slice WHERE ms_level=?");
+		stmt.bind(1, msLevel);
+		stmt.step();
+
+		int minMz = stmt.columnInt(0);
+		int maxMz = stmt.columnInt(1);
+		stmt.dispose();
+
+		int[] mzRange = { minMz, maxMz };
+		return mzRange;
+	}
+
+	/**
+	 * _get table records count.
+	 * 
+	 * @param tableName
+	 *            the table name
+	 * @return the int
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getTableRecordsCount(String tableName) throws SQLiteException {
+		return new SQLiteQuery(connection,
+				"SELECT seq FROM sqlite_sequence WHERE name = ?").bind(1,
+				tableName).extractSingleInt();
+	}
+
+	/**
+	 * Gets the data encoding count.
+	 * 
+	 * @return the data encoding count
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getDataEncodingsCount() throws SQLiteException {
+		return this.getTableRecordsCount("data_encoding");
+	}
+
+	/**
+	 * Gets the scan count.
+	 * 
+	 * @return int the number of scans
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getScansCount() throws SQLiteException {
+		return this.getTableRecordsCount("spectrum");
+	}
+
+	/**
+	 * Gets the run slice count.
+	 * 
+	 * @return int the number of runSlice
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getRunSlicesCount() throws SQLiteException {
+		return this.getTableRecordsCount("run_slice");
+	}
+
+	/**
+	 * Gets the bounding box count.
+	 * 
+	 * @return int, the number of bounding box
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getBoundingBoxesCount() throws SQLiteException {
+		return this.getTableRecordsCount("bounding_box");
+	}
+
+	/**
+	 * Gets the bounding box count.
+	 * 
+	 * @param runSliceId
+	 *            the run slice id
+	 * @return the number of bounding box contained in the specified runSliceId
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getBoundingBoxesCount(int runSliceId) throws SQLiteException {
+		String queryStr = "SELECT count(*) FROM bounding_box WHERE bounding_box.run_slice_id = ?";
+		return new SQLiteQuery(connection, queryStr).bind(1, runSliceId)
+				.extractSingleInt();
+	}
+
+	/**
+	 * Gets the cycle count.
+	 * 
+	 * @return the cycle count
+	 * @throws SQLiteException
+	 */
+	public int getCyclesCount() throws SQLiteException {// SELECT MAX(cycle)
+														// FROM scan
+		String queryStr = "SELECT cycle FROM scan ORDER BY id DESC LIMIT 1";
+		return new SQLiteQuery(connection, queryStr).extractSingleInt();
+	}
+
+	/**
+	 * Cycle num to scan id.
+	 * 
+	 * @param cycleNumber
+	 *            the cycle number
+	 * @return the int
+	 */
+	public int cycleNumToScanId(int cycleNumber) {
+
+		return 0;
+	}
+
+	/**
+	 * Scan id to cycle num.
+	 * 
+	 * @param cycleNumber
+	 *            the cycle number
+	 * @return the int
+	 */
+	public int scanIdToCycleNum(int cycleNumber) {
+		return 0;
+	}
+
+	/**
+	 * Gets the data encoding.
+	 * 
+	 * @param id
+	 *            the id
+	 * @return the data encoding
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public DataEncoding getDataEncoding(int id) throws SQLiteException {
+		return this._dataEncodingReader.getDataEncoding(id);
+	}
+
+	/**
+	 * Gets the data encoding by scan id.
+	 * 
+	 * @return the data encoding by scan id
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public HashMap<Integer, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
+		return this._dataEncodingReader.getDataEncodingByScanId();
+	}
+
+	/**
+	 * Gets the scan data encoding.
+	 * 
+	 * @param scanId
+	 *            the scan id
+	 * @return the scan data encoding
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public DataEncoding getScanDataEncoding(int scanId) throws SQLiteException {
+		return this._dataEncodingReader.getScanDataEncoding(scanId);
+	}
+
+	/**
+	 * Gets the run slices.
+	 * 
+	 * @return array of runSlice instance without data associated
+	 * @throws SQLiteException
+	 *             the SQLite exception
+	 */
+	public RunSliceHeader[] getRunSliceHeaders(int msLevel)
+			throws SQLiteException {
+		return this._runSliceHeaderReader.getRunSliceHeaders(msLevel);
+	}
+
+	/**
+	 * Gets the run slice header by id.
+	 * 
+	 * @param msLevel
+	 *            the ms level
+	 * @return the run slice header by id
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel)
+			throws SQLiteException {
+		return this._runSliceHeaderReader.getRunSliceHeaderById(msLevel);
+	}
+
+	/**
+	 * Gets the run slice data.
+	 * 
+	 * @param runSliceId
+	 *            the run slice id
+	 * @return the run slice data
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public RunSliceData getRunSliceData(int runSliceId) throws SQLiteException {
+
+		// Retrieve the corresponding run slices
+		String queryStr = "SELECT bounding_box.id, data, first_scan_id FROM bounding_box, bounding_box_rtree"
+				+ " WHERE bounding_box.id = bounding_box_rtree.id AND bounding_box.run_slice_id = ?"
+				+ " ORDER BY first_scan_id"; // number
+
+		// SQLiteStatement stmt =
+		// connection.prepare("SELECT * FROM run_slice WHERE ms_level="+msLevel+" ORDER BY begin_mz ",
+		// false);//number ASC", false);
+		SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr)
+				.bind(1, runSliceId).getRecords();
+
+		List<BoundingBox> bbs = new ArrayList<BoundingBox>();
+		HashMap<Integer, DataEncoding> dataEncodingByScanId = this
+				.getDataEncodingByScanId();
+
+		while (records.hasNext()) {
+			SQLiteRecord record = records.next();
+
+			int id = record.columnInt(BoundingBoxTable.ID);
+			byte[] data = record.columnBlob(BoundingBoxTable.DATA);
+			int scanId = record.columnInt(BoundingBoxTable.FIRST_SPECTRUM_ID);
+			// float minTime = (float) stmt.columnDouble(3);
+
+			BoundingBox bb = BoundingBoxBuilder.buildBB(id,
+					dataEncodingByScanId, data);
+			bb.setFirstScanId(scanId);
+			bbs.add(bb);
+		}
+
+		// TODO: check if faster than order by
+		// Collections.sort(bbs); //sort bbs by their rt_min
+
+		List<ScanSlice> scanList = new ArrayList<ScanSlice>();
+		for (BoundingBox bb : bbs) {
+			ScanSlice[] sl = bb.asScanSlicesArray();
+			scanList.addAll(Arrays.asList(sl));
+		}
+
+		// rsd.buildPeakListByScanId();
+		return new RunSliceData(runSliceId,
+				scanList.toArray(new ScanSlice[scanList.size()]));
+	}
+
+	/**
+	 * Gets the bounding box data.
+	 * 
+	 * @param bbId
+	 *            the bb id
+	 * @return the bounding box data
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public byte[] getBoundingBoxData(int bbId) throws SQLiteException {
+		String sqlString = "SELECT data FROM bounding_box WHERE bounding_box.id = ?";
+		return new SQLiteQuery(connection, sqlString).bind(1, bbId)
+				.extractSingleBlob();
+	}
+
+	/**
+	 * Gets the bounding box first scan index.
+	 * 
+	 * @param scanId
+	 *            the scan id
+	 * @return the bounding box first scan index
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getBoundingBoxFirstScanId(int scanId) throws SQLiteException {
+		String sqlString = "SELECT bb_first_scan_id FROM scan WHERE id = ?";
+		return new SQLiteQuery(connection, sqlString).bind(1, scanId)
+				.extractSingleInt();
+	}
+
+	/**
+	 * Gets the bounding box min mz.
+	 * 
+	 * @param bbId
+	 *            the bb id
+	 * @return the bounding box min mz
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public float getBoundingBoxMinMz(int bbId) throws SQLiteException {
+		String sqlString = "SELECT min_mz FROM bounding_box_rtree WHERE bounding_box_rtree.id = ?";
+		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId)
+				.extractSingleDouble();
+	}
+
+	/**
+	 * Gets the bounding box min time.
+	 * 
+	 * @param bbId
+	 *            the bb id
+	 * @return the bounding box min time
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public float getBoundingBoxMinTime(int bbId) throws SQLiteException {
+		String sqlString = "SELECT min_time FROM bounding_box_rtree WHERE bounding_box_rtree.id = ?";
+		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId)
+				.extractSingleDouble();
+	}
+
+	/**
+	 * Gets the bounding box ms level.
+	 * 
+	 * @param bbId
+	 *            the bb id
+	 * @return the bounding box ms level
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public int getBoundingBoxMsLevel(int bbId) throws SQLiteException {
+
+		String sqlString1 = "SELECT run_slice_id FROM bounding_box WHERE id = ?";
+		int runSliceId = new SQLiteQuery(connection, sqlString1).bind(1, bbId)
+				.extractSingleInt();
+
+		String sqlString2 = "SELECT ms_level FROM run_slice WHERE run_slice.id = ?";
+		return new SQLiteQuery(connection, sqlString2).bind(1, runSliceId)
+				.extractSingleInt();
+	}
+
+	/**
+	 * Gets the peaks.
+	 * 
+	 * @param minmz
+	 *            the minmz
+	 * @param maxmz
+	 *            the maxmz
+	 * @param minrt
+	 *            the minrt
+	 * @param maxrt
+	 *            the maxrt
+	 * @param msLevel
+	 *            the ms level
+	 * @return the peaks
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public Peak[] getPeaks(double minmz, double maxmz, double minrt,
+			double maxrt, int msLevel) throws SQLiteException {
+		/*
+		 * use get ScanSlices function then return a peak array using simply the
+		 * toPeaks function
+		 */
+		ScanSlice[] r = this.getScanSlices(minmz, maxmz, minrt, maxrt, msLevel);
+
+		this.logger.debug("ScanSliceLen : {}", r.length);
+
+		if (r.length == 0)
+			return new Peak[0];
+		for (int i = 1; i < r.length; ++i) {
+			r[0].addScanData(r[i]);
+		}
+		return r[0].toPeaks();
+	}
+
+	/**
+	 * Gets the scan headers.
+	 * 
+	 * @return the scan headers
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public ScanHeader[] getScanHeaders() throws SQLiteException {
+		return this._scanHeaderReader.getScanHeaders();
+	}
+
+	/**
+	 * Gets the scan header.
+	 * 
+	 * @param id
+	 *            the id
+	 * @return the scan header
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public ScanHeader getScanHeader(int id) throws SQLiteException {
+		return this._scanHeaderReader.getScanHeader(id);
+	}
+
+	/**
+	 * Gets the scan header by id.
+	 * 
+	 * @return the scan header by id
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public HashMap<Integer, ScanHeader> getScanHeaderById()
+			throws SQLiteException {
+		return this._scanHeaderReader.getScanHeaderById();
+	}
+
+	/**
+	 * Gets the scan header for time.
+	 * 
+	 * @param time
+	 *            the time
+	 * @param msLevel
+	 *            the ms level
+	 * @return scanheader the closest to the time input parameter
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public ScanHeader getScanHeaderForTime(float time, int msLevel)
+			throws SQLiteException {
+		return this._scanHeaderReader.getScanHeaderForTime(time, msLevel);
+	}
+
+	/**
+	 * Gets the scan id by time.
+	 * 
+	 * @return the scan id by time
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	// TODO: remove this method when mzDb is updated
+	public HashMap<Float, Integer> getScanIdByTime() throws SQLiteException {
+		return this._scanHeaderReader.getScanIdByTime();
+	}
+
+	/**
+	 * Gets the scan data.
+	 * 
+	 * @param scanId
+	 *            the scan id
+	 * @return the scan data
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public ScanData getScanData(int scanId) throws SQLiteException {
+
+		Map<Integer, DataEncoding> dataEnc = this.getDataEncodingByScanId();
+
+		// retrieve first scan index of the specified scanId better
+		// than doing junction in sql query
+		int firstScanId = this.getBoundingBoxFirstScanId(scanId);
+
+		String sqlString = "SELECT id, data, run_slice_id FROM bounding_box WHERE bounding_box.first_scan_id = ?";
+		SQLiteRecordIterator records = new SQLiteQuery(connection, sqlString)
+				.bind(1, firstScanId).getRecords();
+
+		List<BoundingBox> bbS = new ArrayList<BoundingBox>();
+
+		while (records.hasNext()) {
+			SQLiteRecord r = records.next();
+
+			BoundingBox bb = BoundingBoxBuilder.buildBB(
+					r.columnInt(BoundingBoxTable.ID), dataEnc,
+					r.columnBlob(BoundingBoxTable.DATA));
+
+			bb.setRunSliceId(r.columnInt(BoundingBoxTable.RUN_SLICE_ID));
+			bb.setFirstScanId(firstScanId);
+
+			bbS.add(bb);
+		}
+		this.logger.debug("BBs count: {}", bbS.size());
+
+		// Construct empty scan data
+		ScanData sd = new ScanData(scanId, new double[0], new float[0]);
+
+		// int firstScanCycle = getScanHeader(firstScanId).cycle;
+		// int cycle = getScanHeader(scanId).cycle;
+		// int cycleOffset = cycle - firstScanCycle;
+
+		for (BoundingBox bb : bbS) {
+
+			int nbScans = bb.nbScans();
+			for (int j = 1; j <= nbScans; j++) {
+				if (scanId == bb.idOfScanAt(j)) {
+					sd.addScanData(bb.scanSliceOfScanAt(j));
+					break;
+				}
+			}
+		}
+
+		return sd;
+	}
+
+	/**
+	 * Gets the scan peaks.
+	 * 
+	 * @param scanId
+	 *            the scan id
+	 * @return the scan peaks
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public Peak[] getScanPeaks(int scanId) throws SQLiteException {
+		ScanData sd = this.getScanData(scanId);
+		return sd.toPeaks();
+	}
+	
+	/**
+	 * Gets the scan slices.
+	 * 
+	 * @param minmz
+	 *            the minmz
+	 * @param maxmz
+	 *            the maxmz
+	 * @param minrt
+	 *            the minrt
+	 * @param maxrt
+	 *            the maxrt
+	 * @param msLevel
+	 *            the ms level
+	 * @return the scan slices
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public ScanSlice[] getScanSlices(double minmz, double maxmz, double minrt,
+			double maxrt, int msLevel) throws SQLiteException {
+		
+		//get values from param tree
+		BBSizes sizes = getBBSizes();
+		double rtWidth  = (msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn;
+		double mzHeight = (msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn;
+		
+		double _maxrt = maxrt + rtWidth;
+		double _minmz = minmz - mzHeight;
+		double _minrt = minrt - rtWidth;
+		double _maxmz = maxmz + mzHeight; 
+	
+		String sqlQuery = "SELECT bounding_box.id, data, run_slice_id, first_spectrum_id "
+				+ "FROM bounding_box WHERE bounding_box.id "
+				+ "IN (SELECT id FROM bounding_box_rtree "
+				+ "WHERE min_mz >= ? AND max_mz <= ? AND min_time >= ? AND max_time <= ? );";
+
+		SQLiteStatement stmt = connection.prepare(sqlQuery, false);
+		
+		stmt.bind(1, _minmz);
+		stmt.bind(2, _maxmz);
+		stmt.bind(3, _minrt);
+		stmt.bind(4, _maxrt);
+
+		Map<Integer, ArrayList<BoundingBox>> BBs = new TreeMap<Integer, ArrayList<BoundingBox>>();
+
+		HashMap<Integer, DataEncoding> dataEncodingByScanId = this
+				.getDataEncodingByScanId();
+
+		while (stmt.step()) {
+			int id = stmt.columnInt(0);
+			if (getBoundingBoxMsLevel(id) != msLevel)
+				continue;
+			
+			// Retrieve bounding box data
+			byte[] data = stmt.columnBlob(1);
+			int runSliceId = stmt.columnInt(2);
+			int firstScanId = stmt.columnInt(3);
+
+			// Build the Bounding Box
+			BoundingBox bb = BoundingBoxBuilder.buildBB(id,
+					dataEncodingByScanId, data);
+			bb.setFirstScanId(firstScanId);
+			bb.setRunSliceId(runSliceId);
+
+			// Initialize map entry if it doesn't exist
+			if (BBs.containsKey(firstScanId) == false)
+				BBs.put(firstScanId, new ArrayList<BoundingBox>());
+
+			BBs.get(firstScanId).add(bb);
+		}
+		stmt.dispose();
+		//System.out.println("BBs size:" + BBs.size());
+		ArrayList<ScanSlice> sl = new ArrayList<ScanSlice>();
+		Map<Integer, ScanHeader> headerById = getScanHeaderById();
+
+		for (ArrayList<BoundingBox> bbs : BBs.values()) {
+
+			if (bbs.size() == 0)
+				continue;
+
+			BoundingBox firstbb = bbs.get(0);
+			int scanCount = firstbb.nbScans();
+
+			for (int i = 1; i <= scanCount; i++) {
+
+				boolean toBeContinued = false;
+				boolean toBeBroken = false;
+
+				ScanSlice s = new ScanSlice(firstbb.getFirstScanId() + i - 1,
+						firstbb.getRunSliceId(), new double[0], new float[0]);
+
+				for (BoundingBox bb : bbs) {
+					//if (headerById.get((int)bb.idOfScanAt(i)) == null) System.out.println("" + (int)bb.idOfScanAt(i));
+					if (headerById.get(bb.idOfScanAt(i)).getElutionTime() > maxrt) {
+						toBeBroken = true;
+						break;
+					}
+					if (headerById.get(bb.idOfScanAt(i)).getElutionTime() < minrt) {
+						toBeContinued = true;
+						break;
+					}
+
+					ScanSlice _s = bb.scanSliceOfScanAt(i);
+					// if (_s.mzList.length == 0)
+					// s.addScanData(_s);
+
+					// Filter scan data
+					if (_s.getMzList().length > 0) {
+						ScanData filteredSD = _s.mzRangeFilter(minmz, maxmz);
+						s.addScanData(filteredSD);
+					}
+				}
+				if (toBeBroken)
+					break;
+				if (toBeContinued)
+					continue;
+				sl.add(s);
+			}
+		}
+
+		return sl.toArray(new ScanSlice[sl.size()]);
+	}
+
+	/**
+	 * Gets the bounding box iterator.
+	 * 
+	 * @param msLevel
+	 *            the ms level
+	 * @return the bounding box iterator
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public Iterator<BoundingBox> getBoundingBoxIterator(int msLevel)
+			throws SQLiteException {
+		SQLiteStatement stmt = connection
+				.prepare(
+						"SELECT bounding_box.* FROM bounding_box, spectrum WHERE spectrum.id = bounding_box.first_spectrum_id AND spectrum.ms_level= ?",
+						false);
+		stmt.bind(1, msLevel);
+
+		return new BoundingBoxIterator(this, stmt,
+				this.getDataEncodingByScanId(), msLevel);
+	}
+
+	/**
+	 * Gets the ms scan iterator.
+	 * 
+	 * @param msLevel
+	 *            the ms level
+	 * @return the ms scan iterator
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public Iterator<Scan> getMsScanIterator(int msLevel) throws SQLiteException {
+		return new MsScanIterator(this, msLevel);
+	}
+
+	/**
+	 * Gets the run slice data iterator.
+	 * 
+	 * @param msLevel
+	 *            the ms level
+	 * @return the run slice data iterator
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public Iterator<RunSlice> getRunSliceIterator(int msLevel)
+			throws SQLiteException {
+
+		// First pass to index data
+		SQLiteStatement fakeStmt = connection.prepare(
+				"SELECT * FROM bounding_box", false);
+		while (fakeStmt.step()) {
+		}
+		fakeStmt.dispose();
+
+		return new RunSliceIterator(this, msLevel);
+	}
+
+	/**
+	 * Gets the xic.
+	 * 
+	 * @param minMz
+	 *            the min mz
+	 * @param maxMz
+	 *            the max mz
+	 * @param msLevel
+	 *            the ms level
+	 * @return the xic
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	public Peak[] getXIC(double minMz, double maxMz, int msLevel, String method) throws SQLiteException {
+
+		method = method.equalsIgnoreCase("") ? "sum" : method;
+
+		List<Peak> results = new ArrayList<Peak>();
+	
+		Map<Integer, ArrayList<BoundingBox>> BBs = new TreeMap<Integer, ArrayList<BoundingBox>>();
+
+		String sqlString = "SELECT bounding_box.* FROM bounding_box, run_slice WHERE bounding_box.run_slice_id = run_slice.id AND run_slice.begin_mz >= ? and run_slice.end_mz <= ?";
+		
+		double mzHeight = (msLevel == 1) ? getBBSizes().BB_MZ_HEIGHT_MS1 : getBBSizes().BB_MZ_HEIGHT_MSn;
+
+		SQLiteStatement stmt = connection.prepare(sqlString, true);
+		
+		stmt.bind(1, minMz - mzHeight);
+		stmt.bind(2, maxMz + mzHeight);
+		
+		//System.out.println("" + (minMz - mzHeight) + ", " + (maxMz + mzHeight) );
+		int k = 0;
+		while (stmt.step()) {
+			
+			int id = stmt.columnInt(0);
+			System.out.println("" + k);
+			
+			if (getBoundingBoxMsLevel(id) != msLevel)
+				continue;
+			
+			// Retrieve bounding box data
+			byte[] data = stmt.columnBlob(1);
+			int runSliceId = stmt.columnInt(2);
+			int firstScanId = stmt.columnInt(3);
+
+			// Build the Bounding Box
+			BoundingBox bb = BoundingBoxBuilder.buildBB(id, getDataEncodingByScanId(), data);
+			bb.setFirstScanId(firstScanId);
+			bb.setRunSliceId(runSliceId);
+
+			// Initialize map entry if it doesn't exist
+			if (BBs.containsKey(firstScanId) == false)
+				BBs.put(firstScanId, new ArrayList<BoundingBox>());
+
+			BBs.get(firstScanId).add(bb);
+			k++;
+		}
+		stmt.dispose();
+		
+		System.out.println("Hola");
+		for (ArrayList<BoundingBox> bbs : BBs.values()) {
+
+			if (bbs.size() == 0)
+				continue;
+
+			BoundingBox b = bbs.get(0);
+			// printf("after retrieving first bounding box");
+			ArrayList<ScanData> scanDatas = new ArrayList<ScanData>();
+			
+			// printf("scanCount:%d\n", scanCount);
+			for (int i = 1; i <= b.nbScans(); ++i) {
+
+				ScanData s = new ScanData(0, new double[0], new float[0]); 
+				
+				for (BoundingBox b_ : bbs) {
+
+					ScanSlice sl = b_.scanSliceOfScanAt(i);			
+					s.addScanData(sl);//sl.mzRangeFilter(minMz, maxMz));
+				}
+				
+				scanDatas.add(s);
+				// results.addAll...
+				this.logger.debug("nb Points by Scan: {}", s.getMzList().length);
+			}
+			
+			for (ScanData scanData : scanDatas) {
+				Peak p = null;
+				float sum = 0;
+				ScanData filteredData = scanData.mzRangeFilter(minMz, maxMz);
+				if (filteredData == null)
+					continue;
+				Peak[] peaks = filteredData.toPeaks();
+				if (method.equalsIgnoreCase("sum")) {
+					Arrays.sort(peaks);
+
+					for (Peak f : peaks) {
+						sum += f.getIntensity();
+					}
+					double mz = peaks[(int) Math.floor(0.5 * peaks.length)].getMz();
+					float lwhm = peaks[(int) Math.floor(0.5 * peaks.length)].getLeftHwhm();
+					float rwhm = peaks[(int) Math.floor(0.5 * peaks.length)].getRightHwhm();		
+					ILcContext lcContext = peaks[(int) Math.floor(0.5 * peaks.length)].getLcContext();
+					p = new Peak(mz, sum, lwhm, rwhm, lcContext);
+				} else if (method.equalsIgnoreCase("max")) {
+					Arrays.sort(peaks, Peak.getIntensityComp());
+					p = peaks[peaks.length - 1];
+				} else {
+					throw new Error("Xic Method parameter: should be one of 'sum' or 'max' ");
+				}
+				results.add(p);
+			}
+		}
+
+		return results.toArray(new Peak[results.size()]);
+	}
+
+}
