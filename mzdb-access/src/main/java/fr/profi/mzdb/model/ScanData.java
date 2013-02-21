@@ -180,8 +180,10 @@ public class ScanData extends AbstractInMemoryIdGen {
 	    return binSearchIndex;
 	  else {
 	    int idx = - binSearchIndex - 1;
-	    if( idx == 0 ) return - 1;
-	    else return idx;
+	    if( idx == 0 ) 
+	    	return - 1;
+	    else 
+	    	return idx;
 	  }
 	}
 	
@@ -202,19 +204,23 @@ public class ScanData extends AbstractInMemoryIdGen {
 		
 		// Retrieve the index of nearest minimum value if it exists
 		int minBinSearchIndex = Arrays.binarySearch(this.mzList, mzMin);
-		int firstIdx = this._binSearchIndexToNearestIndex(minBinSearchIndex,nbPoints);
+		int firstIdx = this._binSearchIndexToNearestIndex(minBinSearchIndex, nbPoints);
 		// If out of bounds => return empty scan data
-		if( firstIdx == nbPoints ) return null;
+		if( firstIdx == nbPoints ) 
+			return null;
 	  // If first index => set the first value index as the array first index
-		if( firstIdx == -1 ) firstIdx = 0;
+		if( firstIdx == -1 ) 
+			firstIdx = 0;
 		
 	  // Retrieve the index of nearest maximum value if it exists
 		int maxBinSearchIndex = Arrays.binarySearch(this.mzList, firstIdx, nbPoints, mzMax );
-		int lastIdx = this._binSearchIndexToNearestIndex(maxBinSearchIndex,nbPoints);
+		int lastIdx = this._binSearchIndexToNearestIndex(maxBinSearchIndex, nbPoints);
 	  // If first index => return empty scan data
-		if( lastIdx == -1 ) return null;
+		if( lastIdx == -1 ) 
+			return null;
 	  // If out of bounds => set the last value index as the array last index
-		if( lastIdx == nbPoints ) lastIdx -= 1;
+		if( lastIdx == nbPoints ) 
+			lastIdx -= 1;
 		
 		// Increment the last index to have an exclusive index (needed by copyOfRange)
 		int exclusiveLastidx = lastIdx + 1;
@@ -223,8 +229,8 @@ public class ScanData extends AbstractInMemoryIdGen {
 		
 		ScanData filteredScanData = new ScanData(
 		                                  ScanData.generateNewId(), 
-		                                  Arrays.copyOfRange(mzList, firstIdx, exclusiveLastidx),
-		                                  Arrays.copyOfRange(intensityList, firstIdx, exclusiveLastidx)
+		                                  Arrays.copyOfRange(mzList, firstIdx, lastIdx), //exclusiveLastidx),
+		                                  Arrays.copyOfRange(intensityList, firstIdx, lastIdx) //exclusiveLastidx)
 		                                  );
 		
 		if ( this.leftHwhmList != null ) {
