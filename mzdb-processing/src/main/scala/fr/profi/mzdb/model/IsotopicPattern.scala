@@ -18,7 +18,8 @@ object IsotopicPattern {
     val filteredPeaks = if( maxNbPeaks > 0 ) peaks.take( maxNbPeaks ) else peaks
     
     var sum = 0f
-    for( pOpt <- peaks; p <- pOpt ) sum += p.getIntensity()
+    for( pOpt <- peaks; p <- pOpt ) 
+      sum += p.getIntensity()
     
     sum
   }

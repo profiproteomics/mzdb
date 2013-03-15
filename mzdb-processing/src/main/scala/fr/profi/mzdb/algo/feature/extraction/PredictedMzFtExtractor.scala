@@ -5,6 +5,12 @@ import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
+import scala.collection.mutable.ArrayBuffer
+import fr.profi.mzdb.model.Peak
+import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.utils.math.cwt.MexicanHat
+import fr.profi.mzdb.model.IsotopicPattern
 
 class PredictedMzFtExtractor(
   val mzDbReader: MzDbReader,
@@ -16,13 +22,52 @@ class PredictedMzFtExtractor(
 ) extends ISupervisedFtExtractor {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
+    val moz = putativeFt.getMz // suppose to be the mz of the monoisotopic right ?
+    val charge = putativeFt.getCharge // charge magically deduced by the machine
     
-    // Retrieve a list of sorted scan initial ids
+    val mzTolDa = MsUtils.ppmToDa(moz, mzTolPPM)
     
-    //ArrayList<Integer> sortedScanIds = (ArrayList<Integer>) Ordering.from(this.sortIntegersAsc).sortedCopy( pklTree.pklGroupByScanId.keySet() );
-    //ArrayList<IsotopicPattern> ips = new ArrayList<IsotopicPattern>( sortedScanIds.size() );
-  
-    Option.empty[Feature]
+    //less memory usage than map
+    //need the scanIds because they may not be filled in the LcContext of one peak (can have hole during extraction)
+    //which is really bad/sad...
+    val xic = new ArrayBuffer[Peak]
+    val xicScanIDs = new ArrayBuffer[Int]
+    
+    //buid the xic with getNearestPeak for each scan
+    //i was wondering if getting a full Xic using rtree would be faster ?
+    for (id  <- pklTree.scansIDs) {
+      val p = pklTree.getNearestPeak(id, moz, mzTolDa)
+      if ( ! p.isEmpty ) {
+    	  xic += pklTree.getNearestPeak(id, moz, mzTolDa).get 
+    	  xicScanIDs += id
+      }
+    }
+   
+	//build cwt, if no good ...
+	val peakelFinder = new WaveletBasedPeakelFinder( xic.toSeq, scales = (1f to 64f by 1f).toArray, wavelet = MexicanHat() ) //mexh by default
+	val peakels = peakelFinder.findCwtPeakels()
+	
+	//return Option[Feature] if cwt did not found any peaks
+	if ( peakels.isEmpty) 
+	  return Option.empty[Feature]
+	
+	//take the highest peakel since we have to return only one feature ? 
+	val highestPeakel = peakels.sortBy( x=> xic(x.apex).getIntensity ).last
+	val isotopicPatterns = new Array[Option[IsotopicPattern]](highestPeakel.maxIdx - highestPeakel.minIdx)
+	
+	var c = 0
+	for ( i <- highestPeakel.minIdx to highestPeakel.maxIdx) {
+	  val peak = xic(i)
+	  val scanID = xicScanIDs(i)
+	  //TODO: fondamental  stuff to check
+	  //verify if the peakels have the same size before
+	  isotopicPatterns(c) = pklTree.extractIsotopicPattern(mzDbReader.getScanHeader(scanID), moz, mzTolPPM, charge, 6)
+	  c+=1
+	}
+	//use of the constructor which build peakels
+    val f =  new Feature(Feature.generateNewId(), moz, charge, isotopicPatterns.filter(x=> x.isDefined ) map (_.get) toSeq)
+    Some(f)
+    
   }
 
 }
