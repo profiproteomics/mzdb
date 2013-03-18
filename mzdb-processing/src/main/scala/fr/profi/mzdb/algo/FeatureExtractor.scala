@@ -39,10 +39,12 @@ class FeatureExtractor(
     var ft = Option.empty[Feature]
     if( !putativeFt.isPredicted ) { // we know that signal is there
       
-      if( putativeFt.firstScanId > 0 && putativeFt.lastScanId > 0 ) { // have a full feature knowledge 
+      if( putativeFt.firstScanId > 0 && putativeFt.lastScanId > 0 ) { // have a full feature knowledge
+        //println("Fully supervised")
         ft = this.fullySupervisedFtExtractor.extractFeature(putativeFt, pklTree )
 
       }  else if( putativeFt.scanId > 0 ) { // only know feature m/z and a related MS scan event
+        //println("MS2 driven")
         ft = this.ms2DrivenFtExtractor.extractFeature(putativeFt, pklTree )
         
       }
@@ -50,9 +52,12 @@ class FeatureExtractor(
     }  else { // don't know if signal is there
       
       if( putativeFt.elutionTime > 0 ) { // only know m/z, elution time is predicted
+        //println("Predicted time")
+
         ft = this.predictedTimeFtExtractor.extractFeature(putativeFt, pklTree );
         
       }  else if( putativeFt.mz > 0 ) { // search best feature for this m/z
+        //println("Predicted Mz")
         ft = this.predictedMzFtExtractor.extractFeature(putativeFt, pklTree );
       }
     }

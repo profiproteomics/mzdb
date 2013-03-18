@@ -17,8 +17,9 @@ trait IFittingType extends DifferentiableMultivariateVectorialFunction {
   def getX(): Array[Double]
 }
 
-class ParabolaFitting ( @BeanProperty var x: Array[Double], //mz
-					    @BeanProperty var y:Array[Double], //intensity
+/* basically this used to fit mz Peak */
+class ParabolaFitting ( @BeanProperty val x: Array[Double], //mz
+					    @BeanProperty val y:Array[Double], //intensity
 					    @BeanProperty var peaks: Array[PeakShape]) //basically peaks detected after smoothing and local maxima detection
 					    extends IFittingType {//DifferentiableMultivariateVectorialFunction {
     /* calculate data */
@@ -60,9 +61,11 @@ class ParabolaFitting ( @BeanProperty var x: Array[Double], //mz
 		    }
 		  };
   }
+}
 
- class GaussianFitting ( @BeanProperty var x: Array[Double], //mz
-					      @BeanProperty var y:Array[Double], //intensity
+  /* test mz fit or peakel */
+ class GaussianFitting ( @BeanProperty val x: Array[Double], //mz
+					      @BeanProperty val y:Array[Double], //intensity
 					      @BeanProperty var peaks: Array[PeakShape]) //basically peaks detected after smoothing and local maxima detection
 					      extends IFittingType {
     
@@ -109,6 +112,18 @@ class ParabolaFitting ( @BeanProperty var x: Array[Double], //mz
 		  };
   }
   }
+ 
+ 
+ //the idea is to fit on the first part a gaussian and on the second part a lorentzian
+ //this would be particulary adapted for fitting peakels
+ abstract class GaussLorentzFitting( @BeanProperty val x: Array[Double], //mz
+					        @BeanProperty val y:Array[Double], //intensity
+					        @BeanProperty var peaks: Array[PeakShape]) //basically peaks detected after smoothing and local maxima detection
+					        extends IFittingType{
+  
+  }
+   
+ 
 
  object Optimizer {
     
@@ -124,4 +139,3 @@ class ParabolaFitting ( @BeanProperty var x: Array[Double], //mz
   }
     
 
-}

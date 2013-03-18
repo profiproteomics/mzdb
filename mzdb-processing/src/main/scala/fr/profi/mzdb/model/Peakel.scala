@@ -36,6 +36,7 @@ object Peakel {
     
     (firstLcContext, lastLcContext)
   }
+  
 }
 
 /** The Class Peakel.
@@ -74,6 +75,8 @@ case class Peakel(
   
   // Update feature intensity and area
   this._integratePeakel()
+  
+  
   
   protected def _integratePeakel() {
     

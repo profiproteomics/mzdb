@@ -74,7 +74,7 @@ class PredictedTimeFtExtractor(
     val scanIDs = pklTree.scansIDs().filter(x => x > (curScanH.getId - leftmostScanH.getId) && x < (curScanH.getId + rightmostScanH.getId)) toArray
 
     val NB_PEAKELS_TO_CHECK = 3
-    val deltaMass = 1f / charge
+    val deltaMass = 1.002f / charge
 
     var peakels = new ArrayBuffer[Array[CwtPeakel]]
     var values = new ArrayBuffer[Array[Float]]
