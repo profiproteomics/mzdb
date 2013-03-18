@@ -9,35 +9,93 @@ import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
 
 case class PeakShape (var mz:Double, 
 					  var intensity:Float,
-					  var lwhm:Float, 
-					  var rwhm:Float) {}
+					  var lwhm:Float = 0.05f, 
+					  var rwhm:Float = 0.05f) {}
 
+trait IFittingType extends DifferentiableMultivariateVectorialFunction {
+  def getY(): Array[Double]
+  def getX(): Array[Double]
+}
 
-class ParabolaFitting ( @BeanProperty var x: Array[Double], 
-					    @BeanProperty var y:Array[Double], 
-					    @BeanProperty var peaks: Array[PeakShape]) extends DifferentiableMultivariateVectorialFunction {
+class ParabolaFitting ( @BeanProperty var x: Array[Double], //mz
+					    @BeanProperty var y:Array[Double], //intensity
+					    @BeanProperty var peaks: Array[PeakShape]) //basically peaks detected after smoothing and local maxima detection
+					    extends IFittingType {//DifferentiableMultivariateVectorialFunction {
     /* calculate data */
 	def value(variables: Array[Double]): Array[Double] = {
 	  val v = new Array[Double](x.length)
-	  val (a, b, c) = (variables(0), variables(1), variables(2));
-	  val c_squared = c * c
 	  
-	  for (i <- 0 to v.length) {
+	  for (i <- 0 until v.length) {
 	    val moz = x(i)
-	    v(i) = -1 / 2 * c_squared * moz * moz + b / c_squared * moz - (b * b) / 2 * c_squared + math.log(a) 
+	    var calcInt = 0.0
+	    for (j <- 0 until peaks.length) {
+	    	val (a, b, c) = (variables(i * j), variables(i * j + 1), variables(i * j + 2));
+	    	calcInt += -1 / 2 * c*c * moz * moz + b / c*c* moz - (b * b) / 2 * c*c + math.log(a)
+	    }
+	    v(i) = calcInt
+	  }
+	  return v
+	}
+	
+	
+	def calcJacobian(variables: Array[Double] ) : Array[Array[Double]]= {
+		val jacobian =  Array.ofDim[Double](x.length, 3 * peaks.length)		
+		for (i <- 0 until x.length) {
+		  for (j <- 0 until peaks.length) {
+			  val (a, b, c) = (variables(i * j), variables(i * j + 1), variables(i * j + 2))
+			  jacobian(i)(i * j) = 1. / a
+			  jacobian(i)(i * j + 1) = (x(i) - b) / (c * c)
+			  jacobian(i)(i * j + 2) = math.pow(( x(i) -  b), 2) / math.pow(c, 3)
+		  }
+		}
+		return jacobian
+	}
+
+	/** interface method of DifferentiableMultivariateVectorialFunction */
+  def jacobian() : MultivariateMatrixFunction = {
+		  return new MultivariateMatrixFunction() {
+		    
+		    def value(point: Array[Double]) : Array[Array[Double]] = {
+                return calcJacobian(point);
+		    }
+		  };
+  }
+
+ class GaussianFitting ( @BeanProperty var x: Array[Double], //mz
+					      @BeanProperty var y:Array[Double], //intensity
+					      @BeanProperty var peaks: Array[PeakShape]) //basically peaks detected after smoothing and local maxima detection
+					      extends IFittingType {
+    
+    /* calculate data */
+	def value(variables: Array[Double]): Array[Double] = {
+	  val v = new Array[Double](x.length)
+
+	  for (i <- 0 until v.length) {
+	    val moz = x(i)
+	    var calcInt = 0.0
+	    for (j <- 0 until peaks.length) {
+       	  val (a, b, c, d) = (variables(i * j), variables(i * j + 1), variables( i *j + 2), variables(i * j + 3));
+       	  val sigma = if (x(i) < b) 2 * c else 2 * d
+	      calcInt += a * math.exp(- math.pow( x(i) - b , 2) / 2 * sigma * sigma)
+	    }
+	    v(i) = calcInt
 	  }
 	  return v
 	}
 	
 	
 	def jacobian(variables: Array[Double] ) : Array[Array[Double]]= {
-		val jacobian =  Array.ofDim[Double](x.length, 3)
-		val (a, b, c) = (variables(0), variables(1), variables(2))
-		
-		for (i <- 0 to x.length) {
-		  jacobian(i)(0) = 1. / a
-		  jacobian(i)(1) = (x(i) - b) / (c * c)
-		  jacobian(i)(2) = math.pow(( x(i) -  b), 2) / math.pow(c, 3)
+		val jacobian =  Array.ofDim[Double](x.length, 3 * peaks.length)		
+		for (i <- 0 until x.length) {
+		  for (j <- 0 until peaks.length) {
+			  val (a, b, c, d) = (variables(i * j), variables(i * j + 1), variables(i * j + 2), variables(i * j + 3))
+			  val sigma = if (x(i) < b) 2 * c else 2 * d
+			  val dfdy = math.exp(- math.pow( x(i) - b, 2) / 2 * sigma * sigma)
+			  jacobian(i)(i * j) = dfdy
+			  jacobian(i)(i * j + 1) = a * (x(i) - b) / sigma * sigma * dfdy  
+			  jacobian(i)(i * j + 2) = if (x(i) < b) a * math.pow(( x(i) -  b), 2) / math.pow(sigma, 3) else 0
+			  jacobian(i)(i * j + 3) = if (x(i) >= b) a * math.pow(( x(i) -  b), 2) / math.pow(sigma, 3) else 0
+		  }
 		}
 		return jacobian
 	}
@@ -50,21 +108,17 @@ class ParabolaFitting ( @BeanProperty var x: Array[Double],
 		    }
 		  };
   }
+  }
 
-  
-  object Optimizer {
+ object Optimizer {
     
      def optimize(iteration: Int = 100, 
-    		 	  optimizer:AbstractLeastSquaresOptimizer = new LevenbergMarquardtOptimizer, 
-    		 	  function: ParabolaFitting, //DifferentiableMultivariateVectorialFunction, 
-    		 	  weights:Array[Double], 
+    		 	  optimizer:AbstractLeastSquaresOptimizer = new LevenbergMarquardtOptimizer, // could be GaussNewton to but LM generally is more performant
+    		 	  function: IFittingType, 
+    		 	  weights:Array[Double], // may put more wheigths on points around the apex !
     		 	  initialSolution: Array[Double]): VectorialPointValuePair = {
-       /*public VectorialPointValuePair optimize(final DifferentiableMultivariateVectorialFunction f,
-                                            final double[] target, final double[] weights,
-                                            final double[] startPoint)*/
-       
+
        val optimum = optimizer.optimize(function, function.getY, weights, initialSolution)
-       //optimizer.getConvergenceChecker().
        optimum
      }
   }

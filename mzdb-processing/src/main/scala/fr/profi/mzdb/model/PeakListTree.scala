@@ -29,23 +29,17 @@ case class PeakListTree( private var pklGroupByScanId: Map[Int,PeakListGroup] ) 
   
   def scansIDs() : Array[Int] = { pklGroupByScanId.keys.toArray.sortWith(_ < _) }
   
-  /* I change little stuff here, it is simpler that the result isotopic pattern contain
-   * maxNbPeaks each time as we require that peakels must contain the same number of data points
-   * maxNbPeaks ~=
-   * With little bit more code, check problem of overlapping ( two centroids too close for example)  
-   */
   def extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
                               charge: Int, maxNbPeaks: Int ): Option[IsotopicPattern] = {
     
     val scanId = scanHeader.id
     val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
-    
-    if( charge < 1 || pklGroupAsOpt == None ) 
-      return Option.empty[IsotopicPattern]
+    if( charge < 1 || pklGroupAsOpt == None ) return Option.empty[IsotopicPattern]
     
     val pklGroup = pklGroupAsOpt.get
-    val peaks = new Array[Option[Peak]]( maxNbPeaks )//ArrayBuffer does not init to null => out of bound exception
+    val peaks = new ArrayBuffer[Peak]( maxNbPeaks )
     
+    breakable {
       for( peakPos <- 0 until maxNbPeaks ) {
         
         // Compute some vars
@@ -58,20 +52,22 @@ case class PeakListTree( private var pklGroupByScanId: Map[Int,PeakListGroup] ) 
         val nearestPeak = pklGroup.getNearestPeak( mzToExtract, mzTolDa)
         
         // If nearest peak is found, add it it to the list of peaks
-        peaks(peakPos) = nearestPeak
-
+        if( nearestPeak != None ) peaks += nearestPeak.get
+        else 
+          break
+        
       }
-
+    }
     
     if( peaks.length == 0 ) 
       return Option.empty[IsotopicPattern]
     
     // Compute IP intensity using the 2 first peaks
     // TODO: use parameter which specifies the number of peaks to use
-    //val ipPeaks = peaks.toArray.map( Option(_) )
-    val ipIntensity = IsotopicPattern.sumPeakIntensities(peaks, 2);
+    val ipPeaks = peaks.toArray.map( Option(_) )
+    val ipIntensity = IsotopicPattern.sumPeakIntensities(ipPeaks, 2);
     
-    Some( new IsotopicPattern( peaks(0).get.mz, ipIntensity, charge, peaks, scanHeader, null, 0f ) )
+    Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
     
   }
   
