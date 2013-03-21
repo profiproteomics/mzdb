@@ -18,7 +18,7 @@ object PeakelGenerator {
     val peaks = new ArrayBuffer[Option[Peak]]
     for( x <- ((time - halfDuration)) to ((time + halfDuration)) by samplingSize ) {
       val y = gaussModel.getYValue(x)
-      println( ""+x +"\t"+y )
+      //println( ""+x +"\t"+y )
       peaks += Some( new Peak( mz, y.toFloat, peakWwhm, peakWwhm, new ElutionTimeContext(x) ) )
     }
     

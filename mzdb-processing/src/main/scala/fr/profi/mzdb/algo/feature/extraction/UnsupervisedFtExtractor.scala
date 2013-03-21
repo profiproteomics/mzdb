@@ -1,15 +1,17 @@
 package fr.profi.mzdb.algo.feature.extraction
 
+import fr.profi.mzdb.MzDbReader
+import scala.reflect.BeanProperty
+
 /**
  * @author David Bouyssie
  *
  */
 
-object UnsupervisedFtExtractor {
-  val NB_CONSECTUVIVE_SCANS = 5
-  
-}
-class UnsupervisedFtExtractor {
-  
+
+class UnsupervisedFtExtractor(@BeanProperty reader: MzDbReader, 
+							  @BeanProperty nbConsecutiveScanMin: Int = 5,
+							  @BeanProperty nbConsecutiveScanMax: Int = 100) {
+  // allow
 
 }

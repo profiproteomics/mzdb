@@ -2,11 +2,12 @@ package fr.profi.mzdb.algo.feature.extraction
 
 import collection.mutable.ArrayBuffer
 import util.control.Breaks._
-
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
+import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.mzdb.model.Peak
 
 trait ISupervisedFtExtractor extends IFeatureExtractor {
 
@@ -122,7 +123,7 @@ trait ISupervisedFtExtractor extends IFeatureExtractor {
     for( z <- 1 to maxZ ) {
       
       // Try several m/z shifts
-      for( ipShift <- (-maxIpShift) until 0 ) {
+      for( ipShift <- (-maxIpShift) until 0 ) { //TODO :why not checking -maxIpShift +maxIpShift
         
         val olpIpMz = ip.mz + ( ipShift.toDouble/z )
         val olpIpNbPeaks = Math.abs(ipShift);
@@ -151,5 +152,9 @@ trait ISupervisedFtExtractor extends IFeatureExtractor {
     
     olpIPs.toArray
 
+  }
+  
+  protected def _checkIsMonoisotopicPeakel(f: Feature) {
+    
   }
 }

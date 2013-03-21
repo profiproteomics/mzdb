@@ -6,6 +6,8 @@ import scala.reflect.BeanProperty
 import org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimizer
 import org.apache.commons.math.optimization.VectorialPointValuePair
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
+import org.apache.commons.math.optimization.SimpleVectorialPointChecker
+import scala.collection.mutable.ArrayBuffer
 
 case class PeakShape (var mz:Double, 
 					  var intensity:Float,
@@ -15,10 +17,12 @@ case class PeakShape (var mz:Double,
 trait IFittingType extends DifferentiableMultivariateVectorialFunction {
   def getY(): Array[Double]
   def getX(): Array[Double]
+  
+  def optimize(iteration:Int, optimizer:AbstractLeastSquaresOptimizer): Pair[VectorialPointValuePair, AbstractLeastSquaresOptimizer]
 }
 
 /* basically this used to fit mz Peak */
-class ParabolaFitting ( @BeanProperty val x: Array[Double], //mz
+abstract class ParabolaFitting ( @BeanProperty val x: Array[Double], //mz
 					    @BeanProperty val y:Array[Double], //intensity
 					    @BeanProperty var peaks: Array[PeakShape]) //basically peaks detected after smoothing and local maxima detection
 					    extends IFittingType {//DifferentiableMultivariateVectorialFunction {
@@ -111,7 +115,21 @@ class ParabolaFitting ( @BeanProperty val x: Array[Double], //mz
 		    }
 		  };
   }
-  }
+  
+   def optimize(iteration:Int, optimizer:AbstractLeastSquaresOptimizer=new LevenbergMarquardtOptimizer): Pair[VectorialPointValuePair, AbstractLeastSquaresOptimizer] = {
+     val weights = for (i <- 0 until y.length) yield 1d
+     var initialGuess = new ArrayBuffer[Double]()
+     for (i <- 0 until peaks.length) {
+       for (j <- 0 until 4)
+         initialGuess += 1d
+     }
+     val optimum = optimizer.optimize(this, y, weights.toArray, initialGuess.toArray)
+     new Tuple2[VectorialPointValuePair, AbstractLeastSquaresOptimizer](optimum, optimizer)
+     
+   }
+ 
+  
+}
  
  
  //the idea is to fit on the first part a gaussian and on the second part a lorentzian
@@ -123,19 +141,22 @@ class ParabolaFitting ( @BeanProperty val x: Array[Double], //mz
   
   }
    
- 
-
+ /*
+//i was looking for testing convergence, but it is not yet implemented in 2.2 version
  object Optimizer {
-    
-     def optimize(iteration: Int = 100, 
+	 
+     def optimize(x : Array[Double],
+    		 	  y :Array[Double],
+    		 	  iteration: Int = 1000, 
     		 	  optimizer:AbstractLeastSquaresOptimizer = new LevenbergMarquardtOptimizer, // could be GaussNewton to but LM generally is more performant
-    		 	  function: IFittingType, 
-    		 	  weights:Array[Double], // may put more wheigths on points around the apex !
-    		 	  initialSolution: Array[Double]): VectorialPointValuePair = {
-
+    		 	  //function: IFittingType = new GaussianFitting,
+    		 	  //weights:Array[Double], // may put more wheigths on points around the apex !
+    		 	  initialSolution: Array[Double]): Tuple2[VectorialPointValuePair, AbstractLeastSquaresOptimizer] = {
+       
+       //optimizer.setConvergenceChecker(new SimpleVectorialPointChecker)
        val optimum = optimizer.optimize(function, function.getY, weights, initialSolution)
-       optimum
+       new Tuple2[VectorialPointValuePair, AbstractLeastSquaresOptimizer](optimum, optimizer)
      }
-  }
+  }*/
     
 

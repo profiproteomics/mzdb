@@ -70,5 +70,56 @@ case class PeakListTree( private var pklGroupByScanId: Map[Int,PeakListGroup] ) 
     Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
     
   }
+  	
+  // All this stuff seems o be already done 
+  /*
+    def _extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
+                              charge: Int, maxNbPeaks: Int ): Tuple2[Option[IsotopicPattern], ArrayBuffer[ArrayBuffer[Option[Peak]]]] = {
+    
+    val scanId = scanHeader.id
+    val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
+    if( charge < 1 || pklGroupAsOpt == None ) 
+      return  (Option.empty[IsotopicPattern], new ArrayBuffer[ArrayBuffer[Option[Peak]]])
+    
+    val pklGroup = pklGroupAsOpt.get
+    val peaks = new ArrayBuffer[Peak]( maxNbPeaks )
+    val overlappingPeaks = new ArrayBuffer[ArrayBuffer[Option[Peak]]]( maxNbPeaks) //several overlapping could occur
+    breakable {
+      for( peakPos <- 0 until maxNbPeaks ) {
+        
+        // Compute some vars
+        val mzToExtract =  mz + (peakPos * 1.002 / charge)
+        val mzTolDa = MsUtils.ppmToDa( mzToExtract, mzTolPPM )
+        
+        // Try to retrieve peaks in range
+        val nearestPeaks = pklGroup.getPeaksInRange( mzToExtract, mzTolDa)
+        
+        if (nearestPeaks.isEmpty)
+          break
+        if (nearestPeaks.length > 1) {
+          nearestPeaks.sortBy(x => math.abs(mz - x.getMz()))
+          peaks += nearestPeaks(0)
+          for ( p <- 1 to nearestPeaks.length) {
+            overlappingPeaks(peakPos) += Some(nearestPeaks(p)) 
+          }          
+        } else {
+          //just one peak no overlapping
+          peaks += nearestPeaks(0)
+          overlappingPeaks(peakPos) += Option.empty[Peak]
+        } 
+      }
+    }
+    
+    if( peaks.length == 0 ) 
+      return (Option.empty[IsotopicPattern], overlappingPeaks)
+    
+    // Compute IP intensity using the 2 first peaks
+    // TODO: use parameter which specifies the number of peaks to use
+    val ipPeaks = peaks.toArray.map( Option(_) )
+    val ipIntensity = IsotopicPattern.sumPeakIntensities(ipPeaks, 2);
+    
+    (Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) ), overlappingPeaks)
+    
+  }*/
   
 }

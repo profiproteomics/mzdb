@@ -21,6 +21,7 @@ import fr.profi.mzdb.utils.math.VectorSimilarity
 
 
 class PredictedTimeFtExtractor(
+    
   override val mzDbReader: MzDbReader,
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],

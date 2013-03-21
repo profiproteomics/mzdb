@@ -6,20 +6,8 @@ package fr.profi.mzdb.utils.math.pdf
  */
 object LorentzianFunction {
 
-  /*
-////// Load essentials here, other modules loaded on demand later
-  use Carp
-  use Math::Trig ':pi'
-  
-  ////// Define attributes
-  has 'x_zero' = ( isa = 'Num', is = 'ro', required = 1 )
-  has 'y_max' = ( isa = 'Num', is = 'ro', required = 1 )
-  has 'hwhm' = ( isa = 'Num', is = 'ro', required = 1, )
-  
-  ////// Define cached attributes which help to speed up computations
-  has '_hwhm_square' = ( is = 'ro', required = 0, builder = '_build_hwhm_square', lazy = 1, init_arg = undef )
-  has '_theo_y_max' = ( isa = 'Num', is = 'ro', required = 0, builder = '_build_theo_y_max', lazy = 1,  init_arg = undef )
-    
+
+    /*
   def _buildHwhmSquare (): Unit = {
     val ( this ) = _
     return this.hwhm ** 2

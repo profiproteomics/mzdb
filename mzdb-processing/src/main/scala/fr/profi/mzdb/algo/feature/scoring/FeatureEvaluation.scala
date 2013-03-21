@@ -95,14 +95,6 @@ case class FeatureEvaluationThresholds(
   }
 }
 
-//will contains function allowing to evaluate features
-/*case class FeatureEvaluation(
-  feature: Feature,
-  qualityCriteria: FeatureQualityVector,
-  qualityAssessment: FeatureQualityAssessment,
-  overlapCriteria: FeatureOverlapVector,
-  isOverlapping: Boolean
-)*/
 object FeatureEvaluator  {
   /*ms1Count: Int,
   shape: Float,
@@ -144,10 +136,7 @@ object FeatureEvaluator  {
     														peakelsCorrelation > eval.qualityThresholds._1.peakelsCorrelation && peakelsCorrelation < eval.qualityThresholds._2.peakelsCorrelation,
     														true)//peakelsNumber > eval.qualityThresholds._1.peakelUnicity && peakelsNumber < eval.qualityThresholds._2.peakelUnicity,
 
-   /* case class FeatureOverlapVector (
-  overlappingPeakelsCorrelation: Float,
-  overlappingFactor: Float
-)*/
+
     val featureOverlapVector = FeatureOverlapVector(0,0)
     new FeatureEvaluation(f, 
     					  featureQuality, 
@@ -161,6 +150,8 @@ object FeatureEvaluator  {
     var shape = 0f
     for (peakel <- f.getPeakels) {
     	val results = BasicPeakelFinder.findPeakelsIndexes(peakel.definedPeaks)
+    	if (results.length > 1 || results.isEmpty)
+    	  shape += 1f
     }
     shape
   }
@@ -168,7 +159,10 @@ object FeatureEvaluator  {
   private def _shapeByWaveletBasedPeakelFinder ( f:Feature ): Float =  {
     var shape = 0f
     for (peakel <- f.getPeakels) {
-    	val results = BasicPeakelFinder.findPeakelsIndexes(peakel.definedPeaks)
+    	
+    	val results = new WaveletBasedPeakelFinder(peakel.definedPeaks).findCwtPeakels()
+    	if (results.length > 1 || results.isEmpty)
+    	  shape += 1f
     }
     shape
   }

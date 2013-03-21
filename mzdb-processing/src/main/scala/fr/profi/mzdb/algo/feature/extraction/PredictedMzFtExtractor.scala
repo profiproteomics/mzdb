@@ -35,7 +35,7 @@ class PredictedMzFtExtractor(
     
     //buid the xic with getNearestPeak for each scan
     //i was wondering if getting a full Xic using rtree would be faster ?
-    for (id  <- pklTree.scansIDs) {
+    for (id  <- pklTree.scansIDs) { 
       val p = pklTree.getNearestPeak(id, moz, mzTolDa)
       if ( ! p.isEmpty ) {
     	  xic += pklTree.getNearestPeak(id, moz, mzTolDa).get 
@@ -51,23 +51,37 @@ class PredictedMzFtExtractor(
 	if ( peakels.isEmpty) 
 	  return Option.empty[Feature]
 	
-	//take the highest peakel since we have to return only one feature ? 
-	val highestPeakel = peakels.sortBy( x=> xic(x.apex).getIntensity ).last
-	val isotopicPatterns = new Array[Option[IsotopicPattern]](highestPeakel.maxIdx - highestPeakel.minIdx)
-	
+	//take the highest peakel since we have to return only one feature ?
+	//val highestPeakel = peakels.sortBy( x=> xic(x.apex).getIntensity ).last
+	//by elutionTime ? Some work TODO here LcContext well filled ?
+	val highestPeakel = peakels.sortBy( x => math.abs(xic(x.apex).getLcContext().getElutionTime() - putativeFt.getElutionTime)).first
+
+	val isotopicPatterns = new Array[Option[IsotopicPattern]](highestPeakel.maxIdx - highestPeakel.minIdx + 1)
+
 	var c = 0
 	for ( i <- highestPeakel.minIdx to highestPeakel.maxIdx) {
 	  val peak = xic(i)
 	  val scanID = xicScanIDs(i)
-	  //TODO: fondamental  stuff to check
-	  //verify if the peakels have the same size before
-	  isotopicPatterns(c) = pklTree.extractIsotopicPattern(mzDbReader.getScanHeader(scanID), moz, mzTolPPM, charge, 6)
-	  c+=1
+	  val ipOpt = pklTree.extractIsotopicPattern(mzDbReader.getScanHeader(scanID), moz, mzTolPPM, charge, maxNbPeaksInIP)
+	  if( ipOpt != None ) {
+        val ip = ipOpt.get
+        val intensity = ip.intensity
+        // If we have peaks
+        if( ip.peaks.length > 0 ) {
+          val olpIPs = this._extractOverlappingIPs( ip, pklTree )
+          // Set overlapping IPs if at least one has been found
+          val nbOlpIPs = olpIPs.length
+          if( nbOlpIPs > 0 ) {
+            ip.overlappingIps = olpIPs.toArray
+          }
+        }
+	  }
+	  isotopicPatterns(c) = ipOpt
 	}
 	//use of the constructor which build peakels
     val f =  new Feature(Feature.generateNewId(), moz, charge, isotopicPatterns.filter(x=> x.isDefined ) map (_.get) toSeq)
+    updateFtOverlappingFeatures( f, isotopicPatterns.filter(x => x != None) map(x=> x.get), this.minNbOverlappingIPs )
     Some(f)
     
   }
-
 }
