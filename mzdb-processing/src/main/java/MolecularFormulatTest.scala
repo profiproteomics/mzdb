@@ -1,6 +1,3 @@
-
-
-
 import fr.profi.mzdb.model.MolecularFormula
 import fr.profi.mzdb.model.Elements
 import scala.collection.mutable.HashMap
@@ -9,13 +6,20 @@ import scala.sys.process._
 import java.io.OutputStreamWriter
 import scala.sys.process.Process
 import fr.profi.mzdb.model.MercuryLauncher
-import org.apache.commons.math.optimization.fitting.GaussianFitter
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
 import fr.profi.mzdb.algo.signal.generation.PeakelGenerator
 import scala.util.Random
-import fr.profi.mzdb.algo.signal.fitting.GaussianFitting
 import fr.profi.mzdb.algo.signal.fitting.PeakShape
 import scala.collection.mutable.ArrayBuffer
+import fr.profi.mzdb.algo.signal.fitting.ParabolaFitter
+import org.apache.commons.math.optimization.fitting.GaussianFunction
+import fr.profi.mzdb.utils.math.pdf.ParametricParabola
+import fr.profi.mzdb.algo.signal.fitting.GaussFitter
+import fr.profi.mzdb.utils.math.pdf.ParametricParabola
+import org.apache.commons.math.optimization.fitting.PolynomialFitter
+import org.apache.commons.math.analysis.polynomials.PolynomialFunction
+import org.apache.commons.math.optimization.general.GaussNewtonOptimizer
+import org.junit.Assert
 
 object Test extends App {
 	
@@ -23,7 +27,7 @@ object Test extends App {
 		var m = MolecularFormula()
 		m(Elements.H) = 34
 		m(Elements.C) = 22
-		assert(m.toString == "C22H34")
+		Assert.assertTrue(m.toString == "C22H34")
 		println(m.toString())
 	}
 	
@@ -39,14 +43,15 @@ object Test extends App {
 	    else
 	    	intens(i) += noise(i)
 	  }
-	  val fitter = new GaussianFitter(new LevenbergMarquardtOptimizer)
-	  for ((a, b) <- rt.slice(0, 20).zip(intens.slice(0, 20))) {
+	  val fitter = new org.apache.commons.math.optimization.fitting.GaussianFitter(new LevenbergMarquardtOptimizer)
+	  for ((a, b) <- rt.zip(intens)) {
 	    println("" + a+ "\t" + b)
 	    fitter.addObservedPoint(a, b toDouble)
 	  }
 	  val v = fitter.fit()
+	  println("A:" + v.getA())
 	  val fitted_y = rt.map(x=> v.value(x))
-	  for (i <- 0 until rt.slice(0, 20).length) {
+	  for (i <- 0 until rt.length) {
 	    println("" + rt(i) + "\t" + intens(i) +"\t" + fitted_y(i))
 	  }
 	  
@@ -65,24 +70,51 @@ object Test extends App {
 	    else
 	    	intens(i) += noise(i)
 	  }
-	  val f = new GaussianFitting(rt.map(x=>x toDouble)toArray, intens.map(x=>x toDouble)toArray,  (new ArrayBuffer[PeakShape]() += new PeakShape(1, 1, 1, 1))toArray)
-	  val a = f.optimize(1000)._1
-	  val inte = a.getPoint()(0)
-	  val rtn = a.getPoint()(1)
-	  val l = a.getPoint()(2)
-	  val r = a.getPoint()(3)
-	  
-	  for (i <- 0 until rt.length)  {
-	    if (rt(i) < rtn) 
-	    	println("" + rt(i) + " \t" + inte * math.exp(-math.pow(rt(i) - rtn, 2)/ 2 * l * l))
-	    else
-	      println("" + rt(i) + " \t" + inte * math.exp(-math.pow(rt(i) - rtn, 2)/ 2 * r * r))
+	  val f = new PolynomialFitter(2, new LevenbergMarquardtOptimizer)
+	  for ((a, b) <- rt.zip(intens)) {
+	    f.addObservedPoint(1d, a, b toDouble)
 	  }
-	    
-	  
+	  val a = f.fit()
+	 
+	  for (i <- 0 until rt.length)  {
+		//val xrt = rt(i) - rtn
+	    //if (rt(i) < rtn) {
+	      //var y =  shift + inte * math.exp(- xrt *xrt / (2 * sigmal * sigmal))
+	      println("" + rt(i) + " \t" + intens(i) + "\t"+ a.value(rt(i)))
+	    //}else {
+	      //var y = shift + inte * math.exp(- xrt * xrt / (2 * sigmar * sigmar))
+	    //  println("" + rt(i) + " \t" + intens(i) + "\t" +  v2.value(rt(i)))
+	    //}
+	  }
 	}
 	
-	testLM
+	
+	def testPolyFit() {
+	  val peakel = PeakelGenerator.generate(525.12, 2000, 10000, 30, 1, 50)
+	  val peaks = peakel.getDefinedPeaks
+	  val noise = Seq.fill(1000)(Random.nextInt(2500))
+	  var count = 0
+	  var (rt, intens) = (peaks.map(x=> x.getLcContext().getElutionTime()), peaks.map{x=>x.getIntensity })
+	  for (i <- 0 until intens.length) {
+	    if (i == 4)
+	      intens(i) += 5000
+	    else
+	    	intens(i) += noise(i)
+	  }
+	  val f = new GaussFitter(rt.map(x=>x toDouble)toArray, intens.map(x=>x toDouble)toArray)
+	  val a = f.optimize()
+	  val p = f.getPeaks
+	  val peak = p(0)
+	  val y = peak.getFittedY(rt.map(x=> x toDouble).toArray)
+	  var count_ = 0
+	  for ((rt_, intens_) <- rt.zip(y) ) {
+	      println("" + rt_ + " \t" + intens(count_) + "\t" +  intens_)
+	      count_ += 1
+	    }
+	  }
+	
+	
+	testPolyFit
     //val (mz, intensities) = this.computeIsotopicDistribution(m, 0)
     //for ( (m, i) <- mz.zip(intensities)) {
     //  println("" + m +"\t" + i)
