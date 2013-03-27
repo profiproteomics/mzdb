@@ -14,10 +14,7 @@ import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
  *
  * @author David Bouyssie
  */
-public class ScanData extends AbstractInMemoryIdGen {
-  
-	/** The id. */
-  protected final int id;
+public class ScanData {
   
   /** The mz list. */
   protected double[] mzList;
@@ -35,15 +32,13 @@ public class ScanData extends AbstractInMemoryIdGen {
   /**
    * Instantiates a new scan data.
    *
-   * @param id the id
    * @param mzList the mz list
    * @param intensityList the intensity list
    * @param lHwhmList the l hwhm list
    * @param rHwhmList the r hwhm list
    */
-  public ScanData(int id, double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList ) {
+  public ScanData(double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList ) {
     super();
-    this.id = id;
     this.mzList = mzList;
     this.intensityList = intensityList;
     this.leftHwhmList = lHwhmList;
@@ -53,23 +48,13 @@ public class ScanData extends AbstractInMemoryIdGen {
 	/**
 	 * Instantiates a new scan data.
 	 *
-	 * @param id the id
 	 * @param mzList the mz list
 	 * @param intensityList the intensity list
 	 */
-	public ScanData(int id, double[] mzList, float[] intensityList) {
-	  this(id, mzList, intensityList, null, null);
+	public ScanData(double[] mzList, float[] intensityList) {
+	  this(mzList, intensityList, null, null);
 	}
-
-  /**
-   * Gets the id.
-   *
-   * @return the id
-   */
-  public int getId() {
-    return id;
-  }
-
+	
   /**
    * Gets the mz list.
    *
@@ -111,7 +96,7 @@ public class ScanData extends AbstractInMemoryIdGen {
 	 *
 	 * @return the peak[]
 	 */
-	public Peak[] toPeaks() {
+	public Peak[] toPeaks( ILcContext lcContext ) {
 		int peaksCount = mzList.length;
 		Peak[] peaks = new Peak[peaksCount];
 		
@@ -123,7 +108,7 @@ public class ScanData extends AbstractInMemoryIdGen {
 			  rightHwhm = rightHwhmList[i];
 			}
 			
-			peaks[i] = new Peak( mzList[i], intensityList[i], leftHwhm, rightHwhm, null );
+			peaks[i] = new Peak( mzList[i], intensityList[i], leftHwhm, rightHwhm, lcContext );
 		}
 		return peaks;
 	}
@@ -228,7 +213,6 @@ public class ScanData extends AbstractInMemoryIdGen {
 		//System.out.println("range: "+firstIdx + " " + lastIdx + " " + mzList.length);
 		
 		ScanData filteredScanData = new ScanData(
-		                                  ScanData.generateNewId(), 
 		                                  Arrays.copyOfRange(mzList, firstIdx, lastIdx), //exclusiveLastidx),
 		                                  Arrays.copyOfRange(intensityList, firstIdx, lastIdx) //exclusiveLastidx)
 		                                  );

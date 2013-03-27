@@ -10,6 +10,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.PeakEncoding;
+//import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
 /**
@@ -25,6 +26,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 														// scan
 	protected Map<Integer, Integer> _nbPeaks; // number of peaks of each scan
 	protected int _nbScans; // number of scans
+	//protected Map<Integer, ScanHeader> _scanHeaders;
 	protected Map<Integer, DataEncoding> _dataEncodings; // DataEncoding (32-64
 															// bit, centroid
 															// profile) by
@@ -53,7 +55,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	 * @see IBlobReader#peaksOfScanAt(int)
 	 */
 	public Peak[] peaksOfScanAt(int idx) {
-		return scanSliceOfScanAt(idx).toPeaks();
+		return null;//return scanSliceOfScanAt(idx).toPeaks(_scanHeader.get()); //TODO how to pass a lcContext here ?
 	}
 	
 	

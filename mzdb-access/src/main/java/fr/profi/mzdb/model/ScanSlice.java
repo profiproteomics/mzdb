@@ -30,7 +30,7 @@ public class ScanSlice extends ScanData {
 	 * @param intensityList the intensity list
 	 */
 	public ScanSlice(int scanId, int runSliceId, double[] mzList, float[] intensityList) {
-		super(ScanData.generateNewId(), mzList, intensityList);
+		super(mzList, intensityList);
 		this.scanId = scanId;
 		this.runSliceId = runSliceId;
 	}
@@ -45,7 +45,7 @@ public class ScanSlice extends ScanData {
 	 * @param rHwhmList the r hwhm list
 	 */
 	public ScanSlice( double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList ) {
-	  super( ScanData.generateNewId(), mzList, intensityList, lHwhmList, rHwhmList );
+	  super( mzList, intensityList, lHwhmList, rHwhmList );
 	  this.scanId = 0;
 	  this.runSliceId = 0;
 	}

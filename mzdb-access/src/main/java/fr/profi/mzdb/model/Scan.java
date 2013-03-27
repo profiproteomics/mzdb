@@ -76,7 +76,7 @@ public class Scan {
 	public Peak[] getPeaks() {
 	
 		if( this.peaks == null )
-			this.peaks = scanData.toPeaks();
+			this.peaks = scanData.toPeaks(this.header);
 		return this.peaks;
 	}
 
