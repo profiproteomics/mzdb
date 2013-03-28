@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math.cwt
+package fr.profi.mzdb.utils.math.wavelet
 
 trait WaveletFilter {
   val lp1: Array[Double]

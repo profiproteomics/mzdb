@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math.cwt
+package fr.profi.mzdb.utils.math.wavelet
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.math.complex.Complex
 import scala.collection.mutable.Buffer

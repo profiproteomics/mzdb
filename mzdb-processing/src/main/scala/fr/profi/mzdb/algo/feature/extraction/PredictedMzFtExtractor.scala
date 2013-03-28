@@ -9,8 +9,8 @@ import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
-import fr.profi.mzdb.utils.math.cwt.MexicanHat
 import fr.profi.mzdb.model.IsotopicPattern
+import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 
 class PredictedMzFtExtractor(
   val mzDbReader: MzDbReader,
@@ -44,7 +44,7 @@ class PredictedMzFtExtractor(
     }
    
 	//build cwt, if no good ...
-	val peakelFinder = new WaveletBasedPeakelFinder( xic.toSeq, scales = (1f to 64f by 1f).toArray, wavelet = MexicanHat() ) //mexh by default
+	val peakelFinder = new WaveletBasedPeakelFinder( xic, scales = (1f to 64f by 1f).toArray, wavelet = MexicanHat() ) //mexh by default
 	val peakels = peakelFinder.findCwtPeakels()
 	
 	//return Option[Feature] if cwt did not found any peaks

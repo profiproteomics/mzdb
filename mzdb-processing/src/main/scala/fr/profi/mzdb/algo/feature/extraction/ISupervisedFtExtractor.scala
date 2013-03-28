@@ -123,30 +123,35 @@ trait ISupervisedFtExtractor extends IFeatureExtractor {
     for( z <- 1 to maxZ ) {
       
       // Try several m/z shifts
-      for( ipShift <- (-maxIpShift) until 0 ) { //TODO :why not checking -maxIpShift +maxIpShift
+      for( ipShift <- (-maxIpShift) until 2 ) { //TODO :why not checking -maxIpShift +maxIpShift
         
-        val olpIpMz = ip.mz + ( ipShift.toDouble/z )
-        val olpIpNbPeaks = Math.abs(ipShift);
-        
-        // Try to extract a putative overlapping isotopic pattern
-        val tmpOlpIp = pklTree.extractIsotopicPattern(
-                                 scanHeader = ip.scanHeader,
-                                 mz = olpIpMz,
-                                 mzTolPPM = this.mzTolPPM,
-                                 charge = z,
-                                 maxNbPeaks = olpIpNbPeaks
-                                 )
-                              
-        //System.out.println( "putativeFt.mz=" + putativeFt.mz + " z="  + z + " shift="+ ipShift + " olpIpMz="+ olpIpMz );
-        
-        // Check that we retrieved enough peaks
-        if( tmpOlpIp != None && olpIpNbPeaks == tmpOlpIp.get.peaks.length ) {
+        // Skip current feature peaks
+        if( ipShift != 0 && !(ipShift > 0 && z == ip.charge) ) {
           
-          // Set overlapping IP elution time
-          //tmpOlpIp.elutionTime = ip.getElutionTime;
+          val olpIpMz = ip.mz + ( ipShift.toDouble/z )
+          val olpIpNbPeaks = Math.abs(ipShift);
           
-          olpIPs += tmpOlpIp.get
+          // Try to extract a putative overlapping isotopic pattern
+          val tmpOlpIp = pklTree.extractIsotopicPattern(
+                                   scanHeader = ip.scanHeader,
+                                   mz = olpIpMz,
+                                   mzTolPPM = this.mzTolPPM,
+                                   charge = z,
+                                   maxNbPeaks = olpIpNbPeaks
+                                   )
+                                
+          //System.out.println( "putativeFt.mz=" + putativeFt.mz + " z="  + z + " shift="+ ipShift + " olpIpMz="+ olpIpMz );
+          
+          // Check that we retrieved enough peaks
+          if( tmpOlpIp != None && olpIpNbPeaks == tmpOlpIp.get.peaks.length ) {
+            
+            // Set overlapping IP elution time
+            //tmpOlpIp.elutionTime = ip.getElutionTime;
+            
+            olpIPs += tmpOlpIp.get
+          }
         }
+
       }
     }
     

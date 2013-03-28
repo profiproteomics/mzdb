@@ -11,17 +11,15 @@ import fr.profi.mzdb.model.IsotopicPattern
 import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.Ridge
-
 import fr.profi.mzdb.algo.signal.detection.CwtPeakel
-
-import fr.profi.mzdb.utils.math.cwt.MexicanHat
 import fr.profi.mzdb.utils.math.VectorSimilarity
+import fr.profi.mzdb.utils.math.wavelet.MexicanHat
+import fr.profi.mzdb.utils.math.wavelet.Ridge
+import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 
 
 
 class PredictedTimeFtExtractor(
-    
   override val mzDbReader: MzDbReader,
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
@@ -29,13 +27,13 @@ class PredictedTimeFtExtractor(
   override val maxNbPeaksInIP: Int,
   override val minNbOverlappingIPs: Int,
   val minConsecutiveScans: Int = 4,
-  val predictedTimeTol: Int = 120) extends Ms2DrivenFtExtractor(
+  val predictedTimeTol: Int = 120) extends Ms2DrivenFtExtractor (
   mzDbReader,
   scanHeaderById,
   nfByScanId,
   mzTolPPM,
   maxNbPeaksInIP,
-  minNbOverlappingIPs) {
+  minNbOverlappingIPs)  with RidgesFinder {
 
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
@@ -88,7 +86,7 @@ class PredictedTimeFtExtractor(
 	      var peaks = _extractPeaks(putativeFt, pklTree, scanIDs, mzToCheck, mzTolPPM)
 	      values += peaks.map(_.getIntensity)
 	      //build cwt
-	      val peakelFinder = new WaveletBasedPeakelFinder( peaks.toSeq, scales = (1f to 64f by 1f).toArray, wavelet = MexicanHat() ) //mexh by default
+	      val peakelFinder = new WaveletBasedPeakelFinder( peaks, scales = (1f to 64f by 1f).toArray, wavelet = MexicanHat() ) //mexh by default
 	      var peakelsInPredictedRange = peakelFinder.findCwtPeakels().filter( x => x.scanID > leftmostScanH.getId && x.scanID < rightmostScanH.getId )
 	      
 	      //we break if did not find any peakel ?
@@ -109,7 +107,7 @@ class PredictedTimeFtExtractor(
     var weightedRidges = _rmsdCalc(peakels, ridges, values)
     
     //we take the minimum
-    var bestCandidateRidge = weightedRidges.map{ case (ridge, rmsds) => (ridge, rmsds.sum / rmsds.length) }.toList.sortBy(x => x._2).first._1
+    var bestCandidateRidge = weightedRidges.map{ case (ridge, rmsds) => (ridge, rmsds.sum[Double] / rmsds.length) }.toList.sortBy(x => x._2).first._1
     //return the maxIdx (scanId) of the ridge that has the most intense value at monoistopic peakel 
     bestCandidateRidge.maxIdxAtLastScale._1
   }
@@ -130,7 +128,7 @@ class PredictedTimeFtExtractor(
   private def ridgeCalc(peakels: ArrayBuffer[Array[CwtPeakel]] ) : Array[Ridge] = {
     //var apexes = new ArrayBuffer[ArrayBuffer[Int]]
     var apexes = peakels.map {x=> x.map {_.apex} } toArray
-    var ridges = WaveletBasedPeakelFinder.findRidges(apexes.reverse, winLength = 10) //10scans aprroximatively 20-30 s
+    var ridges = this.findRidges(apexes.reverse, winLength = 10) //10scans aprroximatively 20-30 s
     
     var ridgesByLength = new HashMap[Int, ArrayBuffer[Ridge]]
     ridges.foreach( x => ridgesByLength.getOrElseUpdate(x.length, new ArrayBuffer[Ridge]) += x)

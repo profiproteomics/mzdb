@@ -3,7 +3,7 @@ package fr.profi.mzdb.algo.feature.scoring
 import fr.profi.mzdb.model.Feature
 import scala.reflect.BeanProperty
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.algo.signal.fitting.Optimizer
+//import fr.profi.mzdb.algo.signal.fitting.Optimizer
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
 import fr.profi.mzdb.algo.signal.fitting.GaussLorentzFitting
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
@@ -159,10 +159,10 @@ object FeatureEvaluator  {
   private def _shapeByWaveletBasedPeakelFinder ( f:Feature ): Float =  {
     var shape = 0f
     for (peakel <- f.getPeakels) {
-    	
+    	/*
     	val results = new WaveletBasedPeakelFinder(peakel.definedPeaks).findCwtPeakels()
     	if (results.length > 1 || results.isEmpty)
-    	  shape += 1f
+    	  shape += 1f*/
     }
     shape
   }

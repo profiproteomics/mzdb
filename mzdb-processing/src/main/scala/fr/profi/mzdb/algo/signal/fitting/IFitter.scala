@@ -46,7 +46,8 @@ case class PeakShape (var y_shift:Double,
         }
       }
     } else if (peakType == PeakType.PARABOLA) {
-      val func_ = new PolynomialFunction(Array[Double](gamma, beta, alpha))
+      //val func_ = new PolynomialFunction(Array[Double](gamma, beta, alpha))
+      val func_ = new GaussianFunction(fittedYShift, fittedIntensity.toDouble, fittedMz, fittedSigmaLeft.toDouble)
       for (i <- 0 until x.length) {
     	 r += func_.value(x(i))
       }

@@ -77,9 +77,9 @@ class GaussFitter ( @BeanProperty val x: Array[Double], //mz
      
      val weights = (for (i <- 0 until y.length) yield 1d) toArray
      val maxIdx = y.indexOf(y.max)
-     /*for (i <- maxIdx - 5 to maxIdx + 5) {
+     for (i <- maxIdx - 5 to maxIdx + 5) {
        weights(i) += 5d
-     }*/
+     }
      
      var optimum : VectorialPointValuePair = null
      if (peaks.isEmpty) {

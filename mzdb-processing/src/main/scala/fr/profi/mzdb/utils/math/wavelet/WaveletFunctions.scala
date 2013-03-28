@@ -1,17 +1,26 @@
-package fr.profi.mzdb.utils.math.cwt
-
+package fr.profi.mzdb.utils.math.wavelet
+import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
-import org.apache.commons.math.transform.FastFourierTransformer
-import org.apache.commons.math.complex.Complex
 import scala.collection.mutable.Buffer
 import scala.Numeric
 
+import org.apache.commons.math.transform.FastFourierTransformer
+import org.apache.commons.math.complex.Complex
+
+
 /**
- * Make input length array to be power of 2
- * padd with zeros
+ * static object performing continous wavelet transform
  */
-trait PowerOf2Maker {
+object WaveletUtils {
+
+  /** construct a fast fourier transformer */
+  val transformer = new FastFourierTransformer
+
+  /**
+   * Make input length array to be power of 2
+   * padd with zeros
+   */
   def nextPowerOf2(a: Integer): Integer = {
 
     var b = 1;
@@ -23,12 +32,18 @@ trait PowerOf2Maker {
     b;
   }
 
+  /**
+   * Check if n is a power of two
+   */
   def checkIfItsPowerOf2(n: Integer): Boolean = {
     if (n == 0 || n == 1 || n == 2)
       return false
     ((n & -n) == n)
   }
 
+  /**
+   * make power of 2 an array padding with zero
+   */
   def makePowerOf2(ydata: Array[Double]): Array[Double] = {
     if (!checkIfItsPowerOf2(ydata.length)) {
       val diff = nextPowerOf2(ydata.length) - ydata.length
@@ -41,7 +56,10 @@ trait PowerOf2Maker {
     } else
       ydata
   }
-  
+
+  /**
+   * make power of 2 an array of complex padding with zero
+   */
   def makePowerOf2(ydata: Array[Complex]): Array[Complex] = {
     if (!checkIfItsPowerOf2(ydata.length)) {
       val diff = nextPowerOf2(ydata.length) - ydata.length
@@ -55,64 +73,45 @@ trait PowerOf2Maker {
       ydata
   }
 
-} //end traits
-
-/**
- *
- */
-trait WaveletComputer extends PowerOf2Maker {
-  //def transform() = {}
-  //def inverseTransform() = {}
-
   /**
    * to avoid boundary effect
    * tried to test but it is not concluent
    */
-  def periodicExtend(sig: Buffer[Double], a: Int) : Array[Double] = {
+  def periodicExtend(sig: Buffer[Double], a: Int): Array[Double] = {
     var len = sig.length
 
     for (i <- 0 until a) {
       var temp1 = sig(2 * i)
-      var temp2 = sig.last//sig(len - 1)
+      var temp2 = sig.last
       sig.insert(0, temp2)
-      //sig.insert(sig.length, temp1)
-      sig  += temp1
+      sig += temp1
     }
     sig.toArray
   }
-  
-  
+
   /**
    * circular convolution using fft
+   * @param y: its length must be a power of 2
+   * @param wavelet: scaled wavelet, padded with zero to match y length
+   * @return the circular convolution of y and wavelet
    */
-  def convfft(y: Array[Complex], wavelet: Array[Complex], transformer: FastFourierTransformer): Array[Double] = {
-	
-    var yComp = makePowerOf2(y)//.map { new Complex(_, 0.) }
-    var yfft = transformer.transform(yComp)
-    
-    var wavepadded = (for (i <- 0 until yfft.length) yield new Complex(0., 0.)).toArray
-    
+  def convolveUsingFft(y: Array[Double], wavelet: Array[Double]): Array[Double] = {
 
-    for (i <- 0 until wavelet.length) { 
-      wavepadded(i) = wavelet(i)//new Complex(wavelet(i), 0.) 
+    var yfft = transformer.transform(y)
+
+    var wavepadded = (for (i <- 0 until yfft.length) yield 0.).toArray
+
+    val r = math.min(wavelet.length, yfft.length)
+    for (i <- 0 until r) {
+      wavepadded(i) = wavelet(i)
     }
     //do not forget to take the conjugate
-    var waveletfft = transformer.transform(wavepadded).map(_.conjugate())
+    var waveletfft = transformer.transform(wavepadded).map(_.conjugate)
     //multiply
-    var x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }.toArray
-    transformer.inversetransform(x.toArray).slice(0, y.length).map(x=> x.getReal)
-    
+    var x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }
+    transformer.inversetransform(x).map(_.getReal)
+
   }
-
-}
-
-/**
- * static object performing continous wavelet transform
- */
-object cwt extends WaveletComputer {
-	
-  
-  val transformer = new FastFourierTransformer
   
   /**
    * compute the continous wavelet transform of input ydata
@@ -122,44 +121,54 @@ object cwt extends WaveletComputer {
    * @param scales, scales to perform cwt, scale belongs to R
    * @return Coefficients matrix
    */
-  def transform(ydata: Array[Double], wavelet: MotherWavelet = MexicanHat(), scales: Array[Float]): Array[Array[Double]] = {
+  def cwt(ydata: Array[Double], wavelet: MotherWavelet = MexicanHat(), scales: Array[Float]): Array[Array[Double]] = {
 
     //make y data periodic to avoid boundary effect
-    //var ydataf = periodicExtend(ydata.toBuffer, lenWave / 2).map(new Complex(_, 0.))
-	  
+    //var ydataf = periodicExtend(ydata.toBuffer, wavelet.nbPoints / 3).map( x =>0.0)
+
     //var ffdata = transformer.transform(makePowerOf2(ydata))
 
     var coeffs = Array.ofDim[Double](scales.length, ydata.length)
-
-    var row = 0 //scales.length - 1
+    var ydataExtended = makePowerOf2(ydata)
+    var row = 0
     var waveletValues = wavelet.values()
 
     var psiXval = wavelet.getPsiXval()
     var dxval = psiXval(1)
     var xmax = psiXval.last
-
-    for (scale <- scales) {
-      
-      //build scales wavelet @see MassSpecWavelet
-      //calc indexes of wavelet upSampling
-      var r = (0 to (scale * xmax).toInt).map { x => math.floor(x / (scale * dxval)).toInt }.toArray[Int]
-      var lenWave = r.length
-      //println(lenWave)
-      //var f = (for (i <- 0 until ffdata.length) yield new Complex(0, 0)).toArray[Complex]
-      var array = r.map { waveletValues(_).getReal }.toArray // .getReal
-      
-      var result = fft.convfft(ydata.toBuffer, array, 1)//cwt.convfft(ydata.map(new Complex(_, 0)), array, transformer)//
-   
-      var scaleogram = result.map { x => x * 1 / math.sqrt(scale) }
-      //flip an assign to row
-      coeffs(row) = ((scaleogram.slice(ydata.length - math.floor(lenWave / 2f).toInt, ydata.length)) ++ (scaleogram.slice(0, ydata.length - math.floor(lenWave / 2f).toInt))).toArray
-      row += 1
+    
+    var prevExiting = scales.length
+    breakable {
+      for (scale <- scales) {
+  
+        //build scales wavelet @see MassSpecWavelet, calc indexes of wavelet upSampling
+        var indexes = (0 to (scale * xmax).toInt).map { x => math.floor(x / (scale * dxval)).toInt }.toArray[Int]
+        var lenWave = indexes.length
+  
+        var f = indexes.map { waveletValues(_) }
+        var mean = f.sum / f.length
+        f = f.map(_ - mean)
+        f = f.reverse
+        if (f.length > ydataExtended.length) {
+          println("Warning exiting loop, scale was too large")
+          prevExiting = scale.toInt
+          break
+        }
+  
+        var convolvingResult = convolveUsingFft(ydataExtended, f)
+        var scaleogram = convolvingResult.map { _ * (1.0 / math.sqrt(scale)) }
+  
+        //flip an assign to row
+        var p = ydataExtended.length - math.floor(lenWave / 2f).toInt
+        coeffs(row) = ((scaleogram.slice(p, ydataExtended.length)) ++ (scaleogram.slice(0, p))).slice(0, ydata.length)
+        row += 1
+      }
     }
-    coeffs
-  }
-
-  def inverseTransform() = {
-
+    if (prevExiting == scales.length) {
+      return coeffs
+    } else {
+      return coeffs.slice(0, prevExiting - 1)
+    }
   }
 
   /**
@@ -202,46 +211,23 @@ object cwt extends WaveletComputer {
     }
   }
 
-  def smoothSignal(signal: Array[Double], times: Int = 3): Array[Double] = {
-
-    import mr.go.sgfilter.SGFilter
-
-    val (nl, nr, order) = (5, 5, 4)
-    val polycoef = SGFilter.computeSGCoefficients(nl, nr, order)
-
-    val sgFilter = new SGFilter(5, 5)
-    var smoothedValues = signal
-    for (i <- 1 to times) {
-      smoothedValues = sgFilter.smooth(smoothedValues, polycoef)
-    }
-    smoothedValues
-  }
-
-}
-
-
-
-
-
-
-
-object swt extends WaveletComputer {
+  
 
   /**
    * possible optimization using periodic extension
    * see:http://code.google.com/p/wavelet1d/source/browse/trunk/src/wavelet.cpp
    */
 
-  def transform(signal: Array[Double], J: Int = 6, filter: WaveletFilter = Daub8): Array[Double] = {
+  def swt(signal: Array[Double], J: Int = 6, filter: WaveletFilter = Daub8): Array[Double] = {
 
-   // val transformer = new FastFourierTransformer()
+    // val transformer = new FastFourierTransformer()
 
     var N = signal.length
     var length = N;
     var sig = signal
     var lpd = filter.lp1
     var hpd = filter.hp1
-    
+
     var swt_output = new ArrayBuffer[Double]
 
     for (iter <- 0 until J) {
@@ -261,17 +247,14 @@ object swt extends WaveletComputer {
       }
 
       var len_filt = low_pass.length
-      sig = periodicExtend(sig.toBuffer, len_filt/2)
- 
+      sig = periodicExtend(sig.toBuffer, len_filt / 2)
+
       var cA = fft.convfft(sig.toBuffer, low_pass)
       var cD = fft.convfft(sig.toBuffer, high_pass)
-      
-    
-      cA.trimStart(len_filt); cA.trimEnd(cA.length - N )
-      cD.trimStart(len_filt); cD.trimEnd(cD.length - N )
 
+      cA.trimStart(len_filt); cA.trimEnd(cA.length - N)
+      cD.trimStart(len_filt); cD.trimEnd(cD.length - N)
 
-      
       sig = cA.toArray;
 
       if (iter == J - 1) {
@@ -313,11 +296,10 @@ object swt extends WaveletComputer {
     sig_d.toArray
   }
 
-  
   /**
    * compute the inverse transform
    */
-  def inverseTransform(swtop: Array[Double], J: Int = 6, filter: WaveletFilter = Daub8): Array[Double] = { //, vector<double> &iswt_output) {
+  def iswt(swtop: Array[Double], J: Int = 6, filter: WaveletFilter = Daub8): Array[Double] = {
 
     //var transformer = new FastFourierTransformer()
     var N = swtop.length / (J + 1)
@@ -327,7 +309,6 @@ object swt extends WaveletComputer {
 
     var appx_sig = new ArrayBuffer[Double]
     var iswt_output = new ArrayBuffer[Double]
-    
 
     var low_pass = lpr;
     var high_pass = hpr;
@@ -351,15 +332,12 @@ object swt extends WaveletComputer {
       }
 
       var value = math.pow(2.0, (J - 1 - iter).toDouble).toInt
-      
-      //println("iswt length before clearing", iswt_output.length)
-      iswt_output = new ArrayBuffer[Double]
-      //println("iswt length after clearing", iswt_output.length)
 
-      for (i <-0 until N) {
-    	  iswt_output += 0.
+      iswt_output = new ArrayBuffer[Double]
+
+      for (i <- 0 until N) {
+        iswt_output += 0.
       }
-      //iswt_output.assign(N, 0.0);
 
       for (count <- 0 until value) {
         var appx1 = new ArrayBuffer[Double]
@@ -389,23 +367,16 @@ object swt extends WaveletComputer {
 
         var cL0 = upsamp(appx2, U)
         var cH0 = upsamp(det2, U)
-        cL0 = periodicExtend(cL0.toBuffer, lf /2)// per_ext(cL0, lf / 2);
-        cH0 = periodicExtend(cH0.toBuffer, lf / 2) // per_ext(cH0, lf / 2);
-        //println("cL0" + cL0.length)
+        cL0 = periodicExtend(cL0.toBuffer, lf / 2)
+        cH0 = periodicExtend(cH0.toBuffer, lf / 2)
         var oup00L = fft.convfft(cL0.toBuffer, low_pass)
-        //println("cHO" + cH0.length)
         var oup00H = fft.convfft(cH0.toBuffer, high_pass)
 
-        //oup00L.erase(oup00L.begin(), oup00L.begin() + lf - 1);
         oup00L.trimStart(lf - 1); oup00L.trimEnd(oup00L.length - len)
-        //oup00L.erase(oup00L.begin() + len, oup00L.end());
-        
-        //oup00H.erase(oup00H.begin(), oup00H.begin() + lf - 1);
+
         oup00H.trimStart(lf - 1); oup00H.trimEnd(oup00H.length - len);
-        //oup00H.erase(oup00H.begin() + len, oup00H.end());
 
         var oup00 = oup00L.zip(oup00H).map { case (a, b) => a + b }
-        //vecsum(oup00L, oup00H, oup00);
 
         // Shift = 1
 
@@ -419,33 +390,24 @@ object swt extends WaveletComputer {
           det3 += temp1
         }
 
-        //vector<double> cL1, cH1;
         var cL1 = upsamp(appx3, U)
         var cH1 = upsamp(det3, U)
-        cL1 = periodicExtend(cL1.toBuffer, lf / 2)//per_ext(cL1, lf / 2);
-        cH1 = periodicExtend(cH1.toBuffer, lf / 2)//per_ext(cH1, lf / 2);
+        cL1 = periodicExtend(cL1.toBuffer, lf / 2)
+        cH1 = periodicExtend(cH1.toBuffer, lf / 2)
 
         var oup01L = fft.convfft(cL1.toBuffer, low_pass)
         var oup01H = fft.convfft(cH1.toBuffer, high_pass)
 
-        //oup01L.erase(oup01L.begin(), oup01L.begin() + lf - 1);
         oup01L.trimStart(lf - 1); oup01L.trimEnd(oup01L.length - len)
-        //oup01L.erase(oup01L.begin() + len, oup01L.end());
-        
-        //oup01H.erase(oup01H.begin(), oup01H.begin() + lf - 1);
+
         oup01H.trimStart(lf - 1); oup01H.trimEnd(oup01H.length - len)
-        //oup01H.erase(oup01H.begin() + len, oup01H.end());
-        
-        
+
         var oup01 = oup01L.zip(oup01H).map { case (a, b) => a + b }.toBuffer[Double]
         circshift(oup01, -1)
-       // println(oup01.length, oup00.length)
 
         //   Continue
         var index2 = 0;
         for (index <- count until N by value) {
-          //println("index2 fail" + index2)
-          //println(index, N, value)
           var temp = oup00(index2) + oup01(index2);
           iswt_output(index) = temp / 2;
           index2 += 1
@@ -465,51 +427,49 @@ object swt extends WaveletComputer {
    * if we consider spectrometer introduce noise when it calculates wrongly
    * number of ions entering in the trap, could be used to detect elution peak
    */
-  def denoiseSoft(coeffs: Array[Double], J:Int = 6) = {
-	  var N = coeffs.length / (J + 1)
-	  var cA  = coeffs.slice(0, N)
-	  //println("CA length : " + cA.length)
-	  //cA.foreach(x=> print( x + "\t"));println()
-	  var firstCD = coeffs.slice(coeffs.length - N, coeffs.length)
-	  //firstCD.foreach(x=>print(x + "\t")); println()
-	  //cA.zip(firstCD).foreach { case (a, b) => if (b > 0) print((a-b)+ "\t") else print(a+"\t")}
-	  var sortedCD = firstCD.sortBy(x=>x)
-	  var med = firstCD((0.5 * firstCD.length).toInt)
-	  var thresh = med / 0.6745 * math.sqrt(2 * math.log(N))
-	  
-	  for (i <-0 until coeffs.length) {
-		  if ( math.abs(coeffs(i)) < thresh) {
-		    coeffs(i) = 0
-		  } else if (coeffs(i) > thresh) {
-		    coeffs(i) -= thresh
-		  } else if (coeffs(i) < 0) {
-		    coeffs(i) += thresh
-		  } else {
-		    println("Weird coeffs, warning")
-		  }
-	  }
+  def denoiseSoft(coeffs: Array[Double], J: Int = 6) = {
+    var N = coeffs.length / (J + 1)
+    var cA = coeffs.slice(0, N)
+    //println("CA length : " + cA.length)
+    //cA.foreach(x=> print( x + "\t"));println()
+    var firstCD = coeffs.slice(coeffs.length - N, coeffs.length)
+    //firstCD.foreach(x=>print(x + "\t")); println()
+    //cA.zip(firstCD).foreach { case (a, b) => if (b > 0) print((a-b)+ "\t") else print(a+"\t")}
+    var sortedCD = firstCD.sortBy(x => x)
+    var med = firstCD((0.5 * firstCD.length).toInt)
+    var thresh = med / 0.6745 * math.sqrt(2 * math.log(N))
+
+    for (i <- 0 until coeffs.length) {
+      if (math.abs(coeffs(i)) < thresh) {
+        coeffs(i) = 0
+      } else if (coeffs(i) > thresh) {
+        coeffs(i) -= thresh
+      } else if (coeffs(i) < 0) {
+        coeffs(i) += thresh
+      } else {
+        println("Weird coeffs, warning")
+      }
+    }
   }
 
   /**
    *
    */
-  def denoiseHard(coeffs: Array[Double], J:Int) = {
-	  var N = coeffs.length / (J + 1)
-	  var cA  = coeffs.slice(0, N)
-	  var firstCD = coeffs.slice(coeffs.length - N, coeffs.length)
-	  var sortedCD = firstCD.sortBy(x=>x)
-	  var med = firstCD((0.5 * firstCD.length).toInt)
-	  var thresh = (med / 0.6745) * math.sqrt(2 * math.log(N))
-	  
-	  for (i <-0 until coeffs.length) {
-		  if ( coeffs(i) < thresh) {
-		    //println("Coeffs changed")
-		    coeffs(i) = 0.
-		  }
-	  }
+  def denoiseHard(coeffs: Array[Double], J: Int) = {
+    var N = coeffs.length / (J + 1)
+    var cA = coeffs.slice(0, N)
+    var firstCD = coeffs.slice(coeffs.length - N, coeffs.length)
+    var sortedCD = firstCD.sortBy(x => x)
+    var med = firstCD((0.5 * firstCD.length).toInt)
+    var thresh = (med / 0.6745) * math.sqrt(2 * math.log(N))
+
+    for (i <- 0 until coeffs.length) {
+      if (coeffs(i) < thresh) {
+        //println("Coeffs changed")
+        coeffs(i) = 0.
+      }
+    }
   }
-  
-  
 
   def circshift(sig_cir: Buffer[Double], L: Int) = {
     var K = L
@@ -533,8 +493,8 @@ object swt extends WaveletComputer {
     else
       return -1;
   }
-  
-  def sign[T](x: T)(implicit X: Numeric[T]): Int  = {
+
+  def sign[T](x: T)(implicit X: Numeric[T]): Int = {
     if (X.gt(x, X.zero))
       return 1
     return -1
