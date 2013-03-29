@@ -87,7 +87,7 @@ class PredictedTimeFtExtractor(
 	      values += peaks.map(_.getIntensity)
 	      //build cwt
 	      val peakelFinder = new WaveletBasedPeakelFinder( peaks, scales = (1f to 64f by 1f).toArray, wavelet = MexicanHat() ) //mexh by default
-	      var peakelsInPredictedRange = peakelFinder.findCwtPeakels().filter( x => x.scanID > leftmostScanH.getId && x.scanID < rightmostScanH.getId )
+	      var peakelsInPredictedRange = peakelFinder.findCwtPeakels().filter( x => x.apexLcContext.getScanId() > leftmostScanH.getId && x.apexLcContext.getScanId() < rightmostScanH.getId )
 	      
 	      //we break if did not find any peakel ?
 	      if (peakelsInPredictedRange.isEmpty)
@@ -109,7 +109,7 @@ class PredictedTimeFtExtractor(
     //we take the minimum
     var bestCandidateRidge = weightedRidges.map{ case (ridge, rmsds) => (ridge, rmsds.sum[Double] / rmsds.length) }.toList.sortBy(x => x._2).first._1
     //return the maxIdx (scanId) of the ridge that has the most intense value at monoistopic peakel 
-    bestCandidateRidge.maxIdxAtLastScale._1
+    bestCandidateRidge.lastScaleMaxCoeffPos._1
   }
 
   private def _extractPeaks(putativeFt: PutativeFeature, pklTree: PeakListTree, selectedScanIDs: Array[Int], mz: Double, mzTol: Float): Array[Peak] = {
@@ -128,7 +128,7 @@ class PredictedTimeFtExtractor(
   private def ridgeCalc(peakels: ArrayBuffer[Array[CwtPeakel]] ) : Array[Ridge] = {
     //var apexes = new ArrayBuffer[ArrayBuffer[Int]]
     var apexes = peakels.map {x=> x.map {_.apex} } toArray
-    var ridges = this.findRidges(apexes.reverse, winLength = 10) //10scans aprroximatively 20-30 s
+    var ridges = this.findRidges(apexes.reverse, null, winLength = 10) //10scans aprroximatively 20-30 s
     
     var ridgesByLength = new HashMap[Int, ArrayBuffer[Ridge]]
     ridges.foreach( x => ridgesByLength.getOrElseUpdate(x.length, new ArrayBuffer[Ridge]) += x)

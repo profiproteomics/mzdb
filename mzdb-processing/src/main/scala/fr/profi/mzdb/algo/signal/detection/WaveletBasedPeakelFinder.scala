@@ -3,30 +3,31 @@ package fr.profi.mzdb.algo.signal.detection
 import java.awt.Color
 import scala.Array.canBuildFrom
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
-import org.jfree.chart.axis.NumberAxis
-import org.jfree.chart.plot.XYPlot
-import org.jfree.chart.renderer.xy.XYBlockRenderer
-import org.jfree.chart.renderer.GrayPaintScale
 import org.jfree.chart.ChartUtilities
 import org.jfree.chart.JFreeChart
+import org.jfree.chart.axis.NumberAxis
+import org.jfree.chart.plot.XYPlot
+import org.jfree.chart.renderer.GrayPaintScale
+import org.jfree.chart.renderer.xy.XYBlockRenderer
 import org.jfree.data.xy.DefaultXYZDataset
+import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 import fr.profi.mzdb.utils.math.wavelet.MotherWavelet
-import fr.profi.mzdb.utils.math.wavelet.WaveletUtils
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 import fr.profi.mzdb.utils.math.wavelet.Ridge
+import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
+import fr.profi.mzdb.utils.math.wavelet.WaveletUtils
+import mr.go.sgfilter.SGFilter
+import fr.profi.mzdb.model.ILcContext
 
 /**
  * result of the algorithm
  */
 case class CwtPeakel(val apex: Int,
-                     val scanID: Int,
+                     val apexLcContext: ILcContext,
                      val minIdx: Int,
-                     val minScanID: Int,
+                     val startLcContext: ILcContext,
                      val maxIdx: Int,
-                     val maxScanID: Int,
+                     val endLcContext: ILcContext, 
                      val snr: Float) {}
 
 /**
@@ -39,17 +40,19 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
   //by default MexicanHat is used since it has better results
   var ydata = peaks.map(_.getIntensity().toDouble)
   var coeffs: Array[Array[Double]] = WaveletUtils.cwt(ydata.toArray, wavelet, scales.toArray)
-  this.coeffToImage("test.jpg")
-  this.maximaToImage("maxima.jpg")
-  this.zeroCrossingsLines
+  var maxScale = coeffs.length
+
+  //Debug
+  this.coeffToImage(coeffs, "coeffs.jpg")
+  this.maximaToImage(findMaximaRegion)
+  this.maximaToImage(findMinimaRegion, "minima.jpg")
+
   /** recompute the coefficients */
   def computeCoeffs() { coeffs = WaveletUtils.cwt(ydata.toArray, MexicanHat(), scales.toArray) }
 
   //TODO
   /** compute the energy density of the wavelet */
-  def energyDensity(): Array[Array[Double]] = {
-    throw new Error("Not yet implemented")
-  }
+  def energyDensity(): Array[Array[Double]] = { throw new Error("Not yet implemented") }
 
   /** smooth signal with a SG smoother */
   def smoothSignal(signal: Array[Double], times: Int = 3): Array[Double] = {
@@ -69,7 +72,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
   /**
    * Improved peak detection in mass spectrum by incorporating continuous wavelet transform-based pattern matching
    */
-  def findMaxima(winSize: Int = 5): Array[Array[Int]] = {
+  def findMaxima(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
 
     var maximaIndexesPerScale = new ArrayBuffer[ArrayBuffer[Int]]
     var c = 0
@@ -107,7 +110,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
    * try to find all maxima using kind of derivative approach
    * find too few maxima
    */
-  def findStrictMaxima(): Array[Array[Int]] = {
+  def findStrictMaxima(coeffs: Array[Array[Double]]): Array[Array[Int]] = {
     var maximaIndexesPerScale = new ArrayBuffer[ArrayBuffer[Int]]
 
     for (coeff <- coeffs) {
@@ -139,7 +142,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
    * Reference:
    * A continuous wavelet transform algorithm for peak detection, Andrew Wee et al, 2008
    */
-  def findMaximaRegion(winSize: Int = 5): Array[Array[Int]] = {
+  def findMaximaRegion(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
     var maximaIndexesPerScale = new ArrayBuffer[ArrayBuffer[Int]]
     var c = 0
     for (coeff <- coeffs) {
@@ -162,69 +165,70 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
   }
 
   /**
+   * find minima by inversing wavelet coefficient,
+   *  A continuous wavelet transform algorithm for peak detection, Andrew Wee et al, 2008
+   */
+  def findMinimaRegion(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
+    val inverseCoeffs = coeffs map { x => x map { y => -y } }
+    findMaximaRegion(inverseCoeffs, winSize)
+  }
+
+  /**
    * The CWT is performed on 32 scales (1 to 32) it would be better to
    * do 1 to 64 by step of 2
    * winLength: min Window acceptable
    * minRidgeLength : default mid 16 general half of scale number
    * scaleRange : maxCWT coeff must be in scale > 5
    * SNR = 3 by default could be less ?
+   * the principal difficulty is that we need to readjust some parameters
+   * regarding the length of the input array
+   * Normally, we choose scale according to peaks width we want to find
    */
   def ridgeToPeaks(ridges: Array[Ridge],
-                   minRidgeLength: Int = 15,
-                   minSNR: Float = 2f,
-                   sizeNoise: Int = 500,
-                   skipBoundaries: Int = 100): Array[CwtPeakel] = { // scaleRange: Pair[Int, Int] = (0, 64), not relevant parameter
+                   minRidgeLength: Int = maxScale / 4, //this hard to defined 
+                   minSNR: Float = 0.3f,
+                   minPeakWidth:Float = 10f, // en seconds
+                   maxPeakWidth : Float = 110f,
+                   sizeNoise: Int = ydata.length / 20, //the same this hard to defined
+                   skipBoundaries: Int = ydata.length / 20): Array[CwtPeakel] = { 
 
-    //var peakels = new ArrayBuffer[Peakel]
-    //var ridges = findRidges(winLength)
-    //println("len ridges: " + ridges.length)
-
-    //val sizeNoise = 500
-    //val skipBoundaries = 100
-
-    /*
-    var values = new ArrayBuffer[Double]
-    for (i <- 0 until ydata.length)
-      values += 0
-    */
-    //var indexes = new ArrayBuffer[Pair[Int, Int]]
     var peakels = new ArrayBuffer[CwtPeakel]
-
-    for (ridge <- ridges if ridge.length() >= minRidgeLength) {
-      //println(ridge.length)
-      var v = ridge.maxIdxAtFirstScale
-      //println("***" + v._2)
-      var t = ridge.maxIndex
-      var maxScale = t._1
-      var maxCwtIdx = t._2
-      if (v._2 > skipBoundaries && v._2 < ydata.length - skipBoundaries) {
-        var centroidValue = math.abs(coeffs(maxScale)(maxCwtIdx))
-        var snrCoeffs = coeffs(0).map(math.abs(_)).slice(math.max(v._2 - sizeNoise, 0), math.min(v._2 + sizeNoise, ydata.length - 1)).toList.sortBy(x => x)
-        var noiseValue = math.max(snrCoeffs((0.005 * snrCoeffs.length) toInt), 0.001)
-        var estimatedSNR = centroidValue / noiseValue
-
-        if (estimatedSNR > minSNR) {
-          var i = findLocalMinima(scale = maxScale, maxCwtIdx)
-
-          peakels += CwtPeakel(apex = v._2,
-            scanID = 0, //peaks(v._2).getLcContext.getScanId,
-            minIdx = i._1,
-            minScanID = 0, //peaks(i._1).getLcContext.getScanId, 
-            maxIdx = i._2,
-            maxScanID = 0, //peaks(i._2).getLcContext.getScanId, 
-            snr = estimatedSNR.toFloat)
-          //indexes += i
-          //DEBUG values(v._2) = ydata(v._2)
-          //DEBUG println("apex:" + v._2 + " maxCoefficentIdx: " + t._2 + " ridgeLength: " + ridge.length + " SNR:" + estimatedSNR + " begin:"+indexes._1 + " end:"+indexes._2 + " peakValue:" + coeffs(maxScale)(maxCwtIdx))
-        }
+     
+    //filter against selected criteria
+    var filteredRidges = ridges.filter(x => !x.isEnded && x.startingScale > 2 && x.length >= minRidgeLength) 
+    
+    //compute SNR for each ridge
+    filteredRidges.foreach { x =>
+      var (firstScale, maxIdxAtFirstScale, maxValueAtFirstScale) = x.firstScaleMaxCoeffPos
+      var centroidValue = math.abs(maxValueAtFirstScale);
+      var snrCoeffs = coeffs(0).map(math.abs(_)).slice(math.max(maxIdxAtFirstScale - sizeNoise, 0), 
+            math.min(maxIdxAtFirstScale + sizeNoise, ydata.length - 1)).toList.sortBy(x => x)
+      var noiseValue = snrCoeffs((0.9 * snrCoeffs.length) toInt)
+      var estimatedSNR = centroidValue / noiseValue
+      x.SNR = estimatedSNR.toFloat 
+    }
+    
+    //filter against SNR criteria
+    filteredRidges.filter(x => x.SNR > 3 )
+    
+    //peakWidth estimation
+    filteredRidges.foreach { ridge =>
+      var (maxScale, maxIdxAtMaxScale, maxValueAtMaxScale) = ridge.maxCoeffPos
+      var (firstScale, maxIdxAtFirstScale, maxValueAtFirstScale) = ridge.firstScaleMaxCoeffPos
+      var demifwhm = (1.252 * maxScale) / 2
+      val rt = peaks(maxIdxAtFirstScale).getLcContext().getElutionTime()
+      val sortedPeaks_ = peaks.sortBy(x=> math.abs( x.getLcContext().getElutionTime() - (rt - demifwhm) )) toArray
+      val sortedPeaks__ = peaks.sortBy(x=> math.abs( x.getLcContext().getElutionTime() - (rt + demifwhm) )).toArray
+      if (demifwhm * 2 > minPeakWidth && demifwhm * 2 < maxPeakWidth) {
+        peakels += CwtPeakel(apex = maxIdxAtFirstScale,
+                             apexLcContext = peaks(maxIdxAtFirstScale).getLcContext,
+                             minIdx = peaks.indexOf(sortedPeaks_(0)),
+                             startLcContext = sortedPeaks_(0).getLcContext, 
+                             maxIdx = peaks.indexOf(sortedPeaks__(0)),
+                             endLcContext = sortedPeaks__(0).getLcContext,
+                             snr = 0)
       }
     }
-    /*DEBUG
-    for (v <- values)
-      print(v + "\t")
-    println
-    */
-
     peakels.toArray
   }
 
@@ -275,10 +279,57 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
     (minIdx, lastIdx)
   }
 
-  //***********************************************************************************
-  //Plotting functions
-  //***********************************************************************************
-  def coeffToImage(file: String = "coeffs.jpg") = {
+  /**
+   * return the indexes of the peakel found
+   */
+  def findPeakelsIndexes(smooth: String = "swt", //smoothing method could be 
+                         winLength: Int = 5,
+                         ridgeMethod: String = "maxima",
+                         minRidgeLength: Int = 15,
+                         minSNR: Float = 1.5f,
+                         sizeNoise: Int = 200,
+                         skipBoundaries: Int = (ydata.length * 2.5 / 100).toInt): Array[Pair[Int, Int]] = {
+
+    val peakels = findCwtPeakels(smooth, winLength, ridgeMethod, minRidgeLength, minSNR, sizeNoise, skipBoundaries)
+    peakels.map(x => (x.minIdx, x.maxIdx))
+  }
+
+  def findCwtPeakels(smooth: String = "swt", //smoothing method could be 
+                     winLength: Int = 5,
+                     ridgeMethod: String = "maxima",
+                     minRidgeLength: Int = 15,
+                     minSNR: Float = 2f,
+                     sizeNoise: Int = 200,
+                     skipBoundaries: Int = (ydata.length * 2.5 / 100).toInt): Array[CwtPeakel] = {
+
+    var y_data: Array[Double] = null
+    var swtSmoothing = false
+    if (smooth == "swt") {
+      var coefficients = WaveletUtils.swt(ydata.toArray[Double], 5)
+      WaveletUtils.denoiseSoft(coefficients)
+      y_data = WaveletUtils.iswt(coefficients)
+      swtSmoothing = true
+    } else if (smooth == "sg")
+      y_data = smoothSignal(ydata.toArray, 3)
+    else
+      y_data = ydata.toArray
+
+    val maxima = findMaximaRegion(coeffs, 10)
+    val ridges = findRidges(maxima, coeffs, winLength)
+    val peakels = ridgeToPeaks(ridges,
+      minRidgeLength = minRidgeLength,
+      minSNR = minSNR,
+      sizeNoise = sizeNoise,
+      skipBoundaries = skipBoundaries)
+    peakels
+  }
+
+  /**
+   * *********************************************************************************
+   * //Plotting functions
+   * *********************************************************************************
+   */
+  def coeffToImage(coeffs: Array[Array[Double]], file: String = "coeffs.jpg") = {
     var dataset = new DefaultXYZDataset()
     for (i <- 0 until coeffs.length) {
       var x = new ArrayBuffer[Double]
@@ -305,8 +356,8 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
     ChartUtilities.saveChartAsJPEG(new java.io.File(file), chart, ydata.length, ydata.length);
   }
 
-  def maximaToImage(file: String = "maxima.jpg") = {
-    var maxima = this.findMaximaRegion(10)//(winSize = coeffs(0).length / 15)
+  def maximaToImage(f: (Array[Array[Double]], Int) => Array[Array[Int]], file: String = "maxima.jpg") {
+    var maxima = f(coeffs, 10) //(winSize = coeffs(0).length / 15)
     var dataset = new DefaultXYZDataset()
     for (i <- 0 until maxima.length) {
       var x = new ArrayBuffer[Double]
@@ -383,51 +434,6 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
     plot.setBackgroundPaint(Color.lightGray);
     var chart = new JFreeChart("XYBlockChartDemo1", plot)
     ChartUtilities.saveChartAsJPEG(new java.io.File("zerocross.jpg"), chart, ydata.length, ydata.length);
-  }
-
-  /**
-   * return the indexes of the peakel found
-   */
-  def findPeakelsIndexes(smooth: String = "swt", //smoothing method could be 
-                         winLength: Int = 5,
-                         ridgeMethod: String = "maxima",
-                         minRidgeLength: Int = 15,
-                         minSNR: Float = 1.5f,
-                         sizeNoise: Int = 200,
-                         skipBoundaries: Int = (ydata.length * 2.5 / 100).toInt): Array[Pair[Int, Int]] = {
-
-    val peakels = findCwtPeakels(smooth, winLength, ridgeMethod, minRidgeLength, minSNR, sizeNoise, skipBoundaries)
-    peakels.map(x => (x.minIdx, x.maxIdx))
-  }
-
-  def findCwtPeakels(smooth: String = "swt", //smoothing method could be 
-                     winLength: Int = 5,
-                     ridgeMethod: String = "maxima",
-                     minRidgeLength: Int = 15,
-                     minSNR: Float = 2f,
-                     sizeNoise: Int = 200,
-                     skipBoundaries: Int = (ydata.length * 2.5 / 100).toInt): Array[CwtPeakel] = {
-
-    var y_data: Array[Double] = null
-    var swtSmoothing = false
-    if (smooth == "swt") {
-      var coefficients = WaveletUtils.swt(ydata.toArray[Double], 5)
-      WaveletUtils.denoiseSoft(coefficients)
-      y_data = WaveletUtils.iswt(coefficients)
-      swtSmoothing = true
-    } else if (smooth == "sg")
-      y_data = smoothSignal(ydata.toArray, 3)
-    else
-      y_data = ydata.toArray
-
-    val maxima = findMaxima()
-    val ridges = this.findRidges(maxima, winLength)
-    val peakels = ridgeToPeaks(ridges,
-      minRidgeLength = minRidgeLength,
-      minSNR = minSNR,
-      sizeNoise = sizeNoise,
-      skipBoundaries = skipBoundaries)
-    peakels
   }
 
 }//end class
