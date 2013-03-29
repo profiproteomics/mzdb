@@ -12,6 +12,7 @@ import java.util.Map;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
+import fr.profi.mzdb.model.ScanData;
 import fr.profi.mzdb.model.ScanSlice;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
@@ -176,7 +177,7 @@ public class StreamReader extends AbstractBlobReader {
 		}
 
 		BlobData blobData = readBlob(peaksBytes, peaksBytes.length, structSize, de);
-		ScanSlice s = new ScanSlice(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm);
+		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
 		s.setScanId(id);
 		return s;
 	}
@@ -192,7 +193,6 @@ public class StreamReader extends AbstractBlobReader {
 			if (s == null) {
 				break;
 			}
-			s.setFirstScanId(firstScanId);
 			s.setRunSliceId(runSliceId);
 			sl.add(s);
 			i++;

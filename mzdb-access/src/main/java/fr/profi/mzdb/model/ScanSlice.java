@@ -10,16 +10,15 @@ package fr.profi.mzdb.model;
  *
  * @author David Bouyssie
  */
-public class ScanSlice extends ScanData {
+public class ScanSlice extends Scan {
+
+//ScanData {
 
 	/** The scan id. */
   protected int scanId;
 	
 	/** The run slice id. */
   protected int runSliceId;
-	
-	/** The first scan id. */
-  protected int firstScanId;
 	
 	/**
 	 * Instantiates a new scan slice.
@@ -29,27 +28,10 @@ public class ScanSlice extends ScanData {
 	 * @param mzList the mz list
 	 * @param intensityList the intensity list
 	 */
-	public ScanSlice(int scanId, int runSliceId, double[] mzList, float[] intensityList) {
-		super(mzList, intensityList);
-		this.scanId = scanId;
-		this.runSliceId = runSliceId;
-	}
+  public ScanSlice(ScanHeader header, ScanData scanData) {
+    super(header, scanData);
+  }
 	
-	// TODO: is run slice id mandatory ?
-	/**
-	 * Instantiates a new scan slice.
-	 *
-	 * @param mzList the mz list
-	 * @param intensityList the intensity list
-	 * @param lHwhmList the l hwhm list
-	 * @param rHwhmList the r hwhm list
-	 */
-	public ScanSlice( double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList ) {
-	  super( mzList, intensityList, lHwhmList, rHwhmList );
-	  this.scanId = 0;
-	  this.runSliceId = 0;
-	}
-
   /**
    * Gets the scan id.
    *
@@ -85,24 +67,4 @@ public class ScanSlice extends ScanData {
   public void setRunSliceId(int runSliceId) {
     this.runSliceId = runSliceId;
   }
-
-  /**
-   * Gets the first scan id.
-   *
-   * @return the first scan id
-   */
-  public int getFirstScanId() {
-    return firstScanId;
-  }
-
-  /**
-   * Sets the first scan id.
-   *
-   * @param firstScanId the new first scan id
-   */
-  public void setFirstScanId(int firstScanId) {
-    this.firstScanId = firstScanId;
-  }
-
-
 }

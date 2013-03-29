@@ -10,6 +10,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
+import fr.profi.mzdb.model.ScanData;
 import fr.profi.mzdb.model.ScanSlice;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
@@ -198,7 +199,7 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		}
 		
 		BlobData blobData = readBlob(peaksBytes, peaksBytes.length, structSize, de);
-		ScanSlice s = new ScanSlice(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm);
+		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
 		s.setScanId(id);
 		return s;
 	}
@@ -211,7 +212,6 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		ScanSlice[] sl = new ScanSlice[_nbScans];
 		for (int i=1; i <= _nbScans; i++) {
 			ScanSlice s = this.scanSliceOfScanAt(i); 
-			s.setFirstScanId( firstScanId ); 
 			s.setRunSliceId( runSliceId );
 			sl[i - 1] = s;
 		}

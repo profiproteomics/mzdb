@@ -51,7 +51,7 @@ public class MsScanIterator extends AbstractScanSliceIterator implements Iterato
 			
 		    	if (sSlices[0].getScanId() == scanSliceBuffer[0].getScanId()) {
 		    		for (int i=0; i < sSlices.length; i++) {
-		    			scanSliceBuffer[i].addScanData(sSlices[i]);//, scanSliceBuffer[i].length);
+		    			scanSliceBuffer[i].getData().addScanData(sSlices[i].getData());//, scanSliceBuffer[i].length);
 		    		}
 			    }
 		    	else {
@@ -80,12 +80,8 @@ public class MsScanIterator extends AbstractScanSliceIterator implements Iterato
 				this.firstBB= null;
 		}
 		
-		try {
-			return new Scan(mzDbReader.getScanHeader(sSlice.getScanId()), sSlice);
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-			return null;
-		}
+		return sSlice;
+		
 		
 	}
 	

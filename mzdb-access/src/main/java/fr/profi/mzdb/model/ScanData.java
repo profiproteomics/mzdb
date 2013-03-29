@@ -6,7 +6,6 @@ package fr.profi.mzdb.model;
 
 import java.util.Arrays;
 import org.apache.commons.lang3.ArrayUtils;
-import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
 
 // TODO: Auto-generated Javadoc
 /**

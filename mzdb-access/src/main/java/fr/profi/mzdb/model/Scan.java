@@ -19,7 +19,7 @@ public class Scan {
   protected ScanData scanData;
 	
 	/** The peaks. */
-  protected Peak[] peaks;
+  //protected Peak[] peaks;
 	
 	/**
 	 * Instantiates a new scan.
@@ -27,11 +27,11 @@ public class Scan {
 	 * @param header the header
 	 * @param peaks the peaks
 	 */
-	public Scan(ScanHeader header, Peak[] peaks) {
+	/*public Scan(ScanHeader header, Peak[] peaks) {
 	  super();
 		this.header = header;
 		this.peaks = peaks;
-	}
+	}*/
 	
 	/**
 	 * Instantiates a new scan.
@@ -75,9 +75,10 @@ public class Scan {
 	 */
 	public Peak[] getPeaks() {
 	
-		if( this.peaks == null )
-			this.peaks = scanData.toPeaks(this.header);
-		return this.peaks;
+		//if( this.peaks == null )
+			//this.peaks = scanData.toPeaks(this.header);
+		//return this.peaks;
+			return scanData.toPeaks(this.header);
 	}
 
 }

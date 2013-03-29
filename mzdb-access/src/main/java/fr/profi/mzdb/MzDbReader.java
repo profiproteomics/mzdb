@@ -631,9 +631,9 @@ public class MzDbReader {
 		if (r.length == 0)
 			return new Peak[0];
 		for (int i = 1; i < r.length; ++i) {
-			r[0].addScanData(r[i]);
+			r[0].getData().addScanData(r[i].getData());
 		}
-		return r[0].toPeaks(null);//TODO work around here
+		return r[0].getPeaks();
 	}
 
 	/**
@@ -749,7 +749,7 @@ public class MzDbReader {
 			int nbScans = bb.nbScans();
 			for (int j = 1; j <= nbScans; j++) {
 				if (scanId == bb.idOfScanAt(j)) {
-					sd.addScanData(bb.scanSliceOfScanAt(j));
+					sd.addScanData(bb.scanSliceOfScanAt(j).getData());
 					break;
 				}
 			}
@@ -847,12 +847,16 @@ public class MzDbReader {
       int scanCount = firstbb.nbScans();
 
       for (int i = 1; i <= scanCount; i++) {
-        ScanSlice s = new ScanSlice(firstbb.idOfScanAt(i), firstbb.getRunSliceId(), new double[0], new float[0]);
-
+        ScanSlice s = new ScanSlice(getScanHeader(firstbb.idOfScanAt(i)), 
+                                                  new ScanData(new double[0], 
+                                                               new float[0], 
+                                                               new float[0], 
+                                                               new float[0]));
+        s.setRunSliceId(firstbb.getRunSliceId());
         for (BoundingBox bb : bbs) {
           ScanSlice _s = bb.scanSliceOfScanAt(i);
-          if (_s.getMzList().length > 0) {
-            s.addScanData(_s);
+          if (_s.getData().getMzList().length > 0) {
+            s.getData().addScanData(_s.getData());
           }
         }
         sl.add(s);
@@ -896,16 +900,17 @@ public class MzDbReader {
 		   //filter mz !
 		   ScanSlice currentScanSlice = scanSlices[i];
 		   int scanID = currentScanSlice.getScanId();
-		   ScanData d = currentScanSlice.mzRangeFilter(minmz, maxmz);
+		   ScanData d = currentScanSlice.getData().mzRangeFilter(minmz, maxmz);
 		   if (d == null) {
 		     i++;
 	       elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
 		     continue;
 		   }
-		   ScanSlice f = new ScanSlice(d.getMzList(), 
-		                               d.getIntensityList(), 
-		                               d.getLeftHwhmList(), 
-		                               d.getRightHwhmList());
+		   ScanSlice f = new ScanSlice(getScanHeader(scanID), 
+		                               new ScanData(d.getMzList(), 
+		                                            d.getIntensityList(), 
+		                                            d.getLeftHwhmList(), 
+		                                            d.getRightHwhmList()));
 		   f.setScanId(scanID);
 		   f.setRunSliceId(currentScanSlice.getRunSliceId());
 		   finalScanSlices.add(f);
@@ -1019,7 +1024,7 @@ public class MzDbReader {
     List<Peak> results = new ArrayList<Peak>();
     if (method == XicMethod.MAX) {
       for (ScanSlice sl : scanSlices) {
-        Peak[] peaks = sl.toPeaks(getScanHeader(sl.getScanId()));
+        Peak[] peaks = sl.getPeaks();
         if (peaks.length == 0)
           continue;
         Arrays.sort(peaks, Peak.getIntensityComp());
@@ -1028,7 +1033,7 @@ public class MzDbReader {
       return results.toArray(new Peak[results.size()]);
     } else if (method == XicMethod.SUM) {
       for (ScanSlice sl : scanSlices) {
-        Peak[] peaks = sl.toPeaks(getScanHeader(sl.getScanId()));
+        Peak[] peaks = sl.getPeaks();
         if (peaks.length == 0)
           continue;
         Arrays.sort(peaks, Peak.getIntensityComp());

@@ -13,6 +13,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.PeakEncoding;
+import fr.profi.mzdb.model.ScanData;
 import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.model.ScanSlice;
 
@@ -210,8 +211,8 @@ public class BytesReader extends AbstractBlobReader {
 		pos += 8 ; 
 		
 		BlobData blobData = readBlob(length, structSize, pos, de);
-		ScanSlice s = new ScanSlice(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm);
-		s.setScanId(id);
+		ScanSlice s = new ScanSlice(_scanHeaders.get(id), 
+		                            new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
 		return s;
 	}
 
@@ -224,7 +225,6 @@ public class BytesReader extends AbstractBlobReader {
 		ScanSlice[] sl = new ScanSlice[_nbScans];
 		for (int i = 1; i <= _nbScans; i++) {
 			ScanSlice s = this.scanSliceOfScanAt(i); 
-			s.setFirstScanId( firstScanId ); 
 			s.setRunSliceId( runSliceId );
 			sl[i-1] = s;
 		}
