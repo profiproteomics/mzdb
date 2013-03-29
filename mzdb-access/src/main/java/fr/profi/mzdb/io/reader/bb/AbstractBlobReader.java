@@ -10,6 +10,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.PeakEncoding;
+import fr.profi.mzdb.model.ScanHeader;
 //import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
@@ -31,6 +32,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 															// bit, centroid
 															// profile) by
 															// scanId
+	protected Map<Integer, ScanHeader> _scanHeaders;
 
 	// protected DataMode _dataMode;
 
@@ -41,9 +43,9 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	 *            Id by DataEncoding
 	 * @see DataEncoding
 	 */
-	public AbstractBlobReader(Map<Integer, DataEncoding> dataEnc) {
+	public AbstractBlobReader(Map<Integer, ScanHeader> headers, Map<Integer, DataEncoding> dataEnc) {
 		this._dataEncodings = dataEnc;
-
+		this._scanHeaders = headers;
 	}
 
 	/**

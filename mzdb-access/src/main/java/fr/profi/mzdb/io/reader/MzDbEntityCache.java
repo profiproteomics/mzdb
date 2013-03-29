@@ -1,6 +1,7 @@
 package fr.profi.mzdb.io.reader;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.RunSliceHeader;
@@ -14,33 +15,33 @@ public class MzDbEntityCache {
   
   protected ScanHeader[] scanHeaders = null;
   
-  protected HashMap<Integer, ScanHeader> scanHeaderById = null;
+  protected Map<Integer, ScanHeader> scanHeaderById = null;
 
-  protected HashMap<Float, Integer> scanIdByTime = null;
+  protected Map<Float, Integer> scanIdByTime = null;
   
   //protected HashMap<Integer, ArrayList<Integer>> _scanIdsByTimeIndex = null;
   
-  protected HashMap<Integer, DataEncoding> dataEncodingById = null;
+  protected Map<Integer, DataEncoding> dataEncodingById = null;
   
-  protected HashMap<Integer, DataEncoding> dataEncodingByScanId = null;
+  protected Map<Integer, DataEncoding> dataEncodingByScanId = null;
   
   protected RunSliceHeader[] runSliceHeaders = null;
   
-  protected HashMap<Integer, RunSliceHeader> runSliceHeaderById = null;
+  protected Map<Integer, RunSliceHeader> runSliceHeaderById = null;
   
   public ScanHeader[] getScanHeaders() {
     return scanHeaders;
   }
 
-  public HashMap<Integer, ScanHeader> getScanHeaderById() {
+  public Map<Integer, ScanHeader> getScanHeaderById() {
     return scanHeaderById;
   }
 
-  public HashMap<Float, Integer> getScanIdByTime() {
+  public Map<Float, Integer> getScanIdByTime() {
     return scanIdByTime;
   }
 
-  public HashMap<Integer, DataEncoding> getDataEncodingByScanId() {
+  public Map<Integer, DataEncoding> getDataEncodingByScanId() {
     return dataEncodingByScanId;
   }
 
@@ -48,7 +49,7 @@ public class MzDbEntityCache {
     return runSliceHeaders;
   }
   
-  public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById() {
+  public Map<Integer, RunSliceHeader> getRunSliceHeaderById() {
     return runSliceHeaderById;
   }
 

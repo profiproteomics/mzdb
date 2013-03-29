@@ -37,6 +37,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
   /** Is high resolution boolean. */
   protected final boolean isHighResolution;
   
+  /**total ion chromatogram of the spectrum*/
   protected final float tic;
   
   /** The base peak mz. */

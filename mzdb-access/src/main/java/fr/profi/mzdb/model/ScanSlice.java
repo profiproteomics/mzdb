@@ -14,8 +14,7 @@ public class ScanSlice extends Scan {
 
 //ScanData {
 
-	/** The scan id. */
-  protected int scanId;
+
 	
 	/** The run slice id. */
   protected int runSliceId;
@@ -38,17 +37,10 @@ public class ScanSlice extends Scan {
    * @return the scan id
    */
   public int getScanId() {
-    return scanId;
+    return header.getId();
   }
 
-  /**
-   * Sets the scan id.
-   *
-   * @param scanId the new scan id
-   */
-  public void setScanId(int scanId) {
-    this.scanId = scanId;
-  }
+  
 
   /**
    * Gets the run slice id.

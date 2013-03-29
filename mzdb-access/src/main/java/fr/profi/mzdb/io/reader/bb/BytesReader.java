@@ -31,9 +31,6 @@ public class BytesReader extends AbstractBlobReader {
 	/** size of the data */
 	protected int _dataSize;
 	
-	/** scanHeaders ScanHeader by ScanID */
-	protected Map<Integer, ScanHeader> _scanHeaders;
-	
 	/**
 	 * Constructor
 	 * @param dataEncodings, DataEncoding object for each scan, usually given by a mzDbReaderInstance
@@ -41,8 +38,8 @@ public class BytesReader extends AbstractBlobReader {
 	 * @see MzDbReader
 	 * @see DataEncoding
 	 */
-	public BytesReader(Map<Integer, DataEncoding> dataEncodings, byte[] data) {
-		super(dataEncodings);
+	public BytesReader(Map<Integer, ScanHeader> headers, Map<Integer, DataEncoding> dataEncodings, byte[] data) {
+		super(headers, dataEncodings);
 		_data = ByteBuffer.wrap(data);
 		_data.order(ByteOrder.LITTLE_ENDIAN);
 		_dataSize = data.length;
@@ -211,8 +208,8 @@ public class BytesReader extends AbstractBlobReader {
 		pos += 8 ; 
 		
 		BlobData blobData = readBlob(length, structSize, pos, de);
-		ScanSlice s = new ScanSlice(_scanHeaders.get(id), 
-		                            new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
+	
+		ScanSlice s = new ScanSlice(_scanHeaders.get(id), new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
 		return s;
 	}
 

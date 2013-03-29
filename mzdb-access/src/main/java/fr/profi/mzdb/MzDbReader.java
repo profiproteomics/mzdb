@@ -424,7 +424,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public HashMap<Integer, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
+	public Map<Integer, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
 		return this._dataEncodingReader.getDataEncodingByScanId();
 	}
 
@@ -490,7 +490,7 @@ public class MzDbReader {
 				.bind(1, runSliceId).getRecords();
 
 		List<BoundingBox> bbs = new ArrayList<BoundingBox>();
-		HashMap<Integer, DataEncoding> dataEncodingByScanId = this
+		Map<Integer, DataEncoding> dataEncodingByScanId = this
 				.getDataEncodingByScanId();
 
 		while (records.hasNext()) {
@@ -501,8 +501,7 @@ public class MzDbReader {
 			int scanId = record.columnInt(BoundingBoxTable.FIRST_SPECTRUM_ID);
 			// float minTime = (float) stmt.columnDouble(3);
 
-			BoundingBox bb = BoundingBoxBuilder.buildBB(id,
-					dataEncodingByScanId, data);
+			BoundingBox bb = BoundingBoxBuilder.buildBB(id,getScanHeaderById(), dataEncodingByScanId, data);
 			bb.setFirstScanId(scanId);
 			bbs.add(bb);
 		}
@@ -667,8 +666,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public HashMap<Integer, ScanHeader> getScanHeaderById()
-			throws SQLiteException {
+	public Map<Integer, ScanHeader> getScanHeaderById() throws SQLiteException {
 		return this._scanHeaderReader.getScanHeaderById();
 	}
 
@@ -696,7 +694,7 @@ public class MzDbReader {
 	 *             the sQ lite exception
 	 */
 	// TODO: remove this method when mzDb is updated
-	public HashMap<Float, Integer> getScanIdByTime() throws SQLiteException {
+	public Map<Float, Integer> getScanIdByTime() throws SQLiteException {
 		return this._scanHeaderReader.getScanIdByTime();
 	}
 
@@ -727,7 +725,7 @@ public class MzDbReader {
 			SQLiteRecord r = records.next();
 
 			BoundingBox bb = BoundingBoxBuilder.buildBB(
-					r.columnInt(BoundingBoxTable.ID), dataEnc,
+					r.columnInt(BoundingBoxTable.ID), getScanHeaderById(),dataEnc,
 					r.columnBlob(BoundingBoxTable.DATA));
 
 			bb.setRunSliceId(r.columnInt(BoundingBoxTable.RUN_SLICE_ID));
@@ -824,7 +822,7 @@ public class MzDbReader {
       int firstScanId = stmt.columnInt(3);
 
       // Build the Bounding Box
-      BoundingBox bb = BoundingBoxBuilder.buildBB(id, getDataEncodingByScanId(), data);
+      BoundingBox bb = BoundingBoxBuilder.buildBB(id, getScanHeaderById(), getDataEncodingByScanId(), data);
       bb.setFirstScanId(firstScanId);
       bb.setRunSliceId(runSliceId);
 
@@ -911,7 +909,6 @@ public class MzDbReader {
 		                                            d.getIntensityList(), 
 		                                            d.getLeftHwhmList(), 
 		                                            d.getRightHwhmList()));
-		   f.setScanId(scanID);
 		   f.setRunSliceId(currentScanSlice.getRunSliceId());
 		   finalScanSlices.add(f);
 		   //update !

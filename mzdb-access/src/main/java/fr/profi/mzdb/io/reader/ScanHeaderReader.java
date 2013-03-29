@@ -2,6 +2,7 @@ package fr.profi.mzdb.io.reader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -111,14 +112,14 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
    * @return the scan header by id
    * @throws SQLiteException the sQ lite exception
    */
-  public HashMap<Integer, ScanHeader> getScanHeaderById() throws SQLiteException {
+  public Map<Integer, ScanHeader> getScanHeaderById() throws SQLiteException {
     
     if (this.entityCache != null && this.entityCache.scanHeaderById != null ) {
       return this.entityCache.scanHeaderById;
     }
     else {
       ScanHeader[] scanHeaders = this.getScanHeaders();
-      HashMap<Integer, ScanHeader> scanHeaderById = new HashMap<Integer, ScanHeader>(scanHeaders.length);
+      Map<Integer, ScanHeader> scanHeaderById = new HashMap<Integer, ScanHeader>(scanHeaders.length);
   
       for (ScanHeader scanHeader : scanHeaders )
         scanHeaderById.put(scanHeader.getId(), scanHeader);
@@ -153,7 +154,7 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
    * @throws SQLiteException the sQ lite exception
    */
   // TODO: remove this method  and related cache when mzDB is updated
-  public HashMap<Float, Integer> getScanIdByTime() throws SQLiteException {
+  public Map<Float, Integer> getScanIdByTime() throws SQLiteException {
     
     if (this.entityCache != null && this.entityCache.scanIdByTime != null ) {
       return this.entityCache.scanIdByTime;

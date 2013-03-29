@@ -13,6 +13,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.ScanData;
+import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.model.ScanSlice;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
@@ -35,8 +36,8 @@ public class StreamReader extends AbstractBlobReader {
 	 * @see AbstractBlobReader
 	 * @see AbstractBlobReader#_dataEncodings 
 	 */
-	public StreamReader(Map<Integer, DataEncoding> dataEnc, InputStream s) {
-		super(dataEnc); 
+	public StreamReader(Map<Integer, ScanHeader> headers, Map<Integer, DataEncoding> dataEnc, InputStream s) {
+		super(headers, dataEnc); 
 		_stream = s;
 	}
 	
@@ -178,7 +179,6 @@ public class StreamReader extends AbstractBlobReader {
 
 		BlobData blobData = readBlob(peaksBytes, peaksBytes.length, structSize, de);
 		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
-		s.setScanId(id);
 		return s;
 	}
 

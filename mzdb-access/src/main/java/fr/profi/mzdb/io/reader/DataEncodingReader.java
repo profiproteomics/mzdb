@@ -1,6 +1,7 @@
 package fr.profi.mzdb.io.reader;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteException;
 
@@ -107,7 +108,7 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
    * @return the data encoding by id
    * @throws SQLiteException the sQ lite exception
    */
-  public HashMap<Integer, DataEncoding> getDataEncodingById() throws SQLiteException {
+  public Map<Integer, DataEncoding> getDataEncodingById() throws SQLiteException {
     
     if (this.entityCache != null && this.entityCache.dataEncodingById != null ) {
       return this.entityCache.dataEncodingById;
@@ -132,14 +133,14 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
    * @return the data encoding by scan id
    * @throws SQLiteException the sQ lite exception
    */
-  public HashMap<Integer, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
+  public Map<Integer, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
     
     if( this.entityCache != null && this.entityCache.dataEncodingByScanId != null ) {
       return this.entityCache.dataEncodingByScanId;
     } else {
       
-      HashMap<Integer, DataEncoding> dataEncodingById = this.getDataEncodingById();
-      HashMap<Integer, ScanHeader> scanHeaderById = mzDbReader.getScanHeaderById();
+      Map<Integer, DataEncoding> dataEncodingById = this.getDataEncodingById();
+      Map<Integer, ScanHeader> scanHeaderById = mzDbReader.getScanHeaderById();
       
       // Retrieve encoding PK for the given scan id
       String queryStr = "SELECT id, data_encoding_id FROM spectrum";

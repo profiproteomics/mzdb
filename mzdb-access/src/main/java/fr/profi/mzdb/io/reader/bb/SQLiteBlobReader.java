@@ -11,6 +11,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.ScanData;
+import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.model.ScanSlice;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
@@ -32,8 +33,8 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	 * @see SQLiteBlob
 	 * @see DataEncoding
 	 */
-	public SQLiteBlobReader(Map<Integer, DataEncoding> dataEnc, SQLiteBlob r) {
-		super(dataEnc);
+	public SQLiteBlobReader(Map<Integer, ScanHeader> headers, Map<Integer, DataEncoding> dataEnc, SQLiteBlob r) {
+		super(headers, dataEnc);
 		_blob = r;
 		_buildMapPositions();
 	}
@@ -200,7 +201,6 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		
 		BlobData blobData = readBlob(peaksBytes, peaksBytes.length, structSize, de);
 		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
-		s.setScanId(id);
 		return s;
 	}
 	

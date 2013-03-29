@@ -31,7 +31,7 @@ public class BoundingBoxIterator extends StatementIterator<BoundingBox> {
 		int runSliceId = stmt.columnInt(2);
 		int firstScanId = stmt.columnInt(3);
 		
-		BoundingBox bb = BoundingBoxBuilder.buildBB(bbId, this.dataEnc, data);
+		BoundingBox bb = BoundingBoxBuilder.buildBB(bbId, this.mzDbReader.getScanHeaderById(), this.dataEnc, data);
 		bb.setRunSliceId(runSliceId);
 		bb.setFirstScanId(firstScanId);
 		

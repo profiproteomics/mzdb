@@ -5,6 +5,7 @@ package fr.profi.mzdb.io.reader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteException;
 
@@ -179,7 +180,7 @@ public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
    * @return the run slice header by id
    * @throws SQLiteException the sQ lite exception
    */
-  public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById() throws SQLiteException {
+  public Map<Integer, RunSliceHeader> getRunSliceHeaderById() throws SQLiteException {
     
     if (this.entityCache != null && this.entityCache.runSliceHeaderById != null ) {
       return this.entityCache.runSliceHeaderById;
