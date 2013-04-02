@@ -26,7 +26,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
   
   class RichRunSliceData(self: RunSliceData) {
     def getPeakListByScanId(): Map[Int,PeakList] = {
-      Map() ++ self.getScanSliceList.map { ss => ss.getScanId -> new PeakList(ss.toPeaks(mzDbReader.getScanHeader(ss.getScanId)),0.1) }
+      Map() ++ self.getScanSliceList.map { ss => ss.getScanId -> new PeakList(ss.getPeaks(),0.1) }
     }
   }
   implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
