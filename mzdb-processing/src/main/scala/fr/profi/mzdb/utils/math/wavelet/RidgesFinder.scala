@@ -9,7 +9,7 @@ import scala.collection.mutable.HashMap
  * at the consdidered scale
  */
 object Ridge {
-  val maxGap = 6
+  val maxGap = 4
 }
 
 
@@ -48,7 +48,7 @@ case class Ridge(var gap: Int = 0) {
   def get(scaleIdx: Int): Option[Pair[Int, Double]] = { maximaIndexPerScale.get(scaleIdx).get }
   def incGap() = {gap += 1; totalGaps +=1 }
   def initGap() = {gap = 0}
-  def length(): Int = { val keys = maximaIndexPerScale.keySet; keys.max - keys.min + 1} //with gap ?
+  def length(): Int = { maximaIndexPerScale.size }//val keys = maximaIndexPerScale.keySet; keys.max - keys.min + 1} //with gap ?
 
   def startingScale(): Int = {
     var v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
@@ -67,10 +67,11 @@ trait RidgesFinder {
    * winLength: minWindow window is proportionnal to the scale: scale * 2 + 1
    */
   
-  def findRidges(maximaIndexesPerScale: Array[Array[Int]], coeffs: Array[Array[Double]], winLength: Int = 5): Array[Ridge] = {
+  def findRidges(maximaIndexesPerScale: Array[Array[Int]], coeffs: Array[Array[Double]], winLength: Int = 5): Pair[Array[Ridge], Array[Ridge]] = {
 
     var lastMaximaRow = maximaIndexesPerScale.last
     var ridges = new ArrayBuffer[Ridge]
+    var orphanRidges = new ArrayBuffer[Ridge]
     
     for (m <- lastMaximaRow) { 
       var r = Ridge()
@@ -84,7 +85,7 @@ trait RidgesFinder {
       
       var treatedIdx = new ArrayBuffer[Int]()
 
-      for (ridge <- ridges if !ridge.isEnded()) {
+      for (ridge <- ridges if !ridge.isEnded() ) {
         var prevMaxIndex = ridge.maximaIndexPerScale(i + 1)
         //the prev max could be None because of gap
         //looking for a valid prevMax
@@ -122,6 +123,6 @@ trait RidgesFinder {
     ridges.foreach { r => ridgesPerMaxIndexAtFirstScale.getOrElseUpdate(r.firstScaleMaxCoeffPos._2, new ArrayBuffer[Ridge]()) += r }
     var lastOfLastRidges = new ArrayBuffer[Ridge]()
     ridgesPerMaxIndexAtFirstScale.foreach { case (u, v) => lastOfLastRidges += v.maxBy { x => x.length() } }
-    lastOfLastRidges.toArray[Ridge]
+    (lastOfLastRidges.toArray, orphanRidges.toArray)
   }
 }
