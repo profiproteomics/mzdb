@@ -1,149 +1,111 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <artifactId>ProFI-Pom</artifactId>
+    <groupId>fr.proline</groupId>
+    <version>0.0.1</version>
+  </parent>
+
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-processing</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
-  
+
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.6</maven.compiler.source>
     <maven.compiler.target>1.6</maven.compiler.target>
-    <encoding>UTF-8</encoding>
   </properties>
-  
-  <repositories>
-    <repository>
-      <id>scala-tools.org</id>
-      <name>Scala-Tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url>
-    </repository>
-    <repository>
 
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-
-      <id>repo.codahale.com</id>
-      <url>http://repo.codahale.com</url>
-    </repository>
-    <!-- <repository>
-      <releases>           
-      </releases>
-      <snapshots>
-      </snapshots>
-      <id>proline-repo</id>
-      <name>Proline Repository</name>
-      <url>https://bioproj.extra.cea.fr/redmine/projects/proline-repo/repository/raw/maven2</url>
-    </repository>-->
-  </repositories>
-  
-  <pluginRepositories>
-    <pluginRepository>
-      <id>scala-tools.org</id>
-      <name>Scala-Tools Maven2 Repository</name>
-      <url>http://scala-tools.org/repo-releases</url>
-    </pluginRepository>
-  </pluginRepositories>
-  
   <dependencies>
-  
+
     <!-- Scala -->
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>2.9.1</version>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
     <!-- Test -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.1</version>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
-    
+
     <dependency>
       <groupId>org.scala-tools.testing</groupId>
       <artifactId>specs_2.9.1</artifactId>
-      <version>1.6.9</version>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
-    
+
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.9.1</artifactId>
-      <version>1.7.1</version>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
-    
+
     <!-- Logging -->
-    <dependency> 
+    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.0.7</version>
-    </dependency>   
-     
+      <!-- Version inherited from ProFI-Pom -->
+    </dependency>
+
     <dependency>
       <groupId>com.weiglewilczek.slf4s</groupId>
       <artifactId>slf4s_2.9.1</artifactId>
-      <version>1.0.7</version>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
-    
+
     <!-- Commons -->
     <dependency>
-		  <groupId>org.apache.commons</groupId>
-		  <artifactId>commons-math</artifactId>
-		  <version>2.2</version>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-math</artifactId>
+      <version>2.2</version>
     </dependency>
-    
+
     <!-- JSON -->
     <dependency>
       <groupId>com.codahale</groupId>
       <artifactId>jerkson_2.9.1</artifactId>
       <version>0.6.0-SNAPSHOT</version>
     </dependency>
-    
+
     <!-- Charting -->
     <dependency>
       <groupId>jfreechart</groupId>
       <artifactId>jfreechart</artifactId>
       <version>1.0.0</version>
     </dependency>
-    
+
     <!-- mzdb-access -->
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>mzdb-access</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
-    
+
      <dependency>
       <groupId>jfree</groupId>
       <artifactId>jfreechart</artifactId>
       <version>1.0.13</version>
     </dependency>
 
+    <dependency>
+      <groupId>sgfilter</groupId>
+      <artifactId>sgfilter</artifactId>
+      <version>v1_2r25</version>
+    </dependency>
+
   </dependencies>
-  
+
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.scala-tools</groupId>
-          <artifactId>maven-scala-plugin</artifactId>
-          <version>2.15.2</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>2.3.2</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-  
+
     <plugins>
       <plugin>
         <groupId>org.scala-tools</groupId>
@@ -160,7 +122,7 @@
             <phase>test-compile</phase>
           </execution>
           <execution>
-           <id>scala-compile-first</id>            
+           <id>scala-compile-first</id>
             <phase>process-resources</phase>
             <goals><goal>add-source</goal><goal>compile</goal></goals>
           </execution>
@@ -185,40 +147,10 @@
             <arg>-dependencyfile</arg>
             <arg>${project.build.directory}/.scala_dependencies</arg>
           </args>
-        </configuration>        
-      </plugin>
-      
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>compile</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-       
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.12.4</version>
-        <configuration>
-          <useFile>false</useFile>
-          <skipTests>false</skipTests>
-          <disableXmlReport>true</disableXmlReport>
-          <!-- If you have classpath issue like NoDefClassError,... -->
-          <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
-          <includes>
-            <include>**/*Test.*</include>
-            <include>**/*Suite.*</include>
-          </includes>
         </configuration>
       </plugin>
-      
+
     </plugins>
   </build>
-  
+
 </project>
