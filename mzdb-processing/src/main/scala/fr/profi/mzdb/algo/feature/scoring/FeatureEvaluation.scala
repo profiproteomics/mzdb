@@ -5,7 +5,6 @@ import scala.reflect.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 //import fr.profi.mzdb.algo.signal.fitting.Optimizer
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
-import fr.profi.mzdb.algo.signal.fitting.GaussLorentzFitting
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
 import fr.profi.mzdb.algo.FeatureScorer

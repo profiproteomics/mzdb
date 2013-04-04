@@ -153,7 +153,7 @@ class PredictedTimeFtExtractor(
       //var peaks = new HashMap[Int, Array[Float]]
       
       var correspondingPeakels = new HashMap[Int, CwtPeakel]
-      ridge.maximaIndexPerScale.foreach{ case (a, b)  =>  if (b!= None) peakels(a).foreach {x => if (x.apex == b.get) correspondingPeakels(a) = x}  }    
+      //ridge.maximaIndexPerScale.foreach{ case (a, b)  =>  if (b!= None) peakels(a).foreach {x => if (x.apex == b.get) correspondingPeakels(a) = x}  }    
       var (monoisotopicScale, monoisotopicPeakel) = correspondingPeakels.map { case (a, b) => (a, b) }.toList.sortBy(x => x._1).last//sList.sortBy( peakel => math.abs(peakel.maxIdx - peakel.minIdx)).last
       //val longestSize = math.abs(longestPeakel.maxIdx - longestPeakel.minIdx) //abs not necessary i suppose
       var (minIdx, maxIdx) = (monoisotopicPeakel.minIdx, monoisotopicPeakel.maxIdx)
