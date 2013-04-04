@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -78,9 +79,16 @@
 
     <!-- Charting -->
     <dependency>
-      <groupId>jfreechart</groupId>
+      <groupId>jfree</groupId>
       <artifactId>jfreechart</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.13</version>
+    </dependency>
+    
+    <!-- Smoothing (algorithmic) -->
+    <dependency>
+      <groupId>sgfilter</groupId>
+      <artifactId>sgfilter</artifactId>
+      <version>v1_2r25</version>
     </dependency>
 
     <!-- mzdb-access -->
@@ -88,18 +96,6 @@
       <groupId>fr.profi</groupId>
       <artifactId>mzdb-access</artifactId>
       <version>0.0.1-SNAPSHOT</version>
-    </dependency>
-
-     <dependency>
-      <groupId>jfree</groupId>
-      <artifactId>jfreechart</artifactId>
-      <version>1.0.13</version>
-    </dependency>
-
-    <dependency>
-      <groupId>sgfilter</groupId>
-      <artifactId>sgfilter</artifactId>
-      <version>v1_2r25</version>
     </dependency>
 
   </dependencies>
@@ -113,18 +109,25 @@
         <executions>
           <execution>
             <id>compile</id>
-            <goals><goal>compile</goal></goals>
+            <goals>
+              <goal>compile</goal>
+            </goals>
             <phase>compile</phase>
           </execution>
           <execution>
             <id>test-compile</id>
-            <goals><goal>testCompile</goal></goals>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
             <phase>test-compile</phase>
           </execution>
           <execution>
-           <id>scala-compile-first</id>
+            <id>scala-compile-first</id>
             <phase>process-resources</phase>
-            <goals><goal>add-source</goal><goal>compile</goal></goals>
+            <goals>
+              <goal>add-source</goal>
+              <goal>compile</goal>
+            </goals>
           </execution>
           <execution>
             <id>scala-test-compile</id>
@@ -140,8 +143,8 @@
             <launcher>
               <id>myLauncher</id>
               <mainClass>samples.AppJava</mainClass>
-          </launcher>
-        </launchers>
+            </launcher>
+          </launchers>
           <args>
             <arg>-make:transitivenocp</arg>
             <arg>-dependencyfile</arg>
