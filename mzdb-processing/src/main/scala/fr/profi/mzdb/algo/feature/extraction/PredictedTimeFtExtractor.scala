@@ -128,7 +128,7 @@ class PredictedTimeFtExtractor(
   private def ridgeCalc(peakels: ArrayBuffer[Array[CwtPeakel]] ) : Array[Ridge] = {
     //var apexes = new ArrayBuffer[ArrayBuffer[Int]]
     var apexes = peakels.map {x=> x.map {_.apex} } toArray
-    var ridges = this.findRidges(apexes.reverse, null, winLength = 10) //10scans aprroximatively 20-30 s
+    var (ridges, orphanRidges) = this.findRidges(apexes.reverse, null, winLength = 10) //10scans aprroximatively 20-30 s
     
     var ridgesByLength = new HashMap[Int, ArrayBuffer[Ridge]]
     ridges.foreach( x => ridgesByLength.getOrElseUpdate(x.length, new ArrayBuffer[Ridge]) += x)
