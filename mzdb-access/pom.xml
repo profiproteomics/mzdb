@@ -14,6 +14,7 @@
   <description>The mzDB access java library</description>
 
   <properties>
+    <project.build.sourceEncoding>Cp1252</project.build.sourceEncoding> <!-- Windows CP-1252 encoding -->
     <sqlite4java.version>0.282</sqlite4java.version>
   </properties>
 
