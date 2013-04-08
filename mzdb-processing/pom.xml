@@ -6,7 +6,7 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.0.1</version>
+    <version>0.0.2-SNAPSHOT</version>
   </parent>
 
   <groupId>fr.profi</groupId>
@@ -83,7 +83,7 @@
       <artifactId>jfreechart</artifactId>
       <version>1.0.13</version>
     </dependency>
-    
+
     <!-- Smoothing (algorithmic) -->
     <dependency>
       <groupId>sgfilter</groupId>
