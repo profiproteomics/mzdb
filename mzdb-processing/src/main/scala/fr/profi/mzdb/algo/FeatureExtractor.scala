@@ -18,7 +18,7 @@ class FeatureExtractor(
   val mzTolPPM: Float,
   val maxNbPeaksInIP: Int,
   val minNbOverlappingIPs: Int
-) extends IFeatureExtractor {
+) extends AbstractFeatureExtractor {
 
   protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
   protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
