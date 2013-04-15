@@ -10,7 +10,7 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
              
 class FullySupervisedFtExtractor(
-  val mzDbReader: MzDbReader,
+  //val mzDbReader: MzDbReader,
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
   val mzTolPPM: Float,

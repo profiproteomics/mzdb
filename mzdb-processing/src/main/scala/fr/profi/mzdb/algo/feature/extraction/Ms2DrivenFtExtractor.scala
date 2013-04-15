@@ -13,7 +13,7 @@ import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import scala.collection.mutable.ArrayBuffer
 
 class Ms2DrivenFtExtractor(
-  val mzDbReader: MzDbReader,
+  //val mzDbReader: MzDbReader,
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
   val mzTolPPM: Float,
@@ -123,7 +123,7 @@ class Ms2DrivenFtExtractor(
           val curTime = curScanH.getTime
             
           // TODO: check if total time does not exceed the provided threshold
-          if( this.maxTimeWindow > 0 && Math.abs(curTime-apexTime) > this.maxTimeWindow/2 ) timeOverRange = true
+          if( this.maxTimeWindow > 0 && math.abs(curTime-apexTime) > this.maxTimeWindow/2 ) timeOverRange = true
               
           val ipOpt = pklTree.extractIsotopicPattern( curScanH, putativeFt.mz, this.mzTolPPM, putativeFt.charge, this.maxNbPeaksInIP )
           if( cycleShift == 0 && ipOpt == None ) {

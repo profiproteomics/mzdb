@@ -3,6 +3,8 @@ package fr.profi.mzdb
 import collection.mutable.ArrayBuffer
 import collection.mutable.HashMap
 import collection.JavaConversions.mapAsScalaMap
+import com.weiglewilczek.slf4s.Logging
+
 import fr.profi.mzdb.algo.FeatureExtractor
 import fr.profi.mzdb.algo.ms.normalization.MsScanNormalizer
 import fr.profi.mzdb.io.reader.RunSliceDataProvider
@@ -22,7 +24,7 @@ import fr.profi.mzdb.model.ScanHeader
  */
 class MzDbFeatureExtractor( mzDbReader: MzDbReader,
                             maxNbPeaksInIP: Int = 3,
-                            minNbOverlappingIPs: Int = 3 ) {
+                            minNbOverlappingIPs: Int = 3 ) extends Logging {
   
   class RichRunSliceData(self: RunSliceData) {
     def getPeakListByScanId(): Map[Int,PeakList] = {
@@ -74,7 +76,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
     var( prevRSH, nextRSH ) = (Option.empty[RunSliceHeader], Option.empty[RunSliceHeader])
     
     for ( rsh <- rsHeaders if rsh.getMsLevel == 1 ) {
-      System.out.println("processing run slice with id =" + rsh.getId);
+      this.logger.debug("processing run slice with id =" + rsh.getId);
 
       // Retrieve run slices and their corresponding id
       val rsNum = rsh.getNumber
@@ -105,7 +107,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
         // runSlicePutativeFeatures.size() );
 
         // Retrieve previous run slice peaklist
-        if (prevRSH != None) {
+        if (prevRSH.isDefined) {
           if ( pklByScanIdAndRsId.contains(prevRsNumber) == false ) { 
             pklByScanIdAndRsId += ( prevRsNumber -> this._getRSD(rsdProvider,prevRsNumber).getPeakListByScanId )
           }
@@ -117,7 +119,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
         }
   
         // Retrieve current next slice peaklist
-        if (nextRSH != None) {
+        if (nextRSH.isDefined) {
           if ( pklByScanIdAndRsId.contains(nextRsNumber) == false ) {
             pklByScanIdAndRsId += ( nextRsNumber -> this._getRSD(rsdProvider,nextRsNumber).getPeakListByScanId )
           }
@@ -155,7 +157,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
       }
     }
     
-    System.out.println("nb features before identity filtering:" + extractedFeatures.length );
+    this.logger.debug("nb features before identity filtering:" + extractedFeatures.length );
     
     val featuresByApex = new HashMap[Peak,ArrayBuffer[Feature]]()
     
@@ -165,7 +167,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
       featuresByApex.getOrElseUpdate(firstPeakelApex,new ArrayBuffer[Feature]) += ft      
     }
     
-    System.out.println("nb features after identity filtering:" + featuresByApex.size );
+    this.logger.debug("nb features after identity filtering:" + featuresByApex.size );
     
     val filteredFeatures = new ArrayBuffer[Feature](featuresByApex.size)
     

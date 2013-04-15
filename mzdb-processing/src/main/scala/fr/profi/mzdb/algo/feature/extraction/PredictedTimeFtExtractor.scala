@@ -20,20 +20,21 @@ import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 
 
 class PredictedTimeFtExtractor(
-  override val mzDbReader: MzDbReader,
+  //override val mzDbReader: MzDbReader,
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   override val mzTolPPM: Float,
   override val maxNbPeaksInIP: Int,
   override val minNbOverlappingIPs: Int,
   val minConsecutiveScans: Int = 4,
-  val predictedTimeTol: Int = 120) extends Ms2DrivenFtExtractor (
-  mzDbReader,
-  scanHeaderById,
-  nfByScanId,
-  mzTolPPM,
-  maxNbPeaksInIP,
-  minNbOverlappingIPs)  with RidgesFinder {
+  val predictedTimeTol: Int = 120
+) extends Ms2DrivenFtExtractor (
+    scanHeaderById,
+    nfByScanId,
+    mzTolPPM,
+    maxNbPeaksInIP,
+    minNbOverlappingIPs
+) with RidgesFinder {
 
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
@@ -66,9 +67,9 @@ class PredictedTimeFtExtractor(
     val mz = putativeFt.mz
     val charge = putativeFt.charge
 
-    val curScanH = mzDbReader.getScanHeaderForTime(elutionTime, 1)
-    val leftmostScanH = mzDbReader.getScanHeaderForTime(elutionTime - predictedTimeTol, 1)
-    val rightmostScanH = mzDbReader.getScanHeaderForTime(elutionTime + predictedTimeTol, 1)
+    val curScanH = this.getScanHeaderForTime(elutionTime, 1)
+    val leftmostScanH = this.getScanHeaderForTime(elutionTime - predictedTimeTol, 1)
+    val rightmostScanH = this.getScanHeaderForTime(elutionTime + predictedTimeTol, 1)
 
     val scanIDs = pklTree.scansIDs().filter(x => x > (curScanH.getId - leftmostScanH.getId) && x < (curScanH.getId + rightmostScanH.getId)) toArray
 
@@ -209,20 +210,34 @@ class PredictedTimeFtExtractor(
 
     // Retrieve some vars
     val elutionTime = putativeFt.elutionTime
-    val curScanH = this.mzDbReader.getScanHeaderForTime(elutionTime, 1)
+    var curScanH = this.getScanHeaderForTime(elutionTime, 1)
+    
+    // If no scan header for current time => take the last scan header
+    if( curScanH == null ) {
+      val ftId = putativeFt.id
+      this.logger.debug("feature (id="+ftId+") elution time is out of the range of the current raw file")      
+      
+      curScanH = this.scanHeaders.last
+      
+      // Check that the feature elution time is greater than the last scan header
+      if( elutionTime < curScanH.getElutionTime )
+        throw new Exception("can't retrieve a scan header at time: "+ elutionTime)
+    }
+      
+    // Retrieve the cycle number
     var curCycleNum = curScanH.getCycle
 
-    val leftmostScanH = this.mzDbReader.getScanHeaderForTime(elutionTime - predictedTimeTol, 1)
-    val rightmostScanH = this.mzDbReader.getScanHeaderForTime(elutionTime + predictedTimeTol, 1)
+    val leftmostScanH = Option(this.getScanHeaderForTime(elutionTime - predictedTimeTol, 1)).getOrElse(curScanH)
+    val rightmostScanH = Option(this.getScanHeaderForTime(elutionTime + predictedTimeTol, 1)).getOrElse(curScanH)
     val leftmostCycleNum = leftmostScanH.getCycle
     val rightmostCycleNum = rightmostScanH.getCycle
 
     // Compute the cycle range which will be screened to search for signal
     var cycleShift = 0
-    if (Math.abs(rightmostCycleNum - curCycleNum) >= Math.abs(leftmostCycleNum - curCycleNum)) {
-      cycleShift = Math.abs(rightmostCycleNum - curCycleNum);
+    if (math.abs(rightmostCycleNum - curCycleNum) >= math.abs(leftmostCycleNum - curCycleNum)) {
+      cycleShift = math.abs(rightmostCycleNum - curCycleNum)
     } else {
-      cycleShift = Math.abs(leftmostCycleNum - curCycleNum);
+      cycleShift = math.abs(leftmostCycleNum - curCycleNum)
     }
     val range = Pair(0, cycleShift)
 
@@ -273,7 +288,7 @@ class PredictedTimeFtExtractor(
               if (nbConsecutiveScans >= minConsecutiveScans) breaked = true
               else {
                 curCycleNum += intensityAscDir
-                timeShift = Math.abs(startingScanH.getTime - elutionTime)
+                timeShift = math.abs(startingScanH.getTime - elutionTime)
               }
             }
           }

@@ -9,6 +9,7 @@ import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
 import fr.profi.mzdb.MzDbReader
+import fr.profi.mzdb.utils.ms.MsUtils
 
 class FeatureExtractor(
   val mzDbReader: MzDbReader,
@@ -19,10 +20,10 @@ class FeatureExtractor(
   val minNbOverlappingIPs: Int
 ) extends IFeatureExtractor {
 
-  protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( mzDbReader, scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
-  protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( mzDbReader, scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
-  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor( mzDbReader, scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
-  protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor( mzDbReader, scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
+  protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
+  protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
+  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
+  protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
     
   def extractFeatures( putativeFeatures: Seq[PutativeFeature], 
                        extractedFeatures: ArrayBuffer[Feature], // store newly extracted features
@@ -37,7 +38,7 @@ class FeatureExtractor(
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
       
     var ft = Option.empty[Feature]
-    if( !putativeFt.isPredicted ) { // we know that signal is there
+    if( putativeFt.isPredicted == false ) { // we know that signal is there
       
       if( putativeFt.firstScanId > 0 && putativeFt.lastScanId > 0 ) { // have a full feature knowledge
         //println("Fully supervised")
@@ -60,6 +61,31 @@ class FeatureExtractor(
         //println("Predicted Mz")
         ft = this.predictedMzFtExtractor.extractFeature(putativeFt, pklTree );
       }
+    }
+    
+    // Update MS2 scan ids of the feature
+    for( foundFt <- ft ) {  
+      
+      val ftScanHeaders = foundFt.getScanHeaders
+      
+      val firstScanId = ftScanHeaders.head.getId
+      val lastCycleNum = ftScanHeaders.last.getCycle + 1 // jump to next cycle
+        
+      val lastScanId = if( scanHeaderByCycleNum.contains(lastCycleNum) ) scanHeaderByCycleNum(lastCycleNum).getId
+      else scanHeaderByCycleNum(lastCycleNum - 1).getId
+      
+      val ms2ScanIds = new ArrayBuffer[Int]
+      for( scanId <- firstScanId until lastScanId ) {
+        val scanH = this.scanHeaderById(scanId)
+        if( scanH.getMsLevel == 2 ) {
+          val mzDiffPPM = MsUtils.DaToPPM(foundFt.mz, (scanH.getPrecursorMz - foundFt.mz).abs )
+          if( mzDiffPPM < mzTolPPM ) {
+            ms2ScanIds += scanId
+          }
+        }
+      }
+      
+      foundFt.ms2ScanIds = ms2ScanIds.toArray
     }
 
     ft

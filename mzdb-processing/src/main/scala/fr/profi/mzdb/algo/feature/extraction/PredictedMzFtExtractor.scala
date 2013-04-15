@@ -13,7 +13,7 @@ import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 
 class PredictedMzFtExtractor(
-  val mzDbReader: MzDbReader,
+  //val mzDbReader: MzDbReader,
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
   val mzTolPPM: Float,
@@ -62,8 +62,8 @@ class PredictedMzFtExtractor(
 	for ( i <- highestPeakel.minIdx to highestPeakel.maxIdx) {
 	  val peak = xic(i)
 	  val scanID = xicScanIDs(i)
-	  val ipOpt = pklTree.extractIsotopicPattern(mzDbReader.getScanHeader(scanID), moz, mzTolPPM, charge, maxNbPeaksInIP)
-	  if( ipOpt != None ) {
+	  val ipOpt = pklTree.extractIsotopicPattern(this.scanHeaderById(scanID), moz, mzTolPPM, charge, maxNbPeaksInIP)
+	  if( ipOpt.isDefined ) {
         val ip = ipOpt.get
         val intensity = ip.intensity
         // If we have peaks
@@ -78,9 +78,24 @@ class PredictedMzFtExtractor(
 	  }
 	  isotopicPatterns(c) = ipOpt
 	}
-	//use of the constructor which build peakels
-    val f =  new Feature(Feature.generateNewId(), moz, charge, isotopicPatterns.filter(x=> x.isDefined ) map (_.get) toSeq)
-    updateFtOverlappingFeatures( f, isotopicPatterns.filter(x => x != None) map(x=> x.get), this.minNbOverlappingIPs )
+	
+	// FIXME: check why ip is null => it should not be
+	val definedIps = isotopicPatterns.filter(ip => ip != null && ip.isDefined).map(_.get)
+	
+	// use of the constructor that build peakels
+    val f =  new Feature(
+      Feature.generateNewId(),
+      moz,
+      charge,
+      definedIps
+    )
+    
+    this.updateFtOverlappingFeatures(
+      f,
+      definedIps,
+      this.minNbOverlappingIPs
+    )
+    
     Some(f)
     
   }
