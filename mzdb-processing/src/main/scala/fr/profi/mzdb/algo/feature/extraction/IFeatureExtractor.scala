@@ -8,7 +8,7 @@ import fr.profi.mzdb.model.ScanHeader
 import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.model.Feature
 
-trait IFeatureExtractor {
+abstract class AbstractFeatureExtractor {
 
   //val mzDbReader: MzDbReader // TODO: not thread safe => is this really needed ?
   val scanHeaderById: Map[Int, ScanHeader]

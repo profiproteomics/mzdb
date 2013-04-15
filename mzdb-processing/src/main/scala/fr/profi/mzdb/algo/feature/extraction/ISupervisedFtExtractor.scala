@@ -9,7 +9,7 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.profi.mzdb.model.Peak
 
-trait ISupervisedFtExtractor extends IFeatureExtractor {
+abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
 
   // Build scanIdByCycleNum
   val ms1ScanIdByCycleNum = this.scanHeaderById

@@ -19,7 +19,7 @@ class PredictedMzFtExtractor(
   val mzTolPPM: Float,
   val maxNbPeaksInIP: Int,
   val minNbOverlappingIPs: Int
-) extends ISupervisedFtExtractor {
+) extends AbstractSupervisedFtExtractor {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
     val moz = putativeFt.getMz // suppose to be the mz of the monoisotopic right ?

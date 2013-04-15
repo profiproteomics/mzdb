@@ -16,7 +16,7 @@ class FullySupervisedFtExtractor(
   val mzTolPPM: Float,
   val maxNbPeaksInIP: Int,
   val minNbOverlappingIPs: Int
-) extends ISupervisedFtExtractor {
+) extends AbstractSupervisedFtExtractor {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
     

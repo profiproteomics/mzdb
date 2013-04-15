@@ -22,7 +22,7 @@ class Ms2DrivenFtExtractor(
   val maxConsecutiveGaps: Int = 2,
   val maxTimeWindow: Float = 600f,
   val minPercentageOfMaxInt: Float = 0.005f
-) extends ISupervisedFtExtractor with Logging {
+) extends AbstractSupervisedFtExtractor with Logging {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
     this.extractFeature(putativeFt, pklTree, putativeFt.scanId )
