@@ -83,9 +83,11 @@ public class RunSliceDataProvider {
 		  RunSlice tmpRs = rsdIter.next();
 		  //return tmpRs.getData();
 		  
-		  if( tmpRs.getHeader().getNumber() == runSliceNumber )
+		  int curRsNumber = tmpRs.getHeader().getNumber();
+		  
+		  if( curRsNumber == runSliceNumber )
 			  return tmpRs.getData();
-	      else if( tmpRs.getHeader().getNumber() > runSliceNumber )
+	      else if( curRsNumber > runSliceNumber )
 	    	  return null;
 	  }
 	  return null;

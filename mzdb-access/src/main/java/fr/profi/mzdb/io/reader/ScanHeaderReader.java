@@ -226,24 +226,30 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
    * @param time the time
    * @param msLevel the ms level
    * @return scanheader the closest to the time input parameter
-   * @throws SQLiteException the sQ lite exception
+   * @throws Exception 
    */
-  public ScanHeader getScanHeaderForTime(float time, int msLevel) throws SQLiteException {
+  public ScanHeader getScanHeaderForTime(float time, int msLevel) throws Exception {
     
     // TODO: implements a SQL alternative method
     
     int timeIndex = (int) (time / TIME_INDEX_WIDTH);
 
     ScanHeader nearestScanHeader = null;
+    HashMap<Integer, ArrayList<Integer>> scanIdsByTimeIndex = this.getScanIdsByTimeIndex();
     
     for (int index = timeIndex - 1; index <= timeIndex + 1; index++) {
-      ArrayList<Integer> tmpScanIds = getScanIdsByTimeIndex().get(index);
-      if (tmpScanIds == null)
-        continue;
       
-      for (int tmpScanId : tmpScanIds) {
+      if (scanIdsByTimeIndex.containsKey(index) == false) {
+    	  continue;
+      }
+      
+      ArrayList<Integer> tmpScanIds = scanIdsByTimeIndex.get(index);
+      for (Integer tmpScanId : tmpScanIds) {
         
         ScanHeader scanH = getScanHeaderById().get(tmpScanId);
+        if( scanH == null ) {
+          throw new Exception("can' t retrieve scan with id =" + tmpScanId);
+        }
         
         if (scanH.getMsLevel() != msLevel) continue;
         

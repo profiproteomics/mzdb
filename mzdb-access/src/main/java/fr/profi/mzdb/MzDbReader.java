@@ -678,11 +678,9 @@ public class MzDbReader {
 	 * @param msLevel
 	 *            the ms level
 	 * @return scanheader the closest to the time input parameter
-	 * @throws SQLiteException
-	 *             the sQ lite exception
+	 * @throws Exception 
 	 */
-	public ScanHeader getScanHeaderForTime(float time, int msLevel)
-			throws SQLiteException {
+	public ScanHeader getScanHeaderForTime(float time, int msLevel) throws Exception {
 		return this._scanHeaderReader.getScanHeaderForTime(time, msLevel);
 	}
 
