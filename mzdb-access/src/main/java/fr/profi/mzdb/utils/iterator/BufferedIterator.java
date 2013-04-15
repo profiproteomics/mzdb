@@ -6,131 +6,126 @@ import java.util.NoSuchElementException;
 
 public class BufferedIterator<E> implements Iterator<E> {
 
-     private Iterator<E> source;
-     private int max;
-     private LinkedList<Object> queue;
-     private E nextReturn;
-     private Object done = new Object();
+	private Iterator<E> source;
+	private int max;
+	private LinkedList<Object> queue;
+	private E nextReturn;
+	private Object done = new Object();
 
-     public BufferedIterator(Iterator<E> src, int m) {
+	public BufferedIterator(Iterator<E> src, int m) {
 
-         max = m;
-         source = src;
-         queue = new LinkedList<Object>();
+		max = m;
+		source = src;
+		queue = new LinkedList<Object>();
 
-        (new Thread("BufferedIterator Filler") {
+		(new Thread("BufferedIterator Filler") {
 
-             public void run() {
+			public void run() {
 
-                 while (source.hasNext()) {
+				while (source.hasNext()) {
 
-                     E next = source.next();
+					E next = source.next();
 
-                     synchronized (queue) {
+					synchronized (queue) {
 
-                        while (queue.size() >= max) {
+						while (queue.size() >= max) {
 
-                             try {
+							try {
 
-                                 queue.wait();
-                             } catch (InterruptedException doh) {
+								queue.wait();
+							} catch (InterruptedException doh) {
 
-                                 doh.printStackTrace();
+								doh.printStackTrace();
 
-                                return; // something went wrong
+								return; // something went wrong
 
-                             }
+							}
 
-                         }
+						}
 
-                         queue.add(next);
+						queue.add(next);
 
-                         queue.notify();
+						queue.notify();
 
-                     }
+					}
 
-                }
+				}
 
-                 synchronized (queue) {
+				synchronized (queue) {
 
-                     queue.add( done);
+					queue.add(done);
 
-                     queue.notify();
+					queue.notify();
 
-                 }
+				}
 
-             }
+			}
 
-         }).start();
+		}).start();
 
-     }
-    
+	}
 
-    @SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	public synchronized boolean hasNext() {
 
-         while (nextReturn == null) {
+		while (nextReturn == null) {
 
-             synchronized (queue) {
+			synchronized (queue) {
 
-                 while (queue.isEmpty()) {
+				while (queue.isEmpty()) {
 
-                    try {
+					try {
 
-                         queue.wait();
+						queue.wait();
 
-                     } catch (InterruptedException doh) {
+					} catch (InterruptedException doh) {
 
-                         doh.printStackTrace();
+						doh.printStackTrace();
 
-                         return false; // something went wrong
+						return false; // something went wrong
 
-                    }
+					}
 
-                 }
+				}
 
-                 nextReturn = (E)queue.removeFirst();
+				nextReturn = (E) queue.removeFirst();
 
-                 queue.notify();
+				queue.notify();
 
-                 if (nextReturn == done) {
+				if (nextReturn == done) {
 
-                     return false;
+					return false;
 
-                 }
+				}
 
-             }
+			}
 
-         }
+		}
 
-         return true;
+		return true;
 
-     }
+	}
 
+	public synchronized E next() {
 
+		if (!hasNext()) {
 
-     public synchronized E next() {
+			throw new NoSuchElementException();
 
-         if (! hasNext()) {
+		}
 
-             throw new NoSuchElementException();
+		E retVal = nextReturn;
 
-         }
+		nextReturn = null;
 
-         E retVal = nextReturn;
+		return retVal;
 
-         nextReturn = null;
+	}
 
-        return retVal;
+	public void remove() {
 
-     }
+		throw new UnsupportedOperationException("Unsupported operation.");
 
+	}
 
-
-     public void remove() {
-
-         throw new UnsupportedOperationException("Unsupported operation.");
-
-     }
-
- }
+}

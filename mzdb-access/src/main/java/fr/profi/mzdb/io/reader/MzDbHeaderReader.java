@@ -40,17 +40,19 @@ public class MzDbHeaderReader {
 	 */
 	public MzDbHeader getMzDbHeader() throws SQLiteException {
 
-		return new SQLiteQuery(connection,"select * from mzdb").extractRecord(new ISQLiteRecordExtraction<MzDbHeader>() {
+		return new SQLiteQuery(connection, "select * from mzdb")
+				.extractRecord(new ISQLiteRecordExtraction<MzDbHeader>() {
 
-  		public MzDbHeader extract(SQLiteRecord r) throws SQLiteException {
-  
-  			String version = r.columnString(MzdbTable.VERSION);
-  			int creationTimestamp = r.columnInt(MzdbTable.CREATION_TIMESTAMP);
-  			String paramTreeAsStr = r.columnString(MzdbTable.PARAM_TREE);
-  
-  			return new MzDbHeader(version, creationTimestamp, ParamTreeParser.parseParamTree(paramTreeAsStr));
-  		}
-  	});
+					public MzDbHeader extract(SQLiteRecord r) throws SQLiteException {
+
+						String version = r.columnString(MzdbTable.VERSION);
+						int creationTimestamp = r.columnInt(MzdbTable.CREATION_TIMESTAMP);
+						String paramTreeAsStr = r.columnString(MzdbTable.PARAM_TREE);
+
+						return new MzDbHeader(version, creationTimestamp, ParamTreeParser
+								.parseParamTree(paramTreeAsStr));
+					}
+				});
 	}
 
 }

@@ -37,26 +37,24 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
  * @author David
  */
 public class MzDbReader {
-	
+
 	public enum BBSizesUserParamNames {
-		BB_MZ_HEIGHT_MS1_STR("BB_height_ms1"),
-		BB_MZ_HEIGHT_MSn_STR("BB_height_msn"),
-		BB_RT_WIDTH_MS1_STR("BB_width_ms1"),
-		BB_RT_WIDTH_MSn_STR("BB_width_msn");
-		
+		BB_MZ_HEIGHT_MS1_STR("BB_height_ms1"), BB_MZ_HEIGHT_MSn_STR("BB_height_msn"), BB_RT_WIDTH_MS1_STR(
+				"BB_width_ms1"), BB_RT_WIDTH_MSn_STR("BB_width_msn");
+
 		private final String userParamName;
-		
+
 		private BBSizesUserParamNames(String val) {
 			userParamName = val;
 		}
+
 		public String toString() {
 			return userParamName;
 		}
 	};
-	
-	
-	public class BBSizes{
-		
+
+	public class BBSizes {
+
 		public double BB_MZ_HEIGHT_MS1;
 		public double BB_MZ_HEIGHT_MSn;
 		public double BB_RT_WIDTH_MS1;
@@ -64,7 +62,6 @@ public class MzDbReader {
 	};
 
 	final Logger logger = LoggerFactory.getLogger(MzDbReader.class);
-
 
 	/** The connection. */
 	protected SQLiteConnection connection = null;
@@ -86,15 +83,14 @@ public class MzDbReader {
 
 	/** The _run slice header reader. */
 	private RunSliceHeaderReader _runSliceHeaderReader = null;
-	
+
 	private BBSizes _boundingBoxSizes = null;
-	
+
 	/** The xml mapper. */
 	public static XmlMapper xmlMapper = new XmlMapper();
 
 	/**
-	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite
-	 * connection.
+	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
 	 * 
 	 * @param dbLocation
 	 *            the db location
@@ -109,17 +105,16 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbReader(File dbLocation, boolean cacheEntities,
-			boolean logConnections) throws ClassNotFoundException,
-			FileNotFoundException, SQLiteException {
+	public MzDbReader(File dbLocation, boolean cacheEntities, boolean logConnections)
+			throws ClassNotFoundException, FileNotFoundException, SQLiteException {
 
 		if (cacheEntities) {
 			this.entityCache = new MzDbEntityCache();
 		}
 
 		if (logConnections == false) {
-			java.util.logging.Logger.getLogger("com.almworks.sqlite4java")
-					.setLevel(java.util.logging.Level.OFF);
+			java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(
+					java.util.logging.Level.OFF);
 		}
 
 		// Check if database exists
@@ -141,7 +136,6 @@ public class MzDbReader {
 		this._scanHeaderReader = new ScanHeaderReader(this);
 		this._runSliceHeaderReader = new RunSliceHeaderReader(this);
 		this._boundingBoxSizes = getBBSizes();
-		
 
 	}
 
@@ -154,10 +148,14 @@ public class MzDbReader {
 			} catch (SQLiteException e) {
 				e.printStackTrace();
 			}
-			_boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_MZ_HEIGHT_MS1_STR.toString()).getValue());
-			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_MZ_HEIGHT_MSn_STR.toString()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_RT_WIDTH_MS1_STR.toString()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(BBSizesUserParamNames.BB_RT_WIDTH_MSn_STR.toString()).getValue());
+			_boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(
+					BBSizesUserParamNames.BB_MZ_HEIGHT_MS1_STR.toString()).getValue());
+			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(
+					BBSizesUserParamNames.BB_MZ_HEIGHT_MSn_STR.toString()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(
+					BBSizesUserParamNames.BB_RT_WIDTH_MS1_STR.toString()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(
+					BBSizesUserParamNames.BB_RT_WIDTH_MSn_STR.toString()).getValue());
 		}
 		return _boundingBoxSizes;
 	}
@@ -176,9 +174,8 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbReader(File dbLocation, boolean cacheEntities)
-			throws ClassNotFoundException, FileNotFoundException,
-			SQLiteException {
+	public MzDbReader(File dbLocation, boolean cacheEntities) throws ClassNotFoundException,
+			FileNotFoundException, SQLiteException {
 		this(dbLocation, cacheEntities, false);
 	}
 
@@ -196,9 +193,8 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbReader(String dbPath, boolean cacheEntities)
-			throws ClassNotFoundException, FileNotFoundException,
-			SQLiteException {
+	public MzDbReader(String dbPath, boolean cacheEntities) throws ClassNotFoundException,
+			FileNotFoundException, SQLiteException {
 		this(new File(dbPath), cacheEntities, false);
 	}
 
@@ -255,8 +251,7 @@ public class MzDbReader {
 	public float getLastTime() throws SQLiteException {
 		// Retrieve the number of scans
 		String sqlString = "SELECT time FROM scan ORDER BY id DESC LIMIT 1";
-		return (float) new SQLiteQuery(connection, sqlString)
-				.extractSingleDouble();
+		return (float) new SQLiteQuery(connection, sqlString).extractSingleDouble();
 	}
 
 	/**
@@ -267,8 +262,7 @@ public class MzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getMaxMsLevel() throws SQLiteException {
-		return new SQLiteQuery(connection,
-				"SELECT max(ms_level) FROM run_slice").extractSingleInt();
+		return new SQLiteQuery(connection, "SELECT max(ms_level) FROM run_slice").extractSingleInt();
 	}
 
 	/**
@@ -305,8 +299,7 @@ public class MzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getTableRecordsCount(String tableName) throws SQLiteException {
-		return new SQLiteQuery(connection,
-				"SELECT seq FROM sqlite_sequence WHERE name = ?").bind(1,
+		return new SQLiteQuery(connection, "SELECT seq FROM sqlite_sequence WHERE name = ?").bind(1,
 				tableName).extractSingleInt();
 	}
 
@@ -365,8 +358,7 @@ public class MzDbReader {
 	 */
 	public int getBoundingBoxesCount(int runSliceId) throws SQLiteException {
 		String queryStr = "SELECT count(*) FROM bounding_box WHERE bounding_box.run_slice_id = ?";
-		return new SQLiteQuery(connection, queryStr).bind(1, runSliceId)
-				.extractSingleInt();
+		return new SQLiteQuery(connection, queryStr).bind(1, runSliceId).extractSingleInt();
 	}
 
 	/**
@@ -376,7 +368,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 */
 	public int getCyclesCount() throws SQLiteException {// SELECT MAX(cycle)
-														// FROM scan
+		// FROM scan
 		String queryStr = "SELECT cycle FROM scan ORDER BY id DESC LIMIT 1";
 		return new SQLiteQuery(connection, queryStr).extractSingleInt();
 	}
@@ -448,8 +440,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the SQLite exception
 	 */
-	public RunSliceHeader[] getRunSliceHeaders(int msLevel)
-			throws SQLiteException {
+	public RunSliceHeader[] getRunSliceHeaders(int msLevel) throws SQLiteException {
 		return this._runSliceHeaderReader.getRunSliceHeaders(msLevel);
 	}
 
@@ -462,8 +453,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel)
-			throws SQLiteException {
+	public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel) throws SQLiteException {
 		return this._runSliceHeaderReader.getRunSliceHeaderById(msLevel);
 	}
 
@@ -486,12 +476,10 @@ public class MzDbReader {
 		// SQLiteStatement stmt =
 		// connection.prepare("SELECT * FROM run_slice WHERE ms_level="+msLevel+" ORDER BY begin_mz ",
 		// false);//number ASC", false);
-		SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr)
-				.bind(1, runSliceId).getRecords();
+		SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).bind(1, runSliceId).getRecords();
 
 		List<BoundingBox> bbs = new ArrayList<BoundingBox>();
-		Map<Integer, DataEncoding> dataEncodingByScanId = this
-				.getDataEncodingByScanId();
+		Map<Integer, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
 
 		while (records.hasNext()) {
 			SQLiteRecord record = records.next();
@@ -501,7 +489,7 @@ public class MzDbReader {
 			int scanId = record.columnInt(BoundingBoxTable.FIRST_SPECTRUM_ID);
 			// float minTime = (float) stmt.columnDouble(3);
 
-			BoundingBox bb = BoundingBoxBuilder.buildBB(id,getScanHeaderById(), dataEncodingByScanId, data);
+			BoundingBox bb = BoundingBoxBuilder.buildBB(id, getScanHeaderById(), dataEncodingByScanId, data);
 			bb.setFirstScanId(scanId);
 			bbs.add(bb);
 		}
@@ -516,8 +504,7 @@ public class MzDbReader {
 		}
 
 		// rsd.buildPeakListByScanId();
-		return new RunSliceData(runSliceId,
-				scanList.toArray(new ScanSlice[scanList.size()]));
+		return new RunSliceData(runSliceId, scanList.toArray(new ScanSlice[scanList.size()]));
 	}
 
 	/**
@@ -531,8 +518,7 @@ public class MzDbReader {
 	 */
 	public byte[] getBoundingBoxData(int bbId) throws SQLiteException {
 		String sqlString = "SELECT data FROM bounding_box WHERE bounding_box.id = ?";
-		return new SQLiteQuery(connection, sqlString).bind(1, bbId)
-				.extractSingleBlob();
+		return new SQLiteQuery(connection, sqlString).bind(1, bbId).extractSingleBlob();
 	}
 
 	/**
@@ -546,8 +532,7 @@ public class MzDbReader {
 	 */
 	public int getBoundingBoxFirstScanId(int scanId) throws SQLiteException {
 		String sqlString = "SELECT bb_first_scan_id FROM scan WHERE id = ?";
-		return new SQLiteQuery(connection, sqlString).bind(1, scanId)
-				.extractSingleInt();
+		return new SQLiteQuery(connection, sqlString).bind(1, scanId).extractSingleInt();
 	}
 
 	/**
@@ -561,8 +546,7 @@ public class MzDbReader {
 	 */
 	public float getBoundingBoxMinMz(int bbId) throws SQLiteException {
 		String sqlString = "SELECT min_mz FROM bounding_box_rtree WHERE bounding_box_rtree.id = ?";
-		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId)
-				.extractSingleDouble();
+		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId).extractSingleDouble();
 	}
 
 	/**
@@ -576,8 +560,7 @@ public class MzDbReader {
 	 */
 	public float getBoundingBoxMinTime(int bbId) throws SQLiteException {
 		String sqlString = "SELECT min_time FROM bounding_box_rtree WHERE bounding_box_rtree.id = ?";
-		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId)
-				.extractSingleDouble();
+		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId).extractSingleDouble();
 	}
 
 	/**
@@ -592,12 +575,10 @@ public class MzDbReader {
 	public int getBoundingBoxMsLevel(int bbId) throws SQLiteException {
 
 		String sqlString1 = "SELECT run_slice_id FROM bounding_box WHERE id = ?";
-		int runSliceId = new SQLiteQuery(connection, sqlString1).bind(1, bbId)
-				.extractSingleInt();
+		int runSliceId = new SQLiteQuery(connection, sqlString1).bind(1, bbId).extractSingleInt();
 
 		String sqlString2 = "SELECT ms_level FROM run_slice WHERE run_slice.id = ?";
-		return new SQLiteQuery(connection, sqlString2).bind(1, runSliceId)
-				.extractSingleInt();
+		return new SQLiteQuery(connection, sqlString2).bind(1, runSliceId).extractSingleInt();
 	}
 
 	/**
@@ -617,11 +598,10 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Peak[] getPeaks(double minmz, double maxmz, double minrt,
-			double maxrt, int msLevel) throws SQLiteException {
+	public Peak[] getPeaks(double minmz, double maxmz, double minrt, double maxrt, int msLevel)
+			throws SQLiteException {
 		/*
-		 * use get ScanSlices function then return a peak array using simply the
-		 * toPeaks function
+		 * use get ScanSlices function then return a peak array using simply the toPeaks function
 		 */
 		ScanSlice[] r = this.getScanSlices(minmz, maxmz, minrt, maxrt, msLevel);
 
@@ -678,7 +658,7 @@ public class MzDbReader {
 	 * @param msLevel
 	 *            the ms level
 	 * @return scanheader the closest to the time input parameter
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public ScanHeader getScanHeaderForTime(float time, int msLevel) throws Exception {
 		return this._scanHeaderReader.getScanHeaderForTime(time, msLevel);
@@ -714,17 +694,16 @@ public class MzDbReader {
 		int firstScanId = this.getBoundingBoxFirstScanId(scanId);
 
 		String sqlString = "SELECT id, data, run_slice_id FROM bounding_box WHERE bounding_box.first_scan_id = ?";
-		SQLiteRecordIterator records = new SQLiteQuery(connection, sqlString)
-				.bind(1, firstScanId).getRecords();
+		SQLiteRecordIterator records = new SQLiteQuery(connection, sqlString).bind(1, firstScanId)
+				.getRecords();
 
 		List<BoundingBox> bbS = new ArrayList<BoundingBox>();
 
 		while (records.hasNext()) {
 			SQLiteRecord r = records.next();
 
-			BoundingBox bb = BoundingBoxBuilder.buildBB(
-					r.columnInt(BoundingBoxTable.ID), getScanHeaderById(),dataEnc,
-					r.columnBlob(BoundingBoxTable.DATA));
+			BoundingBox bb = BoundingBoxBuilder.buildBB(r.columnInt(BoundingBoxTable.ID),
+					getScanHeaderById(), dataEnc, r.columnBlob(BoundingBoxTable.DATA));
 
 			bb.setRunSliceId(r.columnInt(BoundingBoxTable.RUN_SLICE_ID));
 			bb.setFirstScanId(firstScanId);
@@ -753,21 +732,21 @@ public class MzDbReader {
 
 		return sd;
 	}
-	
-  /**
-   * Gets the scan.
-   * 
-   * @param scanId
-   *            the scan id
-   * @return the scan
-   * @throws SQLiteException
-   *             the SQlite exception
-   */
-  public Scan getScan(int scanId) throws SQLiteException {
-    ScanHeader sh = this.getScanHeader(scanId);
-    ScanData sd = this.getScanData(scanId);
-    return new Scan( sh,  sd);
-  }
+
+	/**
+	 * Gets the scan.
+	 * 
+	 * @param scanId
+	 *            the scan id
+	 * @return the scan
+	 * @throws SQLiteException
+	 *             the SQlite exception
+	 */
+	public Scan getScan(int scanId) throws SQLiteException {
+		ScanHeader sh = this.getScanHeader(scanId);
+		ScanData sd = this.getScanData(scanId);
+		return new Scan(sh, sd);
+	}
 
 	/**
 	 * Gets the scan peaks.
@@ -781,86 +760,83 @@ public class MzDbReader {
 	public Peak[] getScanPeaks(int scanId) throws SQLiteException {
 		return this.getScan(scanId).getPeaks();
 	}
-	
-	
-  private ScanSlice[] _getNeighbouringScanSlices(double minmz, double maxmz, double minrt, double maxrt, int msLevel) throws SQLiteException {
-    BBSizes sizes = getBBSizes();
-    double rtWidth  = (msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn;
-    double mzHeight = (msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn;
-    
-    double _maxrt = maxrt + rtWidth;
-    double _minmz = minmz - mzHeight;
-    double _minrt = minrt - rtWidth;
-    double _maxmz = maxmz + mzHeight; 
-  
-    String sqlQuery = "SELECT bounding_box.id, data, run_slice_id, first_spectrum_id "
-        + "FROM bounding_box WHERE bounding_box.id "
-        + "IN (SELECT id FROM bounding_box_rtree "
-        + "WHERE min_mz >= ? AND max_mz <= ? AND min_time >= ? AND max_time <= ? );";
 
-    SQLiteStatement stmt = connection.prepare(sqlQuery, false);
-    
-    stmt.bind(1, _minmz);
-    stmt.bind(2, _maxmz);
-    stmt.bind(3, _minrt);
-    stmt.bind(4, _maxrt);
+	private ScanSlice[] _getNeighbouringScanSlices(double minmz, double maxmz, double minrt, double maxrt,
+			int msLevel) throws SQLiteException {
+		BBSizes sizes = getBBSizes();
+		double rtWidth = (msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn;
+		double mzHeight = (msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn;
 
-    Map<Integer, ArrayList<BoundingBox>> BBs = new TreeMap<Integer, ArrayList<BoundingBox>>();
-    
-    //retrieve bounding box
-    while (stmt.step()) {
-      int id = stmt.columnInt(0);
-      
-      if (getBoundingBoxMsLevel(id) != msLevel)
-        continue;
-      
-      // Retrieve bounding box data
-      byte[] data = stmt.columnBlob(1);
-      int runSliceId = stmt.columnInt(2);
-      int firstScanId = stmt.columnInt(3);
+		double _maxrt = maxrt + rtWidth;
+		double _minmz = minmz - mzHeight;
+		double _minrt = minrt - rtWidth;
+		double _maxmz = maxmz + mzHeight;
 
-      // Build the Bounding Box
-      BoundingBox bb = BoundingBoxBuilder.buildBB(id, getScanHeaderById(), getDataEncodingByScanId(), data);
-      bb.setFirstScanId(firstScanId);
-      bb.setRunSliceId(runSliceId);
+		String sqlQuery = "SELECT bounding_box.id, data, run_slice_id, first_spectrum_id "
+				+ "FROM bounding_box WHERE bounding_box.id " + "IN (SELECT id FROM bounding_box_rtree "
+				+ "WHERE min_mz >= ? AND max_mz <= ? AND min_time >= ? AND max_time <= ? );";
 
-      // Initialize map entry if it doesn't exist
-      if (BBs.containsKey(firstScanId) == false)
-        BBs.put(firstScanId, new ArrayList<BoundingBox>());
+		SQLiteStatement stmt = connection.prepare(sqlQuery, false);
 
-      BBs.get(firstScanId).add(bb);
-    }
-    stmt.dispose();
-    
-    ArrayList<ScanSlice> sl = new ArrayList<ScanSlice>();
+		stmt.bind(1, _minmz);
+		stmt.bind(2, _maxmz);
+		stmt.bind(3, _minrt);
+		stmt.bind(4, _maxrt);
 
-    for (ArrayList<BoundingBox> bbs : BBs.values()) {
+		Map<Integer, ArrayList<BoundingBox>> BBs = new TreeMap<Integer, ArrayList<BoundingBox>>();
 
-      if (bbs.size() == 0)
-        continue;
+		// retrieve bounding box
+		while (stmt.step()) {
+			int id = stmt.columnInt(0);
 
-      BoundingBox firstbb = bbs.get(0);
-      int scanCount = firstbb.nbScans();
+			if (getBoundingBoxMsLevel(id) != msLevel)
+				continue;
 
-      for (int i = 1; i <= scanCount; i++) {
-        ScanSlice s = new ScanSlice(getScanHeader(firstbb.idOfScanAt(i)), 
-                                                  new ScanData(new double[0], 
-                                                               new float[0], 
-                                                               new float[0], 
-                                                               new float[0]));
-        s.setRunSliceId(firstbb.getRunSliceId());
-        for (BoundingBox bb : bbs) {
-          ScanSlice _s = bb.scanSliceOfScanAt(i);
-          if (_s.getData().getMzList().length > 0) {
-            s.getData().addScanData(_s.getData());
-          }
-        }
-        sl.add(s);
-      }
-    }
-    return sl.toArray(new ScanSlice[sl.size()]);
-  }
-  
+			// Retrieve bounding box data
+			byte[] data = stmt.columnBlob(1);
+			int runSliceId = stmt.columnInt(2);
+			int firstScanId = stmt.columnInt(3);
+
+			// Build the Bounding Box
+			BoundingBox bb = BoundingBoxBuilder.buildBB(id, getScanHeaderById(), getDataEncodingByScanId(),
+					data);
+			bb.setFirstScanId(firstScanId);
+			bb.setRunSliceId(runSliceId);
+
+			// Initialize map entry if it doesn't exist
+			if (BBs.containsKey(firstScanId) == false)
+				BBs.put(firstScanId, new ArrayList<BoundingBox>());
+
+			BBs.get(firstScanId).add(bb);
+		}
+		stmt.dispose();
+
+		ArrayList<ScanSlice> sl = new ArrayList<ScanSlice>();
+
+		for (ArrayList<BoundingBox> bbs : BBs.values()) {
+
+			if (bbs.size() == 0)
+				continue;
+
+			BoundingBox firstbb = bbs.get(0);
+			int scanCount = firstbb.nbScans();
+
+			for (int i = 1; i <= scanCount; i++) {
+				ScanSlice s = new ScanSlice(getScanHeader(firstbb.idOfScanAt(i)), new ScanData(new double[0],
+						new float[0], new float[0], new float[0]));
+				s.setRunSliceId(firstbb.getRunSliceId());
+				for (BoundingBox bb : bbs) {
+					ScanSlice _s = bb.scanSliceOfScanAt(i);
+					if (_s.getData().getMzList().length > 0) {
+						s.getData().addScanData(_s.getData());
+					}
+				}
+				sl.add(s);
+			}
+		}
+		return sl.toArray(new ScanSlice[sl.size()]);
+	}
+
 	/**
 	 * Gets the scan slices.
 	 * 
@@ -878,42 +854,40 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public ScanSlice[] getScanSlices(double minmz, double maxmz, double minrt, double maxrt, int msLevel) throws SQLiteException {
-		 ScanSlice[] scanSlices = _getNeighbouringScanSlices(minmz, maxmz, minrt, maxrt, msLevel);
-		 if (scanSlices.length == 0) {
-		   logger.warn("Empty scanSlices, narrow request ?");
-		   return scanSlices;
-		 }
-		 ArrayList<ScanSlice> finalScanSlices = new ArrayList<ScanSlice>();
-		 Map<Integer, ScanHeader> headers = getScanHeaderById();
-		 int i = 0;
-		 float elt = headers.get(scanSlices[0].getScanId()).getElutionTime();
-		 while (i < scanSlices.length && elt < minrt) {
-		   i++;
-		   elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
-		 }
-		 while (i < scanSlices.length && elt < maxrt) {
-		   //filter mz !
-		   ScanSlice currentScanSlice = scanSlices[i];
-		   int scanID = currentScanSlice.getScanId();
-		   ScanData d = currentScanSlice.getData().mzRangeFilter(minmz, maxmz);
-		   if (d == null) {
-		     i++;
-	       elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
-		     continue;
-		   }
-		   ScanSlice f = new ScanSlice(getScanHeader(scanID), 
-		                               new ScanData(d.getMzList(), 
-		                                            d.getIntensityList(), 
-		                                            d.getLeftHwhmList(), 
-		                                            d.getRightHwhmList()));
-		   f.setRunSliceId(currentScanSlice.getRunSliceId());
-		   finalScanSlices.add(f);
-		   //update !
-		   i++;
-		   elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
-		 }
-		 return finalScanSlices.toArray(new ScanSlice[finalScanSlices.size()]);
+	public ScanSlice[] getScanSlices(double minmz, double maxmz, double minrt, double maxrt, int msLevel)
+			throws SQLiteException {
+		ScanSlice[] scanSlices = _getNeighbouringScanSlices(minmz, maxmz, minrt, maxrt, msLevel);
+		if (scanSlices.length == 0) {
+			logger.warn("Empty scanSlices, narrow request ?");
+			return scanSlices;
+		}
+		ArrayList<ScanSlice> finalScanSlices = new ArrayList<ScanSlice>();
+		Map<Integer, ScanHeader> headers = getScanHeaderById();
+		int i = 0;
+		float elt = headers.get(scanSlices[0].getScanId()).getElutionTime();
+		while (i < scanSlices.length && elt < minrt) {
+			i++;
+			elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
+		}
+		while (i < scanSlices.length && elt < maxrt) {
+			// filter mz !
+			ScanSlice currentScanSlice = scanSlices[i];
+			int scanID = currentScanSlice.getScanId();
+			ScanData d = currentScanSlice.getData().mzRangeFilter(minmz, maxmz);
+			if (d == null) {
+				i++;
+				elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
+				continue;
+			}
+			ScanSlice f = new ScanSlice(getScanHeader(scanID), new ScanData(d.getMzList(),
+					d.getIntensityList(), d.getLeftHwhmList(), d.getRightHwhmList()));
+			f.setRunSliceId(currentScanSlice.getRunSliceId());
+			finalScanSlices.add(f);
+			// update !
+			i++;
+			elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
+		}
+		return finalScanSlices.toArray(new ScanSlice[finalScanSlices.size()]);
 	}
 
 	/**
@@ -925,16 +899,14 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Iterator<BoundingBox> getBoundingBoxIterator(int msLevel)
-			throws SQLiteException {
+	public Iterator<BoundingBox> getBoundingBoxIterator(int msLevel) throws SQLiteException {
 		SQLiteStatement stmt = connection
 				.prepare(
 						"SELECT bounding_box.* FROM bounding_box, spectrum WHERE spectrum.id = bounding_box.first_spectrum_id AND spectrum.ms_level= ?",
 						false);
 		stmt.bind(1, msLevel);
 
-		return new BoundingBoxIterator(this, stmt,
-				this.getDataEncodingByScanId(), msLevel);
+		return new BoundingBoxIterator(this, stmt, this.getDataEncodingByScanId(), msLevel);
 	}
 
 	/**
@@ -959,12 +931,10 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Iterator<RunSlice> getRunSliceIterator(int msLevel)
-			throws SQLiteException {
+	public Iterator<RunSlice> getRunSliceIterator(int msLevel) throws SQLiteException {
 
 		// First pass to index data
-		SQLiteStatement fakeStmt = connection.prepare(
-				"SELECT * FROM bounding_box", false);
+		SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
 		while (fakeStmt.step()) {
 		}
 		fakeStmt.dispose();
@@ -986,66 +956,66 @@ public class MzDbReader {
 	 *             the sQ lite exception
 	 */
 	public enum XicMethod {
-	  MAX(0),
-    SUM(1);
-	
-    
-    private final Integer val;
-    
-    private XicMethod(Integer val_) {
-      val = val_;
-    }
-    public String toString() {
-      return val.toString();
-    }
+		MAX(0), SUM(1);
+
+		private final Integer val;
+
+		private XicMethod(Integer val_) {
+			val = val_;
+		}
+
+		public String toString() {
+			return val.toString();
+		}
 	};
-	
+
 	public Peak[] getXIC(double minMz, double maxMz, int msLevel, XicMethod method) throws SQLiteException {
-	  
+
 		ScanHeader[] headers = getScanHeaders();
 		if (headers == null || headers.length == 0) {
-		  logger.error("[getXIC]: Can not retrieve headers, returning null");
-		  return null;
+			logger.error("[getXIC]: Can not retrieve headers, returning null");
+			return null;
 		}
 		double minRt = headers[0].getElutionTime();
 		double maxRt = headers[headers.length - 1].getElutionTime();
-		//System.out.println(minRt+ "," + maxRt);
+		// System.out.println(minRt+ "," + maxRt);
 		ScanSlice[] scanSlices = getScanSlices(minMz, maxMz, minRt, maxRt, msLevel);
-    if (scanSlices.length == 0) {
-      logger.warn("Empty scanSlices, narrow request ?");
-      return new Peak[0];
-    }
+		if (scanSlices.length == 0) {
+			logger.warn("Empty scanSlices, narrow request ?");
+			return new Peak[0];
+		}
 
-    List<Peak> results = new ArrayList<Peak>();
-    if (method == XicMethod.MAX) {
-      for (ScanSlice sl : scanSlices) {
-        Peak[] peaks = sl.getPeaks();
-        if (peaks.length == 0)
-          continue;
-        Arrays.sort(peaks, Peak.getIntensityComp());
-        results.add(peaks[peaks.length - 1]);
-      }
-      return results.toArray(new Peak[results.size()]);
-    } else if (method == XicMethod.SUM) {
-      for (ScanSlice sl : scanSlices) {
-        Peak[] peaks = sl.getPeaks();
-        if (peaks.length == 0)
-          continue;
-        Arrays.sort(peaks, Peak.getIntensityComp());
-        float sum = 0.0f;
-        for (Peak p: peaks) {
-          sum += p.getIntensity();
-        }
-        Peak refPeak = peaks[(int) Math.floor(0.5 * peaks.length)];
-        Peak fp = new Peak(refPeak.getMz(), sum, refPeak.getLeftHwhm(), refPeak.getRightHwhm(), refPeak.getLcContext());
-        results.add(fp);
-      }
-      return results.toArray(new Peak[results.size()]);
-    } else {
-      logger.error("[getXIC]: method must be one of 'max' or 'sum', returning null");
-      return null;
-    }
-		
+		List<Peak> results = new ArrayList<Peak>();
+		if (method == XicMethod.MAX) {
+			for (ScanSlice sl : scanSlices) {
+				Peak[] peaks = sl.getPeaks();
+				if (peaks.length == 0)
+					continue;
+				Arrays.sort(peaks, Peak.getIntensityComp());
+				results.add(peaks[peaks.length - 1]);
+			}
+			return results.toArray(new Peak[results.size()]);
+		} else if (method == XicMethod.SUM) {
+			for (ScanSlice sl : scanSlices) {
+				Peak[] peaks = sl.getPeaks();
+				if (peaks.length == 0)
+					continue;
+				Arrays.sort(peaks, Peak.getIntensityComp());
+				float sum = 0.0f;
+				for (Peak p : peaks) {
+					sum += p.getIntensity();
+				}
+				Peak refPeak = peaks[(int) Math.floor(0.5 * peaks.length)];
+				Peak fp = new Peak(refPeak.getMz(), sum, refPeak.getLeftHwhm(), refPeak.getRightHwhm(),
+						refPeak.getLcContext());
+				results.add(fp);
+			}
+			return results.toArray(new Peak[results.size()]);
+		} else {
+			logger.error("[getXIC]: method must be one of 'max' or 'sum', returning null");
+			return null;
+		}
+
 	}
 
 }

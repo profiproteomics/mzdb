@@ -18,9 +18,9 @@ import fr.profi.mzdb.model.ScanSlice;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
 /**
- * This class aloow to read a SQLite blob using a stream reader.
- * We process data only in one direction in a sequential way
- * The goal is to request only one time the blob
+ * This class aloow to read a SQLite blob using a stream reader. We process data only in one direction in a
+ * sequential way The goal is to request only one time the blob
+ * 
  * @author marco
  * 
  */
@@ -29,18 +29,19 @@ public class StreamReader extends AbstractBlobReader {
 	/** Stream to read */
 	private InputStream _stream;
 
-
 	/**
-	 * @param dataEnc ScanID the key, dataEncoding the value
-	 * @param s inputStream
+	 * @param dataEnc
+	 *            ScanID the key, dataEncoding the value
+	 * @param s
+	 *            inputStream
 	 * @see AbstractBlobReader
-	 * @see AbstractBlobReader#_dataEncodings 
+	 * @see AbstractBlobReader#_dataEncodings
 	 */
 	public StreamReader(Map<Integer, ScanHeader> headers, Map<Integer, DataEncoding> dataEnc, InputStream s) {
-		super(headers, dataEnc); 
+		super(headers, dataEnc);
 		_stream = s;
 	}
-	
+
 	/**
 	 * @see IBlobReader#disposeBlob()
 	 */
@@ -136,8 +137,9 @@ public class StreamReader extends AbstractBlobReader {
 		}
 		int nbPeaks = this.nbPeaksOfScanAt(idx);
 		if (pos > nbPeaks) {
-			throw new IndexOutOfBoundsException("peakAt: Index out of bound, peak wanted index superior at scan slice length");
-		}		
+			throw new IndexOutOfBoundsException(
+					"peakAt: Index out of bound, peak wanted index superior at scan slice length");
+		}
 		Peak[] peaks = peaksOfScanAt(idx);
 		return peaks[pos];
 	}
@@ -154,16 +156,16 @@ public class StreamReader extends AbstractBlobReader {
 				byte[] b = new byte[4];
 				_stream.read(b);
 				id = BytesUtils.bytesToInt(b, 0);
-				
+
 				byte[] bytes = new byte[4];
 				_stream.read(bytes);
 				nbPeaks = BytesUtils.bytesToInt(bytes, 0);
-				
+
 				de = this._dataEncodings.get(id);
 				structSize = de.getPeakEncoding().getValue();
 				if (de.getMode() == DataMode.FITTED)
 					structSize += 8;
-				
+
 				byte[] pb = new byte[nbPeaks * structSize];
 				_stream.read(pb);
 				peaksBytes = pb;
@@ -178,7 +180,8 @@ public class StreamReader extends AbstractBlobReader {
 		}
 
 		BlobData blobData = readBlob(peaksBytes, peaksBytes.length, structSize, de);
-		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
+		ScanSlice s = new ScanSlice(null, new ScanData(blobData.mz, blobData.intensity, blobData.lwhm,
+				blobData.rwhm));
 		return s;
 	}
 
@@ -205,7 +208,6 @@ public class StreamReader extends AbstractBlobReader {
 		return sl.toArray(new ScanSlice[sl.size()]);
 	}
 
-	
 	protected void _buildMapPositions() {
 
 	}

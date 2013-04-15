@@ -15,8 +15,7 @@ import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.utils.primitives.BytesUtils;
 
 /**
- * Abstract Class containing commons objects and attributes through the
- * implementations
+ * Abstract Class containing commons objects and attributes through the implementations
  * 
  * @author marco
  * @see IBlobReader
@@ -24,14 +23,14 @@ import fr.profi.mzdb.utils.primitives.BytesUtils;
 public abstract class AbstractBlobReader implements IBlobReader {
 
 	protected Map<Integer, Integer> _startPositions; // startPositions of each
-														// scan
+	// scan
 	protected Map<Integer, Integer> _nbPeaks; // number of peaks of each scan
 	protected int _nbScans; // number of scans
-	//protected Map<Integer, ScanHeader> _scanHeaders;
+	// protected Map<Integer, ScanHeader> _scanHeaders;
 	protected Map<Integer, DataEncoding> _dataEncodings; // DataEncoding (32-64
-															// bit, centroid
-															// profile) by
-															// scanId
+	// bit, centroid
+	// profile) by
+	// scanId
 	protected Map<Integer, ScanHeader> _scanHeaders;
 
 	// protected DataMode _dataMode;
@@ -57,10 +56,10 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	 * @see IBlobReader#peaksOfScanAt(int)
 	 */
 	public Peak[] peaksOfScanAt(int idx) {
-		return null;//return scanSliceOfScanAt(idx).toPeaks(_scanHeader.get()); //TODO how to pass a lcContext here ?
+		return null;// return scanSliceOfScanAt(idx).toPeaks(_scanHeader.get());
+		// //TODO how to pass a lcContext here ?
 	}
-	
-	
+
 	/**
 	 * Class holding mz, intensity, lwhm, rwhm
 	 * 
@@ -74,8 +73,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 		public float[] lwhm;
 		public float[] rwhm;
 
-		public BlobData(double[] mz_, float[] intensity_, float[] lwhm_,
-				float[] rwhm_) {
+		public BlobData(double[] mz_, float[] intensity_, float[] lwhm_, float[] rwhm_) {
 			mz = mz_;
 			intensity = intensity_;
 			lwhm = lwhm_;
@@ -86,8 +84,10 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	/**
 	 * By default use byteUtils but will be overrided in BytesReader
 	 * 
-	 * @param peaksBytes array of bytes containing the ScanSlice of interest
-	 * @param length of peaksBytes
+	 * @param peaksBytes
+	 *            array of bytes containing the ScanSlice of interest
+	 * @param length
+	 *            of peaksBytes
 	 * @param structSize
 	 * @param de
 	 * @return
@@ -131,7 +131,8 @@ public abstract class AbstractBlobReader implements IBlobReader {
 		case NO_LOSS_PEAK:
 			for (int j = 0; j < peaksBytesLength; j += structSize) {
 				mz[count] = BytesUtils.bytesToDouble(Arrays.copyOfRange(peaksBytes, j, j + 8), 0);
-				intensity[count] = (float) BytesUtils.bytesToDouble(Arrays.copyOfRange(peaksBytes, j + 8, j + 16), 0);
+				intensity[count] = (float) BytesUtils.bytesToDouble(
+						Arrays.copyOfRange(peaksBytes, j + 8, j + 16), 0);
 				if (dataMode == DataMode.FITTED) {
 					lwhm[count] = BytesUtils.bytesToFloat(Arrays.copyOfRange(peaksBytes, j + 16, j + 20), 0);
 					rwhm[count] = BytesUtils.bytesToFloat(Arrays.copyOfRange(peaksBytes, j + 20, j + 24), 0);
@@ -140,7 +141,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 			}
 			break;
 		}
-		//return the newly formed blobData
+		// return the newly formed blobData
 		return new BlobData(mz, intensity, lwhm, rwhm);
 	}
 

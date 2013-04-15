@@ -18,23 +18,26 @@ import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.model.ScanSlice;
 
 /**
- * @author marco
- * This implementation is mainly used is mzDbReader
- * <p> Use a ByteBuffer to store the blob's bytes
- * This class extends AbstractBlobReader </p>
+ * @author marco This implementation is mainly used is mzDbReader
+ *         <p>
+ *         Use a ByteBuffer to store the blob's bytes This class extends AbstractBlobReader
+ *         </p>
  */
 public class BytesReader extends AbstractBlobReader {
-	
+
 	/** the data */
 	protected ByteBuffer _data;
-	
+
 	/** size of the data */
 	protected int _dataSize;
-	
+
 	/**
 	 * Constructor
-	 * @param dataEncodings, DataEncoding object for each scan, usually given by a mzDbReaderInstance
-	 * @param data, array of byte of the blob 
+	 * 
+	 * @param dataEncodings
+	 *            , DataEncoding object for each scan, usually given by a mzDbReaderInstance
+	 * @param data
+	 *            , array of byte of the blob
 	 * @see MzDbReader
 	 * @see DataEncoding
 	 */
@@ -45,7 +48,7 @@ public class BytesReader extends AbstractBlobReader {
 		_dataSize = data.length;
 		this._buildMapPositions();
 	}
-	
+
 	/**
 	 * @see AbstractBlobReader
 	 * @see AbstractBlobReader._buildMpaPositions()
@@ -57,30 +60,32 @@ public class BytesReader extends AbstractBlobReader {
 		_startPositions = new HashMap<Integer, Integer>();
 		_nbPeaks = new HashMap<Integer, Integer>();
 		while (i < _dataSize) {
-			_startPositions.put(count, i); 
+			_startPositions.put(count, i);
 			int id = _data.getInt(i);
-			
-			i += 4; //skip id;
-			
-			int nbPeaks = _data.getInt(i); //nbPeaks
+
+			i += 4; // skip id;
+
+			int nbPeaks = _data.getInt(i); // nbPeaks
 			_nbPeaks.put(count, nbPeaks);
-			
-			i += 4; //skip nbPeaks
+
+			i += 4; // skip nbPeaks
 			DataEncoding de = this._dataEncodings.get(id);
 			int structSize = de.getPeakEncoding().getValue();
 			if (de.getMode() == DataMode.FITTED)
-				structSize += 8; //add 2 float lwhm, rwhm
-			i += nbPeaks * structSize; //skip nbPeaks * size of one peak
-			count ++; 
+				structSize += 8; // add 2 float lwhm, rwhm
+			i += nbPeaks * structSize; // skip nbPeaks * size of one peak
+			count++;
 		}
-		_nbScans = count - 1; //removing the last count++ better than doing a if statement inside a while loop
+		_nbScans = count - 1; // removing the last count++ better than doing a if
+		// statement inside a while loop
 	}
-	
+
 	/**
 	 * @see IBlobReader#disposeBlob()
 	 */
-	public void disposeBlob() {}
-	
+	public void disposeBlob() {
+	}
+
 	/**
 	 * @see IBlobReader#blobSize()
 	 */
@@ -88,15 +93,13 @@ public class BytesReader extends AbstractBlobReader {
 		return _dataSize;
 	}
 
-	
 	/**
 	 * @see IBlobReader#nbScans()
 	 */
 	public int nbScans() {
 		return _nbScans;
 	}
-	
-	
+
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
@@ -105,7 +108,6 @@ public class BytesReader extends AbstractBlobReader {
 		return _data.getInt(j);
 	}
 
-	
 	/**
 	 * @see IBlobReader#nbPeaksOfScanAt(int)
 	 */
@@ -115,7 +117,7 @@ public class BytesReader extends AbstractBlobReader {
 		}
 		return _nbPeaks.get(i);
 	}
-	
+
 	/**
 	 * peaksBytes corresponds here to the entire blob
 	 */
@@ -169,7 +171,7 @@ public class BytesReader extends AbstractBlobReader {
 			}
 			break;
 		}
-		//return the newly formed blobData
+		// return the newly formed blobData
 		return new BlobData(mz, intensity, lwhm, rwhm);
 	}
 
@@ -182,48 +184,48 @@ public class BytesReader extends AbstractBlobReader {
 		}
 		int nbPeaks = this.nbPeaksOfScanAt(idx);
 		if (pos > nbPeaks) {
-			throw new IndexOutOfBoundsException("peakAt: Index out of bound, peak wanted index superior at scan slice length");
-		}		
+			throw new IndexOutOfBoundsException(
+					"peakAt: Index out of bound, peak wanted index superior at scan slice length");
+		}
 		Peak[] peaks = peaksOfScanAt(idx);
 		return peaks[pos];
 	}
-
 
 	/**
 	 * @see IBlobReader#scanSliceOfScanAt(int)
 	 */
 	public ScanSlice scanSliceOfScanAt(int idx) {
-		if(idx > _nbScans || idx < 1)
+		if (idx > _nbScans || idx < 1)
 			throw new IndexOutOfBoundsException("scanSliceOfScanAt: Index out of bound start counting at 1");
-		
+
 		int pos = _startPositions.get(idx);
 		int id = _data.getInt(pos);
 		DataEncoding de = this._dataEncodings.get(id);
-		
+
 		int structSize = de.getPeakEncoding().getValue();
 		if (de.getMode() == DataMode.FITTED)
 			structSize += 8;
-		
-		int length = _nbPeaks.get(idx) * structSize; 
-		pos += 8 ; 
-		
+
+		int length = _nbPeaks.get(idx) * structSize;
+		pos += 8;
+
 		BlobData blobData = readBlob(length, structSize, pos, de);
-	
-		ScanSlice s = new ScanSlice(_scanHeaders.get(id), new ScanData(blobData.mz, blobData.intensity, blobData.lwhm, blobData.rwhm));
+
+		ScanSlice s = new ScanSlice(_scanHeaders.get(id), new ScanData(blobData.mz, blobData.intensity,
+				blobData.lwhm, blobData.rwhm));
 		return s;
 	}
 
-	
 	/**
 	 * @see IBlobReader#asScanSlicesArray(int, int)
 	 */
 	public ScanSlice[] asScanSlicesArray(int firstScanId, int runSliceId) {
-		
+
 		ScanSlice[] sl = new ScanSlice[_nbScans];
 		for (int i = 1; i <= _nbScans; i++) {
-			ScanSlice s = this.scanSliceOfScanAt(i); 
-			s.setRunSliceId( runSliceId );
-			sl[i-1] = s;
+			ScanSlice s = this.scanSliceOfScanAt(i);
+			s.setRunSliceId(runSliceId);
+			sl[i - 1] = s;
 		}
 		return sl;
 	}
