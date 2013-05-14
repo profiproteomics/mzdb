@@ -16,8 +16,7 @@ import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 import fr.profi.mzdb.utils.math.wavelet.Ridge
 import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
-
-
+import fr.profi.mzdb.model.Peakel
 
 class PredictedTimeFtExtractor(
   //override val mzDbReader: MzDbReader,
@@ -27,13 +26,12 @@ class PredictedTimeFtExtractor(
   override val maxNbPeaksInIP: Int,
   override val minNbOverlappingIPs: Int,
   val minConsecutiveScans: Int = 4,
-  val predictedTimeTol: Int = 120
-) extends Ms2DrivenFtExtractor (
-    scanHeaderById,
-    nfByScanId,
-    mzTolPPM,
-    maxNbPeaksInIP,
-    minNbOverlappingIPs
+  val predictedTimeTol: Int = 120) extends Ms2DrivenFtExtractor(
+  scanHeaderById,
+  nfByScanId,
+  mzTolPPM,
+  maxNbPeaksInIP,
+  minNbOverlappingIPs
 ) with RidgesFinder {
 
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
@@ -74,156 +72,138 @@ class PredictedTimeFtExtractor(
     val scanIDs = pklTree.scansIDs().filter(x => x > (curScanH.getId - leftmostScanH.getId) && x < (curScanH.getId + rightmostScanH.getId)) toArray
 
     val NB_PEAKELS_TO_CHECK = 3
+
     val deltaMass = 1.002f / charge
 
     var peakels = new ArrayBuffer[Array[CwtPeakel]]
     var values = new ArrayBuffer[Array[Float]]
+    var maxNbPeakels = 0
     
     breakable {
-	    for (c <- 0 to NB_PEAKELS_TO_CHECK) {
-	      
-	      var mzToCheck = (deltaMass * c) + mz
-	      //extractPeaks
-	      var peaks = _extractPeaks(putativeFt, pklTree, scanIDs, mzToCheck, mzTolPPM)
-	      values += peaks.map(_.getIntensity)
-	      //build cwt
-	      val peakelFinder = new WaveletBasedPeakelFinder( peaks, scales = (1f to 64f by 1f).toArray, wavelet = MexicanHat() ) //mexh by default
-	      var peakelsInPredictedRange = peakelFinder.findCwtPeakels().filter( x => x.apexLcContext.getScanId() > leftmostScanH.getId && x.apexLcContext.getScanId() < rightmostScanH.getId )
-	      
-	      //we break if did not find any peakel ?
-	      if (peakelsInPredictedRange.isEmpty)
-	        break
-	      
-	      peakels += peakelsInPredictedRange
-	      
-	      //val closestPeakel = peakelsInPredictedRange.sortBy(x => math.abs(curScanH.getId - x.scanID)).first
-	    }
-    }
-    
-    var ridges = ridgeCalc(peakels)
-    if (ridges.isEmpty) {
-      logger.warn("no signal found in selected region of the calculated XIC")
-      return 0
-    }
-    var weightedRidges = _rmsdCalc(peakels, ridges, values)
-    
-    //we take the minimum
-    var bestCandidateRidge = weightedRidges.map{ case (ridge, rmsds) => (ridge, rmsds.sum[Double] / rmsds.length) }.toList.sortBy(x => x._2).first._1
-    //return the maxIdx (scanId) of the ridge that has the most intense value at monoistopic peakel 
-    bestCandidateRidge.lastScaleMaxCoeffPos._1
-  }
+      for (c <- 0 to NB_PEAKELS_TO_CHECK) {
 
+        var mzToCheck = (deltaMass * c) + mz
+        //extractPeaks
+        var peaks = _extractPeaks(putativeFt, pklTree, scanIDs, mzToCheck, mzTolPPM)
+        values += peaks.map(_.getIntensity)
+        //build cwt
+        val peakelFinder = new WaveletBasedPeakelFinder(peaks, 
+                                                        scales = (6f to 120f by 2f).toArray, 
+                                                        wavelet = MexicanHat()) //mexh by default
+        var peakelsInPredictedRange = peakelFinder.findCwtPeakels().filter(x => x.apexLcContext.getElutionTime() > leftmostScanH.getElutionTime() && 
+                                                                                x.apexLcContext.getElutionTime() < rightmostScanH.getElutionTime())
+
+        //we break if did not find any peakel ?
+        if (peakelsInPredictedRange.isEmpty)
+          break
+        peakels += peakelsInPredictedRange
+        maxNbPeakels = math.max(maxNbPeakels, peakelsInPredictedRange.length)
+      }
+    }
+    
+    if (peakels.isEmpty) // nothing found
+      return 0
+    
+    //no computation of the correlation
+    //we return the scanId of the maximum intensity ? or the closest in rt
+    if (peakels.length == 1) {
+      return peakels(0).sortBy( _.intensityMax ).last.apexLcContext.getScanId()
+    } 
+     
+    //usual case 
+    val monoIsosRmsd = _rmsdCalc(peakels, values)
+    //val monoIsosEval = monoIsos 
+    //retrieving the best solution
+    val isos = monoIsosRmsd.map{ case (monoiso, mapping) => monoiso -> (mapping.map { case (index, rmsd) => rmsd._2 }).toBuffer.sum }
+    val bestMonoIso = isos.maxBy(x=> x._2)._1
+    bestMonoIso.apexLcContext.getScanId()
+  }
+  
+  /**
+   * get the most intense peak in the range mz - mzTol, mz + mzTol, equivalent to getXic(XicMethod.MAX)
+   */
   private def _extractPeaks(putativeFt: PutativeFeature, pklTree: PeakListTree, selectedScanIDs: Array[Int], mz: Double, mzTol: Float): Array[Peak] = {
     var peaks = new ArrayBuffer[Peak]
     selectedScanIDs.foreach { x =>
       var minmz = putativeFt.mz - (mzTolPPM * putativeFt.mz / 1e6)
       var maxmz = putativeFt.mz + (mzTolPPM * putativeFt.mz / 1e6)
-      peaks += pklTree.getPeaksInRange(x, minmz, maxmz).sortBy(_.getIntensity).last
+      val p = pklTree.getPeaksInRange(x, minmz, maxmz)
+      if (p.length > 0) peaks +=  p.sortBy(_.getIntensity).last else peaks += new Peak(0,0)
     }
     peaks.toArray
   }
+  
+  /**
+   * return a hashmap containing monoistopicpeakel as key and a hashmap containing best rmsd in isotopic level
+   */
+  private def _rmsdCalc(peakels : ArrayBuffer[Array[CwtPeakel]],
+                        values: ArrayBuffer[Array[Float]],
+                        scanDrift : Int = 5): collection.mutable.Map[CwtPeakel, HashMap[Int, Pair[CwtPeakel, Double]]] = {
+    
+    var monoIsos = HashMap[CwtPeakel, HashMap[Int, Pair[CwtPeakel, Double]]]() ++ peakels(0).map( _ -> new HashMap[Int,Pair[CwtPeakel, Double]]()).toMap
+    for (monoiso <- monoIsos.keys) {
+      val (minIdx, maxIdx) = (monoiso.minIdx, monoiso.maxIdx)
+      var array = values(0).slice(minIdx, maxIdx).toBuffer
+      for ( i <- 1 until peakels.length) {
+        val closestPeakels = peakels(i).filter(x => math.abs(monoiso.apexLcContext.getScanId() - x.apexLcContext.getScanId()) < scanDrift)
+        var peakelsWithRmsd = closestPeakels.map(x => x -> VectorSimilarity.rmsd(array.map(_.toDouble).toArray, values(i).slice(x.minIdx, x.maxIdx).map(_.toDouble).toArray)).toBuffer
+        monoIsos(monoiso)(i) = peakelsWithRmsd.sortBy(_._2).last
+      }
+    }
+    monoIsos
+  }
+
+  
 
   /**
-   * return the most probable Ridges
-   */
-  private def ridgeCalc(peakels: ArrayBuffer[Array[CwtPeakel]] ) : Array[Ridge] = {
-    //var apexes = new ArrayBuffer[ArrayBuffer[Int]]
-    var apexes = peakels.map {x=> x.map {_.apex} } toArray
-    var (ridges, orphanRidges) = this.findRidges(apexes.reverse, null, winLength = 10) //10scans aprroximatively 20-30 s
-    
-    var ridgesByLength = new HashMap[Int, ArrayBuffer[Ridge]]
-    ridges.foreach( x => ridgesByLength.getOrElseUpdate(x.length, new ArrayBuffer[Ridge]) += x)
-    var longestRidges = ridgesByLength(ridgesByLength.keys.toList.sortBy(x=>x).last)
-    longestRidges.toArray
-  }
-  
-  /**
-   * lastScale correspond to the monoisotopic peakel
-   * return an hashmap containing Ridge and an array of rmsd using monoistopic peakel
-   */
-  private def _rmsdCalc(peakels: ArrayBuffer[Array[CwtPeakel]], 
-		  		        ridges: Array[Ridge], 
-		  		        values: ArrayBuffer[Array[Float]]) : HashMap[Ridge, Array[Double]] = {
-    
-    var rpeakels = peakels.reverse
-    var rvalues = values.reverse
-    
-    var weightedRidges = new HashMap[Ridge, Array[Double]]
-    
-    for (ridge <- ridges) {
-      //var peaks = new HashMap[Int, Array[Float]]
-      
-      var correspondingPeakels = new HashMap[Int, CwtPeakel]
-      //ridge.maximaIndexPerScale.foreach{ case (a, b)  =>  if (b!= None) peakels(a).foreach {x => if (x.apex == b.get) correspondingPeakels(a) = x}  }    
-      var (monoisotopicScale, monoisotopicPeakel) = correspondingPeakels.map { case (a, b) => (a, b) }.toList.sortBy(x => x._1).last//sList.sortBy( peakel => math.abs(peakel.maxIdx - peakel.minIdx)).last
-      //val longestSize = math.abs(longestPeakel.maxIdx - longestPeakel.minIdx) //abs not necessary i suppose
-      var (minIdx, maxIdx) = (monoisotopicPeakel.minIdx, monoisotopicPeakel.maxIdx)
-      
-      //peaks += scale -> values(scale).slice(minIdx, maxIdx)
-      
-      var rmsds = new ArrayBuffer[Double]
-      for ( (scale, peakel) <- correspondingPeakels if peakel != monoisotopicPeakel) {
-        //var (minIdx_ , maxIdx_) = (peakel.minIdx, peakel.maxIdx)
-        var array = zeroPad(peakel, values(scale), minIdx, maxIdx)
-        // calc rmsd
-        rmsds += VectorSimilarity.rmsd(array.map(_.toDouble), values(monoisotopicScale).map(_.toDouble))
-      }
-      weightedRidges += ridge -> rmsds.toArray
-    }
-    weightedRidges
-  }
-  
-  
-  /**
-   * use to make peakels contain same number of peaks, if shorter use zero padding, 
+   * use to make peakels contain same number of peaks, if shorter use zero padding,
    * else remove value to match min and max Idx of the monoisotopic peakel
    */
-  private def zeroPad(peakel: CwtPeakel, values: Array[Float], minIdx: Int, maxIdx:Int) : Array[Float]= {
-    var (minIdx_ , maxIdx_) = (peakel.minIdx, peakel.maxIdx)
+  private def zeroPad(peakel: CwtPeakel, values: Array[Float], minIdx: Int, maxIdx: Int): Array[Float] = {
+    var (minIdx_, maxIdx_) = (peakel.minIdx, peakel.maxIdx)
     var output = values.slice(minIdx_, maxIdx_).toBuffer
-    
+
     while (minIdx_ < minIdx) {
       output.remove(0)
       minIdx_ += 1
     }
-    
+
     while (minIdx_ > minIdx) {
       output.insert(0, 0f)
       minIdx_ -= 1
     }
-    
+
     while (maxIdx_ < maxIdx) {
       output += 0f
-      maxIdx_ +=1
+      maxIdx_ += 1
     }
-    
+
     while (maxIdx_ > maxIdx) {
       output.remove(output.length - 1)
       maxIdx_ -= 1
     }
-    
+
     output.toArray
-  } 
-  
+  }
 
   private def _findStartingScanId(putativeFt: PutativeFeature, pklTree: PeakListTree): Int = {
 
     // Retrieve some vars
     val elutionTime = putativeFt.elutionTime
     var curScanH = this.getScanHeaderForTime(elutionTime, 1)
-    
+
     // If no scan header for current time => take the last scan header
-    if( curScanH == null ) {
+    if (curScanH == null) {
       val ftId = putativeFt.id
-      this.logger.debug("feature (id="+ftId+") elution time is out of the range of the current raw file")      
-      
+      this.logger.debug("feature (id=" + ftId + ") elution time is out of the range of the current raw file")
+
       curScanH = this.scanHeaders.last
-      
+
       // Check that the feature elution time is greater than the last scan header
-      if( elutionTime < curScanH.getElutionTime )
-        throw new Exception("can't retrieve a scan header at time: "+ elutionTime)
+      if (elutionTime < curScanH.getElutionTime)
+        throw new Exception("can't retrieve a scan header at time: " + elutionTime)
     }
-      
+
     // Retrieve the cycle number
     var curCycleNum = curScanH.getCycle
 
@@ -298,80 +278,7 @@ class PredictedTimeFtExtractor(
 
       }
     }
-
     startingScanId
-
-    /* {
-    my( $self, $charge, $moz, $mozTol, $rawFileParser, $scanNumber, $scanTime, $quantitationMethod ) = @_;
-    my $predictedTimeTol = $quantitationMethod->predictedTimeTol;
-    my $stepSize = $quantitationMethod->stepSize;
-    my $intensityThreshold = $quantitationMethod->intensityThreshold;
-
-    my( @startingPoint, @deltaMoz, @deltaTime );
-
-    ### Forward search
-    $deltaTime[0] = 0;
-    my $curScanNumber = $scanNumber + 1;
-    while( $deltaTime[0] < $predictedTimeTol )
-      {
-      my $scan = $rawFileParser->getScan('number',$curScanNumber); last if not defined $scan;
-      my $isotopicProfile = $scan->peaks->extractIsotopicProfile($charge, $moz, $mozTol );
-      if( defined $isotopicProfile and $isotopicProfile->getTrueNumOfPeaks >= 2 )
-        {
-        ### Extract the current isotopic profile intensity
-        my $intensity = $isotopicProfile->computeIntensity;
-        if( $intensity > $intensityThreshold  )
-          {
-          $startingPoint[0] = $curScanNumber;
-          $deltaMoz[0] = abs($isotopicProfile->getDeltaMoz( $moz ));
-          last;
-          }
-        }
-
-      $deltaTime[0] = abs( $scan->retentionTime - $scanTime );
-      $curScanNumber += $stepSize;
-      }
-
-    ### Backward search
-    $deltaTime[1] = 0;
-    my $curScanNumber = $scanNumber - 1;
-    while( $deltaTime[1] < $predictedTimeTol )
-      {
-      my $scan = $rawFileParser->getScan('number',$curScanNumber); last if not defined $scan;
-      my $isotopicProfile = $scan->peaks->extractIsotopicProfile($charge, $moz, $mozTol );
-      if( defined $isotopicProfile and $isotopicProfile->getTrueNumOfPeaks >= 2 )
-        {
-        ### Extract the current isotopic profile intensity
-        my $intensity = $isotopicProfile->computeIntensity;
-        if( $intensity > $intensityThreshold )
-          {
-          $startingPoint[1] = $curScanNumber;
-          $deltaMoz[1] = abs($isotopicProfile->getDeltaMoz( $moz ));
-          last;
-          }
-        }
-        
-      $deltaTime[1] = abs( $scan->retentionTime - $scanTime );
-      $curScanNumber -= $stepSize;
-      }
-
-    if( !defined $deltaMoz[0] and !defined $deltaMoz[1] ) { return undef; }
-    elsif( defined $deltaMoz[0] and !defined $deltaMoz[1] ) { return $startingPoint[0]; }
-    elsif( defined $deltaMoz[1] and !defined $deltaMoz[0] ) { return $startingPoint[1]; }
-    elsif( $deltaTime[0] ne $deltaTime[1] )
-      { return $deltaTime[0] < $deltaTime[1] ? $startingPoint[0] : $startingPoint[1]; }
-    else { return $deltaMoz[0] < $deltaMoz[1] ? $startingPoint[0] : $startingPoint[1]; }
-
-    #elsif( $delta[0] eq $delta[1] ) #Keep the best intensity if there are two different points iwth the same m/z
-    #  {
-    #  my @intensitySums;
-    #  $intensitySums[0] = $self->_integrateIntensity($charge, $moz, $mozTol, $rawFileParser, $startingPoint[0], [1,5], 1);
-    #  $intensitySums[1] = $self->_integrateIntensity($charge, $moz, $mozTol, $rawFileParser, $startingPoint[1], [1,5], -1);
-    #  return $intensitySums[0] > $intensitySums[1] ? $startingPoint[0] : $startingPoint[1];
-    #  }
-
-    return undef;
-    }*/
   }
 
 }
