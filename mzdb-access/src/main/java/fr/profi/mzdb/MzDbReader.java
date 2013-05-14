@@ -763,6 +763,7 @@ public class MzDbReader {
 
 	private ScanSlice[] _getNeighbouringScanSlices(double minmz, double maxmz, double minrt, double maxrt,
 			int msLevel) throws SQLiteException {
+	   
 		BBSizes sizes = getBBSizes();
 		double rtWidth = (msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn;
 		double mzHeight = (msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn;
@@ -857,17 +858,18 @@ public class MzDbReader {
 	public ScanSlice[] getScanSlices(double minmz, double maxmz, double minrt, double maxrt, int msLevel)
 			throws SQLiteException {
 		ScanSlice[] scanSlices = _getNeighbouringScanSlices(minmz, maxmz, minrt, maxrt, msLevel);
+		//System.out.println(scanSlices.length);
 		if (scanSlices.length == 0) {
 			logger.warn("Empty scanSlices, narrow request ?");
 			return scanSlices;
 		}
 		ArrayList<ScanSlice> finalScanSlices = new ArrayList<ScanSlice>();
 		Map<Integer, ScanHeader> headers = getScanHeaderById();
-		int i = 0;
+		int i = 1;
 		float elt = headers.get(scanSlices[0].getScanId()).getElutionTime();
 		while (i < scanSlices.length && elt < minrt) {
+      elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
 			i++;
-			elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
 		}
 		while (i < scanSlices.length && elt < maxrt) {
 			// filter mz !
@@ -875,17 +877,17 @@ public class MzDbReader {
 			int scanID = currentScanSlice.getScanId();
 			ScanData d = currentScanSlice.getData().mzRangeFilter(minmz, maxmz);
 			if (d == null) {
-				i++;
-				elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
+	      elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
+	      i++;
+	      //if (i < scanSlices.length)
 				continue;
 			}
-			ScanSlice f = new ScanSlice(getScanHeader(scanID), new ScanData(d.getMzList(),
-					d.getIntensityList(), d.getLeftHwhmList(), d.getRightHwhmList()));
+			ScanSlice f = new ScanSlice(getScanHeader(scanID), d);
 			f.setRunSliceId(currentScanSlice.getRunSliceId());
 			finalScanSlices.add(f);
 			// update !
+	    elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
 			i++;
-			elt = headers.get(scanSlices[i].getScanId()).getElutionTime();
 		}
 		return finalScanSlices.toArray(new ScanSlice[finalScanSlices.size()]);
 	}
@@ -980,6 +982,8 @@ public class MzDbReader {
 		double maxRt = headers[headers.length - 1].getElutionTime();
 		// System.out.println(minRt+ "," + maxRt);
 		ScanSlice[] scanSlices = getScanSlices(minMz, maxMz, minRt, maxRt, msLevel);
+		if (scanSlices == null)
+		  logger.warn("null detected");//throw new Exception("Empty scanSlices, narrow request ?");
 		if (scanSlices.length == 0) {
 			logger.warn("Empty scanSlices, narrow request ?");
 			return new Peak[0];
