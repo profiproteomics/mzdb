@@ -18,6 +18,7 @@ import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 import fr.profi.mzdb.utils.math.wavelet.WaveletUtils
 import mr.go.sgfilter.SGFilter
 import fr.profi.mzdb.model.ILcContext
+import scala.collection.mutable.HashMap
 
 /**
  * result of the algorithm
@@ -58,7 +59,7 @@ object WaveletBasedPeakelFinder {
  *
  */
 class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
-                               var scales: Array[Float] = (1f to 64f by 1f).toArray[Float],
+                               var scales: Array[Float] = (5f to 64f by 1f).toArray[Float],
                                var wavelet: MotherWavelet = MexicanHat()) extends RidgesFinder {
 
   //by default MexicanHat is used since it has better results
@@ -308,9 +309,41 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
       }
 
     }
+    //filter overlapping peakels tkae the largest
+    peakels = filterOverlappingPeakels(peakels);
     peakels.foreach(x => println(x))
     peakels.toArray
   }
+  
+  
+  def filterOverlappingPeakels(peakels: ArrayBuffer[CwtPeakel]) : ArrayBuffer[CwtPeakel] = {
+    var overlappingPeakelsByMasterPeakel = new HashMap[CwtPeakel, ArrayBuffer[CwtPeakel]]
+    for (i <- 0 until peakels.length ) {
+      overlappingPeakelsByMasterPeakel(peakels(i)) = new ArrayBuffer[CwtPeakel]
+      for (j <- 0 until peakels.length) {
+        if (i != j) {
+          //complete and partial overlapping peakels
+          if ( (peakels(j).minIdx >= peakels(i).minIdx && peakels(j).maxIdx <= peakels(i).maxIdx) || 
+              (peakels(j).minIdx < peakels(i).maxIdx && peakels(j).maxIdx > peakels(i).minIdx) ||
+              (peakels(j).maxIdx < peakels(i).maxIdx && peakels(j).minIdx < peakels(i).minIdx) ) {
+            overlappingPeakelsByMasterPeakel(peakels(i)) += peakels(j)
+          }      
+        }
+      }
+    }
+    var finalPeakels = new ArrayBuffer[CwtPeakel]
+    overlappingPeakelsByMasterPeakel.map{ case (k, v) => 
+      if ( ! v.isEmpty()) {
+        v += k
+        v.sortBy(x => x.maxIdx - x.minIdx)
+        finalPeakels += v.last
+      } else {
+        finalPeakels += k
+      }
+    }
+    finalPeakels.distinct
+  }
+
 
   /**
    * return the indexes of the peakel found
