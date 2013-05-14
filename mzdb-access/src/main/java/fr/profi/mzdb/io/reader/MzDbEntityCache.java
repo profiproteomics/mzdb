@@ -1,6 +1,5 @@
 package fr.profi.mzdb.io.reader;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import fr.profi.mzdb.model.DataEncoding;
