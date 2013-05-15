@@ -34,7 +34,6 @@ class PredictedMzFtExtractor(
     val xicScanIDs = new ArrayBuffer[Int]
     
     //buid the xic with getNearestPeak for each scan
-    //i was wondering if getting a full Xic using rtree would be faster ?
     for (id  <- pklTree.scansIDs) { 
       val p = pklTree.getNearestPeak(id, moz, mzTolDa)
       if ( ! p.isEmpty ) {

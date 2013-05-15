@@ -2,16 +2,13 @@ package fr.profi.mzdb.utils.math.wavelet
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
+import scala.reflect.BeanProperty
 
 /**
  * class for modelize Ridge
  * internal map storing scale for key  and maxIdx of cwt coefficient
  * at the consdidered scale
  */
-object Ridge {
-  val maxGap = 4
-}
-
 
 case class Ridge(var gap: Int = 0) {
   /** internal map stocking the scale as key the maxIdx and the max value as Option may not exist (gap) */
@@ -19,7 +16,7 @@ case class Ridge(var gap: Int = 0) {
   var totalGaps = 0
   var SNR : Float = 0
   
-  def isEnded() : Boolean = { gap == Ridge.maxGap }
+  def isEnded(maxGap: Int = 4) : Boolean = { gap == maxGap }
 
   /**in theory the peak centroid
    * @return a Tuple3 containing scale, maxIdx, value
@@ -48,7 +45,7 @@ case class Ridge(var gap: Int = 0) {
   def get(scaleIdx: Int): Option[Pair[Int, Double]] = { maximaIndexPerScale.get(scaleIdx).get }
   def incGap() = {gap += 1; totalGaps +=1 }
   def initGap() = {gap = 0}
-  def length(): Int = { maximaIndexPerScale.size }//val keys = maximaIndexPerScale.keySet; keys.max - keys.min + 1} //with gap ?
+  def length(): Int = { maximaIndexPerScale.size }//with gap since we stop it 
 
   def startingScale(): Int = {
     var v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
@@ -67,7 +64,7 @@ trait RidgesFinder {
    * winLength: minWindow window is proportionnal to the scale: scale * 2 + 1
    */
   
-  def findRidges(maximaIndexesPerScale: Array[Array[Int]], coeffs: Array[Array[Double]], winLength: Int = 5): Pair[Array[Ridge], Array[Ridge]] = {
+  def findRidges(maximaIndexesPerScale: Array[Array[Int]], coeffs: Array[Array[Double]], winLength: Int = 5, maxGap:Int = 4): Pair[Array[Ridge], Array[Ridge]] = {
 
     var lastMaximaRow = maximaIndexesPerScale.last
     var ridges = new ArrayBuffer[Ridge]
@@ -85,7 +82,7 @@ trait RidgesFinder {
       
       var treatedIdx = new ArrayBuffer[Int]()
 
-      for (ridge <- ridges if !ridge.isEnded() ) {
+      for (ridge <- ridges if !ridge.isEnded(maxGap) ) {
         var prevMaxIndex = ridge.maximaIndexPerScale(i + 1)
         //the prev max could be None because of gap
         //looking for a valid prevMax

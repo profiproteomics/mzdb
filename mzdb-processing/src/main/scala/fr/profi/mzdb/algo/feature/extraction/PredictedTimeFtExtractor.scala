@@ -18,15 +18,26 @@ import fr.profi.mzdb.utils.math.wavelet.Ridge
 import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 import fr.profi.mzdb.model.Peakel
 
+
+ object Method extends Enumeration {
+    type Method = Value
+    val CLASSIC, RIDGE = Value
+  }
+
+import fr.profi.mzdb.algo.feature.extraction.Method._
+
 class PredictedTimeFtExtractor(
   //override val mzDbReader: MzDbReader,
+ 
+    
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   override val mzTolPPM: Float,
   override val maxNbPeaksInIP: Int,
   override val minNbOverlappingIPs: Int,
   val minConsecutiveScans: Int = 4,
-  val predictedTimeTol: Int = 120) extends Ms2DrivenFtExtractor(
+  val predictedTimeTol: Int = 120,
+  val method : Method = Method.RIDGE) extends Ms2DrivenFtExtractor(
   scanHeaderById,
   nfByScanId,
   mzTolPPM,
@@ -71,7 +82,7 @@ class PredictedTimeFtExtractor(
 
     val scanIDs = pklTree.scansIDs().filter(x => x > (curScanH.getId - leftmostScanH.getId) && x < (curScanH.getId + rightmostScanH.getId)) toArray
 
-    val NB_PEAKELS_TO_CHECK = 3
+    val NB_PEAKELS_TO_CHECK = 5
 
     val deltaMass = 1.002f / charge
 
@@ -108,15 +119,34 @@ class PredictedTimeFtExtractor(
     //we return the scanId of the maximum intensity ? or the closest in rt
     if (peakels.length == 1) {
       return peakels(0).sortBy( _.intensityMax ).last.apexLcContext.getScanId()
-    } 
-     
-    //usual case 
-    val monoIsosRmsd = _rmsdCalc(peakels, values)
-    //val monoIsosEval = monoIsos 
-    //retrieving the best solution
-    val isos = monoIsosRmsd.map{ case (monoiso, mapping) => monoiso -> (mapping.map { case (index, rmsd) => rmsd._2 }).toBuffer.sum }
-    val bestMonoIso = isos.maxBy(x=> x._2)._1
-    bestMonoIso.apexLcContext.getScanId()
+    }
+    var scanId = 0
+    if (method == Method.CLASSIC) {
+      //usual case 
+      val monoIsosRmsd = _rmsdCalc(peakels, values)
+      //retrieving the best solution
+      val result = new HashMap[Int, ArrayBuffer[Pair[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]]]]
+      monoIsosRmsd.map{ case (peakel, mapping) => 
+        result.getOrElseUpdate(mapping.size, new ArrayBuffer[Pair[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]]]()) += Tuple2(peakel, mapping)}
+      val longestMonoIsos = result.maxBy(_._1)._2
+      val bestMonoIso = longestMonoIsos.map{ case (peakel, array) => peakel -> (array.map{ x=> x._2}).toBuffer.sum / array.length } maxBy(_._2)//.apexLcContext.getScanId()
+      scanId = bestMonoIso._1.apexLcContext.getScanId()
+      
+    } else if (method == Method.RIDGE) {
+      var ridges = ridgeCalc(peakels)
+      if (ridges.isEmpty) {
+        logger.warn("no signal found in selected region")
+        return 0
+      }
+      var weightedRidges = _rmsdCalc(peakels, ridges, values)
+      //we take the minimum
+      var bestCandidateRidge = weightedRidges.map{ case (ridge, rmsds) => (ridge, rmsds._1, rmsds._2.sum[Double] / rmsds._2.length) }.toList.maxBy(_._3)
+      //return the maxIdx (scanId) of the ridge that has the most intense value at monoistopic peakel 
+      scanId = bestCandidateRidge._2.apexLcContext.getScanId()
+    } else {
+      throw new Exception("Improper method")
+    }
+    scanId
   }
   
   /**
@@ -133,21 +163,82 @@ class PredictedTimeFtExtractor(
     peaks.toArray
   }
   
+
   /**
-   * return a hashmap containing monoistopicpeakel as key and a hashmap containing best rmsd in isotopic level
+   * return the most probable Ridges
+   */
+  private def ridgeCalc(peakels: ArrayBuffer[Array[CwtPeakel]] ) : Array[Ridge] = {
+    //var apexes = new ArrayBuffer[ArrayBuffer[Int]]
+    var apexes = peakels.map {x=> x.map {_.apex} } toArray
+    //we find the ridges here, winLength is not so important since it will find the closest apex, and
+    //we set the maxGap to 1 (the min possible) since we don't want hole in isotopicPattern
+    var (ridges, orphanRidges) = this.findRidges(apexes.reverse, null, winLength = 10, maxGap = 1) //10scans aprroximatively 20-30 s
+    var ridgesByLength = new HashMap[Int, ArrayBuffer[Ridge]]
+    //TODO: check the filter here
+    ridges.filter( !_.isEnded(1)).foreach( x => ridgesByLength.getOrElseUpdate(x.length, new ArrayBuffer[Ridge]) += x)
+    var longestRidges = ridgesByLength(ridgesByLength.keys.toList.sortBy(x=>x).last)
+    longestRidges.toArray
+  }
+
+   /**
+   * lastScale correspond to the monoisotopic peakel
+   * return an hashmap containing Ridge and an array of rmsd using monoistopic peakel
+   */
+  private def _rmsdCalc(peakels: ArrayBuffer[Array[CwtPeakel]], 
+                        ridges: Array[Ridge], 
+                        values: ArrayBuffer[Array[Float]]) : HashMap[Ridge, Pair[CwtPeakel, Array[Double]]] = {
+    var rpeakels = peakels.reverse
+    var rvalues = values.reverse
+    var weightedRidges = new HashMap[Ridge, Pair[CwtPeakel,Array[Double]]]
+    for (ridge <- ridges) {
+      //var peaks = new HashMap[Int, Array[Float]]
+      var correspondingPeakels = new HashMap[Int, CwtPeakel]
+      ridge.maximaIndexPerScale.foreach{ case (scale, value)  =>  
+        if (value != None) rpeakels(scale).foreach { cwtPeakel => 
+          if (cwtPeakel.apex == value.get._1) 
+            correspondingPeakels(scale) = cwtPeakel
+            }
+      }    
+      var (monoisotopicScale, monoisotopicPeakel) = correspondingPeakels.maxBy(_._1)
+      var (minIdx, maxIdx) = (monoisotopicPeakel.minIdx, monoisotopicPeakel.maxIdx)
+      var monoisoArray = rvalues(monoisotopicScale).slice(minIdx, maxIdx).map(_.toDouble)
+      var rmsds = new ArrayBuffer[Double]
+      for ( (scale, peakel) <- correspondingPeakels if peakel != monoisotopicPeakel) {
+        var array = zeroPad(peakel, values(scale), minIdx, maxIdx).map(_.toDouble)
+        // calc rmsd
+        rmsds += VectorSimilarity.rmsd(array, monoisoArray)
+      }
+      weightedRidges += ridge -> (monoisotopicPeakel, rmsds.toArray)
+    }
+    weightedRidges
+  }
+
+  
+  /**
+   * return a hashmap containing monoistopicpeakel as key and a hashmap containing best rmsd in each isotopic level
    */
   private def _rmsdCalc(peakels : ArrayBuffer[Array[CwtPeakel]],
                         values: ArrayBuffer[Array[Float]],
-                        scanDrift : Int = 5): collection.mutable.Map[CwtPeakel, HashMap[Int, Pair[CwtPeakel, Double]]] = {
+                        scanDrift : Int = 5): collection.mutable.Map[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]] = {
     
-    var monoIsos = HashMap[CwtPeakel, HashMap[Int, Pair[CwtPeakel, Double]]]() ++ peakels(0).map( _ -> new HashMap[Int,Pair[CwtPeakel, Double]]()).toMap
+    var monoIsos = HashMap[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]]() ++ peakels(0).map( _ -> new ArrayBuffer[Pair[CwtPeakel, Double]]())
     for (monoiso <- monoIsos.keys) {
       val (minIdx, maxIdx) = (monoiso.minIdx, monoiso.maxIdx)
-      var array = values(0).slice(minIdx, maxIdx).toBuffer
+      var array = values(0).slice(minIdx, maxIdx).map(_.toDouble)
       for ( i <- 1 until peakels.length) {
         val closestPeakels = peakels(i).filter(x => math.abs(monoiso.apexLcContext.getScanId() - x.apexLcContext.getScanId()) < scanDrift)
-        var peakelsWithRmsd = closestPeakels.map(x => x -> VectorSimilarity.rmsd(array.map(_.toDouble).toArray, values(i).slice(x.minIdx, x.maxIdx).map(_.toDouble).toArray)).toBuffer
-        monoIsos(monoiso)(i) = peakelsWithRmsd.sortBy(_._2).last
+        if (closestPeakels.isEmpty) {
+          //monoIsos(monoiso)(i) = None //set to None
+        }
+        else if (closestPeakels.length == 1) {
+          val x = closestPeakels(0)
+          val rmsd =  VectorSimilarity.rmsd(array, values(i).slice(x.minIdx, x.maxIdx).map(_.toDouble))
+          monoIsos(monoiso) += Tuple2(x, rmsd)
+        } else {
+          //take the best one
+           var peakelsWithRmsd = closestPeakels.map(x => x -> VectorSimilarity.rmsd(array, values(i).slice(x.minIdx, x.maxIdx).map(_.toDouble)))
+           monoIsos(monoiso) += peakelsWithRmsd.maxBy(_._2)
+        }
       }
     }
     monoIsos

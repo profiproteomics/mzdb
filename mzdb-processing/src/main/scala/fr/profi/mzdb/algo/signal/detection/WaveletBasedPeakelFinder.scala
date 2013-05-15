@@ -258,7 +258,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
     // 1: the ridge do not have to be ended
     // 2: it must begin at a scale > 2
     // 3: its length must be > minRidgeLength
-    var filteredRidges = ridges.filter { x => (!x.isEnded && x.length >= minRidgeLength) } //&& x.startingScale > 2 => this hard to defined !
+    var filteredRidges = ridges.filter { x => (!x.isEnded() && x.length >= minRidgeLength) } //&& x.startingScale > 2 => this hard to defined !
 
     //compute SNR for each ridge
     filteredRidges.foreach { ridge =>
@@ -322,10 +322,10 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
       overlappingPeakelsByMasterPeakel(peakels(i)) = new ArrayBuffer[CwtPeakel]
       for (j <- 0 until peakels.length) {
         if (i != j) {
-          //complete and partial overlapping peakels
-          if ( (peakels(j).minIdx >= peakels(i).minIdx && peakels(j).maxIdx <= peakels(i).maxIdx) || 
-              (peakels(j).minIdx < peakels(i).maxIdx && peakels(j).maxIdx > peakels(i).minIdx) ||
-              (peakels(j).maxIdx < peakels(i).maxIdx && peakels(j).minIdx < peakels(i).minIdx) ) {
+          //complete overlapping peakels
+          if ( (peakels(j).minIdx >= peakels(i).minIdx && peakels(j).maxIdx <= peakels(i).maxIdx) ){ // || 
+              //(peakels(j).minIdx < peakels(i).maxIdx && peakels(j).maxIdx > peakels(i).minIdx) ||
+              //(peakels(j).maxIdx < peakels(i).maxIdx && peakels(j).minIdx < peakels(i).minIdx) ) {
             overlappingPeakelsByMasterPeakel(peakels(i)) += peakels(j)
           }      
         }
@@ -333,7 +333,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
     }
     var finalPeakels = new ArrayBuffer[CwtPeakel]
     overlappingPeakelsByMasterPeakel.map{ case (k, v) => 
-      if ( ! v.isEmpty()) {
+      if ( ! v.isEmpty) {
         v += k
         v.sortBy(x => x.maxIdx - x.minIdx)
         finalPeakels += v.last
@@ -385,7 +385,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
     } 
 
     val maxima = findMaximaRegion(coeffs, 10)
-    val (ridges, orphanRidges) = findRidges(maxima, coeffs, winLength)
+    val (ridges, orphanRidges) = findRidges(maxima, coeffs, winLength, 4)
     val peakels = ridgeToPeaks(ridges,
       minRidgeLength = minRidgeLength,
       minSNR = minSNR,
