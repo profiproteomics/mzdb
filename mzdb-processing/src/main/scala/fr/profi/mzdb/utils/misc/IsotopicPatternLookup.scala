@@ -20,7 +20,6 @@ object IsotopicPatternLookup {
     var table = new TreeMap[Double, ArrayBuffer[Double]]
     val source = Source.fromURL(getClass().getResource(url))
     source.getLines.foreach {line => 
-      println("hola")
       val splittedLine = new ArrayBuffer[Double]() ++line.split("\t").map(_.toDouble)
       table += (splittedLine(0) -> splittedLine.slice(1, splittedLine.length))         
     }
