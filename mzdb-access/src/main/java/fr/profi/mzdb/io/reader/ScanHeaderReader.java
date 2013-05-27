@@ -54,21 +54,25 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			ParamTree paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
 
 			String val = paramTree.getUserParam("in_high_res").getValue();
-			// little patch to retrieve the data resolution
+			// little workaround to retrieve the data resolution
 			// FIXME: works only for Orbitrap data
 			// FIXME: retrieve the resolution from the data encoding param tree
-			// TODO: use the paramTree instead of paramTreeAsStr
-			boolean isHighRes = (val.equals("true")) ? true : false;// paramTreeAsStr.contains("FTMS")
-			// ? true : false;
+			boolean isHighRes = (val.equals("true")) ? true : false;
 
-			ScanHeader sh = new ScanHeader(record.columnInt(SpectrumTable.ID),
-					record.columnInt(SpectrumTable.INITIAL_ID), record.columnInt(SpectrumTable.CYCLE),
-					(float) record.columnDouble(SpectrumTable.TIME), msLevel,
-					record.columnInt(SpectrumTable.DATA_POINTS_COUNT), isHighRes,
-					(float) record.columnDouble(SpectrumTable.TIC),
-					record.columnDouble(SpectrumTable.BASE_PEAK_MZ),
-					(float) record.columnDouble(SpectrumTable.BASE_PEAK_INTENSITY), precursorMz,
-					precursorCharge);
+			ScanHeader sh = new ScanHeader(
+				record.columnInt(SpectrumTable.ID),
+				record.columnInt(SpectrumTable.INITIAL_ID),
+				record.columnInt(SpectrumTable.CYCLE),
+				(float) record.columnDouble(SpectrumTable.TIME),
+				msLevel,
+				record.columnInt(SpectrumTable.DATA_POINTS_COUNT),
+				isHighRes,
+				(float) record.columnDouble(SpectrumTable.TIC),
+				record.columnDouble(SpectrumTable.BASE_PEAK_MZ),
+				(float) record.columnDouble(SpectrumTable.BASE_PEAK_INTENSITY),
+				precursorMz,
+				precursorCharge
+			);
 
 			sh.setParamTree(paramTree);
 

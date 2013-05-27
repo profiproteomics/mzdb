@@ -47,10 +47,10 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	protected final float basePeakIntensity;
 
 	/** The precursor mz. */
-	protected final double precursorMz;
+	protected final double precursorMz; // TODO: set as Double
 
 	/** The precursor charge. */
-	protected final int precursorCharge;
+	protected final int precursorCharge;  // TODO: set as Integer
 
 	// protected final float tic;
 
