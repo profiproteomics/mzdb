@@ -1,7 +1,7 @@
 package fr.profi.mzdb.model
 
 import reflect.BeanProperty
-import fr.profi.mzdb.algo.FeatureScorer
+import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
 
 object Peakel {
   
@@ -30,7 +30,7 @@ object Peakel {
     
     val peaksCount = definedPeaks.length
     if( peaksCount > 0 ) {    
-      firstLcContext = definedPeaks.first.lcContext
+      firstLcContext = definedPeaks.head.lcContext
       lastLcContext = definedPeaks.last.lcContext
     }
     
@@ -72,6 +72,7 @@ case class Peakel(
   // Define lazy attributes
   @BeanProperty lazy val peakByElutionTime = definedPeaks.map { p => p.getLcContext.getElutionTime -> p } toMap
   @BeanProperty lazy val duration = lastScanContext.getElutionTime - firstScanContext.getElutionTime
+  @BeanProperty var localMaxima : Array[Int] = null
   
   // Update feature intensity and area
   this._integratePeakel()

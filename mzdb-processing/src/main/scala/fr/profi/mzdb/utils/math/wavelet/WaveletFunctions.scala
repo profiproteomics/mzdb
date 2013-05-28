@@ -4,9 +4,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.Buffer
 import scala.Numeric
-
 import org.apache.commons.math.transform.FastFourierTransformer
 import org.apache.commons.math.complex.Complex
+import org.apache.commons.math.MathRuntimeException
 
 
 /**
@@ -109,8 +109,7 @@ object WaveletUtils {
     var waveletfft = transformer.transform(wavepadded).map(_.conjugate)
     //multiply
     var x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }
-    transformer.inversetransform(x).map(_.getReal)
-
+    return transformer.inversetransform(x).map(_.getReal)
   }
   
   /**

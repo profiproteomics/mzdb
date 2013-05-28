@@ -40,7 +40,7 @@ object Feature extends InMemoryIdGen {
     (firstScanHeader, lastScanHeader)
   }
   
-  def buildPeakels( ips: Seq[IsotopicPattern] ): Array[Peakel] = {
+  def buildPeakels( ips: Seq[IsotopicPatternLike] ): Array[Peakel] = {
     
     // Determine the maximum number of peaks
     var maxNbPeaks = 0
@@ -59,7 +59,7 @@ object Feature extends InMemoryIdGen {
     peakels
   }
 
-  protected def _buildPeakel( ips: Seq[IsotopicPattern], peakelIdx: Int ): Peakel = {
+  protected def _buildPeakel( ips: Seq[IsotopicPatternLike], peakelIdx: Int ): Peakel = {
     
     val peaks = new ArrayBuffer[Option[Peak]]()
     
@@ -108,11 +108,11 @@ case class Feature (
   @BeanProperty peakels: Array[Peakel]
    ) {
   
-  def this( id: Int, mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPattern] ) = {
+  def this( id: Int, mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike] ) = {
     this( Feature.generateNewId(), mz, charge, Feature.buildPeakels(isotopicPatterns) )
   }
   
-  def this( mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPattern] ) = {
+  def this( mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike] ) = {
     this( Feature.generateNewId(), mz, charge, isotopicPatterns )
   }
   
@@ -166,9 +166,10 @@ case class Feature (
   @BeanProperty var meanPeakelCorrelation = 0f //(float) FeatureScorer.computeMeanPeakelCorrelation(peakels);
   @BeanProperty var overlapPMCC = 0f
   @BeanProperty var overlapRelativeFactor = 0f
-  @BeanProperty var overlappingFeatures: Array[Feature] = null
+  @BeanProperty var overlappingFeatures : Array[Feature] = null
   @BeanProperty var bestOverlappingFeature: Feature = null
   //@BeanProperty var filteredXIC: Chromatogram = null // x-axis = time ; y-axis = IP intensities
+  
 
   def getMs2Count(): Int = {
     if( ms2ScanIds != null ) ms2ScanIds.length else 0
@@ -177,14 +178,16 @@ case class Feature (
   def getIsotopicPattern( idx: Int ): IsotopicPattern = {
     val ipPeaks = peakels.map { _.peaks(idx) }
     val mz = if( ipPeaks(0) != None ) ipPeaks(0).get.mz else this.mz
-    val intensity = IsotopicPattern.sumPeakIntensities(ipPeaks,Feature.nbPeakelsToIntegrate)
+    val intensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, Feature.nbPeakelsToIntegrate)
     
     new IsotopicPattern(
           mz = mz,
           intensity = intensity,
           charge = this.charge,
           peaks = ipPeaks,
-          scanHeader = scanHeaders(idx)
+          scanHeader = scanHeaders(idx),
+          null,
+          0f
          )
   }
   
@@ -233,6 +236,10 @@ case class Feature (
     (xValues,yValues)
   }
   
+  
+  override def toString() : String = {
+    "" + this.mz + "/" + this.elutionTime
+  }
   //def eachIsotopicPattern
   
   // TODO: use Savitzky-Golay filter to produce a smoothed XIC,

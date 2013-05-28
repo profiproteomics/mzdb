@@ -7,8 +7,33 @@ import fr.profi.mzdb.utils.ms.MsUtils
 
 object PeakListTree {
   
+  val mzDiff = 1.002
+  
   def groupPeaklists( peakListsByScanId: Map[Int, Seq[PeakList]] ): Map[Int,PeakListGroup] = {    
     Map() ++ peakListsByScanId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }
+  }
+  
+  def extractIsotopicPattern(pklGroup: PeakListGroup, mz: Double, mzTolPPM: Float, charge: Int, maxNbPeaks: Int ) : Array[Option[Peak]] = {
+    val peaks = new ArrayBuffer[Peak]( maxNbPeaks )
+    breakable {
+      for( peakPos <- 0 until maxNbPeaks ) {
+        
+        // Compute some vars
+        // TODO: check this the best way to compute isotope masses
+        // TODO: use compute averagine to infer the delta mass
+        val mzToExtract =  mz + (peakPos * PeakListTree.mzDiff / charge)
+        val mzTolDa = MsUtils.ppmToDa( mzToExtract, mzTolPPM )
+        
+        // Try to retrieve the nearest peak
+        val nearestPeak = pklGroup.getNearestPeak( mzToExtract, mzTolDa)
+        
+        // If nearest peak is found, add it it to the list of peaks
+        if( nearestPeak != None ) peaks += nearestPeak.get
+        else 
+          break
+      }
+    }
+    peaks.toArray.map( Option(_) )
   }
   
 }
@@ -29,97 +54,60 @@ case class PeakListTree( private var pklGroupByScanId: Map[Int,PeakListGroup] ) 
   
   def scansIDs() : Array[Int] = { pklGroupByScanId.keys.toArray.sortWith(_ < _) }
   
-  def extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
+  /*def extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
                               charge: Int, maxNbPeaks: Int ): Option[IsotopicPattern] = {
     
     val scanId = scanHeader.id
     val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
-    if( charge < 1 || pklGroupAsOpt == None ) return Option.empty[IsotopicPattern]
-    
-    val pklGroup = pklGroupAsOpt.get
-    val peaks = new ArrayBuffer[Peak]( maxNbPeaks )
-    
-    breakable {
-      for( peakPos <- 0 until maxNbPeaks ) {
-        
-        // Compute some vars
-        // TODO: check this the best way to compute isotope masses
-        // TODO: use compute averagine to infer the delta mass
-        val mzToExtract =  mz + (peakPos * 1.002 / charge)
-        val mzTolDa = MsUtils.ppmToDa( mzToExtract, mzTolPPM )
-        
-        // Try to retrieve the nearest peak
-        val nearestPeak = pklGroup.getNearestPeak( mzToExtract, mzTolDa)
-        
-        // If nearest peak is found, add it it to the list of peaks
-        if( nearestPeak != None ) peaks += nearestPeak.get
-        else 
-          break
-        
-      }
-    }
-    
-    if( peaks.length == 0 ) 
+    if( charge < 1 || pklGroupAsOpt == None ) 
       return Option.empty[IsotopicPattern]
     
-    // Compute IP intensity using the 2 first peaks
-    // TODO: use parameter which specifies the number of peaks to use
-    val ipPeaks = peaks.toArray.map( Option(_) )
-    val ipIntensity = IsotopicPattern.sumPeakIntensities(ipPeaks, 2);
+    val pklGroup = pklGroupAsOpt.get
+    val ipPeaks = PeakListTree.extractIsotopicPattern(pklGroup, mz, mzTolPPM, charge, maxNbPeaks)
+    if (ipPeaks.isEmpty)
+      return Option.empty[IsotopicPattern]
+    
+    val ipIntensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, 2);
     
     Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
-    
-  }
-  	
-  // All this stuff seems o be already done 
-  /*
-    def _extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
-                              charge: Int, maxNbPeaks: Int ): Tuple2[Option[IsotopicPattern], ArrayBuffer[ArrayBuffer[Option[Peak]]]] = {
+  }*/
+  
+  
+  def extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
+                              charge: Int, maxNbPeaks: Int, nbPeaksSumIntens : Int = 2 ): Option[IsotopicPattern] = {
     
     val scanId = scanHeader.id
     val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
     if( charge < 1 || pklGroupAsOpt == None ) 
-      return  (Option.empty[IsotopicPattern], new ArrayBuffer[ArrayBuffer[Option[Peak]]])
+      return Option.empty[IsotopicPattern]
     
     val pklGroup = pklGroupAsOpt.get
-    val peaks = new ArrayBuffer[Peak]( maxNbPeaks )
-    val overlappingPeaks = new ArrayBuffer[ArrayBuffer[Option[Peak]]]( maxNbPeaks) //several overlapping could occur
-    breakable {
-      for( peakPos <- 0 until maxNbPeaks ) {
-        
-        // Compute some vars
-        val mzToExtract =  mz + (peakPos * 1.002 / charge)
-        val mzTolDa = MsUtils.ppmToDa( mzToExtract, mzTolPPM )
-        
-        // Try to retrieve peaks in range
-        val nearestPeaks = pklGroup.getPeaksInRange( mzToExtract, mzTolDa)
-        
-        if (nearestPeaks.isEmpty)
-          break
-        if (nearestPeaks.length > 1) {
-          nearestPeaks.sortBy(x => math.abs(mz - x.getMz()))
-          peaks += nearestPeaks(0)
-          for ( p <- 1 to nearestPeaks.length) {
-            overlappingPeaks(peakPos) += Some(nearestPeaks(p)) 
-          }          
-        } else {
-          //just one peak no overlapping
-          peaks += nearestPeaks(0)
-          overlappingPeaks(peakPos) += Option.empty[Peak]
-        } 
-      }
-    }
+    val ipPeaks = PeakListTree.extractIsotopicPattern(pklGroup, mz, mzTolPPM, charge, maxNbPeaks)
+    if (ipPeaks.isEmpty)
+      return Option.empty[IsotopicPattern]
     
-    if( peaks.length == 0 ) 
-      return (Option.empty[IsotopicPattern], overlappingPeaks)
+    val ipIntensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, 2);
     
-    // Compute IP intensity using the 2 first peaks
-    // TODO: use parameter which specifies the number of peaks to use
-    val ipPeaks = peaks.toArray.map( Option(_) )
-    val ipIntensity = IsotopicPattern.sumPeakIntensities(ipPeaks, 2);
+    Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
+  } 
+  
+  
+  def extractOverlappingIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
+                              charge: Int, maxNbPeaks: Int,  nbPeaksSumIntens : Int = 2, overlapShift: Int ): Option[OverlappingIsotopicPattern] = {
     
-    (Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) ), overlappingPeaks)
+    val scanId = scanHeader.id
+    val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
+    if( charge < 1 || pklGroupAsOpt == None ) 
+      return Option.empty[OverlappingIsotopicPattern]
     
-  }*/
+    val pklGroup = pklGroupAsOpt.get
+    val ipPeaks = PeakListTree.extractIsotopicPattern(pklGroup, mz, mzTolPPM, charge, maxNbPeaks)
+    if (ipPeaks.isEmpty)
+      return Option.empty[OverlappingIsotopicPattern]
+    
+    val ipIntensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, 2);
+    
+    Some( new OverlappingIsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, overlapShift) )
+  } 
   
 }

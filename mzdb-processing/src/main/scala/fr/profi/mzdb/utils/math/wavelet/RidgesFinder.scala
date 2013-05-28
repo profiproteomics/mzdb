@@ -65,7 +65,9 @@ trait RidgesFinder {
    */
   
   def findRidges(maximaIndexesPerScale: Array[Array[Int]], coeffs: Array[Array[Double]], winLength: Int = 5, maxGap:Int = 4): Pair[Array[Ridge], Array[Ridge]] = {
-
+     
+    if (maximaIndexesPerScale.isEmpty)
+      return new Pair[Array[Ridge], Array[Ridge]](Array[Ridge](), Array[Ridge]())
     var lastMaximaRow = maximaIndexesPerScale.last
     var ridges = new ArrayBuffer[Ridge]
     var orphanRidges = new ArrayBuffer[Ridge]

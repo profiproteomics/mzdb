@@ -28,7 +28,7 @@ object IsotopicPatternLookup {
   
   def getIsotopicPatternForMz(mz:Double) : Array[Double] = {
     val keys = lookupTable.keys.toBuffer
-    if (mz < keys.first || mz > keys.last) {
+    if (mz < keys.head || mz > keys.last) {
       println("[getIsotopicPatternForMz] : mz requested out of lookup table bound:" + mz)
       return Array[Double]()
     }

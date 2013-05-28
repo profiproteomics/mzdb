@@ -1,7 +1,7 @@
 /**
  *
  */
-package fr.profi.mzdb.algo.scoring
+package fr.profi.mzdb.algo.feature.scoring
 
 /**
  * @author David Bouyssie

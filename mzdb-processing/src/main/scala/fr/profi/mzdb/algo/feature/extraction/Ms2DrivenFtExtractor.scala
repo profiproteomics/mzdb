@@ -32,17 +32,24 @@ class Ms2DrivenFtExtractor(
     
     // Retrieve the scan header corresponding to the starting scan id
     val scanHeaderOpt = this.scanHeaderById.get(startingScanId)
-    if( scanHeaderOpt == None ) return Option.empty[Feature]    
+    if( scanHeaderOpt == None ) 
+      return Option.empty[Feature]    
+    
     val scanHeader = scanHeaderOpt.get
     
     // Extract isotopic patterns around the starting scan
-    val ips = this.extractIsotopicPatterns(putativeFt,pklTree,scanHeader)
+    val ips = this.extractIsotopicPatterns(putativeFt, pklTree, scanHeader)
     val nbIps =  ips.length
-    if( nbIps == 0 ) return Option.empty[Feature]
+    
+    //if numbers isotopics pattern
+    //TODO put <3
+    if( nbIps == 0 ) 
+      return Option.empty[Feature]
     
     // Normalize the intensity of extracted IPs
     this.normalizeIPs( ips )
     
+    //###EXTRACTION REFINEMENT
     // Build a TMP feature to refine the extraction
     var tmpFt = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, ips )    
     val tmpSummedXIC = tmpFt.getSummedXIC()
@@ -84,26 +91,30 @@ class Ms2DrivenFtExtractor(
     val range = Pair(1,5)
     var ascDirection = this._getIntensityAscendantDirection( putativeFt, pklTree, cycleNum,
                                                              range, this.mzTolPPM, 1, this.maxNbPeaksInIP )
-
-    if( ascDirection == 0 ) return ips.toArray
+    //1 => right
+    //-1 => left                                                         
+    if( ascDirection == 0 )  // no signal found in both side
+      return ips.toArray
     
     // Extract isotopic patterns
     var curMaxIntensity = 0.0
     
     // Iterate until left and right directions have been analyzed
     var numOfAnalyzedDirections = 0
+    
     while( numOfAnalyzedDirections < 2 ) {
       
       var timeOverRange = false
       var consecutiveGapCount = 0
       var cycleShift = 0
-      //int apexScanNum = cycleNum;
       
       // Stop extraction in this direction if we have too much gaps or if we exceed run time range
       while( consecutiveGapCount <= this.maxConsecutiveGaps && !timeOverRange ) {
         
-        // Decrease cycle shift if right direction
-        if( ascDirection == -1 ) { cycleShift -= 1 }
+        // Decrease cycle shift if left direction
+        if( ascDirection == -1 ) { 
+          cycleShift -= 1 
+        }
         
         // Determine current cycle number
         val curCycleNum = cycleNum + cycleShift;        
@@ -117,15 +128,18 @@ class Ms2DrivenFtExtractor(
           curScanHOpt = this.scanHeaderById.get(curScanId)
         }
         
-        if( curScanHOpt == None ) timeOverRange = true
+        if( curScanHOpt == None ) //if wrong scanID
+          timeOverRange = true
         else {
           val curScanH = curScanHOpt.get            
           val curTime = curScanH.getTime
             
           // TODO: check if total time does not exceed the provided threshold
-          if( this.maxTimeWindow > 0 && math.abs(curTime-apexTime) > this.maxTimeWindow/2 ) timeOverRange = true
+          if( this.maxTimeWindow > 0 && math.abs(curTime - apexTime) > this.maxTimeWindow / 2 ) 
+            timeOverRange = true
               
           val ipOpt = pklTree.extractIsotopicPattern( curScanH, putativeFt.mz, this.mzTolPPM, putativeFt.charge, this.maxNbPeaksInIP )
+          
           if( cycleShift == 0 && ipOpt == None ) {
             // Sometimes the precursor m/z is wrong => just skip these weird cases            
             this.logger.trace( "supervised ft extraction failed at scan id=%06d & mz=%f".format(curScanH.getId, putativeFt.getMz) )
@@ -153,8 +167,10 @@ class Ms2DrivenFtExtractor(
               }
 
               // Add the isotopic pattern to the list of extracted IPs            
-              if( ascDirection == 1 ) ips += ip
-              else if( ascDirection == -1 ) ips. +=: ( ip )
+              if( ascDirection == 1 ) 
+                ips += ip // append
+              else if( ascDirection == -1 ) 
+                ips.+=:(ip) // prepend
               
               // Analysis of the isotopic profile intensity
               
@@ -166,16 +182,22 @@ class Ms2DrivenFtExtractor(
             }
             
             // TODO : test intensity < intensityThreshold
-            if( intensity == 0 || intensity < curMaxIntensity * minPercentageOfMaxInt ) consecutiveGapCount += 1
-            else consecutiveGapCount = 0
+            if( intensity == 0 || intensity < curMaxIntensity * minPercentageOfMaxInt ) 
+              consecutiveGapCount += 1
+            else 
+              consecutiveGapCount = 0
+          
+          } else { 
+            consecutiveGapCount += 1
           }
-          else consecutiveGapCount += 1
       
           // Increase cycle shift if right direction
-          if( ascDirection == 1 ) cycleShift += 1
+          if( ascDirection == 1 ) 
+            cycleShift += 1
           
-        }
-      }
+        }// end else
+        
+      } //end while
       
       ascDirection *= -1;
       numOfAnalyzedDirections += 1

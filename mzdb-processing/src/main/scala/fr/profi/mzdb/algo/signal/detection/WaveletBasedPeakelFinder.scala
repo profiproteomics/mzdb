@@ -68,9 +68,9 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
   var maxScale = coeffs.length
 
   //Debug
-  this.coeffToImage(coeffs, "coeffs.jpg")
+  /*this.coeffToImage(coeffs, "coeffs.jpg")
   this.maximaToImage(findMaximaRegion)
-  this.maximaToImage(findMinimaRegion, "minima.jpg")
+  this.maximaToImage(findMinimaRegion, "minima.jpg")*/
 
   /** recompute the coefficients */
   def computeCoeffs() { coeffs = WaveletUtils.cwt(ydata.toArray, MexicanHat(), scales.toArray) }
@@ -97,7 +97,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
   /**
    * Improved peak detection in mass spectrum by incorporating continuous wavelet transform-based pattern matching
    */
-  def findMaxima(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
+  protected def _findMaxima(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
 
     var maximaIndexesPerScale = new ArrayBuffer[ArrayBuffer[Int]]
     var c = 0
@@ -135,7 +135,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
    * try to find all maxima using kind of derivative approach
    * find too few maxima
    */
-  def findStrictMaxima(coeffs: Array[Array[Double]]): Array[Array[Int]] = {
+  protected def _findStrictMaxima(coeffs: Array[Array[Double]]): Array[Array[Int]] = {
     var maximaIndexesPerScale = new ArrayBuffer[ArrayBuffer[Int]]
     for (coeff <- coeffs) {
       var maxima = new ArrayBuffer[Int]
@@ -150,7 +150,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
         if (coeff(i + 1) < coeff(i)) {
           if (!peakHasBeenInserted) {
             maxima += i
-            println(i)
+            //println(i)
             peakHasBeenInserted = true;
           }
         }
@@ -164,7 +164,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
    * Reference:
    * A continuous wavelet transform algorithm for peak detection, Andrew Wee et al, 2008
    */
-  def findMaximaRegion(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
+  protected def _findMaximaRegion(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
     var maximaIndexesPerScale = new ArrayBuffer[ArrayBuffer[Int]]
     var c = 0
     for (coeff <- coeffs) {
@@ -189,9 +189,9 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
    * find minima by inversing wavelet coefficient,
    *  A continuous wavelet transform algorithm for peak detection, Andrew Wee et al, 2008
    */
-  def findMinimaRegion(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
+  protected def _findMinimaRegion(coeffs: Array[Array[Double]], winSize: Int = 5): Array[Array[Int]] = {
     val inverseCoeffs = coeffs map { x => x map { y => -y } }
-    findMaximaRegion(inverseCoeffs, winSize)
+    _findMaximaRegion(inverseCoeffs, winSize)
   }
 
   /**
@@ -200,7 +200,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
    * since apex
    */
 
-  def findLocalMinima(scale: Int = 0, maxIdx: Int): Pair[Int, Int] = {
+  protected def _findLocalMinima(scale: Int = 0, maxIdx: Int): Pair[Int, Int] = {
     var coeffVal = coeffs(scale)(maxIdx)
 
     var i = math.max(maxIdx - 1, 0) //maxIdx supposed to be always greater than zero
@@ -266,7 +266,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
       var centroidValue = math.abs(maxValueAtFirstScale);
       var snrCoeffs = coeffs(0).map(math.abs(_)).slice(math.max(maxIdxAtFirstScale - sizeNoise, 0),
         math.min(maxIdxAtFirstScale + sizeNoise, ydata.length - 1)).toList.sortBy(x => x)
-      var noiseValue = snrCoeffs((0.9 * snrCoeffs.length) toInt)
+      var noiseValue = if (! snrCoeffs.isEmpty) snrCoeffs((0.9 * snrCoeffs.length) toInt) else 0
       var estimatedSNR = centroidValue / noiseValue
       ridge.SNR = estimatedSNR.toFloat
     }
@@ -278,17 +278,19 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
     filteredRidges.foreach { ridge =>
       var (maxScale, maxIdxAtMaxScale, maxValueAtMaxScale) = ridge.maxCoeffPos
       var (firstScale, maxIdxAtFirstScale, maxValueAtFirstScale) = ridge.firstScaleMaxCoeffPos
-      val (minIdx_, maxIdx_) = findLocalMinima(maxScale, maxIdxAtMaxScale)
+      val (minIdx_, maxIdx_) = _findLocalMinima(maxScale, maxIdxAtMaxScale)
       if (minIdx_ != 0 && maxIdx_ != 0) {
-        println(minIdx_ + "\t" + maxIdx_)
+        //println(minIdx_ + "\t" + maxIdx_)
         //centroid calculation
         val slicedPeaks = peaks.slice(minIdx_, maxIdx_)
         val intensities = slicedPeaks.map(_.getIntensity)
         val xvalues = slicedPeaks.map(_.getLcContext.getElutionTime)
-
-        val centroid = xvalues.zip(intensities).map { case (x, y) => x * y }.reduceLeft(_ + _) / intensities.reduceLeft(_ + _)
-        val intensityMax = intensities.max
-        val xmax = xvalues.max
+        val b = (!xvalues.isEmpty && !intensities.isEmpty)
+        val centroid = if (b)
+                          xvalues.zip(intensities).map { case (x, y) => x * y }.reduceLeft(_ + _) / intensities.reduceLeft(_ + _)
+                       else 0
+        val intensityMax = if (b) intensities.max else 0
+        val xmax = if (b) xvalues.max else 0
 
         //Seen in the thesis (biblio)
         //var demifwhm = (1.252 * maxScale) / 2
@@ -310,8 +312,10 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
 
     }
     //filter overlapping peakels tkae the largest
-    peakels = filterOverlappingPeakels(peakels);
-    peakels.foreach(x => println(x))
+    peakels = peakels.filter( x => math.abs(x.maxIdx - x.minIdx) >= 3) // filter the two small peakel
+    peakels = filterOverlappingPeakels(peakels); // remove a detected peakel which is contained in another peakel
+    
+    //peakels.foreach(x => println(x))
     peakels.toArray
   }
   
@@ -384,7 +388,7 @@ class WaveletBasedPeakelFinder(var peaks: Seq[Peak],
       y_data = ydata.toArray
     } 
 
-    val maxima = findMaximaRegion(coeffs, 10)
+    val maxima = _findMaximaRegion(coeffs, 10)
     val (ridges, orphanRidges) = findRidges(maxima, coeffs, winLength, 4)
     val peakels = ridgeToPeaks(ridges,
       minRidgeLength = minRidgeLength,
