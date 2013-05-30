@@ -1,20 +1,14 @@
-
-
-import fr.profi.mzdb.MzDbReader
 import java.io.File
-import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.model.Scan
-import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.Feature
-import fr.profi.mzdb.MzDbFeatureExtractor
-import fr.profi.mzdb.io.reader.RunSliceDataProvider
-import fr.profi.mzdb.utils.misc.IsotopicPatternLookup
-import fr.profi.mzdb.algo.feature.scoring.FeatureEvaluator
-import fr.profi.mzdb.algo.feature.scoring.FeatureEvaluationThresholds
 import java.io.PrintWriter
 
+import scala.Array.canBuildFrom
+import scala.collection.mutable.ArrayBuffer
 
-
+import fr.profi.mzdb.MzDbFeatureExtractor
+import fr.profi.mzdb.MzDbReader
+import fr.profi.mzdb.algo.feature.scoring.FeatureEvaluator
+import fr.profi.mzdb.io.reader.RunSliceDataProvider
+import fr.profi.mzdb.model.PutativeFeature
 
 object Extractor extends App {
   
@@ -54,55 +48,56 @@ object Extractor extends App {
 			pf += feature
 		}
 		val extractor = new MzDbFeatureExtractor(mzDbInstance)
+		
 		val runSliceDataProvider = new RunSliceDataProvider(mzDbInstance)
 		val features = extractor.extractFeatures(runSliceDataProvider, pf, 5)
-		val featuresQuality = features.map(FeatureEvaluator.evaluate(_, None)) toArray
+		val featureQualities = features.map(FeatureEvaluator.computeQualityVector(_)) toArray
 		val f = new PrintWriter(exportPath)
-		featuresQuality.foreach(fq => f.write("" + fq.feature.toString() + "\t" + fq.qualityCriteria.ms1Count + "\t" 
-		    + fq.qualityCriteria.isotopesCount + "\t" + fq.qualityCriteria.isotopesPattern + "\t" + fq.qualityCriteria.signalFluctuation + "\t" + 
-		    fq.qualityCriteria.peakelsWidth + "\t" +fq.qualityCriteria.peakelsCorrelation + "\t" +fq.overlapCriteria.overlappingFactor + "\t" + 
-		    fq.overlapCriteria.overlappingPeakelsCorrelation + "\n"))
+		featureQualities.zip(features).foreach(fq => f.write("" + fq._2.toString() + "\t" + fq._1.ms1Count + "\t" 
+		    + fq._1.isotopesCount + "\t" + fq._1.isotopesPattern + "\t" + fq._1.signalFluctuation + "\t" + 
+		    fq._1.peakelsWidth + "\t" +fq._1.peakelsCorrelation + "\t" +fq._1.overlappingFactor + "\t" + 
+		    fq._1.overlappingPeakelsCorrelation + "\n"))
 		f.close()
-		val numBins = math.sqrt(featuresQuality.length) toInt
+		/*val numBins = math.sqrt(featureQualities.length) toInt
 		val f2 = new PrintWriter(exportPath2)
 		//ms1count
-		val ms1Counts = featuresQuality.par.map(fq => fq.qualityCriteria.ms1Count toDouble) toArray
+		val ms1Counts = featureQualities.par.map(fq => fq.qualityCriteria.ms1Count toDouble) toArray
 		val (ms1CountsBins, binSize) = calcHistogram(ms1Counts, ms1Counts.min, ms1Counts.max, numBins)
 		f2.write("ms1Counts binSize:" + binSize + "\n")
 		ms1CountsBins.foreach(x => f2.write("" + x + "\n"))
 		
-		val isotopesCount = featuresQuality.map(fq => fq.qualityCriteria.isotopesCount toDouble)
+		val isotopesCount = featureQualities.map(fq => fq.qualityCriteria.isotopesCount toDouble)
     val (isotopesCountBins, isotopesCountbinSize) = calcHistogram(isotopesCount, isotopesCount.min, isotopesCount.max, numBins)
     f2.write("isotopesCount binSize:" + isotopesCountbinSize + "\n")
     isotopesCountBins.foreach(x => f2.write("" + x + "\n"))
     
-    val isotopesPattern = featuresQuality.map(fq => fq.qualityCriteria.isotopesPattern toDouble)
+    val isotopesPattern = featureQualities.map(fq => fq.qualityCriteria.isotopesPattern toDouble)
     val (isotopesPatternBins, isotopesPatternbinSize) = calcHistogram(isotopesPattern, isotopesPattern.min, isotopesPattern.max, numBins)
     f2.write("isotopesPattern binSize:" + isotopesPatternbinSize + "\n")
     isotopesPatternBins.foreach(x => f2.write("" + x + "\n"))
     
-    val signalFluctuation = featuresQuality.map(fq => fq.qualityCriteria.signalFluctuation toDouble)
+    val signalFluctuation = featureQualities.map(fq => fq.qualityCriteria.signalFluctuation toDouble)
     val (signalFluctuationBins, signalFluctuationbinSize) = calcHistogram(signalFluctuation, signalFluctuation.min, signalFluctuation.max, numBins)
     f2.write("signalFluctuation binSize:" + signalFluctuationbinSize + "\n")
     signalFluctuationBins.foreach(x => f2.write("" + x + "\n"))
     
-    val peakelsWidth = featuresQuality.map(fq => fq.qualityCriteria.peakelsWidth toDouble)
+    val peakelsWidth = featureQualities.map(fq => fq.qualityCriteria.peakelsWidth toDouble)
     val (peakelsWidthBins, peakelsWidthbinSize) = calcHistogram(peakelsWidth, peakelsWidth.min, peakelsWidth.max, numBins)
     f2.write("peakelsWidth binSize:" + peakelsWidthbinSize + "\n")
     peakelsWidthBins.foreach(x => f2.write("" + x + "\n"))
     
-    val peakelsCorrelation = featuresQuality.filter(_.qualityCriteria.peakelsCorrelation.toString() != "NaN").map(fq => if (fq.qualityCriteria.peakelsCorrelation < 0) 0 else fq.qualityCriteria.peakelsCorrelation toDouble)
+    val peakelsCorrelation = featureQualities.filter(_.qualityCriteria.peakelsCorrelation.toString() != "NaN").map(fq => if (fq.qualityCriteria.peakelsCorrelation < 0) 0 else fq.qualityCriteria.peakelsCorrelation toDouble)
     peakelsCorrelation.foreach(println(_))
     val (peakelsCorrelationBins, peakelsCorrelationbinSize) = calcHistogram(peakelsCorrelation, peakelsCorrelation.min, peakelsCorrelation.max, numBins)
     println("" + peakelsCorrelation.min + ", " + peakelsCorrelation.max)
     f2.write("peakelsCorrelation binSize:" + peakelsCorrelationbinSize + "\n")
     peakelsCorrelationBins.foreach(x => f2.write("" + x + "\n"))
 		
-    val overlappingFactor = featuresQuality.map(fq => fq.overlapCriteria.overlappingFactor toDouble)
+    val overlappingFactor = featureQualities.map(fq => fq.overlapCriteria.overlappingFactor toDouble)
     val (overlappingFactorBins, overlappingFactorbinSize) = calcHistogram(overlappingFactor, overlappingFactor.min, overlappingFactor.max, numBins)
     f2.write("overlappingFactor binSize:" + overlappingFactorbinSize + "\n")
     overlappingFactorBins.foreach(x => f2.write("" + x + "\n"))
 
-    f2.close()
+    f2.close()*/
 		
 }
