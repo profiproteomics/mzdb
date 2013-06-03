@@ -1,7 +1,10 @@
 package fr.profi.mzdb.algo.feature.extraction
 
-import collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.ListBuffer
 import com.weiglewilczek.slf4s.Logging
+
+import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.PeakListTree
@@ -9,18 +12,16 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
 import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.utils.ms.MsUtils
-import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
-import scala.collection.mutable.ArrayBuffer
 
 class Ms2DrivenFtExtractor(
   //val mzDbReader: MzDbReader,
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
   val mzTolPPM: Float,
-  val maxNbPeaksInIP: Int,
+  val maxNbPeaksInIP: Int, // TODO: remove this param
   val minNbOverlappingIPs: Int,
   val maxConsecutiveGaps: Int = 2,
-  val maxTimeWindow: Float = 600f,
+  val maxTimeWindow: Float = 1200f,
   val minPercentageOfMaxInt: Float = 0.005f
 ) extends AbstractSupervisedFtExtractor with Logging {
 
@@ -33,7 +34,7 @@ class Ms2DrivenFtExtractor(
     // Retrieve the scan header corresponding to the starting scan id
     val scanHeaderOpt = this.scanHeaderById.get(startingScanId)
     if( scanHeaderOpt == None ) 
-      return Option.empty[Feature]    
+      return Option.empty[Feature]
     
     val scanHeader = scanHeaderOpt.get
     
@@ -41,17 +42,16 @@ class Ms2DrivenFtExtractor(
     val ips = this.extractIsotopicPatterns(putativeFt, pklTree, scanHeader)
     val nbIps =  ips.length
     
-    //if numbers isotopics pattern
-    //TODO put <3
-    if( nbIps == 0 ) 
+    // if no isotopic pattern
+    if( nbIps == 0 )
       return Option.empty[Feature]
     
     // Normalize the intensity of extracted IPs
     this.normalizeIPs( ips )
     
-    //###EXTRACTION REFINEMENT
+    // --- EXTRACTION REFINEMENT --- //
     // Build a TMP feature to refine the extraction
-    var tmpFt = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, ips )    
+    var tmpFt = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, ips )
     val tmpSummedXIC = tmpFt.getSummedXIC()
     val ftTime = tmpFt.elutionTime
     
@@ -64,13 +64,13 @@ class Ms2DrivenFtExtractor(
     if( matchingPeakIdx != None ) {
       
       // Extract adjusted peakel isotopic patterns
-      val matchingIPs = new ArrayBuffer[IsotopicPattern]()      
+      val matchingIPs = new ArrayBuffer[IsotopicPattern]()
       for( idx <- matchingPeakIdx.get._1 to matchingPeakIdx.get._2 ) {
         matchingIPs += tmpFt.getIsotopicPattern( idx )
       }
       
       // Build adjusted feature
-      tmpFt = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, matchingIPs )  
+      tmpFt = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, matchingIPs )
     }
     
     // Compute overlapping features
@@ -86,18 +86,26 @@ class Ms2DrivenFtExtractor(
     val ips = new ListBuffer[IsotopicPattern]()
     val cycleNum = startingScanHeader.getCycle
     var apexTime = startingScanHeader.getTime
+    val theoIP = putativeFt.theoreticalIP
     
     // Determine intensity ascendant direction
-    val range = Pair(1,5)
-    var ascDirection = this._getIntensityAscendantDirection( putativeFt, pklTree, cycleNum,
-                                                             range, this.mzTolPPM, 1, this.maxNbPeaksInIP )
-    //1 => right
-    //-1 => left                                                         
-    if( ascDirection == 0 )  // no signal found in both side
+    val range = Pair(1,10)
+    var ascDirection = this._getIntensityAscendantDirection(
+      putativeFt,
+      pklTree,
+      cycleNum,
+      range,
+      this.mzTolPPM,
+      1
+    )
+    // 1 => right
+    // -1 => left
+    if( ascDirection == 0 ) // if no signal found on both sides
       return ips.toArray
     
-    // Extract isotopic patterns
+    // --- Extract isotopic patterns --- //
     var curMaxIntensity = 0.0
+    var lastIntensity = 0f
     
     // Iterate until left and right directions have been analyzed
     var numOfAnalyzedDirections = 0
@@ -111,42 +119,39 @@ class Ms2DrivenFtExtractor(
       // Stop extraction in this direction if we have too much gaps or if we exceed run time range
       while( consecutiveGapCount <= this.maxConsecutiveGaps && !timeOverRange ) {
         
-        // Decrease cycle shift if left direction
-        if( ascDirection == -1 ) { 
+        // Decrease cycle shift if LEFT direction
+        if( ascDirection == -1 ) {
           cycleShift -= 1 
         }
         
         // Determine current cycle number
-        val curCycleNum = cycleNum + cycleShift;        
+        val curCycleNum = cycleNum + cycleShift
         
         // Try to retrieve the scan id
         var curScanHOpt = Option.empty[ScanHeader]
         if( this.ms1ScanIdByCycleNum.contains(curCycleNum) ) {
-          val curScanId = this.ms1ScanIdByCycleNum(curCycleNum)
-          
-          // Retrieve the wanted scan header          
-          curScanHOpt = this.scanHeaderById.get(curScanId)
+          // Retrieve the wanted scan header
+          curScanHOpt = this.scanHeaderById.get(this.ms1ScanIdByCycleNum(curCycleNum))
         }
         
-        if( curScanHOpt == None ) //if wrong scanID
+        if( curScanHOpt.isEmpty ) //if wrong scanID
           timeOverRange = true
         else {
-          val curScanH = curScanHOpt.get            
+          val curScanH = curScanHOpt.get
           val curTime = curScanH.getTime
             
           // TODO: check if total time does not exceed the provided threshold
           if( this.maxTimeWindow > 0 && math.abs(curTime - apexTime) > this.maxTimeWindow / 2 ) 
             timeOverRange = true
-              
-          val ipOpt = pklTree.extractIsotopicPattern( curScanH, putativeFt.mz, this.mzTolPPM, putativeFt.charge, this.maxNbPeaksInIP )
-          
-          if( cycleShift == 0 && ipOpt == None ) {
-            // Sometimes the precursor m/z is wrong => just skip these weird cases            
+
+          val ipOpt = pklTree.extractIsotopicPattern( curScanH, theoIP, mzTolPPM, 2 )
+          if( cycleShift == 0 && ipOpt.isEmpty ) {
+            // Sometimes the precursor m/z is wrong => just skip these weird cases
             this.logger.trace( "supervised ft extraction failed at scan id=%06d & mz=%f".format(curScanH.getId, putativeFt.getMz) )
           }
           
           // Check if an isotopic pattern has been found
-          if( ipOpt != None ) {
+          if( ipOpt.isDefined ) {
             
             val ip = ipOpt.get
             val intensity = ip.intensity
@@ -158,7 +163,7 @@ class Ms2DrivenFtExtractor(
               //ip.getElutionTime = curTime;
               
               // search for putative overlapping peaks
-              val olpIPs = this._extractOverlappingIPs( ip, pklTree )
+              val olpIPs = this._extractOverlappingIPs( ip, theoIP, pklTree )
               
               // Set overlapping IPs if at least one has been found
               val nbOlpIPs = olpIPs.length
@@ -166,40 +171,45 @@ class Ms2DrivenFtExtractor(
                 ip.overlappingIps = olpIPs.toArray
               }
 
-              // Add the isotopic pattern to the list of extracted IPs            
-              if( ascDirection == 1 ) 
-                ips += ip // append
-              else if( ascDirection == -1 ) 
-                ips.+=:(ip) // prepend
+              // Add the isotopic pattern to the list of extracted IPs
+              if( ascDirection == 1 )
+                ips += ip // append IP
+              else if( ascDirection == -1 )
+                ips.+=:(ip) // prepend IP
               
-              // Analysis of the isotopic profile intensity
-              
+              // Analysis of the isotopic pattern intensity
               if( intensity > curMaxIntensity ) {
                 // Update information about the apex
                 curMaxIntensity = intensity
                 apexTime = curTime
               }
+              
+              lastIntensity = intensity
             }
             
             // TODO : test intensity < intensityThreshold
-            if( intensity == 0 || intensity < curMaxIntensity * minPercentageOfMaxInt ) 
+            if( intensity == 0 || intensity < curMaxIntensity * minPercentageOfMaxInt )
               consecutiveGapCount += 1
             else 
               consecutiveGapCount = 0
           
           } else { 
             consecutiveGapCount += 1
+            
           }
+          
+          /*if( curMaxIntensity == lastIntensity && consecutiveGapCount == 2 )
+            error("mz="+theoIP.mz +" at="+curScanH.getInitialId() )*/
       
           // Increase cycle shift if right direction
           if( ascDirection == 1 ) 
             cycleShift += 1
           
-        }// end else
+        }// END OF ELSE
         
-      } //end while
+      } // END OF WHILE
       
-      ascDirection *= -1;
+      ascDirection *= -1
       numOfAnalyzedDirections += 1
     }
     

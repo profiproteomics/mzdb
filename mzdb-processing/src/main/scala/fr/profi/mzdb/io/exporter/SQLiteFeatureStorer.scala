@@ -31,6 +31,80 @@ object SQLiteFeatureStorer {
       //throw new Exception("file already exists")
     }
     
+    println("nb features:"+features.length)
+    
+    // Open SQLite file
+    connection.open(true)
+    
+    // SQLite optimization
+    connection.exec("PRAGMA temp_store=2;")
+    connection.exec("PRAGMA cache_size=8000;")
+
+    // Create tables
+    connection.exec("CREATE TABLE feature (" +
+  	  " id INTEGER,\n" +
+      " mz REAL,\n" +
+      " time REAL,\n" +
+      " intensity REAL,\n" +
+      " ms1_count INTEGER,\n" +
+      " isotopes_count INTEGER,\n" +
+      " xic1 BLOB,\n" +
+      " xic2 BLOB,\n" +
+      " xic3 BLOB" +
+      ")"
+    )
+    
+    // Begin transaction
+    connection.exec("BEGIN TRANSACTION")
+    
+    // Prepare INSERT statement
+    val stmt = connection.prepare("INSERT INTO feature VALUES (?,?,?,?,?,?,?,?,?)",true)
+    
+    var i = 0
+    features.sortBy(_.id).grouped(1000).foreach { ftBuffer =>      
+      
+      if( i < 1000 ) {
+        // Compute XICs in parallel
+        val xicsBuffer = ftBuffer.par.map { ft => 
+          val xic = ft.getXIC(0)
+          Pair(createFeatureChart(xic._1, xic._2),createFeatureChart(ft.getSummedXIC()))
+        }.toArray
+
+        ftBuffer.zip(xicsBuffer).foreach { case (ft,xics) =>
+          i += 1
+          
+          stmt.bind(1, ft.id )
+          stmt.bind(2, ft.mz )
+          stmt.bind(3, ft.elutionTime/60 )
+          stmt.bind(4, ft.area )
+          stmt.bind(5, ft.ms1Count )
+          stmt.bind(6, ft.peakelsCount )
+          stmt.bind(7, xics._1 )
+          stmt.bind(8, xics._2 )
+          stmt.bind(9, Array.empty[Byte] )
+          stmt.step()
+          stmt.reset()
+        }
+      }
+
+    }
+    
+    // Commit transaction
+    connection.exec("COMMIT TRANSACTION")
+                       
+    // Close SQLite file
+    connection.dispose()
+    
+  }
+
+  def storeFeaturesAndComputations(features: Seq[Feature], dbLocation: File ) {
+    
+    val connection = new SQLiteConnection(dbLocation)
+    if( dbLocation.exists ) {
+      dbLocation.delete()
+      //throw new Exception("file already exists")
+    }
+    
     // Open SQLite file
     connection.open(true)
     
@@ -40,21 +114,21 @@ object SQLiteFeatureStorer {
 
     // Create tables
     connection.exec("CREATE TABLE feature (id INTEGER,\n" +
-    		            "                      mz REAL,\n" +
-    		            "                      time REAL,\n" +
-    		            "                      intensity REAL,\n" +
-    		            "                      ms1_count INTEGER,\n" +
-    		            "                      peakels_count INTEGER,\n" +
-    		            "                      local_maxima_count INTEGER,\n" +
-    		            "                      peaks_count INTEGER,\n" +
-    		            "                      smoothing_nrsmd REAL,\n" +
-    		            "                      xic1 BLOB,\n" +
-    		            "                      xic2 BLOB,\n" +
+  		            "                      mz REAL,\n" +
+  		            "                      time REAL,\n" +
+  		            "                      intensity REAL,\n" +
+  		            "                      ms1_count INTEGER,\n" +
+  		            "                      peakels_count INTEGER,\n" +
+  		            "                      local_maxima_count INTEGER,\n" +
+  		            "                      peaks_count INTEGER,\n" +
+  		            "                      smoothing_nrsmd REAL,\n" +
+  		            "                      xic1 BLOB,\n" +
+  		            "                      xic2 BLOB,\n" +
                     "                      xic3 BLOB" +
-    		            ")")
+    		        ")")
     
     // Begin transaction
-    connection.exec("BEGIN")
+    connection.exec("BEGIN TRANSACTION")
     
     // Prepare INSERT statement
     val stmt = connection.prepare("INSERT INTO feature VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",true)
@@ -120,7 +194,7 @@ object SQLiteFeatureStorer {
     }
     
     // Commit transaction
-    connection.exec("COMMIT")
+    connection.exec("COMMIT TRANSACTION")
     		           
     // Close SQLite file
     connection.dispose()

@@ -9,6 +9,7 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.OverlappingIsotopicPattern
+import fr.profi.mzdb.model.TheoreticalIsotopePattern
 
 abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
 
@@ -19,21 +20,23 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
 
   protected def _getIntensityAscendantDirection(putativeFt: PutativeFeature, pklTree: PeakListTree,
                                                 cycleNum: Int, range: Pair[Int, Int], mzTolPPM: Float,
-                                                minNbPeaks: Int, maxNbPeaks: Int): Int = {
+                                                minNbPeaks: Int): Int = {
 
     var (firstCycleNum, lastCycleNum) = (0, 0)
 
     // Left check
     firstCycleNum = cycleNum - range._2
     lastCycleNum = cycleNum - range._1
-    val leftIntSum = this._integrateIntensity(putativeFt, pklTree, firstCycleNum, lastCycleNum,
-      mzTolPPM, minNbPeaks, maxNbPeaks);
+    val leftIntSum = this._integrateIntensity(
+      putativeFt, pklTree, firstCycleNum, lastCycleNum, mzTolPPM, minNbPeaks
+    )
 
     // Right check
     firstCycleNum = cycleNum + range._1
     lastCycleNum = cycleNum + range._2
-    val rightIntSum = this._integrateIntensity(putativeFt, pklTree, firstCycleNum, lastCycleNum,
-      mzTolPPM, minNbPeaks, maxNbPeaks);
+    val rightIntSum = this._integrateIntensity(
+      putativeFt, pklTree, firstCycleNum, lastCycleNum, mzTolPPM, minNbPeaks
+    )
 
     // Determine the direction by comparing the summed intensities
     var ascDirection = 0
@@ -49,8 +52,9 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
 
   protected def _integrateIntensity(putativeFt: PutativeFeature, pklTree: PeakListTree,
                                     firstCycle: Int, lastCycle: Int, mzTolPPM: Float,
-                                    minNbPeaks: Int, maxNbPeaks: Int): Double = {
+                                    minNbPeaks: Int): Double = {
 
+    val theoIP = putativeFt.theoreticalIP
     var intensitySum = 0.0
 
     // Sum the forward isotopic profile intensities
@@ -62,10 +66,9 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
         val curScanId = this.ms1ScanIdByCycleNum(curCycleNum)
         val curScanH = this.scanHeaderById(curScanId)
 
-        val ip = pklTree.extractIsotopicPattern(curScanH, putativeFt.mz, mzTolPPM,
-          putativeFt.charge, maxNbPeaks)
+        val ip = pklTree.extractIsotopicPattern(curScanH,putativeFt.theoreticalIP,mzTolPPM,2)
 
-        if (ip != None && ip.get.peaks.length >= minNbPeaks) {
+        if (ip.isDefined && ip.get.peaks.length >= minNbPeaks) {
           intensitySum += ip.get.intensity
         }
       }
@@ -74,7 +77,7 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
     intensitySum
   }
 
-  protected def _extractOverlappingIPs(ip: IsotopicPattern, pklTree: PeakListTree,
+  protected def _extractOverlappingIPs(ip: IsotopicPattern, theoIP: TheoreticalIsotopePattern, pklTree: PeakListTree,
                                        maxZ: Int = 5, maxIpShift: Int = 3): Array[OverlappingIsotopicPattern] = {
     require(maxZ > 0, "maximum charge must be strictly positive")
     require(maxIpShift > 0, "maximum IP shift must be strictly positive")
@@ -92,20 +95,28 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
         if (ipShift != 0 && !(ipShift > 0 && z == ip.charge)) {
 
           val olpIpMz = ip.mz + (ipShift.toDouble / z)
-          val olpIpNbPeaks = math.abs(ipShift);
+          val olpIpNbPeaks = ipShift.abs
+          
+          // Configure a new theoretical isotope pattern
+          val tmpTheoIP = theoIP.copy(
+            mz = olpIpMz,
+            charge = z,
+            relativeAbundances = theoIP.relativeAbundances.take(olpIpNbPeaks)
+          )
 
           // Try to extract a putative overlapping isotopic pattern
-          val tmpOlpIp = pklTree.extractOverlappingIsotopicPattern(scanHeader = ip.scanHeader,
-            mz = olpIpMz,
+          val tmpOlpIp = pklTree.extractOverlappingIsotopicPattern(
+            scanHeader = ip.scanHeader,
+            theoreticalIP = tmpTheoIP,
             mzTolPPM = this.mzTolPPM,
-            charge = z,
-            maxNbPeaks = olpIpNbPeaks,
-            overlapShift = ipShift)
+            nbPeaksToSum = 2,
+            overlapShift = ipShift
+          )
 
           //System.out.println( "putativeFt.mz=" + putativeFt.mz + " z="  + z + " shift="+ ipShift + " olpIpMz="+ olpIpMz );
 
           // Check that we retrieved enough peaks
-          if (tmpOlpIp != None && olpIpNbPeaks == tmpOlpIp.get.peaks.length) {
+          if (tmpOlpIp.isDefined && olpIpNbPeaks == tmpOlpIp.get.peaks.length) {
             // Set overlapping IP elution time
             //tmpOlpIp.elutionTime = ip.getElutionTime;
             olpIPs += tmpOlpIp.get

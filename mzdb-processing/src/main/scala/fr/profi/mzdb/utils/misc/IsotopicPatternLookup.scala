@@ -1,57 +1,72 @@
-/**
- *
- */
 package fr.profi.mzdb.utils.misc
 
-import io.Source
+import scala.io.Source
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.TreeMap
+import scala.util.control.Breaks._
+import com.weiglewilczek.slf4s.Logging
+
+import fr.profi.mzdb.model.TheoreticalIsotopePattern
+import fr.proline.util.math.calcLineParams
+import fr.proline.util.ms.mozToMass
 
 /**
  * @author Marco
  *
  */
-object IsotopicPatternLookup {
-  val url = "/lookup_table.txt"
-  lazy val lookupTable = loadData()
+object IsotopicPatternLookup extends Logging {
   
-  def loadData() : TreeMap[Double, ArrayBuffer[Double]] = {
-    var table = new TreeMap[Double, ArrayBuffer[Double]]
-    val source = Source.fromURL(getClass().getResource(url))
-    source.getLines.foreach {line => 
-      val splittedLine = new ArrayBuffer[Double]() ++line.split("\t").map(_.toDouble)
-      table += (splittedLine(0) -> splittedLine.slice(1, splittedLine.length))         
+  final val LOOKUP_TABLE_URL = "/lookup_table.txt"
+    
+  lazy val lookupTable: TreeMap[Int, Array[Int]] = {
+    
+    // Parse the file into an array buffer
+    val rows = new ArrayBuffer[Array[Int]]
+    Source.fromURL(getClass().getResource(LOOKUP_TABLE_URL)).getLines.foreach { line => 
+      rows += line.split("\t").map(_.toInt)
     }
-    table
+    
+    // Calculate the number of isotopes
+    val maxIsotopesCount = rows.last.length - 1
+    
+    // Create the lookup table
+    val tableBuilder = TreeMap.newBuilder[Int, Array[Int]]
+    rows.foreach { row =>
+      val pattern = Array.fill(maxIsotopesCount)(0)
+      Array.copy(row,1,pattern,0,row.size - 1)
+      tableBuilder += (row.head -> pattern)
+    }
+    
+    tableBuilder.result
   }
   
-  def getIsotopicPatternForMz(mz:Double) : Array[Double] = {
+  // A mass (not m/z) must be provided
+  def getTheoreticalPattern(mz: Double, charge: Int): TheoreticalIsotopePattern = {
+    
+    // Convert m/z into mass
+    val mass = mozToMass(mz,charge)
+    
     val keys = lookupTable.keys.toBuffer
-    if (mz < keys.head || mz > keys.last) {
-      println("[getIsotopicPatternForMz] : mz requested out of lookup table bound:" + mz)
-      return Array[Double]()
-    }
+    require(mass >= keys.first && mass <= keys.last, "provided m/z is out of lookup table bounds: " + mass)
       
-    val idx = keys.indexWhere(_ >= mz)
+    val idx = keys.indexWhere(_ >= mass)
     val (x1, x2) = (keys(idx - 1), keys(idx))
     val (minArray, maxArray) = (lookupTable(x1), lookupTable(x2) )
-    //minArray always shorter
-    while (minArray.length < maxArray.length) {
-      minArray += 0d
+    
+    val pat = new ArrayBuffer[Float](minArray.length)
+    
+    breakable {
+      for( i <- 0 until minArray.length) {
+        val (y1,y2) = (minArray(i),maxArray(i))
+        if (y1 > 0 || y2 > 0) {
+          val (slope, intercept) = calcLineParams(x1, y1, x2, y2)
+          pat += ( (slope * mass) + intercept ).toFloat
+        } else break
+      }
     }
-    val r = new ArrayBuffer[Double]
-    minArray.zip(maxArray).map{ case (y1, y2) => 
-      val (slope, intercept) = _getSlopeAndIntercept(x1, y1, x2, y2)
-      r += (slope * mz) + intercept
-    }
-    r.toArray
-  }
-  
-  private def _getSlopeAndIntercept(x1: Double, y1: Double, x2 : Double, y2: Double) : Pair[Double, Double] = {
-    val slope = (y2 - y1) / (x2 - x1)
-    val intercept = y2 - (slope * x2)
-    (slope, intercept)
+    
+    new TheoreticalIsotopePattern(mz,charge,pat.toArray)
   }
   
 }

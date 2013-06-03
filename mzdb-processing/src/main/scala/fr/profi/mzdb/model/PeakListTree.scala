@@ -54,60 +54,64 @@ case class PeakListTree( private var pklGroupByScanId: Map[Int,PeakListGroup] ) 
   
   def scansIDs() : Array[Int] = { pklGroupByScanId.keys.toArray.sortWith(_ < _) }
   
-  /*def extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
-                              charge: Int, maxNbPeaks: Int ): Option[IsotopicPattern] = {
+  protected def extractIsotopicPattern(
+    scanHeader: ScanHeader, 
+    theoreticalIP: TheoreticalIsotopePattern,
+    mzTolPPM: Float,
+    nbPeaksToSum: Int,
+    overlapShiftOpt: Option[Int] // overlap if defined
+  ): Option[IsotopicPatternLike] = {
     
+    val mz = theoreticalIP.mz
+    val charge = theoreticalIP.charge
+    val maxNbPeaks = theoreticalIP.isotopesCount
     val scanId = scanHeader.id
     val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
     if( charge < 1 || pklGroupAsOpt == None ) 
-      return Option.empty[IsotopicPattern]
+      return Option.empty[IsotopicPatternLike]
     
     val pklGroup = pklGroupAsOpt.get
     val ipPeaks = PeakListTree.extractIsotopicPattern(pklGroup, mz, mzTolPPM, charge, maxNbPeaks)
     if (ipPeaks.isEmpty)
-      return Option.empty[IsotopicPattern]
+      return Option.empty[IsotopicPatternLike]
     
-    val ipIntensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, 2);
+    val ipIntensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, nbPeaksToSum)
     
-    Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
-  }*/
+    if( overlapShiftOpt.isEmpty )
+      Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
+    else
+      Some( new OverlappingIsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, overlapShiftOpt.get ) )
+  }
   
+  def extractIsotopicPattern(
+    scanHeader: ScanHeader,
+    theoreticalIP: TheoreticalIsotopePattern,
+    mzTolPPM: Float,
+    nbPeaksToSum: Int
+  ): Option[IsotopicPattern] = {
+    this.extractIsotopicPattern(
+      scanHeader,
+      theoreticalIP,
+      mzTolPPM,
+      nbPeaksToSum,
+      None
+    ).asInstanceOf[Option[IsotopicPattern]]
+  }
   
-  def extractIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
-                              charge: Int, maxNbPeaks: Int, nbPeaksSumIntens : Int = 2 ): Option[IsotopicPattern] = {
-    
-    val scanId = scanHeader.id
-    val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
-    if( charge < 1 || pklGroupAsOpt == None ) 
-      return Option.empty[IsotopicPattern]
-    
-    val pklGroup = pklGroupAsOpt.get
-    val ipPeaks = PeakListTree.extractIsotopicPattern(pklGroup, mz, mzTolPPM, charge, maxNbPeaks)
-    if (ipPeaks.isEmpty)
-      return Option.empty[IsotopicPattern]
-    
-    val ipIntensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, 2);
-    
-    Some( new IsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
-  } 
-  
-  
-  def extractOverlappingIsotopicPattern( scanHeader: ScanHeader, mz: Double, mzTolPPM: Float,
-                              charge: Int, maxNbPeaks: Int,  nbPeaksSumIntens : Int = 2, overlapShift: Int ): Option[OverlappingIsotopicPattern] = {
-    
-    val scanId = scanHeader.id
-    val pklGroupAsOpt = pklGroupByScanId.get(scanId)    
-    if( charge < 1 || pklGroupAsOpt == None ) 
-      return Option.empty[OverlappingIsotopicPattern]
-    
-    val pklGroup = pklGroupAsOpt.get
-    val ipPeaks = PeakListTree.extractIsotopicPattern(pklGroup, mz, mzTolPPM, charge, maxNbPeaks)
-    if (ipPeaks.isEmpty)
-      return Option.empty[OverlappingIsotopicPattern]
-    
-    val ipIntensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, 2);
-    
-    Some( new OverlappingIsotopicPattern( ipPeaks(0).get.mz, ipIntensity, charge, ipPeaks, overlapShift) )
-  } 
+  def extractOverlappingIsotopicPattern(
+    scanHeader: ScanHeader, 
+    theoreticalIP: TheoreticalIsotopePattern,
+    mzTolPPM: Float,
+    nbPeaksToSum: Int,
+    overlapShift: Int
+  ): Option[OverlappingIsotopicPattern] = {
+    this.extractIsotopicPattern(
+      scanHeader,
+      theoreticalIP,
+      mzTolPPM,
+      nbPeaksToSum,
+      Some(overlapShift)
+    ).asInstanceOf[Option[OverlappingIsotopicPattern]]
+  }
   
 }

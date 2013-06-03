@@ -22,6 +22,8 @@ class PredictedMzFtExtractor(
 ) extends AbstractSupervisedFtExtractor {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
+    
+    val theoIP = putativeFt.theoreticalIP
     val moz = putativeFt.getMz // suppose to be the mz of the monoisotopic right ?
     val charge = putativeFt.getCharge // charge magically deduced by the machine
     
@@ -61,13 +63,13 @@ class PredictedMzFtExtractor(
 	for ( i <- highestPeakel.minIdx to highestPeakel.maxIdx) {
 	  val peak = xic(i)
 	  val scanID = xicScanIDs(i)
-	  val ipOpt = pklTree.extractIsotopicPattern(this.scanHeaderById(scanID), moz, mzTolPPM, charge, maxNbPeaksInIP)
+	  val ipOpt = pklTree.extractIsotopicPattern(scanHeaderById(scanID), theoIP, mzTolPPM, 2)
 	  if( ipOpt.isDefined ) {
         val ip = ipOpt.get
         val intensity = ip.intensity
         // If we have peaks
         if( ip.peaks.length > 0 ) {
-          val olpIPs = this._extractOverlappingIPs( ip, pklTree )
+          val olpIPs = this._extractOverlappingIPs( ip, theoIP, pklTree )
           // Set overlapping IPs if at least one has been found
           val nbOlpIPs = olpIPs.length
           if( nbOlpIPs > 0 ) {

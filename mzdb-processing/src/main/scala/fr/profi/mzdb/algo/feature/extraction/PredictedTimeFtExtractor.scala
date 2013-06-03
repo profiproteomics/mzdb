@@ -19,17 +19,13 @@ import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 import fr.profi.mzdb.model.Peakel
 
 
- object Method extends Enumeration {
-    type Method = Value
-    val CLASSIC, RIDGE = Value
-  }
-
-import fr.profi.mzdb.algo.feature.extraction.Method._
+object ExtractionMethod extends Enumeration {
+  type Name = Value
+  val CLASSIC, RIDGE = Value
+}
 
 class PredictedTimeFtExtractor(
   //override val mzDbReader: MzDbReader,
- 
-    
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   override val mzTolPPM: Float,
@@ -37,7 +33,8 @@ class PredictedTimeFtExtractor(
   override val minNbOverlappingIPs: Int,
   val minConsecutiveScans: Int = 4,
   val predictedTimeTol: Int = 120,
-  val method : Method = Method.RIDGE) extends Ms2DrivenFtExtractor(
+  val method: ExtractionMethod.Name = ExtractionMethod.RIDGE
+) extends Ms2DrivenFtExtractor(
   scanHeaderById,
   nfByScanId,
   mzTolPPM,
@@ -121,7 +118,7 @@ class PredictedTimeFtExtractor(
       return peakels(0).sortBy( _.intensityMax ).last.apexLcContext.getScanId()
     }
     var scanId = 0
-    if (method == Method.CLASSIC) {
+    if (method == ExtractionMethod.CLASSIC) {
       //usual case 
       val monoIsosRmsd = _rmsdCalc(peakels, values)
       //retrieving the best solution
@@ -132,7 +129,7 @@ class PredictedTimeFtExtractor(
       val bestMonoIso = longestMonoIsos.map{ case (peakel, array) => peakel -> (array.map{ x=> x._2}).toBuffer.sum / array.length } maxBy(_._2)//.apexLcContext.getScanId()
       scanId = bestMonoIso._1.apexLcContext.getScanId()
       
-    } else if (method == Method.RIDGE) {
+    } else if (method == ExtractionMethod.RIDGE) {
       var ridges = ridgeCalc(peakels)
       if (ridges.isEmpty) {
         logger.warn("no signal found in selected region")
@@ -280,6 +277,7 @@ class PredictedTimeFtExtractor(
   private def _findStartingScanId(putativeFt: PutativeFeature, pklTree: PeakListTree): Int = {
 
     // Retrieve some vars
+    val theoIP = putativeFt.theoreticalIP
     val elutionTime = putativeFt.elutionTime
     var curScanH = this.getScanHeaderForTime(elutionTime, 1)
 
@@ -319,8 +317,14 @@ class PredictedTimeFtExtractor(
       for (minNbPeaks <- this.maxNbPeaksInIP to 1 by -1) {
 
         // Search for the direction which exhibits the highest intensity
-        val intensityAscDir = _getIntensityAscendantDirection(putativeFt, pklTree, curCycleNum, range,
-          this.mzTolPPM, minNbPeaks, minNbPeaks)
+        val intensityAscDir = _getIntensityAscendantDirection(
+          putativeFt,
+          pklTree,
+          curCycleNum,
+          range,
+          this.mzTolPPM,
+          minNbPeaks
+        )
 
         // Check if there is some signal in one of the left/right directions
         if (intensityAscDir != 0) {
@@ -339,8 +343,7 @@ class PredictedTimeFtExtractor(
               val startingScanH = this.scanHeaderById(curScanId)
 
               // Try to extract some signal
-              val ipOpt = pklTree.extractIsotopicPattern(startingScanH, putativeFt.mz, this.mzTolPPM,
-                putativeFt.charge, this.maxNbPeaksInIP);
+              val ipOpt = pklTree.extractIsotopicPattern(startingScanH, theoIP, mzTolPPM, 2)
 
               // Check if signal has been extracted
               if (ipOpt != None && ipOpt.get.peaks.length >= minNbPeaks) {

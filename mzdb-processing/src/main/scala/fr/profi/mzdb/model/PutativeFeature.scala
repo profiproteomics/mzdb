@@ -2,6 +2,7 @@ package fr.profi.mzdb.model
 
 import scala.reflect.BeanProperty
 import fr.profi.mzdb.utils.misc.InMemoryIdGen
+import fr.profi.mzdb.utils.misc.IsotopicPatternLookup
 
 object PutativeFeature extends InMemoryIdGen
 
@@ -14,6 +15,10 @@ case class PutativeFeature(
   @BeanProperty mz: Double,
   @BeanProperty charge: Int
 ) {
+  
+  @BeanProperty lazy val theoreticalIP: TheoreticalIsotopePattern = {
+    IsotopicPatternLookup.getTheoreticalPattern(mz, charge)
+  }
 
   @BeanProperty var scanId: Int = 0
   @BeanProperty var elutionTime: Float = 0

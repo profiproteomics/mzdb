@@ -159,15 +159,23 @@ object FeatureScorer {
    *  Estimation of the quality of the Isotopic Pattern
    *  rmsd of peakel's area observed vs peakel's area calculated
    ****************************************************************/
-  def calcIsotopicDistance(f : Feature) :Double =  {
+  def calcIsotopicDistance(f : Feature): Double = {
     //if (f.peakelsCount < 2)
     val mz = f.getMz
-    val pattern = IsotopicPatternLookup.getIsotopicPatternForMz(mz)
-    val obsPattern = f.getPeakels().map(_.area.toDouble)
-    val maxIntens = obsPattern.max
-    obsPattern.foreach(_ * 100 / maxIntens)
-    val (shortest, longest) = if (pattern.length > obsPattern.length) (obsPattern,pattern) else (pattern,obsPattern)
-    VectorSimilarity.rmsd(shortest, longest.slice(0, shortest.length))
+    
+    // Retrieve theoreticl and observed abundances
+    val theoPattern = IsotopicPatternLookup.getTheoreticalPattern(mz,f.getCharge)
+    val theoAbundances = theoPattern.relativeAbundances.map(_.toDouble)
+    val obsAbundances = f.getPeakels.map(_.area.toDouble)
+    
+    // Normalize observed abundances
+    val maxIntens = obsAbundances.max
+    val normAbundances = obsAbundances.map(_ * 100 / maxIntens)
+    
+    val (shortest, longest) = if (theoAbundances.length < normAbundances.length) (theoAbundances, obsAbundances)
+    else (obsAbundances, theoAbundances)
+    
+    VectorSimilarity.rmsd( shortest, longest.take(shortest.length) )
   }
   
   /*****************************************************************

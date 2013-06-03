@@ -24,16 +24,17 @@ class FullySupervisedFtExtractor(
     // TODO: check if cycles are a better option
     val sortedScanIds = putativeFt.firstScanId to putativeFt.lastScanId
     
+    val theoIP = putativeFt.theoreticalIP
     val ips = new ArrayBuffer[IsotopicPattern]( sortedScanIds.length )
       
     // Iterate over scan ids sorted in an ascendant way
     for( scanId <- sortedScanIds ) {
       
-      val curScanH = this.scanHeaderById.get(scanId)
-      if( curScanH != None ) {
+      // Try to retrive the scan header
+      for( curScanH <- this.scanHeaderById.get(scanId) ) {
         //println(curScanH.msLevel);
         
-        val ipOpt = pklTree.extractIsotopicPattern( curScanH.get, putativeFt.mz, this.mzTolPPM, putativeFt.charge, this.maxNbPeaksInIP )
+        val ipOpt = pklTree.extractIsotopicPattern( curScanH, theoIP, mzTolPPM, 2 )
         
         // Check if an isotopic pattern has been found
         if( ipOpt != None  ) {
@@ -42,7 +43,7 @@ class FullySupervisedFtExtractor(
           
           if( ip.peaks.length > 0 ) {
             
-            val olpIPs = this._extractOverlappingIPs( ip, pklTree );
+            val olpIPs = this._extractOverlappingIPs( ip, theoIP, pklTree )
             
             // Set overlapping IPs if at least one has been found
             val nbOlpIPs = olpIPs.length
