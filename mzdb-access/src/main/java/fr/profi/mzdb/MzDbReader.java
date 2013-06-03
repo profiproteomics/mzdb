@@ -39,8 +39,10 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
 public class MzDbReader {
 
 	public enum BBSizesUserParamNames {
-		BB_MZ_HEIGHT_MS1_STR("BB_height_ms1"), BB_MZ_HEIGHT_MSn_STR("BB_height_msn"), BB_RT_WIDTH_MS1_STR(
-				"BB_width_ms1"), BB_RT_WIDTH_MSn_STR("BB_width_msn");
+		BB_MZ_HEIGHT_MS1_STR("BB_height_ms1"),
+		BB_MZ_HEIGHT_MSn_STR("BB_height_msn"),
+		BB_RT_WIDTH_MS1_STR("BB_width_ms1"),
+		BB_RT_WIDTH_MSn_STR("BB_width_msn");
 
 		private final String userParamName;
 
@@ -250,7 +252,7 @@ public class MzDbReader {
 	 */
 	public float getLastTime() throws SQLiteException {
 		// Retrieve the number of scans
-		String sqlString = "SELECT time FROM scan ORDER BY id DESC LIMIT 1";
+		String sqlString = "SELECT time FROM spectrum ORDER BY id DESC LIMIT 1";
 		return (float) new SQLiteQuery(connection, sqlString).extractSingleDouble();
 	}
 
@@ -369,7 +371,7 @@ public class MzDbReader {
 	 */
 	public int getCyclesCount() throws SQLiteException {// SELECT MAX(cycle)
 		// FROM scan
-		String queryStr = "SELECT cycle FROM scan ORDER BY id DESC LIMIT 1";
+		String queryStr = "SELECT cycle FROM spectrum ORDER BY id DESC LIMIT 1";
 		return new SQLiteQuery(connection, queryStr).extractSingleInt();
 	}
 
@@ -531,7 +533,7 @@ public class MzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getBoundingBoxFirstScanId(int scanId) throws SQLiteException {
-		String sqlString = "SELECT bb_first_scan_id FROM scan WHERE id = ?";
+		String sqlString = "SELECT bb_first_spectrum_id FROM spectrum WHERE id = ?";
 		return new SQLiteQuery(connection, sqlString).bind(1, scanId).extractSingleInt();
 	}
 
@@ -693,7 +695,7 @@ public class MzDbReader {
 		// than doing junction in sql query
 		int firstScanId = this.getBoundingBoxFirstScanId(scanId);
 
-		String sqlString = "SELECT id, data, run_slice_id FROM bounding_box WHERE bounding_box.first_scan_id = ?";
+		String sqlString = "SELECT id, data, run_slice_id FROM bounding_box WHERE bounding_box.first_spectrum_id = ?";
 		SQLiteRecordIterator records = new SQLiteQuery(connection, sqlString).bind(1, firstScanId)
 				.getRecords();
 
