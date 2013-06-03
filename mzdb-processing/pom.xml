@@ -97,6 +97,13 @@
       <artifactId>mzdb-access</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
+    
+    <!-- ProFI commons Scala -->
+    <dependency>
+      <groupId>fr.proline.util</groupId>
+      <artifactId>ProFI-Commons-Scala</artifactId>
+      <version>0.0.5-SNAPSHOT</version>
+    </dependency>
 
   </dependencies>
 
