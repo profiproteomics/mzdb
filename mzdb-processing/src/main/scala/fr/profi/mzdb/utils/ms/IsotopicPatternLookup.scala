@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.misc
+package fr.profi.mzdb.utils.ms
 
 import scala.io.Source
 import scala.collection.mutable.HashMap

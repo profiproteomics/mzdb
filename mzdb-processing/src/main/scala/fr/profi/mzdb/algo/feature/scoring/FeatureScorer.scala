@@ -8,7 +8,7 @@ import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
 import scala.reflect.BeanProperty
 import util.control.Breaks._
-import fr.profi.mzdb.utils.misc.IsotopicPatternLookup
+import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
 import fr.profi.mzdb.algo.signal.fitting.GaussFitter

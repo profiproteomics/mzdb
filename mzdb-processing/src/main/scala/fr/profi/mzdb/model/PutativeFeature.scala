@@ -2,7 +2,7 @@ package fr.profi.mzdb.model
 
 import scala.reflect.BeanProperty
 import fr.profi.mzdb.utils.misc.InMemoryIdGen
-import fr.profi.mzdb.utils.misc.IsotopicPatternLookup
+import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 
 object PutativeFeature extends InMemoryIdGen
 
