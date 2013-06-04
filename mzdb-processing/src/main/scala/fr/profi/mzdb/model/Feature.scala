@@ -49,29 +49,31 @@ object Feature extends InMemoryIdGen {
       if( nbPeaks > maxNbPeaks ) maxNbPeaks = nbPeaks
     }
   
-    val peakels = new Array[Peakel](maxNbPeaks)
+    val peakels = new ArrayBuffer[Peakel](maxNbPeaks)
     
     for( peakelIdx <- 0 until maxNbPeaks ) {
-      val peakel = this._buildPeakel(ips, peakelIdx)
-      peakels(peakelIdx) = peakel
+      val peakelOpt = this._buildPeakel(ips, peakelIdx)
+      if( peakelOpt.isDefined ) peakels += peakelOpt.get
     }
 
-    peakels
+    peakels.toArray
   }
 
-  protected def _buildPeakel( ips: Seq[IsotopicPatternLike], peakelIdx: Int ): Peakel = {
+  protected def _buildPeakel( ips: Seq[IsotopicPatternLike], peakelIdx: Int ): Option[Peakel] = {
     
     val peaks = new ArrayBuffer[Option[Peak]]()
+    var definedPeaksCount = 0
     
     for( ip <- ips ) {
       if( peakelIdx < ip.peaks.length ) {
         val peak = ip.peaks(peakelIdx)
         peaks += peak
-        
+        if( peak.isDefined ) definedPeaksCount += 1
       } else peaks += Option.empty[Peak]
     }
     
-    new Peakel( peakelIdx, peaks.toArray )
+    if( definedPeaksCount > 0 ) Some( new Peakel( peakelIdx, peaks.toArray ) )
+    else Option.empty[Peakel]
   }
   
   def calcPeakelsAreaRatios( peakels: Seq[Peakel] ): Option[Array[Float]] = {
@@ -209,7 +211,7 @@ case class Feature (
     
     for( idx <- 0 until peaks.length ) {
       val peak = peaks(idx)
-      xValues(idx) = peak.getLcContext.getElutionTime / 60
+      xValues(idx) = peak.getLcContext.getElutionTime
       yValues(idx) = peak.getIntensity()
     }
     
@@ -227,7 +229,7 @@ case class Feature (
       for( idx <- 0 until nbPeaks ) {
         val peak = peaks(idx)
         if( peak != None ) {
-          xValues(idx) = peak.get.getLcContext.getElutionTime / 60
+          xValues(idx) = peak.get.getLcContext.getElutionTime
           yValues(idx) += peak.get.getIntensity()
         }
       }

@@ -52,14 +52,16 @@ case class Peakel(
 ) {
   
   // Make some requirements
-  require( peaks != null )
+  require( peaks != null && peaks.length > 0,"some peaks must be provided" )
   
   // Define other Peakel attributes
   @BeanProperty val definedPeaks = for( p<- peaks if p != None) yield p.get
+  require( definedPeaks.length > 0,"some defined peaks must be provided" )
+  
   @BeanProperty val definedPeaksIndexRange = Peakel.calcPeaksIndexRange( peaks )
   @BeanProperty val lcContextRange = Peakel.calcLcContextRange( definedPeaks )
   @BeanProperty val firstScanContext = lcContextRange._1
-  @BeanProperty val lastScanContext = lcContextRange._2  
+  @BeanProperty val lastScanContext = lcContextRange._2
   @BeanProperty val apexIndex = peaks.indices.filter( peaks(_) != None ).reduce { (a,b) =>
                                   if( peaks(a).get.intensity > peaks(b).get.intensity ) a else b
                                 }

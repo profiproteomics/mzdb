@@ -39,7 +39,7 @@ class Ms2DrivenFtExtractor(
     val scanHeader = scanHeaderOpt.get
     
     // Extract isotopic patterns around the starting scan
-    val ips = this.extractIsotopicPatterns(putativeFt, pklTree, scanHeader)
+    var ips = this.extractIsotopicPatterns(putativeFt, pklTree, scanHeader)
     val nbIps =  ips.length
     
     // if no isotopic pattern
@@ -56,21 +56,25 @@ class Ms2DrivenFtExtractor(
     val ftTime = tmpFt.elutionTime
     
     // Find all peakels in the extracted range of IPs
-    val peaksIndexes = BasicPeakelFinder.findPeakelsIndexes( tmpSummedXIC._2.map(_.toDouble), 2 )
-    val peaksCount = peaksIndexes.length
-    val matchingPeakIdx = peaksIndexes.find( idx => ftTime >= tmpSummedXIC._1(idx._1) && ftTime <= tmpSummedXIC._1(idx._2) )
+    val peakelsIndexes = BasicPeakelFinder.findPeakelsIndexes( tmpSummedXIC._2.map(_.toDouble), 2 )
     
-    // If a peakel with an index compatible with the MS2 event has been detected
-    if( matchingPeakIdx != None ) {
+    // Retrieve the peakel corresponding to the feature apex
+    val matchingPeakelIdx = peakelsIndexes.find( idx => ftTime >= tmpSummedXIC._1(idx._1) && ftTime <= tmpSummedXIC._1(idx._2) )
+    
+    // If at least one peakel has been detected
+    if( matchingPeakelIdx != None ) {
       
       // Extract adjusted peakel isotopic patterns
       val matchingIPs = new ArrayBuffer[IsotopicPattern]()
-      for( idx <- matchingPeakIdx.get._1 to matchingPeakIdx.get._2 ) {
+      for( idx <- matchingPeakelIdx.get._1 to matchingPeakelIdx.get._2 ) {
         matchingIPs += tmpFt.getIsotopicPattern( idx )
       }
       
+      // Replace IPs by matchingIPs
+      ips = matchingIPs.toArray
+      
       // Build adjusted feature
-      tmpFt = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, matchingIPs )
+      tmpFt = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, ips )
     }
     
     // Compute overlapping features

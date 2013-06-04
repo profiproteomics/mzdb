@@ -338,7 +338,7 @@ object SQLiteFeatureStorer {
     val series = new XYSeries("XIC")
     
     xic.zip.foreach { dataPoint =>
-      series.add(dataPoint._1, dataPoint._2 )
+      series.add(dataPoint._1 / 60, dataPoint._2 ) // convert seconds into minutes
     }
     
     val xyDataset = new XYSeriesCollection(series)
