@@ -141,27 +141,6 @@ public class MzDbReader {
 
 	}
 
-	public BBSizes getBBSizes() {
-		if (_boundingBoxSizes == null) {
-			_boundingBoxSizes = new BBSizes();
-			MzDbHeader header = null;
-			try {
-				header = _mzDbHeaderReader.getMzDbHeader();
-			} catch (SQLiteException e) {
-				e.printStackTrace();
-			}
-			_boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(
-					BBSizesUserParamNames.BB_MZ_HEIGHT_MS1_STR.toString()).getValue());
-			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(
-					BBSizesUserParamNames.BB_MZ_HEIGHT_MSn_STR.toString()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(
-					BBSizesUserParamNames.BB_RT_WIDTH_MS1_STR.toString()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(
-					BBSizesUserParamNames.BB_RT_WIDTH_MSn_STR.toString()).getValue());
-		}
-		return _boundingBoxSizes;
-	}
-
 	/**
 	 * Instantiates a new mzDB reader (secondary constructor).
 	 * 
@@ -237,6 +216,27 @@ public class MzDbReader {
 		}
 
 		return this.isNoLossMode;
+	}
+	
+	public BBSizes getBBSizes() {
+		if (_boundingBoxSizes == null) {
+			_boundingBoxSizes = new BBSizes();
+			 MzDbHeader header = null;
+			try {
+				 header = _mzDbHeaderReader.getMzDbHeader();
+			} catch (SQLiteException e) {
+				e.printStackTrace();
+			}
+			 _boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(
+				BBSizesUserParamNames.BB_MZ_HEIGHT_MS1_STR.toString()).getValue());
+			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(
+				BBSizesUserParamNames.BB_MZ_HEIGHT_MSn_STR.toString()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(
+				BBSizesUserParamNames.BB_RT_WIDTH_MS1_STR.toString()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(
+				BBSizesUserParamNames.BB_RT_WIDTH_MSn_STR.toString()).getValue());
+		}
+		return _boundingBoxSizes;
 	}
 
 	public XmlMapper getMapper() {
