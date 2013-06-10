@@ -1,32 +1,34 @@
+/**
+ * 
+ */
 package fr.profi.mzdb.db.model.params.param;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlValue;
 
-@XmlAccessorType(XmlAccessType.FIELD)
-public class UserParam {
+/**
+ * @author Marco
+ */
+
+//@XmlAccessorType(XmlAccessType.FIELD)
+public class UserText {
   @XmlAttribute
   protected String name;
-
+  @XmlValue
+  protected String text;
   @XmlAttribute
-  protected String value;
-
-  @XmlAttribute
-  protected String type;// ="xsd:float"/>;
-
+  protected String type;
   @XmlAttribute
   protected String cvRef = "MS";
-
   @XmlAttribute
-  protected String accession = "";
+  protected String accession;
 
   public String getName() {
     return name;
   }
 
-  public String getValue() {
-    return value;
+  public String getText() {
+    return text;
   }
 
   public String getType() {

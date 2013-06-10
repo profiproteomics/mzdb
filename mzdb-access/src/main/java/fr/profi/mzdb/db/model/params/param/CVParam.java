@@ -1,24 +1,29 @@
 package fr.profi.mzdb.db.model.params.param;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import javax.xml.bind.annotation.*;
 
-@JacksonXmlRootElement(localName = "cvParam")
+//@XmlAccessorType(XmlAccessType.FIELD)
 public class CVParam {
-	@JacksonXmlProperty(isAttribute = true, localName = "value")
+  
+  @XmlAttribute
 	protected String value = "";
-	@JacksonXmlProperty(isAttribute = true, localName = "cvRef")
+	
+  @XmlAttribute
 	protected String cvRef = "MS";
-	@JacksonXmlProperty(isAttribute = true, localName = "name")
+	
+  @XmlAttribute
 	protected String name = "";
-	@JacksonXmlProperty(isAttribute = true, localName = "accession")
+	
+  @XmlAttribute
 	protected String accession = "";
 
-	@JacksonXmlProperty(isAttribute = true, localName = "unitCvRef")
-	protected String unitCvRef = "UO";
-	@JacksonXmlProperty(isAttribute = true, localName = "unitAccession")
+  @XmlAttribute
+  protected String unitCvRef = "UO";
+  
+  @XmlAttribute
 	protected String unitAccession = "";
-	@JacksonXmlProperty(isAttribute = true, localName = "unitName")
+  
+  @XmlAttribute
 	protected String unitName = "";
 
 	public String getValue() {

@@ -6,6 +6,7 @@ import fr.profi.mzdb.db.model.params.IParamContainer;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
+import fr.profi.mzdb.db.model.params.param.UserText;
 import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
 
 // TODO: Auto-generated Javadoc
@@ -102,6 +103,10 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 */
 	public UserParam getUserParam(String name) {
 		return this.paramTree.getUserParam(name);
+	}
+	
+	public List<UserText> getUserTexts() {
+	   return this.paramTree.getUserTexts();
 	}
 
 }

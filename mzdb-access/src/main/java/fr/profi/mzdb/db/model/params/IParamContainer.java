@@ -7,6 +7,7 @@ import java.util.List;
 
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
+import fr.profi.mzdb.db.model.params.param.UserText;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -29,7 +30,8 @@ public interface IParamContainer {
 	 * @return the user params
 	 */
 	public List<UserParam> getUserParams();
-
+	
+	public List<UserText> getUserTexts();
 	/**
 	 * Gets the user param.
 	 * 

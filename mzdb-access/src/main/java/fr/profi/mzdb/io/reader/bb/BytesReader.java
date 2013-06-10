@@ -69,6 +69,7 @@ public class BytesReader extends AbstractBlobReader {
 			_nbPeaks.put(count, nbPeaks);
 
 			i += 4; // skip nbPeaks
+			
 			DataEncoding de = this._dataEncodings.get(id);
 			int structSize = de.getPeakEncoding().getValue();
 			if (de.getMode() == DataMode.FITTED)

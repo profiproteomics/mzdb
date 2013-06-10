@@ -1,9 +1,13 @@
 package fr.profi.mzdb.db.model.params;
 
 import java.util.ArrayList;
+import java.util.List;
 
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlElements;
+import javax.xml.bind.annotation.XmlRootElement;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -11,18 +15,24 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
  * 
  * @author Marco
  */
-@JacksonXmlRootElement(localName = "instrumentConfiguration")
+@XmlRootElement(name = "instrumentConfiguration")
 public class InstrumentConfigParamTree {
 
 	/** The id. */
-	@JacksonXmlProperty(isAttribute = true, localName = "id")
+  @XmlAttribute(required=true)
 	protected String id;
 
 	// TODO see if the removing of count attribute of componentList tag could be
 	// avoided
 	/** The components. */
-	@JacksonXmlProperty(isAttribute = true, localName = "componentList")
-	protected ArrayList<Component> components;
+	
+  @XmlElements({
+    @XmlElement(name = "detector", required = true, type = DetectorComponent.class),
+    @XmlElement(name = "analyzer", required = true, type = AnalyzerComponent.class),
+    @XmlElement(name = "source", required = true, type = SourceComponent.class)
+  })
+  @XmlElementWrapper
+	protected List<Component> components;
 
 	/**
 	 * Instantiates a new instrument config param tree.
@@ -54,7 +64,7 @@ public class InstrumentConfigParamTree {
 	 * 
 	 * @return the components
 	 */
-	public ArrayList<Component> getComponents() {
+	public List<Component> getComponents() {
 		return components;
 	}
 

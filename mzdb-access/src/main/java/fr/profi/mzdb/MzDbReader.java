@@ -10,15 +10,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+
 
 import fr.profi.mzdb.db.model.MzDbHeader;
+import fr.profi.mzdb.db.model.params.InstrumentConfigParamTree;
+import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
 import fr.profi.mzdb.io.reader.*;
 import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
@@ -89,7 +95,9 @@ public class MzDbReader {
 	private BBSizes _boundingBoxSizes = null;
 
 	/** The xml mapper. */
-	public static XmlMapper xmlMapper = new XmlMapper();
+	
+	public static Unmarshaller unmarshaller;
+	public static Unmarshaller instrumentConfigUnmarshaller;
 
 	/**
 	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
@@ -132,13 +140,23 @@ public class MzDbReader {
 		connection.exec("PRAGMA journal_mode=OFF;");
 		connection.exec("PRAGMA temp_store=2;");
 		connection.exec("PRAGMA cache_size=8000;");
+		
+		/**set the marshalling*/
+    try {
+      JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
+      MzDbReader.unmarshaller = jaxbContext.createUnmarshaller();
+      JAXBContext jaxbContext_ = JAXBContext.newInstance(InstrumentConfigParamTree.class);
+      MzDbReader.instrumentConfigUnmarshaller = jaxbContext_.createUnmarshaller();
 
+    } catch (JAXBException e) {
+      e.printStackTrace();
+    }
+		
 		this._mzDbHeaderReader = new MzDbHeaderReader(connection);
 		this._dataEncodingReader = new DataEncodingReader(this);
 		this._scanHeaderReader = new ScanHeaderReader(this);
 		this._runSliceHeaderReader = new RunSliceHeaderReader(this);
 		this._boundingBoxSizes = getBBSizes();
-
 	}
 
 	/**
@@ -177,6 +195,10 @@ public class MzDbReader {
 	public MzDbReader(String dbPath, boolean cacheEntities) throws ClassNotFoundException,
 			FileNotFoundException, SQLiteException {
 		this(new File(dbPath), cacheEntities, false);
+	}
+	
+	public MzDbHeader getMzDbHeader() throws SQLiteException {
+	  return _mzDbHeaderReader.getMzDbHeader();
 	}
 
 	/**
@@ -237,10 +259,6 @@ public class MzDbReader {
 				BBSizesUserParamNames.BB_RT_WIDTH_MSn_STR.toString()).getValue());
 		}
 		return _boundingBoxSizes;
-	}
-
-	public XmlMapper getMapper() {
-		return xmlMapper;
 	}
 
 	/**

@@ -1,9 +1,12 @@
 package fr.profi.mzdb.io.reader;
 
-import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import javax.xml.bind.JAXBException;
+import javax.xml.transform.stream.StreamSource;
+
+import org.xml.sax.InputSource;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.InstrumentConfigParamTree;
@@ -28,15 +31,10 @@ public class ParamTreeParser {
 
 		ParamTree paramTree = null;
 		try {
-			paramTree = MzDbReader.xmlMapper.readValue(paramTreeAsStr, ParamTree.class);
-		} catch (JsonParseException e) {
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
+			paramTree = (ParamTree) MzDbReader.unmarshaller.unmarshal(new StringReader(paramTreeAsStr));
+		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
-
 		return paramTree;
 	}
 
@@ -51,14 +49,11 @@ public class ParamTreeParser {
 
 		InstrumentConfigParamTree paramTree = null;
 		try {
-			paramTree = MzDbReader.xmlMapper.readValue(paramTreeAsStr, InstrumentConfigParamTree.class);
-		} catch (JsonParseException e) {
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+			paramTree = (InstrumentConfigParamTree)MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(paramTreeAsStr));
+		} catch (JAXBException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
 
 		return paramTree;
 	}

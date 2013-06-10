@@ -5,7 +5,6 @@
 package fr.profi.mzdb.model;
 
 import java.util.Comparator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -30,7 +29,6 @@ public class Peak implements Cloneable, Comparable<Peak> {
 	private float _nf = -1;
 
 	/** The peak context. */
-	@JsonIgnore
 	protected ILcContext lcContext;
 
 	// public float elutionTime; // only for LCMS maps
