@@ -23,7 +23,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 
 import fr.profi.mzdb.db.model.MzDbHeader;
-import fr.profi.mzdb.db.model.params.InstrumentConfigParamTree;
+import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
 import fr.profi.mzdb.io.reader.*;
@@ -82,6 +82,8 @@ public class MzDbReader {
 
 	/** The _mz db header reader. */
 	private MzDbHeaderReader _mzDbHeaderReader = null;
+	
+	private InstrumentConfigReader _instrumentConfigReader = null;
 
 	/** The _data encoding reader. */
 	private DataEncodingReader _dataEncodingReader = null;
@@ -145,7 +147,7 @@ public class MzDbReader {
     try {
       JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
       MzDbReader.unmarshaller = jaxbContext.createUnmarshaller();
-      JAXBContext jaxbContext_ = JAXBContext.newInstance(InstrumentConfigParamTree.class);
+      JAXBContext jaxbContext_ = JAXBContext.newInstance(ComponentList.class);
       MzDbReader.instrumentConfigUnmarshaller = jaxbContext_.createUnmarshaller();
 
     } catch (JAXBException e) {
@@ -153,6 +155,7 @@ public class MzDbReader {
     }
 		
 		this._mzDbHeaderReader = new MzDbHeaderReader(connection);
+		this._instrumentConfigReader = new InstrumentConfigReader(connection);
 		this._dataEncodingReader = new DataEncodingReader(this);
 		this._scanHeaderReader = new ScanHeaderReader(this);
 		this._runSliceHeaderReader = new RunSliceHeaderReader(this);

@@ -1,6 +1,7 @@
 package fr.profi.mzdb.db.model;
 
-import fr.profi.mzdb.db.model.params.InstrumentConfigParamTree;
+import fr.profi.mzdb.db.model.params.ComponentList;
+import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
 
 // TODO: Auto-generated Javadoc
@@ -20,8 +21,12 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 	/** The software id. */
 	protected int softwareId;
 
+	
+	protected ParamTree paramTree;
+	
 	/** The param tree. */
-	protected InstrumentConfigParamTree paramTree;
+	protected ComponentList componentList;
+	
 
 	/**
 	 * Instantiates a new instrument configuration.
@@ -35,12 +40,13 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 	 * @param paramTree
 	 *            the param tree
 	 */
-	public InstrumentConfiguration(int id, String name, int softwareId, InstrumentConfigParamTree paramTree) {
+	public InstrumentConfiguration(int id, String name, int softwareId, ParamTree paramTree, ComponentList comp) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.softwareId = softwareId;
-		this.paramTree = paramTree;
+		this.paramTree=paramTree;
+		this.componentList = comp;
 	}
 
 	/**
@@ -54,7 +60,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 	 *            the software id
 	 */
 	public InstrumentConfiguration(int id, String name, int softwareId) {
-		this(id, name, softwareId, null);
+		this(id, name, softwareId, null, null);
 	}
 
 	/**
@@ -84,13 +90,17 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 		return softwareId;
 	}
 
+	public ParamTree getParamTree() {
+	  return this.paramTree;
+	}
+	
 	/**
 	 * Gets the param tree.
 	 * 
 	 * @return the param tree
 	 */
-	public InstrumentConfigParamTree getParamTree() {
-		return paramTree;
+	public ComponentList getComponentList() {
+		return componentList;
 	}
 
 	/**
@@ -99,8 +109,8 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 	 * @param paramTree
 	 *            the new param tree
 	 */
-	public void setParamTree(InstrumentConfigParamTree paramTree) {
+	/*public void setParamTree(InstrumentConfigParamTree paramTree) {
 		this.paramTree = paramTree;
-	}
+	}*/
 
 }

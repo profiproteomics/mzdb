@@ -2,7 +2,6 @@ package fr.profi.mzdb.db.model;
 
 import fr.profi.mzdb.db.model.params.ParamTree;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class MzDbHeader.
  * 
@@ -15,7 +14,7 @@ public class MzDbHeader extends AbstractTableModel {
 
 	/** The creation timestamp. */
 	protected int creationTimestamp;
-
+	
 	/**
 	 * Instantiates a new mz db header.
 	 * 

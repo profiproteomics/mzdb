@@ -1,15 +1,13 @@
 package fr.profi.mzdb.io.reader;
 
-import java.io.InputStream;
 import java.io.StringReader;
 
 import javax.xml.bind.JAXBException;
-import javax.xml.transform.stream.StreamSource;
 
 import org.xml.sax.InputSource;
 
 import fr.profi.mzdb.MzDbReader;
-import fr.profi.mzdb.db.model.params.InstrumentConfigParamTree;
+import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
 
 // TODO: Auto-generated Javadoc
@@ -45,11 +43,11 @@ public class ParamTreeParser {
 	 *            the param tree as str
 	 * @return the instrument config param tree
 	 */
-	public static InstrumentConfigParamTree parseInstrumentConfigParamTree(String paramTreeAsStr) {
+	public static ComponentList parseComponentList(String paramTreeAsStr) {
 
-		InstrumentConfigParamTree paramTree = null;
+		ComponentList paramTree = null;
 		try {
-			paramTree = (InstrumentConfigParamTree)MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(paramTreeAsStr));
+			paramTree = (ComponentList)MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(paramTreeAsStr));
 		} catch (JAXBException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();

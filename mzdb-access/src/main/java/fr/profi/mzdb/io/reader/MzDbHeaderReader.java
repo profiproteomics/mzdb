@@ -4,6 +4,7 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.db.model.MzDbHeader;
+
 import fr.profi.mzdb.db.table.MzdbTable;
 import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
@@ -39,9 +40,7 @@ public class MzDbHeaderReader {
 	 *             the sQ lite exception
 	 */
 	public MzDbHeader getMzDbHeader() throws SQLiteException {
-
-		return new SQLiteQuery(connection, "select * from mzdb")
-				.extractRecord(new ISQLiteRecordExtraction<MzDbHeader>() {
+		return new SQLiteQuery(connection, "select * from mzdb").extractRecord(new ISQLiteRecordExtraction<MzDbHeader>() {
 
 					public MzDbHeader extract(SQLiteRecord r) throws SQLiteException {
 
@@ -49,8 +48,7 @@ public class MzDbHeaderReader {
 						int creationTimestamp = r.columnInt(MzdbTable.CREATION_TIMESTAMP);
 						String paramTreeAsStr = r.columnString(MzdbTable.PARAM_TREE);
 
-						return new MzDbHeader(version, creationTimestamp, ParamTreeParser
-								.parseParamTree(paramTreeAsStr));
+						return new MzDbHeader(version, creationTimestamp, ParamTreeParser.parseParamTree(paramTreeAsStr));
 					}
 				});
 	}
