@@ -25,7 +25,7 @@ public class ParamTreeParser {
 	 *            the param tree as str
 	 * @return the param tree
 	 */
-	public static ParamTree parseParamTree(String paramTreeAsStr) {
+	synchronized public static ParamTree parseParamTree(String paramTreeAsStr) {
 
 		ParamTree paramTree = null;
 		try {
@@ -33,6 +33,7 @@ public class ParamTreeParser {
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
+		ParamTreeParser.class.notifyAll();
 		return paramTree;
 	}
 
@@ -43,7 +44,7 @@ public class ParamTreeParser {
 	 *            the param tree as str
 	 * @return the instrument config param tree
 	 */
-	public static ComponentList parseComponentList(String paramTreeAsStr) {
+	synchronized public static ComponentList parseComponentList(String paramTreeAsStr) {
 
 		ComponentList paramTree = null;
 		try {
@@ -52,7 +53,7 @@ public class ParamTreeParser {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
-
+		ParamTreeParser.class.notifyAll();
 		return paramTree;
 	}
 

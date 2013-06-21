@@ -95,6 +95,8 @@ public class MzDbReader {
 	private RunSliceHeaderReader _runSliceHeaderReader = null;
 
 	private BBSizes _boundingBoxSizes = null;
+	
+	protected String dbLocation = null;
 
 	/** The xml mapper. */
 	
@@ -133,9 +135,11 @@ public class MzDbReader {
 		if (!dbLocation.exists()) {
 			throw (new FileNotFoundException());
 		}
-
+		
+		this.dbLocation = dbLocation.getAbsolutePath();
+		
 		connection = new SQLiteConnection(dbLocation);
-		connection.open(false);
+		connection.openReadonly();//(false);
 
 		// SQLite optimization
 		connection.exec("PRAGMA synchronous=OFF;");
@@ -220,6 +224,10 @@ public class MzDbReader {
 	 */
 	public MzDbEntityCache getEntityCache() {
 		return entityCache;
+	}
+	
+	public String getDbLocation() {
+	  return this.dbLocation;
 	}
 
 	/**
