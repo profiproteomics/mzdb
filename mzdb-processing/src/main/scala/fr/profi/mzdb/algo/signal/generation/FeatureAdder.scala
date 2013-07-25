@@ -1,4 +1,4 @@
-package fr.profi.mzdb.algo.generation
+package fr.profi.mzdb.algo.signal.generation
 
 /**
  * @author David Bouyssie

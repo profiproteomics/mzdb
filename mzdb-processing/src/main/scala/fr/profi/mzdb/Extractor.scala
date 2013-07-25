@@ -1,3 +1,5 @@
+package fr.profi.mzdb
+
 import java.io.File
 import java.io.PrintWriter
 
