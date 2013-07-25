@@ -133,7 +133,7 @@ public class MzDbReader {
 
 		// Check if database exists
 		if (!dbLocation.exists()) {
-			throw (new FileNotFoundException());
+			throw (new FileNotFoundException("can't find the mzDB file at the given path"));
 		}
 		
 		this.dbLocation = dbLocation.getAbsolutePath();
