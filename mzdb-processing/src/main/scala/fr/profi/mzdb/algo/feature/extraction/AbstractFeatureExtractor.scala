@@ -23,7 +23,7 @@ abstract class AbstractFeatureExtractor extends Logging {
   val minNbOverlappingIPs: Int
 
   val scanHeaders = scanHeaderById.values.toArray.sortBy(_.getId)
-  val scanHeaderByCycleNum = Map() ++ scanHeaders.map(sh => sh.getCycle -> sh)
+  val ms1ScanHeaderByCycleNum = Map() ++ scanHeaders.filter(_.getMsLevel() == 1 ).map(sh => sh.getCycle -> sh)
 
   private val TIME_INDEX_WIDTH = 15
 

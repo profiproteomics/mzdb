@@ -111,7 +111,7 @@ case class Feature (
    ) {
   
   def this( id: Int, mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike] ) = {
-    this( Feature.generateNewId(), mz, charge, Feature.buildPeakels(isotopicPatterns) )
+    this( id, mz, charge, Feature.buildPeakels(isotopicPatterns) )
   }
   
   def this( mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike] ) = {
@@ -155,7 +155,7 @@ case class Feature (
   @BeanProperty val apexIndex = basePeakel.apexIndex
   @BeanProperty val apexScanHeader = basePeakel.getApex.getLcContext.asInstanceOf[ScanHeader]
   @BeanProperty val ms1Count = basePeakel.peaks.length
-  @BeanProperty var ms2ScanIds: Array[Int] = null
+  @BeanProperty var ms2ScanIds: Array[Int] = Array.empty[Int]
   @BeanProperty val intensitySum = _ftIntensitySum
   
   // Define some lazy attributes

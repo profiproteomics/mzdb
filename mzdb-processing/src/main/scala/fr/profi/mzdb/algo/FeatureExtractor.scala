@@ -55,18 +55,52 @@ class FeatureExtractor(
       if( putativeFt.elutionTime > 0 ) { // only know m/z, elution time is predicted
         //println("Predicted time")
 
-        ft = this.predictedTimeFtExtractor.extractFeature(putativeFt, pklTree );
+        ft = this.predictedTimeFtExtractor.extractFeature(putativeFt, pklTree )
         
       }  else if( putativeFt.mz > 0 ) { // search best feature for this m/z
         //println("Predicted Mz")
-        ft = this.predictedMzFtExtractor.extractFeature(putativeFt, pklTree );
+        ft = this.predictedMzFtExtractor.extractFeature(putativeFt, pklTree )
       }
     }
     
     // Update MS2 scan ids of the feature
-    for( foundFt <- ft ) {  
+    for( foundFt <- ft ) {
       
-      val ftScanHeaders = foundFt.getScanHeaders
+      val ms2ScanIds = new ArrayBuffer[Int]
+      
+      // Retrieve the first peakel
+      val firstPeakel = foundFt.peakels(0)
+      
+      // Iterate over each peak of this peakel
+      for( peak <- firstPeakel.definedPeaks ) {
+        
+        // Retrieve the cycles surrounding the next MS2 scans
+        val thisScanId = peak.getLcContext.getScanId
+        val thisCycleNum = scanHeaderById(thisScanId).getCycle
+        val nextCycleNum = thisCycleNum + 1
+        
+        // Do the job only if next cycle can be found
+        if( ms1ScanHeaderByCycleNum.contains(nextCycleNum) ) {
+          val nextCycleScanId = ms1ScanHeaderByCycleNum(nextCycleNum).getId
+           
+          // Iterate over MS2 scans
+          for( scanId <- thisScanId until nextCycleScanId ) {
+            val scanH = this.scanHeaderById(scanId)
+            // TODO: log charge conflicts
+            if( scanH.getMsLevel == 2 && scanH.getPrecursorCharge() == foundFt.charge ) {
+              // Compute m/z difference between the current peak and MS2 scan precursor m/z
+              val mzDiffPPM = MsUtils.DaToPPM(peak.getMz, (scanH.getPrecursorMz - peak.getMz).abs )
+              if( mzDiffPPM < mzTolPPM ) {
+                ms2ScanIds += scanId
+              }
+            }
+          }
+        }
+      }
+      
+      foundFt.ms2ScanIds = ms2ScanIds.toArray
+
+      /*val ftScanHeaders = foundFt.getScanHeaders
       
       val firstScanId = ftScanHeaders.head.getId
       val lastCycleNum = ftScanHeaders.last.getCycle + 1 // jump to next cycle
@@ -74,7 +108,6 @@ class FeatureExtractor(
       val lastScanId = if( scanHeaderByCycleNum.contains(lastCycleNum) ) scanHeaderByCycleNum(lastCycleNum).getId
       else scanHeaderByCycleNum(lastCycleNum - 1).getId
       
-      val ms2ScanIds = new ArrayBuffer[Int]
       for( scanId <- firstScanId until lastScanId ) {
         val scanH = this.scanHeaderById(scanId)
         if( scanH.getMsLevel == 2 ) {
@@ -83,9 +116,8 @@ class FeatureExtractor(
             ms2ScanIds += scanId
           }
         }
-      }
+      }*/
       
-      foundFt.ms2ScanIds = ms2ScanIds.toArray
     }
 
     ft

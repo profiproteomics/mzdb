@@ -76,7 +76,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
     var( prevRSH, nextRSH ) = (Option.empty[RunSliceHeader], Option.empty[RunSliceHeader])
     
     for ( rsh <- rsHeaders if rsh.getMsLevel == 1 ) {
-      this.logger.debug("processing run slice with id =" + rsh.getId);
+      this.logger.debug("processing run slice with id =" + rsh.getId)
 
       // Retrieve run slices and their corresponding id
       val rsNum = rsh.getNumber
@@ -102,7 +102,7 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
       
       if ( rsPutativeFts != None ) {
 
-        // System.out.println("run slice id =" +runSlice.id +
+        // println("run slice id =" +runSlice.id +
         // " ; putative features count=" +
         // runSlicePutativeFeatures.size() );
 
@@ -157,22 +157,18 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
       }
     }
     
-    this.logger.debug("nb features before identity filtering:" + extractedFeatures.length );
+    // TODO: add a boolean to disable this
+    this.logger.info("nb features before apex redundancy detection:" + extractedFeatures.length )
     
-    val featuresByApex = new HashMap[Peak,ArrayBuffer[Feature]]()
+    // TODO: try to group by the MS2 spectrum id nearest from the Apex
+    val featuresByApex = extractedFeatures.groupBy( _.peakels(0).getApex )
     
-    for( ft <- extractedFeatures ) {
-      val firstPeakelApex = ft.peakels(0).getApex()
-      //val apexKey = ipApex.scanHeader.getId + "%" + ipApex.peaks(0).getMz + "%" + ipApex.peaks(0).getIntensity      
-      featuresByApex.getOrElseUpdate(firstPeakelApex,new ArrayBuffer[Feature]) += ft      
-    }
-    
-    this.logger.debug("nb features after identity filtering:" + featuresByApex.size );
+    this.logger.info("nb features after apex redundancy detection:" + featuresByApex.size )
     
     val filteredFeatures = new ArrayBuffer[Feature](featuresByApex.size)
     
     for ( fts <- featuresByApex.values ) {
-      // Sort duplicatedFts by descending elution duration
+      // Sort duplicatedFts by descending maximum intensity
       val sortedFts = fts.sortBy( - _.peakels(0).duration )
       filteredFeatures += sortedFts(0)
     }
