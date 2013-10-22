@@ -95,10 +95,9 @@ object Feature extends InMemoryIdGen {
   def sumPeakelsArea( peakels: Seq[Peakel], maxNbPeakels: Int ): Float = {
     require( maxNbPeakels > 0 )
     val nbPeakels = peakels.length
-    val cappedMaxNbPeakels = if( maxNbPeakels >= nbPeakels ) nbPeakels - 1 else maxNbPeakels
+    val cappedMaxNbPeakels = if( maxNbPeakels >= nbPeakels ) nbPeakels else maxNbPeakels
     
-    peakels.take( cappedMaxNbPeakels )
-           .foldLeft(0f) { (tmpArea,p) => tmpArea + p.area }
+    peakels.take( cappedMaxNbPeakels ).foldLeft(0f) { (tmpArea,p) => tmpArea + p.area }
   }
   
 }

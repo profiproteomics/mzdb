@@ -107,7 +107,8 @@ case class Peakel(
       
     }
     
-    if( intensityArea == 0 ) intensityArea = intensitySum
+    if( intensityArea == 0 ) 
+      intensityArea = intensitySum
     
     this.intensity = intensitySum
     this.area = intensityArea
@@ -117,6 +118,17 @@ case class Peakel(
   def getApex(): Peak = peaks(apexIndex).get
   
   def getIntensities(): Array[Float] = getDefinedPeaks.map { _.intensity }
+  
+  def calcPeakelsIntersection( otherPeakel: Peakel ): Pair[Array[Peak],Array[Peak]] = {
+    val thisPeakBytTime = this.peakByElutionTime
+    val otherPeakByTime = otherPeakel.peakByElutionTime
+    val intersectingTimes = (thisPeakBytTime.keys ++ otherPeakByTime.keys)
+      .groupBy(e=>e)
+      .withFilter(_._2.size == 2)
+      .map(_._1)
+      .toArray.sorted
+    Pair( intersectingTimes.map( thisPeakBytTime(_) ), intersectingTimes.map( otherPeakByTime(_) ) )    
+  }
   
   // TODO: remove from this class
   def computeCorrelationWith( otherPeakel: Peakel ): Double = {    

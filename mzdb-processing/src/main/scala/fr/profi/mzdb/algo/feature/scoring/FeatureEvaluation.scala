@@ -12,12 +12,19 @@ import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
  */
 case class FeatureQualityVector (
   ms1Count: Int,
-  isotopesCount: Int, // nb peakels
-  isotopesPattern: Float, //distance between theoretical and experimental patterns correlation ?
+  mzPrecision: Float,
   shape: Float, // RMSD
   signalFluctuation: Float, // derivative switch count over all peakels
+  
+  isotopesCount: Int, // nb peakels
+  isotopesPattern: Float, //distance between theoretical and experimental patterns correlation ?
+  isotopesRatios:Float,
+  
   peakelsWidth: Float,
   peakelsCorrelation: Float,
+  peakelsVelocity: Float,
+  peakelsAmplitude: Float,
+  
   overlappingPeakelsCorrelation: Float,
   overlappingFactor: Float
 )
@@ -27,19 +34,28 @@ case class FeatureQualityVector (
  */
 case class FeatureQualityAssessment (
   evalThresholds : QualityVectorThresholds,
+  
   ms1Count: Boolean,
-  isotopesCount: Boolean,
-  isotopesPattern: Boolean,
+  mzPrecision:Boolean,
   shape: Boolean,
   signalFluctuation: Boolean, // derivative switch count over all peakels
+  
+  isotopesCount: Boolean,
+  isotopesPattern: Boolean,
+  isotopesRatios:Boolean,
+
   peakelsWidth: Boolean,
   peakelsCorrelation: Boolean,
+  peakelsVelocity: Boolean,
+  peakelsAmplitude: Boolean,
+  
   overlappingPeakelsCorrelation: Boolean,
   overlappingFactor: Boolean
 ) {
   def isOk(): Boolean = {
     ( ms1Count && shape && isotopesCount && signalFluctuation && peakelsWidth && 
-        peakelsCorrelation && isotopesPattern && overlappingPeakelsCorrelation && overlappingFactor) 
+        peakelsCorrelation && isotopesPattern && overlappingPeakelsCorrelation && overlappingFactor &&
+        mzPrecision && isotopesRatios && peakelsVelocity && peakelsAmplitude) 
   }
 }
 
@@ -57,7 +73,11 @@ case class FeatureEvaluation(
 
 class QualityVectorThresholds(min:FeatureQualityVector,
                               max:FeatureQualityVector) extends Tuple2[FeatureQualityVector, FeatureQualityVector](min, max) {
-                                                                         
+  
+  def getMzPrecisionMinMax(): Pair[Float, Float] = (min.mzPrecision, max.mzPrecision)
+  def getIsotopesRatios(): Pair[Float, Float] = (min.isotopesRatios, max.isotopesRatios)
+  def getPeakelsAmplitude(): Pair[Float, Float] = (min.peakelsAmplitude, max.peakelsAmplitude)
+  def getPeakelsVelocity(): Pair[Float, Float] = (min.peakelsVelocity, max.peakelsVelocity)
   def getMs1CountMinMax(): Pair[Int, Int] = (min.ms1Count,max.ms1Count)
   def getIsotopesCountMinMax(): Pair[Int,Int] = (min.isotopesCount,max.isotopesCount)
   def getIstopesPatternMinMax(): Pair[Float,Float] = (min.isotopesPattern,max.isotopesPattern)
@@ -72,12 +92,7 @@ class QualityVectorThresholds(min:FeatureQualityVector,
 
 case class FeatureEvaluationThresholds(
    var qualityThresholds: QualityVectorThresholds, // min & max thresholds
-   val ftScoringConfig: FeatureScoringConfig
-) {
-  
-  
-  
-}
+   val ftScoringConfig: FeatureScoringConfig) {}
 
 trait IFeatureThresholdsComputer {
   def getThresholds( features: Array[Feature]): Pair[FeatureQualityVector, FeatureQualityVector]
@@ -106,32 +121,61 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
   
   def getThresholds( features: Array[Feature] ): Pair[FeatureQualityVector, FeatureQualityVector] = {
     
+    val (mzPrecisionMin, mzPrecisionMax) = _getMzPrecisionBounds(features);
     val (ms1CountMin, ms1CountMax) = _getMS1CountBounds(features)
     val (isotopesCountMin, isotopesCountMax) = _getIsotopesCountBounds(features)
     val (isotopesPatternMin, isotopesPatternMax) = _getIsotopesPatternBounds(features)
+    val (isotopesRatiosMin, isotopesRatiosMax) = _getIsotopesRatiosBounds(features);
     val (shapeMin, shapeMax) = _getShapeBounds(features)
     val (signalFluctuationMin, signalFluctuationMax) = _getSignalFluctuationBounds(features)
     val (peakelsWidthMin, peakelsWidthMax) = _getPeakelsWidthBounds(features)
     val (peakelsCorrelationMin, peakelsCorrelationMax) = _getPeakelsCorrelationBounds(features)
+    val (peakelsVelocityMin, peakelsVelocityMax) = _getPeakelsVelocityBounds(features)
+    val (peakelsAmplitudeMin, peakelsAmplitudeMax) = _getPeakelsAmplitudeBounds(features)
     val (overlappingFactorMin, overlappingFactorMax) = _getOverlappingFactorBounds(features)
     val (overlappingPeakelsCorrelationMin, overlappingPeakelsCorrelationMax) = _getOverlappingPeakelsCorrelationBounds(features)
-    
+    /*
+     * ms1Count: Int,
+  mzPrecision: Float,
+  shape: Float, // RMSD
+  signalFluctuation: Float, // derivative switch count over all peakels
+  
+  isotopesCount: Int, // nb peakels
+  isotopesPattern: Float, //distance between theoretical and experimental patterns correlation ?
+  isotopesRatios:Float,
+  
+  peakelsWidth: Float,
+  peakelsCorrelation: Float,
+  peakelsVelocity: Float,
+  peakelsAmplitude: Float,
+  
+  overlappingPeakelsCorrelation: Float,
+  overlappingFactor: Float
+     */
     Pair(FeatureQualityVector(ms1CountMin,
-                              isotopesCountMin, 
-                              isotopesPatternMin,
+                              mzPrecisionMin,
                               shapeMin,
                               signalFluctuationMin,
+                              isotopesCountMin, 
+                              isotopesPatternMin,
+                              isotopesRatiosMin,
                               peakelsWidthMin,
                               peakelsCorrelationMin,
+                              peakelsVelocityMin,
+                              peakelsAmplitudeMin,
                               overlappingPeakelsCorrelationMin,
                               overlappingFactorMin),
          FeatureQualityVector(ms1CountMax,
-                              isotopesCountMax,
-                              isotopesPatternMax,
+                              mzPrecisionMax,
                               shapeMax,
                               signalFluctuationMax,
+                              isotopesCountMax, 
+                              isotopesPatternMax,
+                              isotopesRatiosMax,
                               peakelsWidthMax,
                               peakelsCorrelationMax,
+                              peakelsVelocityMax,
+                              peakelsAmplitudeMax,
                               overlappingPeakelsCorrelationMax,
                               overlappingFactorMax))
   }
@@ -204,6 +248,25 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
         (0f, 0f)
 
   }
+  private def _getMzPrecisionBounds (features : Array[Feature]): Pair[Float, Float] = {
+        (0f, 0f)
+
+  }
+  
+  private def _getIsotopesRatiosBounds(features : Array[Feature]): Pair[Float, Float] = {
+        (0f, 0f)
+
+  }
+  
+  private def _getPeakelsAmplitudeBounds(features : Array[Feature]): Pair[Float, Float] = {
+        (0f, 0f)
+
+  }
+  
+  private def _getPeakelsVelocityBounds(features : Array[Feature]): Pair[Float, Float] = {
+        (0f, 0f)
+
+  }
   
   private def  _getPeakelsCorrelationBounds (features : Array[Feature]): Pair[Float, Float] = {
         (0f, 0f)
@@ -227,12 +290,16 @@ object FeatureQualityEvaluator {
   def evaluate(f : FeatureQualityVector, qualityThresholds: QualityVectorThresholds) : FeatureQualityAssessment = {
     FeatureQualityAssessment(qualityThresholds,
                               checkParam( f.ms1Count, qualityThresholds.getMs1CountMinMax),
-                              checkParam( f.isotopesCount, qualityThresholds.getIsotopesCountMinMax),
-                              checkParam( f.isotopesPattern, qualityThresholds.getIstopesPatternMinMax),
+                              checkParam( f.mzPrecision, qualityThresholds.getMzPrecisionMinMax),
                               checkParam( f.shape, qualityThresholds.getShapeMinMax),
                               checkParam( f.signalFluctuation, qualityThresholds.getSignalFluctuationMinMax),
+                              checkParam( f.isotopesCount, qualityThresholds.getIsotopesCountMinMax),
+                              checkParam( f.isotopesPattern, qualityThresholds.getIstopesPatternMinMax),
+                              checkParam ( f.isotopesRatios, qualityThresholds.getIsotopesRatios),
                               checkParam( f.peakelsWidth, qualityThresholds.getPeakelsWidthMinMax),
                               checkParam( f.peakelsCorrelation, qualityThresholds.getPeakelsCorrelationtMinMax),
+                              checkParam( f.peakelsVelocity, qualityThresholds.getPeakelsVelocity),
+                              checkParam( f.peakelsAmplitude, qualityThresholds.getPeakelsAmplitude),
                               checkParam( f.overlappingPeakelsCorrelation, qualityThresholds.getOverlappingPeakelsCorrelationMinMax),
                               checkParam( f.overlappingFactor, qualityThresholds.getOverlappingFactorMinMax))
 
@@ -249,7 +316,7 @@ object FeatureQualityEvaluator {
 }
 
 case class FeatureScoringConfig(
-  val methods: Map[String, Any] = Map("signalFluctuation" -> "BasicPeakelFinder", "shape" -> "GaussFitting")//several could be employed for assessing the quality of a feature
+  val methods: Map[String, Any] = Map("signalFluctuation" -> "BasicPeakelFinder", "shape" -> "Gauss")//several could be employed for assessing the quality of a feature
 )
 
 
@@ -280,15 +347,20 @@ object FeatureEvaluator  {
     val isotopesPattern = FeatureScorer.calcIsotopicDistance(f)
     val peakelsWidth = FeatureScorer.calcStdDevPeakelsWidth(f)
     val peakelsCorrelation = FeatureScorer.calcMeanPeakelCorrelation(f.getPeakels).toFloat
+    //println("peakelsCorrelation :" + peakelsCorrelation)
 
     FeatureQualityVector (
-      f.ms1Count, 
-      isotopesCount,
-      isotopesPattern toFloat,
+      f.ms1Count,
+      mzPrecision = FeatureScorer.calcStdDevPeakelsMzPrecision(f),
       shape,
       signalFluctuation,
+      isotopesCount,
+      isotopesPattern toFloat,
+      0,
       peakelsWidth,
       peakelsCorrelation,
+      peakelsVelocity = FeatureScorer.calcDistanceOverArea(f),
+      peakelsAmplitude = FeatureScorer.calcPeakelsAmplitude(f),
       f.getOverlapPMCC,
       FeatureScorer.calcOverlappingFactor(f, 5).toFloat)
   }
@@ -302,100 +374,5 @@ object FeatureEvaluator  {
  
 }
 
-/*object Threshold extends Enumeration with Comp{
-  type Threshold = Value
-  val upperThreshold, lowerThreshold, lowerAndUpperThreshold = Value
-}
-import Threshold._
 
-trait Comp {
-  def comp(threshType: Threshold, value: Float, minVal: Float, maxVal: Float): Boolean = {
-    this match {
-      case upperThreshold => return value < maxVal
-      case lowerThreshold => return value > minVal
-      case lowerAndUpperThreshold => return value > minVal && value < maxVal
-    }
-  }
-}
-
-object Metric extends Enumeration {
-  type Metric = Value
-  case class Type(@BeanProperty val name : String, 
-                  @BeanProperty val threshType: Threshold) {
-    
-    def compare(value:Float, f: FeatureEvaluationThresholds) : Boolean = {
-      this match {
-        case ms1Count => return comp(threshType,value, f.qualityThresholds._1.getMs1Count, f.qualityThresholds._2.getMs1Count)
-        case isotopesCount => return comp(threshType,value, f.qualityThresholds._1.getIsotopesCount, f.qualityThresholds._2.getIsotopesCount)
-        case isotopesPattern =>return comp(threshType,value, f.qualityThresholds._1.getIsotopesPattern, f.qualityThresholds._2.getIsotopesPattern)
-        case shape => return comp(threshType,value, f.qualityThresholds._1.getShape, f.qualityThresholds._2.getShape)
-        case signalFluctuation => return comp(threshType,value, f.qualityThresholds._1.getSignalFluctuation, f.qualityThresholds._2.getSignalFluctuation)
-        case peakelsWidth => return comp(threshType,value, f.qualityThresholds._1.getPeakelsWidth, f.qualityThresholds._2.getPeakelsWidth)
-        case peakelsCorrelation => return comp(threshType,value, f.qualityThresholds._1.getPeakelsCorrelation, f.qualityThresholds._2.getPeakelsCorrelation)
-      }
-    }
-  }
-  val ms1Count = Type("ms1Count", lowerThreshold)
-  val isotopesCount = Type("isotopesCount", lowerThreshold)
-  val isotopesPattern = Type("isotopesPattern", upperThreshold)
-  val shape = Type("shape", upperThreshold)
-  val signalFluctuation = Type("signalFluctuation", upperThreshold)
-  val peakelsWidth = Type("peakelsWidth", upperThreshold)
-  val peakelsCorrelation = Type("peakelsCorrelation", upperThreshold)
-    
-  
-}
-import Metric._
-
-
-case class EvalParam(val metric: Metric.Type, var value : Float = 0f)  {
-  
-  def checkEval(fethresh:FeatureEvaluationThresholds) : Boolean = {
-    return metric.compare(value,fethresh)
-  }
-  
-}*/
-
-/*case class FeatureQualityVector  {
-
- var ms1CountParam = EvalParam(Metric.ms1Count)
- val isotopesCountParam = EvalParam(Metric.isotopesCount)
- val isotopesPatternParam = EvalParam(Metric.isotopesPattern)
- val shapeParam = EvalParam(Metric.shape)
- val signalFluctuationParam = EvalParam(Metric.signalFluctuation)
- val peakelsWidthParam = EvalParam(Metric.peakelsWidth)
- val peakelsCorrelationParam = EvalParam(Metric.peakelsCorrelation)
-     
-  def setMs1Count(x:Float) {ms1CountParam.value = x}
-  def getMs1Count() : Float = {ms1CountParam.value}
-  
-  def setIsotopesCount(x:Float) {isotopesCountParam.value = x}
-  def getIsotopesCount() : Float = {isotopesCountParam.value}
-  
-  def setIsotopesPattern(x:Float) {isotopesPatternParam.value = x}
-  def getIsotopesPattern(): Float = {isotopesPatternParam.value}
-
-  def setShape(x:Float) {shapeParam.value = x}
-  def getShape(): Float = {shapeParam.value }
-
-  def setSignalFluctuation(x:Float) {signalFluctuationParam.value = x}
-  def getSignalFluctuation() : Float ={signalFluctuationParam.value }
-
-  def setPeakelsWidth(x:Float) {peakelsWidthParam.value = x}
-  def getPeakelsWidth(): Float = {peakelsWidthParam.value}
-
-  def setPeakelsCorrelation(x:Float) {peakelsCorrelationParam.value = x}
-  def getPeakelsCorrelation() : Float ={peakelsCorrelationParam.value}
-
-  def getFeatureQualityAssessment(eval:FeatureEvaluationThresholds) : FeatureQualityAssessment = {
-    FeatureQualityAssessment(eval, 
-                             ms1CountParam.checkEval(eval), 
-                             isotopesCountParam.checkEval(eval),
-                             isotopesPatternParam.checkEval(eval),
-                             shapeParam.checkEval(eval),
-                             signalFluctuationParam.checkEval(eval),
-                             peakelsWidthParam.checkEval(eval),
-                             peakelsCorrelationParam.checkEval(eval))
-  }
-}*/
 

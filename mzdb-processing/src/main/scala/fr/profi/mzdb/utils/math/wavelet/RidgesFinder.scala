@@ -12,9 +12,11 @@ import scala.reflect.BeanProperty
 
 case class Ridge(var gap: Int = 0) {
   /** internal map stocking the scale as key the maxIdx and the max value as Option may not exist (gap) */
-  var maximaIndexPerScale = HashMap[Int, Option[Pair[Int, Double]]]()
+  val maximaIndexPerScale = HashMap[Int, Option[Pair[Int, Double]]]()
   var totalGaps = 0
   var SNR : Float = 0
+  var id:Int = -1
+  var associatedRidge = Option.empty[Ridge] //used in to remove conflict
   
   def isEnded(maxGap: Int = 4) : Boolean = { gap == maxGap }
 
@@ -22,7 +24,7 @@ case class Ridge(var gap: Int = 0) {
    * @return a Tuple3 containing scale, maxIdx, value
    * */
   lazy val maxCoeffPos: Tuple3[Int, Int, Double] = {
-    var v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._2.get._2) //order by value of the coefficient
+    val v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._2.get._2) //order by value of the coefficient
     (v._1, v._2.get._1, v._2.get._2)
   }
 
@@ -30,13 +32,13 @@ case class Ridge(var gap: Int = 0) {
    *  @return a Tuple3 containing scale, maxIdx, value
    *  */
   lazy val firstScaleMaxCoeffPos: Tuple3[Int, Int, Double] = {
-    var v = maximaIndexPerScale.filter(x => x._2 != None).minBy(x => x._1) //order by scale
+    val v = maximaIndexPerScale.filter(x => x._2 != None).minBy(x => x._1) //order by scale
     (v._1, v._2.get._1, v._2.get._2)
   }
   
   
   lazy val lastScaleMaxCoeffPos: Tuple3[Int, Int, Double] = {
-    var v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
+    val v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
     (v._1, v._2.get._1, v._2.get._2)
   }
 
@@ -48,7 +50,7 @@ case class Ridge(var gap: Int = 0) {
   def length(): Int = { maximaIndexPerScale.size }//with gap since we stop it 
 
   def startingScale(): Int = {
-    var v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
+    val v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
     v._1
   }
 }
@@ -68,9 +70,10 @@ trait RidgesFinder {
      
     if (maximaIndexesPerScale.isEmpty)
       return new Pair[Array[Ridge], Array[Ridge]](Array[Ridge](), Array[Ridge]())
-    var lastMaximaRow = maximaIndexesPerScale.last
-    var ridges = new ArrayBuffer[Ridge]
-    var orphanRidges = new ArrayBuffer[Ridge]
+      
+    val lastMaximaRow = maximaIndexesPerScale.last
+    val ridges = new ArrayBuffer[Ridge]
+    val orphanRidges = new ArrayBuffer[Ridge]
     
     for (m <- lastMaximaRow) { 
       var r = Ridge()
@@ -79,10 +82,10 @@ trait RidgesFinder {
     }
     
     for (i <- maximaIndexesPerScale.length - 2 to 0 by -1) {
-      var currentRow = maximaIndexesPerScale(i)
-      var winSize: Int = if ((i * 2 + 1).toInt > winLength) (i * 2 + 1).toInt else winLength // winLength is th minimal window
+      val currentRow = maximaIndexesPerScale(i)
+      val winSize: Int = if ((i / 2 + 1).toInt > winLength) (i / 2 + 1).toInt else winLength // winLength is th minimal window
       
-      var treatedIdx = new ArrayBuffer[Int]()
+      var treatedIdx = Set[Int]()
 
       for (ridge <- ridges if !ridge.isEnded(maxGap) ) {
         var prevMaxIndex = ridge.maximaIndexPerScale(i + 1)
@@ -96,7 +99,7 @@ trait RidgesFinder {
           prevMaxIndex = ridge.maximaIndexPerScale(k)
         }
 
-        var closestMax = currentRow.minBy(x => math.abs(prevMaxIndex.get._1 - x)) //sortBy(x => math.abs(prevMaxIndex.get - x))
+        val closestMax = currentRow.minBy(x => math.abs(prevMaxIndex.get._1 - x)) //sortBy(x => math.abs(prevMaxIndex.get - x))
 
         if (math.abs(prevMaxIndex.get._1 - closestMax) < winSize / 2) { // /2
           ridge.add(i, Some(Pair(closestMax, coeffs(i)(closestMax))))
@@ -111,16 +114,16 @@ trait RidgesFinder {
       }
       //start a new ridge for all max not assigned to a ridge
       for (maxIdx <- currentRow if !treatedIdx.contains(maxIdx)) {
-        var r_ = Ridge()
+        val r_ = Ridge()
         r_.add(i, Some(Pair(maxIdx, coeffs(i)(maxIdx))))
         ridges += r_
       }
     }
     
     //remove different ridge lines with the same apex, take the longest
-    var ridgesPerMaxIndexAtFirstScale = HashMap[Int, ArrayBuffer[Ridge]]()
+    val ridgesPerMaxIndexAtFirstScale = HashMap[Int, ArrayBuffer[Ridge]]()
     ridges.foreach { r => ridgesPerMaxIndexAtFirstScale.getOrElseUpdate(r.firstScaleMaxCoeffPos._2, new ArrayBuffer[Ridge]()) += r }
-    var lastOfLastRidges = new ArrayBuffer[Ridge]()
+    val lastOfLastRidges = new ArrayBuffer[Ridge]()
     ridgesPerMaxIndexAtFirstScale.foreach { case (u, v) => lastOfLastRidges += v.maxBy { x => x.length() } }
     (lastOfLastRidges.toArray, orphanRidges.toArray)
   }

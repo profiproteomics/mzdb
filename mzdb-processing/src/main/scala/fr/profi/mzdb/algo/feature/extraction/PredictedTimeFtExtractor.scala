@@ -23,6 +23,7 @@ object ExtractionMethod extends Enumeration {
   type Name = Value
   val CLASSIC, RIDGE = Value
 }
+import ExtractionMethod._
 
 class PredictedTimeFtExtractor(
   //override val mzDbReader: MzDbReader,
@@ -33,7 +34,7 @@ class PredictedTimeFtExtractor(
   override val minNbOverlappingIPs: Int,
   val minConsecutiveScans: Int = 4,
   val predictedTimeTol: Int = 120,
-  val method: ExtractionMethod.Name = ExtractionMethod.RIDGE
+  val method: ExtractionMethod.Value = RIDGE
 ) extends Ms2DrivenFtExtractor(
   scanHeaderById,
   nfByScanId,
@@ -83,22 +84,20 @@ class PredictedTimeFtExtractor(
 
     val deltaMass = 1.002f / charge
 
-    var peakels = new ArrayBuffer[Array[CwtPeakel]]
-    var values = new ArrayBuffer[Array[Float]]
+    val peakels = new ArrayBuffer[Array[CwtPeakel]]
+    val values = new ArrayBuffer[Array[Float]]
     var maxNbPeakels = 0
     
     breakable {
       for (c <- 0 to NB_PEAKELS_TO_CHECK) {
 
-        var mzToCheck = (deltaMass * c) + mz
+        val mzToCheck = (deltaMass * c) + mz
         //extractPeaks
-        var peaks = _extractPeaks(putativeFt, pklTree, scanIDs, mzToCheck, mzTolPPM)
+        val peaks = _extractPeaks(putativeFt, pklTree, scanIDs, mzToCheck, mzTolPPM)
         values += peaks.map(_.getIntensity)
         //build cwt
-        val peakelFinder = new WaveletBasedPeakelFinder(peaks, 
-                                                        scales = (6f to 120f by 2f).toArray, 
-                                                        wavelet = MexicanHat()) //mexh by default
-        var peakelsInPredictedRange = peakelFinder.findCwtPeakels().filter(x => x.apexLcContext.getElutionTime() > leftmostScanH.getElutionTime() && 
+        val peakelFinder = new WaveletBasedPeakelFinder(peaks) //mexh by default
+        val peakelsInPredictedRange = peakelFinder.findCwtPeakels().filter(x => x.apexLcContext.getElutionTime() > leftmostScanH.getElutionTime() && 
                                                                                 x.apexLcContext.getElutionTime() < rightmostScanH.getElutionTime())
 
         //we break if did not find any peakel ?
@@ -117,31 +116,35 @@ class PredictedTimeFtExtractor(
     if (peakels.length == 1) {
       return peakels(0).sortBy( _.intensityMax ).last.apexLcContext.getScanId()
     }
+    
     var scanId = 0
-    if (method == ExtractionMethod.CLASSIC) {
-      //usual case 
-      val monoIsosRmsd = _rmsdCalc(peakels, values)
-      //retrieving the best solution
-      val result = new HashMap[Int, ArrayBuffer[Pair[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]]]]
-      monoIsosRmsd.map{ case (peakel, mapping) => 
-        result.getOrElseUpdate(mapping.size, new ArrayBuffer[Pair[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]]]()) += Tuple2(peakel, mapping)}
-      val longestMonoIsos = result.maxBy(_._1)._2
-      val bestMonoIso = longestMonoIsos.map{ case (peakel, array) => peakel -> (array.map{ x=> x._2}).toBuffer.sum / array.length } maxBy(_._2)//.apexLcContext.getScanId()
-      scanId = bestMonoIso._1.apexLcContext.getScanId()
+    
+    //match case of the method employed
+    method match {
+      case CLASSIC =>
+        //usual case 
+        val monoIsosRmsd = _rmsdCalc(peakels, values)
+        //retrieving the best solution
+        val result = new HashMap[Int, ArrayBuffer[Pair[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]]]]
+        monoIsosRmsd.map{ case (peakel, mapping) => 
+          result.getOrElseUpdate(mapping.size, new ArrayBuffer[Pair[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]]]()) += Tuple2(peakel, mapping)}
+        val longestMonoIsos = result.maxBy(_._1)._2
+        val bestMonoIso = longestMonoIsos.map{ case (peakel, array) => peakel -> (array.map{ x=> x._2}).toBuffer.sum / array.length } maxBy(_._2)//.apexLcContext.getScanId()
+        scanId = bestMonoIso._1.apexLcContext.getScanId()
       
-    } else if (method == ExtractionMethod.RIDGE) {
-      var ridges = ridgeCalc(peakels)
-      if (ridges.isEmpty) {
-        logger.warn("no signal found in selected region")
-        return 0
-      }
-      var weightedRidges = _rmsdCalc(peakels, ridges, values)
-      //we take the minimum
-      var bestCandidateRidge = weightedRidges.map{ case (ridge, rmsds) => (ridge, rmsds._1, rmsds._2.sum[Double] / rmsds._2.length) }.toList.maxBy(_._3)
-      //return the maxIdx (scanId) of the ridge that has the most intense value at monoistopic peakel 
-      scanId = bestCandidateRidge._2.apexLcContext.getScanId()
-    } else {
-      throw new Exception("Improper method")
+      case RIDGE =>
+        var ridges = ridgeCalc(peakels)
+        if (ridges.isEmpty) {
+          logger.warn("no signal found in selected region")
+          return 0
+        }
+        var weightedRidges = _rmsdCalc(peakels, ridges, values)
+        //we take the minimum
+        var bestCandidateRidge = weightedRidges.map{ case (ridge, rmsds) => (ridge, rmsds._1, rmsds._2.sum[Double] / rmsds._2.length) }.toList.maxBy(_._3)
+        //return the maxIdx (scanId) of the ridge that has the most intense value at monoistopic peakel 
+        scanId = bestCandidateRidge._2.apexLcContext.getScanId()
+      case _ =>
+        throw new Exception("Improper method")
     }
     scanId
   }

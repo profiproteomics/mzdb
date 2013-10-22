@@ -8,11 +8,12 @@ trait IWaveletInterface[T] {
   def isReal(): Boolean
 }
 
-abstract class MotherWavelet(val lowerBound: Int = -8,
-                             val upperBound: Int = 8,
-                             val nbPoints: Int = 1024) extends IWaveletInterface[Double] {
+abstract class MotherWavelet(val lowerBound: Int = -6,
+                             val upperBound: Int = 6,
+                             val nbPoints: Int = 256) extends IWaveletInterface[Double] {
 
-  val psiXval = (lowerBound.toDouble to upperBound.toDouble by ((upperBound - lowerBound) / nbPoints.toDouble)).toArray[Double]
+  val psiXval = (lowerBound.toDouble until upperBound.toDouble by ((upperBound - lowerBound) / nbPoints.toDouble)).toArray[Double]
+  println("psiXval length:"+ psiXval.length)
 
   def getPsiXval(): Array[Double] = {
     val f = psiXval(0)
@@ -21,9 +22,34 @@ abstract class MotherWavelet(val lowerBound: Int = -8,
 
 }
 
-case class MexicanHat(override val lowerBound: Int = -8,
-                      override val upperBound: Int = 8,
-                      override val nbPoints: Int = 1024) extends MotherWavelet {
+case class MexicanHat(override val lowerBound: Int = -6,
+                      override val upperBound: Int = 6,
+                      override val nbPoints: Int = 256) extends MotherWavelet {
+
+  def values(): Array[Double] = {
+
+    val inter = math.abs(lowerBound - upperBound) / nbPoints.toFloat
+    var x = lowerBound.toDouble
+    var a = new Array[Double](nbPoints )//+ 1)
+    var i = 0 //counter
+    while (x < upperBound) {
+      a(i) = (2.0 / (math.sqrt(3.0) * math.pow(math.Pi, -0.25))) * (1.0 - (x * x)) * math.exp(-(x * x) / 2.0) //density normal function ? Du et al 2005
+      psiXval(i) = x
+      i += 1
+      x += inter
+    }
+    a
+  }
+
+  def isReal(): Boolean = {
+    true
+  }
+}
+
+
+case class GaussianFirstDerivative(override val lowerBound: Int = -6,
+                      override val upperBound: Int = 6,
+                      override val nbPoints: Int = 256) extends MotherWavelet {
 
   def values(): Array[Double] = {
 
@@ -32,7 +58,7 @@ case class MexicanHat(override val lowerBound: Int = -8,
     var a = new Array[Double](nbPoints + 1)
     var i = 0 //counter
     while (x <= upperBound) {
-      a(i) = (2.0 / (math.sqrt(3.0) * math.pow(math.Pi, -0.25))) * (1.0 - (x * x)) * math.exp(-(x * x) / 2.0)
+      a(i) = -x * math.exp(-(x * x) / 2.0) // / math.sqrt(2.0 * math.Pi) )
       psiXval(i) = x
       i += 1
       x += inter

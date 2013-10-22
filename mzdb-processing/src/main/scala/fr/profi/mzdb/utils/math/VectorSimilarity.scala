@@ -61,7 +61,9 @@ object VectorSimilarity {
     var sum_sq_x = 0.0
     var sum_sq_y = 0.0
     
-    for( i <- 0 until N ) {
+    var i = -1
+    while( i < N ) {
+      i += 1
       val x = vector1(i)
       val y = vector2(i)
       
@@ -139,9 +141,9 @@ object VectorSimilarity {
   def rmsd(vector1: Array[Double], vector2: Array[Double]): Double = {
     require(vector1.size == vector2.size, "vectors must have same length" )
     
-    val sumSquare = (vector1,vector2).zip.map { pair =>
-      math.pow(pair._2 - pair._1, 2)
-    }.sum
+    val sumSquare = (vector1, vector2).zipped.map( (x,y) =>
+      math.pow(y - x, 2)
+    ).sum
     
     math.sqrt(sumSquare / vector1.size)
   }

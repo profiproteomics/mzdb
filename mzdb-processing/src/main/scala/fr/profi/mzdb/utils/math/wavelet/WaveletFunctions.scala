@@ -7,7 +7,8 @@ import scala.Numeric
 import org.apache.commons.math.transform.FastFourierTransformer
 import org.apache.commons.math.complex.Complex
 import org.apache.commons.math.MathRuntimeException
-
+import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D
+import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D
 
 /**
  * static object performing continous wavelet transform
@@ -47,7 +48,7 @@ object WaveletUtils {
   def makePowerOf2(ydata: Array[Double]): Array[Double] = {
     if (!checkIfItsPowerOf2(ydata.length)) {
       val diff = nextPowerOf2(ydata.length) - ydata.length
-      var ydatabuff = new ArrayBuffer[Double]()
+      val ydatabuff = new ArrayBuffer[Double]()
       ydata.copyToBuffer[Double](ydatabuff)
       for (i <- 0 to diff - 1) {
         ydatabuff += 0
@@ -63,7 +64,7 @@ object WaveletUtils {
   def makePowerOf2(ydata: Array[Complex]): Array[Complex] = {
     if (!checkIfItsPowerOf2(ydata.length)) {
       val diff = nextPowerOf2(ydata.length) - ydata.length
-      var ydatabuff = new ArrayBuffer[Complex]()
+      val ydatabuff = new ArrayBuffer[Complex]()
       ydata.copyToBuffer[Complex](ydatabuff)
       for (i <- 0 to diff - 1) {
         ydatabuff += new Complex(0, 0)
@@ -78,11 +79,11 @@ object WaveletUtils {
    * tried to test but it is not concluent
    */
   def periodicExtend(sig: Buffer[Double], a: Int): Array[Double] = {
-    var len = sig.length
+    val len = sig.length
 
     for (i <- 0 until a) {
-      var temp1 = sig(2 * i)
-      var temp2 = sig.last
+      val temp1 = sig(2 * i)
+      val temp2 = sig.last
       sig.insert(0, temp2)
       sig += temp1
     }
@@ -96,21 +97,43 @@ object WaveletUtils {
    * @return the circular convolution of y and wavelet
    */
   def convolveUsingFft(y: Array[Double], wavelet: Array[Double]): Array[Double] = {
-
-    var yfft = transformer.transform(y)
-
-    var wavepadded = (for (i <- 0 until yfft.length) yield 0.).toArray
-
-    val r = math.min(wavelet.length, yfft.length)
-    for (i <- 0 until r) {
-      wavepadded(i) = wavelet(i)
-    }
-    //do not forget to take the conjugate
-    var waveletfft = transformer.transform(wavepadded).map(_.conjugate)
+    val yfft = transformer.transform(y)
+    val waveletfft = transformer.transform(wavelet).map(_.conjugate)//do not forget to take the conjugate
     //multiply
-    var x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }
+    val x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }
     return transformer.inversetransform(x).map(_.getReal)
   }
+  
+  /**for the cwt we need */
+  def convolveUsingJtransform(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean = false): Array[Double] = {
+    val N = y.length
+    val fft = new DoubleFFT_1D(N)
+    
+    val yfft = Array.fill[Double](N * 2)(0)
+    for (j <- 0 until N ) {
+      yfft(2 * j) = y(j)
+    }
+    fft.complexForward(yfft)
+
+    val wavepadded = Array.fill[Double](N * 2)(0)
+
+    val r = math.min(wavelet.length, N)
+    for (i <- 0 until r ) {
+      wavepadded(2 * i) = wavelet(i)
+    }
+    //do not forget to take the conjugate
+    fft.complexForward(wavepadded)
+    
+    val x = Array.fill[Double](2 * N)(0)
+    for (j <- 0 until N ) {
+      val value = if (useConjugate) - wavepadded(2 * j + 1) else wavepadded(2 * j + 1)
+      x(2 * j) =  yfft(2 * j) * wavepadded(2 * j) - yfft(2 * j + 1) * value 
+      x(2 * j + 1) =  yfft(2 * j) * value +  wavepadded(2 * j) * yfft( 2 * j + 1) //tkae the conjugate
+    }
+    fft.complexInverse(x, true)
+    x.zipWithIndex.collect{case (value, idx) if idx % 2 == 0 => value}
+  }
+  
   
   /**
    * compute the continous wavelet transform of input ydata
@@ -128,37 +151,43 @@ object WaveletUtils {
     //var ffdata = transformer.transform(makePowerOf2(ydata))
 
     var coeffs = Array.ofDim[Double](scales.length, ydata.length)
-    var ydataExtended = makePowerOf2(ydata)
+    val ydataExtended = makePowerOf2(ydata)
     var row = 0
-    var waveletValues = wavelet.values()
+    val waveletValues = wavelet.values()
 
-    var psiXval = wavelet.getPsiXval()
-    var dxval = psiXval(1)
-    var xmax = psiXval.last
+    val psiXval = wavelet.getPsiXval()
+    val dxval = psiXval(1)
+    val xmax = psiXval.last
     
     var prevExiting = scales.length
     breakable {
       for (scale <- scales) {
   
         //build scales wavelet @see MassSpecWavelet, calc indexes of wavelet upSampling
-        var indexes = (0 to (scale * xmax).toInt).map { x => math.floor(x / (scale * dxval)).toInt }.toArray[Int]
-        var lenWave = indexes.length
+        var f = ( for (i <- 0 until ydataExtended.length) yield 0d) toArray
+        
+        val indexes = (0 to (scale * xmax).toInt).map { x =>math.floor( x / (scale * dxval) ).toInt }.toArray[Int]
+        val lenWave = indexes.length
   
-        var f = indexes.map { waveletValues(_) }
-        var mean = f.sum / f.length
-        f = f.map(_ - mean)
-        f = f.reverse
+        val waveletCoeffs = indexes.map { waveletValues(_) }
+        
+        val mean = waveletCoeffs.sum / waveletCoeffs.length
+        val v = waveletCoeffs.reverse.map(_ - mean)
+        for (i <- 0 until math.min(f.length, lenWave) ) {
+          f(i) = v(i)
+        }
+        
         if (f.length > ydataExtended.length) {
-          println("Warning exiting loop, scale was too large")
+          //logger.debug("exiting loop, scale was too large")
           prevExiting = scale.toInt
           break
         }
   
-        var convolvingResult = convolveUsingFft(ydataExtended, f)
-        var scaleogram = convolvingResult.map { _ * (1.0 / math.sqrt(scale)) }
+        val convolvingResult = this.convolveUsingFft(ydataExtended, f)
+        val scaleogram = convolvingResult.map { _ * (1.0 / math.sqrt(scale)) }
   
         //flip an assign to row
-        var p = ydataExtended.length - math.floor(lenWave / 2f).toInt
+        val p = ydataExtended.length - math.floor(lenWave / 2f).toInt
         coeffs(row) = ((scaleogram.slice(p, ydataExtended.length)) ++ (scaleogram.slice(0, p))).slice(0, ydata.length)
         row += 1
       }
@@ -166,7 +195,7 @@ object WaveletUtils {
     if (prevExiting == scales.length) {
       return coeffs
     } else {
-      return coeffs.slice(0, prevExiting - 1)
+      return coeffs.slice(0, prevExiting)
     }
   }
 
@@ -186,31 +215,6 @@ object WaveletUtils {
     }
   }
 
-  /**
-   * smooth coefficient wavelet
-   * @see massSpecWavelet: Improved peak detection in mass spectrum by incorporating
-   * continuous wavelet transform-based pattern matching. Du et al
-   */
-  def smoothCoeffs(coeffs: Array[Array[Double]], times: Int = 3) = {
-
-    import mr.go.sgfilter.SGFilter
-    val (nl, nr, order) = (5, 5, 4)
-    val polycoef = SGFilter.computeSGCoefficients(nl, nr, order)
-
-    val sgFilter = new SGFilter(5, 5)
-    for (coeff <- coeffs) {
-      var smoothedValues = coeff
-      for (i <- 1 to times) {
-        smoothedValues = sgFilter.smooth(smoothedValues, polycoef)
-      }
-      for (i <- 0 until coeff.length) {
-        var v = smoothedValues(i)
-        coeff(i) = v
-      }
-    }
-  }
-
-  
 
   /**
    * possible optimization using periodic extension
@@ -247,9 +251,9 @@ object WaveletUtils {
 
       var len_filt = low_pass.length
       sig = periodicExtend(sig.toBuffer, len_filt / 2)
-
-      var cA = fft.convfft(sig.toBuffer, low_pass)
-      var cD = fft.convfft(sig.toBuffer, high_pass)
+      //convolveUsingFft(y: Array[Double], wavelet: Array[Double]): Array[Double]
+      var cA = convolveUsingJtransform(sig, low_pass, useConjugate=false).toBuffer//fft.convfft(sig.toBuffer, low_pass)
+      var cD = convolveUsingJtransform(sig, high_pass, useConjugate=false).toBuffer//fft.convfft(sig.toBuffer, high_pass)
 
       cA.trimStart(len_filt); cA.trimEnd(cA.length - N)
       cD.trimStart(len_filt); cD.trimEnd(cD.length - N)
@@ -326,14 +330,12 @@ object WaveletUtils {
         for (i <- 0 until N) {
           var temp1 = swtop((iter + 1) * N + i);
           det_sig += temp1
-
         }
       }
 
       var value = math.pow(2.0, (J - 1 - iter).toDouble).toInt
 
       iswt_output = new ArrayBuffer[Double]
-
       for (i <- 0 until N) {
         iswt_output += 0.
       }
@@ -368,11 +370,11 @@ object WaveletUtils {
         var cH0 = upsamp(det2, U)
         cL0 = periodicExtend(cL0.toBuffer, lf / 2)
         cH0 = periodicExtend(cH0.toBuffer, lf / 2)
-        var oup00L = fft.convfft(cL0.toBuffer, low_pass)
-        var oup00H = fft.convfft(cH0.toBuffer, high_pass)
+        
+        var oup00L = convolveUsingJtransform(cL0, low_pass, useConjugate=false).toBuffer//fft.convfft(cL0.toBuffer, low_pass)
+        var oup00H = convolveUsingJtransform(cH0, high_pass, useConjugate=false).toBuffer//fft.convfft(cH0.toBuffer, high_pass)
 
         oup00L.trimStart(lf - 1); oup00L.trimEnd(oup00L.length - len)
-
         oup00H.trimStart(lf - 1); oup00H.trimEnd(oup00H.length - len);
 
         var oup00 = oup00L.zip(oup00H).map { case (a, b) => a + b }
@@ -394,11 +396,10 @@ object WaveletUtils {
         cL1 = periodicExtend(cL1.toBuffer, lf / 2)
         cH1 = periodicExtend(cH1.toBuffer, lf / 2)
 
-        var oup01L = fft.convfft(cL1.toBuffer, low_pass)
-        var oup01H = fft.convfft(cH1.toBuffer, high_pass)
+        var oup01L = convolveUsingJtransform(cL1, low_pass, useConjugate=false) toBuffer
+        var oup01H = convolveUsingJtransform(cH1, high_pass, useConjugate=false) toBuffer
 
         oup01L.trimStart(lf - 1); oup01L.trimEnd(oup01L.length - len)
-
         oup01H.trimStart(lf - 1); oup01H.trimEnd(oup01H.length - len)
 
         var oup01 = oup01L.zip(oup01H).map { case (a, b) => a + b }.toBuffer[Double]
@@ -410,21 +411,45 @@ object WaveletUtils {
           var temp = oup00(index2) + oup01(index2);
           iswt_output(index) = temp / 2;
           index2 += 1
-
         }
-
       }
       appx_sig = iswt_output;
-
     }
     iswt_output.toArray
   }
+  
+    def circshift(sig_cir: Buffer[Double], L: Int) = {
+    var K = L
+    if (math.abs(K) > sig_cir.length) {
+      K = sign(K) * (math.abs(K) % sig_cir.length)
+    }
 
+    if (K < 0) {
+      K = (sig_cir.length + K) % sig_cir.length
+    }
+    for (i <- 0 until K) {
+      sig_cir += sig_cir(0)
+      sig_cir.remove(0)
+    }
+
+  }
+
+  def sign(X: Int): Int = {
+    if (X >= 0)
+      return 1;
+    else
+      return -1;
+  }
+
+  def sign[T](x: T)(implicit X: Numeric[T]): Int = {
+    if (X.gt(x, X.zero))
+      return 1
+    return -1
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////
   /**
-   * denoise coefficients using discrete continous transform
-   * should be used in mass peak detection in priority
-   * if we consider spectrometer introduce noise when it calculates wrongly
-   * number of ions entering in the trap, could be used to detect elution peak
+   * coeff denoising Donoho et al., 1995, Coombes et al 2005
    */
   def denoiseSoft(coeffs: Array[Double], J: Int = 6) = {
     var N = coeffs.length / (J + 1)
@@ -464,39 +489,11 @@ object WaveletUtils {
 
     for (i <- 0 until coeffs.length) {
       if (coeffs(i) < thresh) {
-        //println("Coeffs changed")
         coeffs(i) = 0.
       }
     }
   }
 
-  def circshift(sig_cir: Buffer[Double], L: Int) = {
-    var K = L
-    if (math.abs(K) > sig_cir.length) {
-      K = sign(K) * (math.abs(K) % sig_cir.length)
-    }
 
-    if (K < 0) {
-      K = (sig_cir.length + K) % sig_cir.length
-    }
-    for (i <- 0 until K) {
-      sig_cir += sig_cir(0)
-      sig_cir.remove(0)
-    }
-
-  }
-
-  def sign(X: Int): Int = {
-    if (X >= 0)
-      return 1;
-    else
-      return -1;
-  }
-
-  def sign[T](x: T)(implicit X: Numeric[T]): Int = {
-    if (X.gt(x, X.zero))
-      return 1
-    return -1
-  }
 
 }

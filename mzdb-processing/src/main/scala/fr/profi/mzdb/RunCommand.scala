@@ -2,6 +2,7 @@ package fr.profi.mzdb
 
 import com.beust.jcommander.{JCommander, MissingCommandException, Parameter, ParameterException, Parameters}
 import com.weiglewilczek.slf4s.Logging
+import scala.collection.mutable.ArrayBuffer
 /**
  * @author David Bouyssie
  *
@@ -34,16 +35,75 @@ object RunCommand extends App with Logging {
     var mzTol: Float = 0f
   }
   
+  //ExportRegion
+  @Parameters( commandNames = Array("dump_region"), commandDescription = "Extract a Lcms Map region given minmz, maxmz, minrt and maxrt", separators = "=")
+  private object DumpRegion extends JCommandReflection {
+    @Parameter(names = Array("--mzdb_file"), description = "The path to the mzDB file", required = true)
+    var mzdbFilePath: String = ""
+    
+    @Parameter(names = Array("--output_file"), description = "The path to the output file", required = true)
+    var outputFilePath: String = ""
+      
+    @Parameter(names = Array("--mzmin"), description = "minimum mz of the requested region", required = true)
+    var mzmin:Double = 0d
+    
+    @Parameter(names = Array("--mzmax"), description = "maximum mz of the requested region", required = true)
+    var mzmax: Double = 0d
+    
+    @Parameter(names = Array("--rtmin"), description = "minimum retention time of the requested region", required = true)
+    var rtmin: Float = 0f
+    
+    @Parameter(names = Array("--rtmax"), description = "maximum retention time of the requested region", required = true)
+    var rtmax: Float = 0f
+
+  }
+  
+  //ExportRegion
+  @Parameters( commandNames = Array("dump_region_and_bin"), commandDescription = "Extract a Lcms Map region given minmz, maxmz, minrt and maxrt", separators = "=")
+  private object DumpRegionBinning extends JCommandReflection {
+    @Parameter(names = Array("--mzdb_file"), description = "The path to the mzDB file", required = true)
+    var mzdbFilePath: String = ""
+    
+    @Parameter(names = Array("--output_file"), description = "The path to the output file", required = true)
+    var outputFilePath: String = ""
+      
+    @Parameter(names = Array("--nb_bins"), description = "the number of wanted bins", required = true)
+    var nbBins: Int = 0
+      
+    @Parameter(names = Array("--mzmin"), description = "minimum mz of the requested region", required = true)
+    var mzmin:Double = 0d
+    
+    @Parameter(names = Array("--mzmax"), description = "maximum mz of the requested region", required = true)
+    var mzmax: Double = 0d
+    
+    @Parameter(names = Array("--rtmin"), description = "minimum retention time of the requested region", required = true)
+    var rtmin: Float = 0f
+    
+    @Parameter(names = Array("--rtmax"), description = "maximum retention time of the requested region", required = true)
+    var rtmax: Float = 0f
+
+  }
+  
   override def main(args: Array[String]): Unit = {
 
     // Instantiate a JCommander object and affect some commands
+    val argsDumpRegion = List("dump_region_and_bin",
+                            """--mzdb_file ="D:/LCMS/raw_files/OTAGP070308_23_small tests/OTAGP070308_23_small.RAW.mzdb" """, 
+                             """--output_file = "D:/LCMS/raw_files/OTAGP070308_23_small tests/dumpedRegion.txt" """,
+                             "--nb_bins = 100",
+                             "--mzmin = 500.0", 
+                             "--mzmax = 650.0",
+                             "--rtmin = 1250.12",
+                             "--rtmax = 1400.12").toArray
+    
     val jCmd = new JCommander()
     jCmd.addCommand(GenerateXICs)
-
+    jCmd.addCommand(DumpRegion)
+    jCmd.addCommand(DumpRegionBinning)
     // Try to parse the command line
     var parsedCommand = ""
     try {
-      jCmd.parse(args: _*)
+      jCmd.parse(argsDumpRegion:_*)//(args: _*)
 
       parsedCommand = jCmd.getParsedCommand()
       println("Running '" + parsedCommand + "' command...")
@@ -53,6 +113,17 @@ object RunCommand extends App with Logging {
         case GenerateXICs.Parameters.firstName => {
           val p = GenerateXICs
           generateXICs(p.mzdbFilePath,p.peplistFilePath,p.outputFilePath,p.mzTol)
+        }
+        case DumpRegion.Parameters.firstName => {
+          val p = DumpRegion
+          println("" + p.mzmin + ", " +  p.mzmax +  ", "  + p.rtmin + ", " + p.rtmax)
+          dumpRegion(p.mzdbFilePath, p.outputFilePath, p.mzmin, p.mzmax, p.rtmin, p.rtmax)
+          
+        }
+        case DumpRegionBinning.Parameters.firstName => {
+          val p = DumpRegionBinning
+          println("" + p.mzmin + ", " +  p.mzmax +  ", "  + p.rtmin + ", " + p.rtmax)
+          dumpRegionBinning(p.mzdbFilePath, p.outputFilePath, p.nbBins, p.mzmin, p.mzmax, p.rtmin, p.rtmax)
         }
       }
     } catch {
@@ -158,10 +229,86 @@ object RunCommand extends App with Logging {
     outStream.close()
     mzDb.close()
     
-    val took = (System.currentTimeMillis - start)/1000
+    val took = (System.currentTimeMillis - start)/1000f
     println("extraction took: "+took)
     
     ()
   }
+  
+  def dumpRegion(mzdbFilePath:String, outputFilePath:String, mzmin:Double, mzmax: Double, rtmin:Float, rtmax:Float) {
+    //import java.io.File
+    import java.io.FileOutputStream
+    import java.io.PrintWriter
+    //import scala.io.Source
+    import fr.profi.mzdb.MzDbReader
+      
+    val start = System.currentTimeMillis()
+    
+    val mzDb = new MzDbReader( mzdbFilePath, true )      
+    val outStream = new PrintWriter(new FileOutputStream(outputFilePath))
+    val scanSlices = mzDb.getScanSlices(mzmin, mzmax, rtmin, rtmax, 1) // always in mslevel 1 by default
+    
+    outStream.println( List("moz","time","intensity").mkString("\t") )
+    
+    scanSlices.foreach( scanSlice => 
+      scanSlice.getPeaks().foreach(peak =>
+        outStream.println(List(peak.getMz(), peak.getLcContext().getElutionTime(), peak.getIntensity()).mkString("\t"))
+      )
+    )
+    
+    outStream.close()
+    mzDb.close()
+    
+    val took = (System.currentTimeMillis - start)/1000f
+    println("extraction took: "+took)
+  }
+  
+  def dumpRegionBinning(mzdbFilePath: String, outputFilePath:String, nbBins: Int, mzmin: Double, mzmax: Double, rtmin: Float, rtmax: Float) {
+    import java.io.FileOutputStream
+    import java.io.PrintWriter
+    //import scala.io.Source
+    import fr.profi.util.stat.EntityHistogramComputer
+    import fr.profi.mzdb.MzDbReader
+    import fr.profi.mzdb.model.Peak
+      
+    val start = System.currentTimeMillis()
+    
+    val mzDb = new MzDbReader( mzdbFilePath, true )      
+    val outStream = new PrintWriter(new FileOutputStream(outputFilePath))
+    val scanSlices = mzDb.getScanSlices(mzmin, mzmax, rtmin, rtmax, 1) // always in mslevel 1 by default
+    val flattenedPeaksMz =  scanSlices.map(_.getPeaks).flatten.map(_.getMz).sortBy(x=>x)
+    val (minmz, maxmz) = (flattenedPeaksMz.head, flattenedPeaksMz.last) 
+    
+
+    val binner = new EntityHistogramComputer(flattenedPeaksMz, (x:Double)=> x)
+    val mzBins = binner.calcHistogram(nbBins)
+    
+    val mzList = mzBins.map{ case (bin, values) => bin.center } toArray
+    val rtList = scanSlices.map(_.getHeader().getElutionTime()) toArray
+    val intList = Array.ofDim[Float](scanSlices.length, mzBins.length)
+    
+    var i = 0
+    scanSlices.foreach{ scanSlice =>
+      val binner_ = new EntityHistogramComputer(scanSlice.getPeaks, (x : Peak) => x.getMz())
+      val bins = binner_.calcHistogram(nbBins, range=Some( Pair(minmz, maxmz) ) )
+      var j = 0
+      bins.foreach{ case (bin, values) =>
+        intList(i)(j) = values.map(_.getIntensity).sum
+        j+=1
+      }
+      i+=1
+    }
+    outStream.println("moz: " + mzList.mkString("\t"))
+    outStream.println("rt: " + rtList.mkString("\t"))
+    val intString = intList.map(_.mkString("\t")).toArray.mkString(",")
+    outStream.println("intensities: "+  intList.map(_.mkString("\t")).toArray.mkString(",") )
+    
+    outStream.close()
+    mzDb.close()
+    
+    val took = (System.currentTimeMillis - start)/1000f
+    println("extraction took: "+took)
+  }
+
   
 }

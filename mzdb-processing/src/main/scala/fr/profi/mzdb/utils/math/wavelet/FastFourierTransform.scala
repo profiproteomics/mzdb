@@ -48,7 +48,8 @@ object fft {
     }
     c
   }
-
+  
+  /**complex version*/
   def convfft(a: Buffer[Complex], b: Array[Complex], conjug: Int): Buffer[Double] = {
     var c = new ArrayBuffer[Double]
     
@@ -185,7 +186,7 @@ object fft {
       //   Using filter "filt" such that the value of reverse changes with each iteration
       var filt = N;
       filt >>= 1
-      while ((rev & filt) != 0) {
+      while ((rev & filt)!= 0) {
         rev &= ~filt
         filt >>= 1
       }
