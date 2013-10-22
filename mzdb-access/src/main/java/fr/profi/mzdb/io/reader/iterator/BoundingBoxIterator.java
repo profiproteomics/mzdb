@@ -34,12 +34,13 @@ public class BoundingBoxIterator extends StatementIterator<BoundingBox> {
 		byte[] data = stmt.columnBlob(1);
 		int runSliceId = stmt.columnInt(2);
 		int firstScanId = stmt.columnInt(3);
+		int lastScanId = stmt.columnInt(4);
 
 		BoundingBox bb = BoundingBoxBuilder.buildBB(bbId, this.mzDbReader.getScanHeaderById(), this.dataEnc,
 				data);
 		bb.setRunSliceId(runSliceId);
 		bb.setFirstScanId(firstScanId);
-
+		bb.setLastScanId(lastScanId);
 		return bb;
 		// ScanSlice[] sl = bb.asScanSlicesArray(scanId, runSliceId);//ScanId,
 		// RunSliceId

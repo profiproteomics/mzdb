@@ -45,10 +45,10 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
 public class MzDbReader {
 
 	public enum BBSizesUserParamNames {
-		BB_MZ_HEIGHT_MS1_STR("BB_height_ms1"),
-		BB_MZ_HEIGHT_MSn_STR("BB_height_msn"),
-		BB_RT_WIDTH_MS1_STR("BB_width_ms1"),
-		BB_RT_WIDTH_MSn_STR("BB_width_msn");
+		BB_MZ_HEIGHT_MS1_STR("ms1_bb_mz_width"),
+		BB_MZ_HEIGHT_MSn_STR("msn_bb_mz_width"),
+		BB_RT_WIDTH_MS1_STR("ms1_bb_time_width"),
+		BB_RT_WIDTH_MSn_STR("msn_bb_time_width");
 
 		private final String userParamName;
 
@@ -242,7 +242,7 @@ public class MzDbReader {
 		if (this.isNoLossMode == null) {
 			MzDbHeader p = this._mzDbHeaderReader.getMzDbHeader();
 
-			if (p.getUserParam("is_no_loss").getValue().equals("false"))
+			if (p.getUserParam("is_lossless").getValue().equals("false"))
 				this.isNoLossMode = false;
 			else
 				this.isNoLossMode = true;
@@ -798,11 +798,13 @@ public class MzDbReader {
 		BBSizes sizes = getBBSizes();
 		double rtWidth = (msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn;
 		double mzHeight = (msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn;
-
+				
 		double _maxrt = maxrt + rtWidth;
 		double _minmz = minmz - mzHeight;
 		double _minrt = minrt - rtWidth;
 		double _maxmz = maxmz + mzHeight;
+		
+		System.out.println(_maxrt + ", " + _minmz + ", " + _minrt + ", " + _maxmz);
 
 		String sqlQuery = "SELECT bounding_box.id, data, run_slice_id, first_spectrum_id "
 				+ "FROM bounding_box WHERE bounding_box.id " + "IN (SELECT id FROM bounding_box_rtree "
@@ -1011,10 +1013,11 @@ public class MzDbReader {
 		}
 		double minRt = headers[0].getElutionTime();
 		double maxRt = headers[headers.length - 1].getElutionTime();
-		// System.out.println(minRt+ "," + maxRt);
+		//System.out.println(minRt+ "," + maxRt + ", " + minMz + ", " + maxMz);
 		ScanSlice[] scanSlices = getScanSlices(minMz, maxMz, minRt, maxRt, msLevel);
+		
 		if (scanSlices == null)
-		  logger.warn("null detected");//throw new Exception("Empty scanSlices, narrow request ?");
+		  logger.warn("null detected");
 		if (scanSlices.length == 0) {
 			logger.warn("Empty scanSlices, narrow request ?");
 			return new Peak[0];

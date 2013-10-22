@@ -69,8 +69,12 @@ public class BytesReader extends AbstractBlobReader {
 			_nbPeaks.put(count, nbPeaks);
 
 			i += 4; // skip nbPeaks
-			
+
 			DataEncoding de = this._dataEncodings.get(id);
+			if (de  == null) {
+			  System.out.println("Scared that the mzdb file is corrupted, id while reading: " + id);
+			  System.exit(0);
+			}
 			int structSize = de.getPeakEncoding().getValue();
 			if (de.getMode() == DataMode.FITTED)
 				structSize += 8; // add 2 float lwhm, rwhm

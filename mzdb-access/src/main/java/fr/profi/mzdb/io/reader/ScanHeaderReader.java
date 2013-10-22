@@ -48,10 +48,12 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 				precursorMz = record.columnDouble(SpectrumTable.MAIN_PRECURSOR_MZ);
 				precursorCharge = record.columnInt(SpectrumTable.MAIN_PRECURSOR_CHARGE);
 			}
+			
+			int bbFirstSpectrumId = record.columnInt(SpectrumTable.BB_FIRST_SPECTRUM_ID);
 
 			// Parse param tree
 			String paramTreeAsStr = record.columnString(SpectrumTable.PARAM_TREE);
-			ParamTree paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
+			ParamTree paramTree =  ParamTreeParser.parseParamTree(paramTreeAsStr);
 
 			String val = paramTree.getUserParam("in_high_res").getValue();
 			// little workaround to retrieve the data resolution
@@ -71,11 +73,11 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 				record.columnDouble(SpectrumTable.BASE_PEAK_MZ),
 				(float) record.columnDouble(SpectrumTable.BASE_PEAK_INTENSITY),
 				precursorMz,
-				precursorCharge
+				precursorCharge,
+				bbFirstSpectrumId
 			);
 
 			sh.setParamTree(paramTree);
-
 			return sh;
 
 		}

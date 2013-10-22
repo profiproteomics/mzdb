@@ -53,7 +53,8 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	protected final int precursorCharge;  // TODO: set as Integer
 
 	// protected final float tic;
-
+	protected final int bbFirstSpectrumId;
+	
 	/**
 	 * Instantiates a new scan header.
 	 * 
@@ -82,7 +83,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	 */
 	public ScanHeader(int id, int initialId, int cycle, float time, int msLevel, int peaksCount,
 			boolean isHighResolution, float tic, double basePeakMz, float basePeakIntensity,
-			double precursorMz, int precursorCharge) {
+			double precursorMz, int precursorCharge, int firstBBSpectrumId) {
 		super(id, null);
 		this.id = id;
 		this.initialId = initialId;
@@ -96,6 +97,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 		this.basePeakIntensity = basePeakIntensity;
 		this.precursorMz = precursorMz;
 		this.precursorCharge = precursorCharge;
+		this.bbFirstSpectrumId = firstBBSpectrumId;
 	}
 
 	/**
@@ -234,6 +236,10 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	 */
 	public float getElutionTime() {
 		return this.time;
+	}
+	
+	public int getBBFirstSpectrumId() {
+	  return this.bbFirstSpectrumId;
 	}
 
 	/** The rt comp. */

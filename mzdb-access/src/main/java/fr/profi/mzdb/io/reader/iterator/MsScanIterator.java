@@ -12,7 +12,7 @@ import fr.profi.mzdb.model.ScanSlice;
 public class MsScanIterator extends AbstractScanSliceIterator implements Iterator<Scan> {
 
 	private static String sqlQuery = "SELECT bounding_box.* FROM bounding_box, spectrum WHERE spectrum.id = bounding_box.first_spectrum_id AND spectrum.ms_level= ?";
-	private int scanSliceIdx;
+	protected int scanSliceIdx;
 
 	protected ScanSlice[] scanSliceBuffer = null;
 	protected boolean bbHasNext = true;

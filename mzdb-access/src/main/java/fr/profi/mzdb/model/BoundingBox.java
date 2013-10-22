@@ -19,7 +19,9 @@ public class BoundingBox implements Comparable<BoundingBox> {
 
 	/** The _first scan id. */
 	protected int _firstScanId;
-
+	
+	protected int _lastScanId;
+	
 	/** The _run slice id. */
 	protected int _runSliceId;
 
@@ -81,7 +83,7 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	public int getFirstScanId() {
 		return _firstScanId;
 	}
-
+	
 	/**
 	 * Sets the first scan id.
 	 * 
@@ -92,6 +94,14 @@ public class BoundingBox implements Comparable<BoundingBox> {
 		_firstScanId = scanid;
 	}
 
+	public int getLastScanId() {
+	  return _lastScanId;
+	}
+	 
+	public void setLastScanId(int i){
+	  _lastScanId = i;
+	}
+	
 	/**
 	 * Gets the run slice id.
 	 * 
