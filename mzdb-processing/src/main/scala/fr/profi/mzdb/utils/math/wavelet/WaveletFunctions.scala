@@ -96,7 +96,7 @@ object WaveletUtils {
    * @param wavelet: scaled wavelet, padded with zero to match y length
    * @return the circular convolution of y and wavelet
    */
-  def convolveUsingFft(y: Array[Double], wavelet: Array[Double], useConjugate=true): Array[Double] = {
+  def convolveUsingFft(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean=true): Array[Double] = {
     val yfft = transformer.transform(y)
     val waveletfft = transformer.transform(wavelet).map(x=> if (useConjugate) x.conjugate)//do not forget to take the conjugate
     //multiply
