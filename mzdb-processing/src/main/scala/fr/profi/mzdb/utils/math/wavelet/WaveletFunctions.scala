@@ -98,7 +98,7 @@ object WaveletUtils {
    */
   def convolveUsingFft(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean=true): Array[Double] = {
     val yfft = transformer.transform(y)
-    val waveletfft = transformer.transform(wavelet).map(x=> if (useConjugate) x.conjugate)//do not forget to take the conjugate
+    val waveletfft = transformer.transform(wavelet).map( _.conjugate )//do not forget to take the conjugate
     //multiply
     val x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }
     return transformer.inversetransform(x).map(_.getReal)
