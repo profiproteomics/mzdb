@@ -11,6 +11,7 @@ import org.jfree.chart.renderer.GrayPaintScale
 import org.jfree.chart.renderer.xy.XYBlockRenderer
 import org.jfree.data.xy.DefaultXYZDataset
 import fr.profi.mzdb.model.Peak
+import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 import fr.profi.mzdb.utils.math.wavelet.MotherWavelet
 import fr.profi.mzdb.utils.math.wavelet.Ridge
@@ -27,28 +28,32 @@ import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 import fr.profi.mzdb.utils.math.wavelet.GaussianFirstDerivative
 import scala.util.control.Breaks._
 import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
-
 import org.jfree.chart.renderer.LookupPaintScale
+import scala.reflect.BeanProperty
 
 
 /**
  * result of the algorithm
  * too many attributes, no ? LcContextSummary 
  */
-case class CwtPeakel(val apex: Int,
-                     val apexLcContext: ILcContext,
-                     val minIdx: Int,
-                     val startLcContext: ILcContext,
-                     val maxIdx: Int,
-                     val endLcContext: ILcContext,
-                     val xMax: Float,
-                     val intensityMax: Float, //
-                     val centroid: Float,  
-                     val snr: Float,
-                     val coeffsAtMaxScale: Array[Pair[Peak, Double]]= null) {
-
+case class CwtPeakel( override val index:Int,
+                      override val peaks: Array[Option[Peak]],
+                      apexLcContext: ILcContext,
+                      minIdx: Int,
+                      startLcContext: ILcContext,
+                      maxIdx: Int,
+                      endLcContext: ILcContext,
+                      xMax: Float,
+                      intensityMax: Float, //
+                      centroid: Float,  
+                      snr: Float,
+                      coeffsAtMaxScale: Array[Pair[Peak, Double]]= null) 
+                      extends Peakel( index:Int, 
+                                      peaks:Array[Option[Peak]]) {
+  
+  
   override def toString(): String = {
-    "apex:" + apex + ", minIdx:" + minIdx + ", maxIdx:" + maxIdx + ", xmax:" + xMax + ", intensityMax:" + intensityMax + ", centroid:" + centroid + ", snr:" + snr + ", minTime:"+ startLcContext.getElutionTime() + ", maxtime:" + endLcContext.getElutionTime() 
+    "apex:" + index + ", minIdx:" + minIdx + ", maxIdx:" + maxIdx + ", xmax:" + xMax + ", intensityMax:" + intensityMax + ", centroid:" + centroid + ", snr:" + snr + ", minTime:"+ startLcContext.getElutionTime() + ", maxtime:" + endLcContext.getElutionTime() 
   }
 }
 
@@ -429,8 +434,9 @@ class WaveletBasedPeakelFinder(val peaks: Seq[Peak] ) extends RidgesFinder with 
         val centroid =xvalues.zip(intensities).map { case (x, y) => x * y }.reduceLeft(_ + _) / intensities.reduceLeft(_ + _)
         val intensityMax = intensities.max 
         val xmax =  xvalues(intensities.indexOf(intensityMax)) 
-        val r = this.peaks.slice(minIdx, maxIdx).zip(coeffs(maxScale).slice(minIdx, maxIdx)).toArray
-        peakels += CwtPeakel(apex = intensities.indexOf(intensityMax),
+        val r = this.peaks.slice(minIdx, maxIdx + 1).zip(coeffs(maxScale).slice(minIdx, maxIdx)).toArray
+        peakels += CwtPeakel(index = intensities.indexOf(intensityMax),
+                            peaks = slicedPeaks.map(Some(_)) toArray,
                             apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
                             minIdx = minIdx, 
                             startLcContext = peaks(minIdx).getLcContext,  
@@ -492,7 +498,8 @@ class WaveletBasedPeakelFinder(val peaks: Seq[Peak] ) extends RidgesFinder with 
         }
         
         //we may need to refined min and max indexes TODO
-        CwtPeakel(apex = intensities.indexOf(intensities.max),
+        CwtPeakel(index = intensities.indexOf(intensities.max),
+                  peaks = slicedPeaks.map(Some(_)) toArray,
                   apexLcContext = peaks(maxIndex).getLcContext,
                   minIdx = maxIdxAtFirstScale, 
                   startLcContext = peaks(maxIdxAtFirstScale).getLcContext, 
@@ -506,11 +513,13 @@ class WaveletBasedPeakelFinder(val peaks: Seq[Peak] ) extends RidgesFinder with 
         null
     }.filter(_ != null)
     
-    //filter overlapping peakels take the largest
-    //peakels = peakels.filter{ x=> math.abs(x.endLcContext.getElutionTime - x.startLcContext.getElutionTime) >= ridgeFilteringParams.minPeakWidth} // filter the two small peakel
+    //// filter the two small peakel
+    //peakels = peakels.filter{ x=> math.abs(x.endLcContext.getElutionTime - x.startLcContext.getElutionTime) >= ridgeFilteringParams.minPeakWidth} 
     
-    peakels = _filterOverlappingPeakels(peakels); // remove a detected peakel which is contained in another peakel
-    //peakels.foreach(x => println(x))
+    // remove a detected peakel which is contained in another peakel
+    peakels = _filterOverlappingPeakels(peakels); 
+    
+    //fill peaks data
     peakels.toArray
   }
   
