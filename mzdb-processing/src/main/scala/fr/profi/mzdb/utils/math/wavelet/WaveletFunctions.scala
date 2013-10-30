@@ -7,8 +7,8 @@ import scala.Numeric
 import org.apache.commons.math.transform.FastFourierTransformer
 import org.apache.commons.math.complex.Complex
 import org.apache.commons.math.MathRuntimeException
-import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D
-import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D
+//import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D
+//import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D
 
 /**
  * static object performing continous wavelet transform
@@ -105,7 +105,7 @@ object WaveletUtils {
   }
   
   /**for the cwt we need */
-  def convolveUsingJtransform(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean = false): Array[Double] = {
+  /*def convolveUsingJtransform(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean = false): Array[Double] = {
     val N = y.length
     val fft = new DoubleFFT_1D(N)
     
@@ -132,7 +132,7 @@ object WaveletUtils {
     }
     fft.complexInverse(x, true)
     x.zipWithIndex.collect{case (value, idx) if idx % 2 == 0 => value}
-  }
+  }*/
   
   
   /**
