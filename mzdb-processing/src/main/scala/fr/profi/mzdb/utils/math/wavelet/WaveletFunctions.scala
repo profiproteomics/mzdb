@@ -91,14 +91,14 @@ object WaveletUtils {
   }
 
   /**
-   * circular convolution using fft
+   * circular convolution using fft TODO:optimize 
    * @param y: its length must be a power of 2
    * @param wavelet: scaled wavelet, padded with zero to match y length
    * @return the circular convolution of y and wavelet
    */
-  def convolveUsingFft(y: Array[Double], wavelet: Array[Double]): Array[Double] = {
+  def convolveUsingFft(y: Array[Double], wavelet: Array[Double], useConjugate=true): Array[Double] = {
     val yfft = transformer.transform(y)
-    val waveletfft = transformer.transform(wavelet).map(_.conjugate)//do not forget to take the conjugate
+    val waveletfft = transformer.transform(wavelet).map(x=> if (useConjugate) x.conjugate)//do not forget to take the conjugate
     //multiply
     val x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }
     return transformer.inversetransform(x).map(_.getReal)
@@ -252,8 +252,8 @@ object WaveletUtils {
       var len_filt = low_pass.length
       sig = periodicExtend(sig.toBuffer, len_filt / 2)
       //convolveUsingFft(y: Array[Double], wavelet: Array[Double]): Array[Double]
-      var cA = convolveUsingJtransform(sig, low_pass, useConjugate=false).toBuffer//fft.convfft(sig.toBuffer, low_pass)
-      var cD = convolveUsingJtransform(sig, high_pass, useConjugate=false).toBuffer//fft.convfft(sig.toBuffer, high_pass)
+      var cA = convolveUsingFft(sig, low_pass, useConjugate=false).toBuffer//fft.convfft(sig.toBuffer, low_pass)
+      var cD = convolveUsingFft(sig, high_pass, useConjugate=false).toBuffer//fft.convfft(sig.toBuffer, high_pass)
 
       cA.trimStart(len_filt); cA.trimEnd(cA.length - N)
       cD.trimStart(len_filt); cD.trimEnd(cD.length - N)
@@ -371,8 +371,8 @@ object WaveletUtils {
         cL0 = periodicExtend(cL0.toBuffer, lf / 2)
         cH0 = periodicExtend(cH0.toBuffer, lf / 2)
         
-        var oup00L = convolveUsingJtransform(cL0, low_pass, useConjugate=false).toBuffer//fft.convfft(cL0.toBuffer, low_pass)
-        var oup00H = convolveUsingJtransform(cH0, high_pass, useConjugate=false).toBuffer//fft.convfft(cH0.toBuffer, high_pass)
+        var oup00L = convolveUsingFft(cL0, low_pass, useConjugate=false).toBuffer//fft.convfft(cL0.toBuffer, low_pass)
+        var oup00H = convolveUsingFft(cH0, high_pass, useConjugate=false).toBuffer//fft.convfft(cH0.toBuffer, high_pass)
 
         oup00L.trimStart(lf - 1); oup00L.trimEnd(oup00L.length - len)
         oup00H.trimStart(lf - 1); oup00H.trimEnd(oup00H.length - len);
@@ -396,8 +396,8 @@ object WaveletUtils {
         cL1 = periodicExtend(cL1.toBuffer, lf / 2)
         cH1 = periodicExtend(cH1.toBuffer, lf / 2)
 
-        var oup01L = convolveUsingJtransform(cL1, low_pass, useConjugate=false) toBuffer
-        var oup01H = convolveUsingJtransform(cH1, high_pass, useConjugate=false) toBuffer
+        var oup01L = convolveUsingFft(cL1, low_pass, useConjugate=false) toBuffer
+        var oup01H = convolveUsingFft(cH1, high_pass, useConjugate=false) toBuffer
 
         oup01L.trimStart(lf - 1); oup01L.trimEnd(oup01L.length - len)
         oup01H.trimStart(lf - 1); oup01H.trimEnd(oup01H.length - len)
