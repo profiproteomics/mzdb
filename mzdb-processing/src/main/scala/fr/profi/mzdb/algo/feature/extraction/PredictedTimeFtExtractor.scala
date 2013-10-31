@@ -133,7 +133,9 @@ class PredictedTimeFtExtractor(
 
     //TODO: check if they are really the monoisotopic peakel of a feature (overlapping test)
     //(peakel: Peakel, pf: PutativeFeature, charge:Int, pklTree:PeakListTree)
-    val monoIsos = peakels(0).filter(peakel => this._checkIsMonoisotopicPeakel(peakel, putativeFt, putativeFt.charge, pklTree));
+    val monoIsos = peakels(0).filter(peakel => this._checkIsMonoisotopicPeakel(peakel, putativeFt, 
+                                                                               putativeFt.charge, pklTree, 
+                                                                               minNbOverlappingIPs));
     
 
     //find longest path between all peakels belonging to different isotopes lovels

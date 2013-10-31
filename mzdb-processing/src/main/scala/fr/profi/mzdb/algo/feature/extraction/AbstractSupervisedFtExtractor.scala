@@ -11,6 +11,7 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.OverlappingIsotopicPattern
 import fr.profi.mzdb.model.TheoreticalIsotopePattern
 import fr.profi.mzdb.model.Peakel
+import scala.collection.mutable.HashMap
 
 abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
 
@@ -100,7 +101,7 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
           val tmpTheoIP = theoIP.copy(
             mz = olpIpMz,
             charge = z,
-            relativeAbundances = theoIP.relativeAbundances.take(olpIpNbPeaksToReachMonoistopicPeakel)//olpIpNbPeaks)
+            relativeAbundances = theoIP.relativeAbundances.take(olpIpNbPeaksToReachMonoistopicPeakel)
           )
 
           // Try to extract a putative overlapping isotopic pattern
@@ -123,14 +124,16 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
     olpIPs.toArray
   }
 
-  protected def _checkIsMonoisotopicPeakel(f: Feature, pf: PutativeFeature, pklTree:PeakListTree): Boolean = {
-    f.getIsotopicPatterns.map(this._extractOverlappingIPs(_, pf.theoreticalIP , pklTree))
-    true
+  protected def _checkIsMonoisotopicPeakel(f: Feature, pf: PutativeFeature, pklTree:PeakListTree, minNbIPs:Int): Boolean = {
+    val ips = f.getIsotopicPatterns.foreach{ ip=> ip.overlappingIps = this._extractOverlappingIPs(ip, pf.theoreticalIP , pklTree) }
+    this.updateFtOverlappingFeatures(f, f.getIsotopicPatterns, minNbIPs)
+    return f.bestOverlappingFeature == null
+
   }
   
-  protected def _checkIsMonoisotopicPeakel(peakel: Peakel, pf: PutativeFeature, charge:Int, pklTree:PeakListTree): Boolean = {
+  protected def _checkIsMonoisotopicPeakel(peakel: Peakel, pf: PutativeFeature, charge:Int, pklTree:PeakListTree, minNbIPs:Int): Boolean = {
     val f = Feature(Feature.generateNewId, peakel.getMz, charge, Array[Peakel](peakel))
-    this._checkIsMonoisotopicPeakel(f, pf, pklTree)
+    this._checkIsMonoisotopicPeakel(f, pf, pklTree, minNbIPs)
   }
   
   

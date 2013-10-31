@@ -104,7 +104,64 @@ abstract class AbstractFeatureExtractor extends Logging {
             }
         }
     }
-    /*
+  
+    val ftFirstPeakel = ft.peakels(0)
+    val chargeStates = ovlIpsMap.keySet.toArray
+    val olpFeatures = new ArrayBuffer[Feature](chargeStates.length)
+    var bestOlpFt: Feature = null
+    var highestPMCC = -1.0; // PMCC range is [-1,+1]
+    for (olpFtCharge <- chargeStates) {
+      val sameChargeIPs = ovlIpsMap(olpFtCharge)
+      val nbPeaksList = sameChargeIPs.keySet.toArray
+      var sameChargeHighestNbIPs = 0
+      var sameChargeLongestOlpFt: Feature = null
+      for (nbPeaks <- nbPeaksList) {
+        val sameFtIps = sameChargeIPs(nbPeaks)
+        this.normalizeIPs(sameFtIps)
+        val olpFt = new Feature(sameFtIps(0).mz, olpFtCharge, sameFtIps)
+        // Update feature properties using apex ones
+        olpFt.mz = olpFt.peakels(0).getApex.getMz
+        // Check if the current overlapping feature has a longer elution duration
+        val nbIPs = olpFt.ms1Count
+        if (nbIPs >= sameChargeHighestNbIPs) {
+          sameChargeHighestNbIPs = nbIPs
+          sameChargeLongestOlpFt = olpFt
+        }
+      }
+      val nbOlpIPs = sameChargeLongestOlpFt.ms1Count
+      if (nbOlpIPs >= minNbIPs) {
+        // Search for the overlapping peakel having the highest correlation with the first feature peakel
+        /*ArrayList<Peakel> overlappingPeakels = (ArrayList<Peakel>) sameChargeLongestOlpFt.getPeakels();
+        int bestOlpPeakelIndex;
+        for( Peakel overlappingPeakel: overlappingPeakels ) {          
+          double overlappingPMCC = FeatureScorer.computePeakelCorrelation(overlappingPeakel, ftFirstPeakel);          
+        }*/
+        olpFeatures += sameChargeLongestOlpFt
+        // Compute the correlation coefficient of this overlapping feature      
+        val olpFtLastPeakel = sameChargeLongestOlpFt.peakels(sameChargeLongestOlpFt.peakelsCount - 1)
+        sameChargeLongestOlpFt.overlapPMCC = olpFtLastPeakel.computeCorrelationWith(ftFirstPeakel).toFloat
+        //overlapClonedPeakels.add( ftFirstPeakel );
+        //double meanPMCC = FeatureScorer.computeMeanPeakelCorrelation(overlapClonedPeakels);
+        // Check if the current overlapping feature has a higher correlation
+        if (sameChargeLongestOlpFt.overlapPMCC >= highestPMCC) {
+          highestPMCC = sameChargeLongestOlpFt.overlapPMCC
+          bestOlpFt = sameChargeLongestOlpFt
+        }
+      }
+    }
+    if ( !olpFeatures.isEmpty) {
+      ft.overlappingFeatures = olpFeatures.toArray
+      ft.bestOverlappingFeature = bestOlpFt
+      if (bestOlpFt != null) {
+        val bestOlpFtInt = bestOlpFt.peakels(bestOlpFt.peakelsCount - 1).intensity
+        ft.overlapRelativeFactor = bestOlpFtInt / ft.peakels(0).intensity
+      }
+    }
+  }
+}
+
+
+  /*
     this.logger.debug("length ovl ft:" + ovlFts.length)
  
     //detect local maxima in each peakel of considered feature 
@@ -158,55 +215,3 @@ abstract class AbstractFeatureExtractor extends Logging {
     //DataStructure holding
     val peakelsByLocalMax = new HashMap[Feature, HashMap[Int, Pair[Int, Peakel]]]()
     ovlFts.foreach(ft => peakelsByLocalMax(ft) = clusterizePeakelsFeatures(ft))*/
-    val ftFirstPeakel = ft.peakels(0)
-    val chargeStates = ovlIpsMap.keySet.toArray
-    val olpFeatures = new ArrayBuffer[Feature](chargeStates.length)
-    var bestOlpFt: Feature = null
-    var highestPMCC = -1.0; // PMCC range is [-1,+1]
-    for (olpFtCharge <- chargeStates) {
-      val sameChargeIPs = ovlIpsMap(olpFtCharge)
-      val nbPeaksList = sameChargeIPs.keySet.toArray
-      var sameChargeHighestNbIPs = 0
-      var sameChargeLongestOlpFt: Feature = null
-      for (nbPeaks <- nbPeaksList) {
-        val sameFtIps = sameChargeIPs(nbPeaks)
-        this.normalizeIPs(sameFtIps)
-        val olpFt = new Feature(sameFtIps(0).mz, olpFtCharge, sameFtIps)
-        // Update feature properties using apex ones
-        olpFt.mz = olpFt.peakels(0).getApex.getMz
-        // Check if the current overlapping feature has a longer elution duration
-        val nbIPs = olpFt.ms1Count
-        if (nbIPs >= sameChargeHighestNbIPs) {
-          sameChargeHighestNbIPs = nbIPs
-          sameChargeLongestOlpFt = olpFt
-        }
-      }
-      val nbOlpIPs = sameChargeLongestOlpFt.ms1Count
-      if (nbOlpIPs >= minNbIPs) {
-        // Search for the overlapping peakel having the highest correlation with the first feature peakel
-        /*ArrayList<Peakel> overlappingPeakels = (ArrayList<Peakel>) sameChargeLongestOlpFt.getPeakels();
-        int bestOlpPeakelIndex;
-        for( Peakel overlappingPeakel: overlappingPeakels ) {          
-          double overlappingPMCC = FeatureScorer.computePeakelCorrelation(overlappingPeakel, ftFirstPeakel);          
-        }*/
-        olpFeatures += sameChargeLongestOlpFt
-        // Compute the correlation coefficient of this overlapping feature      
-        val olpFtLastPeakel = sameChargeLongestOlpFt.peakels(sameChargeLongestOlpFt.peakelsCount - 1)
-        sameChargeLongestOlpFt.overlapPMCC = olpFtLastPeakel.computeCorrelationWith(ftFirstPeakel).toFloat
-        //overlapClonedPeakels.add( ftFirstPeakel );
-        //double meanPMCC = FeatureScorer.computeMeanPeakelCorrelation(overlapClonedPeakels);
-        // Check if the current overlapping feature has a higher correlation
-        if (sameChargeLongestOlpFt.overlapPMCC >= highestPMCC) {
-          highestPMCC = sameChargeLongestOlpFt.overlapPMCC
-          bestOlpFt = sameChargeLongestOlpFt
-        }
-      }
-    }
-    if (olpFeatures.size > 0) {
-      ft.overlappingFeatures = olpFeatures.toArray
-      ft.bestOverlappingFeature = bestOlpFt
-      val bestOlpFtInt = bestOlpFt.peakels(bestOlpFt.peakelsCount - 1).intensity
-      ft.overlapRelativeFactor = bestOlpFtInt / ft.peakels(0).intensity
-    }
-  }
-}
