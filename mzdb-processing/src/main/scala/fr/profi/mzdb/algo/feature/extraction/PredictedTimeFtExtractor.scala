@@ -19,12 +19,6 @@ import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 import fr.profi.mzdb.model.Peakel
 
 
-object ExtractionMethod extends Enumeration {
-  type Name = Value
-  val CLASSIC, RIDGE = Value
-}
-import ExtractionMethod._
-
 class PredictedTimeFtExtractor(
   //override val mzDbReader: MzDbReader,
   override val scanHeaderById: Map[Int, ScanHeader],
@@ -33,15 +27,13 @@ class PredictedTimeFtExtractor(
   override val maxNbPeaksInIP: Int,
   override val minNbOverlappingIPs: Int,
   val minConsecutiveScans: Int = 4,
-  val predictedTimeTol: Int = 180,
-  val method: ExtractionMethod.Value = RIDGE
-) extends Ms2DrivenFtExtractor(
+  val predictedTimeTol: Int = 180) 
+  extends Ms2DrivenFtExtractor(
   scanHeaderById,
   nfByScanId,
   mzTolPPM,
   maxNbPeaksInIP,
-  minNbOverlappingIPs
-) { // with RidgesFinder { => not seems to be a good solution
+  minNbOverlappingIPs) { // with RidgesFinder { => not seems to be a good solution
 
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
@@ -68,6 +60,25 @@ class PredictedTimeFtExtractor(
       return Option.empty[Feature]
   }
 
+  /**
+   * Try to select the best peakel in cross assignment
+   * in order to extract with the ms2DrivenExtractor
+   * 
+   * 
+   * Workflow
+   *  Peakel detection using wavelet approaches
+   *          then
+   *  check if they are monoisotopic (overlapping test)
+   *  keep only ones that are monoisotopic
+   *          then
+   *  compute apex deviation
+   *  keep the longest path between monoisotopic through isotopic peakels
+   *          then
+   *  compute rmsd, keep the path with the best average rmsd
+   *          then
+   *  return the apex scanId of the best monoisotopic peakel, then perform
+   *  extraction with ms2DrivenExtractor 
+   */
   private def _findStartingScanIDUsingCwt(putativeFt: PutativeFeature, pklTree: PeakListTree): Int = {
     //extract some vars
     val elutionTime = putativeFt.elutionTime
@@ -120,14 +131,29 @@ class PredictedTimeFtExtractor(
     
     //the value  we will return
     var scanId = 0
+
+    //TODO: check if they are really the monoisotopic peakel of a feature (overlapping test)
     
-    var longestRidges = this._distCalc(peakels)
+    //find longest path between all peakels belonging to different isotopes lovels
+    val longestRidges = this._distCalc(peakels).groupBy(_.length).maxBy(_._1)._2
     
+    //should never append
+    //algo failed to find something relevant
     if (longestRidges.isEmpty) {
       logger.warn("no signal found in selected region")
-      return 0
+      return scanId
     }
-    //we take the minimum
+    
+    //calc rmsds
+    val rmsdsBymonoIso = this._correlationCalc(longestRidges)
+    
+    //keep the best monisotopic peakel
+    //compute the mean correlation for each path
+    //keep the monoisotopicpeakel which the highest mean correlation
+    val bestMonoIso = rmsdsBymonoIso.map{ case (cwtPeakel, rmsds) => cwtPeakel-> (rmsds.map(_._2).sum / rmsds.length) }.maxBy(_._2)._1
+    
+    //return its scanId
+    scanId = bestMonoIso.apexLcContext.getScanId
     scanId
   }
   
@@ -153,8 +179,11 @@ class PredictedTimeFtExtractor(
    * 
    */
   private def _distCalc(peakels: ArrayBuffer[Array[CwtPeakel]], maxScanDrift:Int =10 ) : Array[Array[CwtPeakel]] = {
-    if (peakels.length <= 1)
-      return null;
+    //should never append
+    //tested before entering 
+    if (peakels.length <= 1) {
+      return null
+    }
     val monoIsos = peakels(0);
     val ridges = new ArrayBuffer[ArrayBuffer[CwtPeakel]]
     for (monoIso <- monoIsos) {
@@ -168,43 +197,21 @@ class PredictedTimeFtExtractor(
              
            currentRidge += isoPeakels(0)
            for (j <- 1 until isoPeakels.length) {
-             val clonedRidges = currentRidge.clone
-             //cl
+             val clonedRidge = currentRidge.clone
+             clonedRidge += isoPeakels(j)
+             ridges += clonedRidge
            }
        }
-     }
-    }
-    null
-  }
-
-   /**
-   * lastScale correspond to the monoisotopic peakel
-   * return an hashmap containing Ridge and an array of rmsd using monoistopic peakel
-   */
-  private def _rmsdCalc(peakels: ArrayBuffer[Array[CwtPeakel]], 
-                        ridges: Array[Ridge]) : HashMap[Ridge, Pair[CwtPeakel, Array[Double]]] = {
-    var rpeakels = peakels.reverse
-    var weightedRidges = new HashMap[Ridge, Pair[CwtPeakel, Array[Double]]]
-    for (ridge <- ridges) {
-      //var peaks = new HashMap[Int, Array[Float]]
-      var correspondingPeakels = new HashMap[Int, CwtPeakel]
-      ridge.maximaIndexPerScale.foreach{ case (scale, value)  =>  
-        if (value != None) rpeakels(scale).foreach { cwtPeakel => 
-          if (cwtPeakel.index == value.get._1) 
-            correspondingPeakels(scale) = cwtPeakel
-            }
-      }    
-      var (monoisotopicScale, monoisotopicPeakel) = correspondingPeakels.maxBy(_._1)
-      var (minIdx, maxIdx) = (monoisotopicPeakel.minIdx, monoisotopicPeakel.maxIdx)
-    }
-    weightedRidges
+     }//end breakable
+    }//end monoIsos
+    ridges.map(_.toArray) toArray
   }
 
   
   /**
    * return a hashmap containing monoistopicpeakel as key and a hashmap containing best rmsd in each isotopic level
    */
-  private def _rmsdCalc(peakels : ArrayBuffer[Array[CwtPeakel]]): collection.mutable.Map[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]] = {
+  private def _correlationCalc(peakels : Array[Array[CwtPeakel]]): collection.mutable.Map[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]] = {
     
     var monoIsos =  new HashMap[CwtPeakel, ArrayBuffer[Pair[CwtPeakel, Double]]] ++ //annoying...
                     peakels(0).map( _ -> new ArrayBuffer[Pair[CwtPeakel, Double]]()).toMap
