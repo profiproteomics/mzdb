@@ -10,6 +10,7 @@ import fr.profi.mzdb.utils.ms.MsUtils
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.OverlappingIsotopicPattern
 import fr.profi.mzdb.model.TheoreticalIsotopePattern
+import fr.profi.mzdb.model.Peakel
 
 abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
 
@@ -79,6 +80,7 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
 
   protected def _extractOverlappingIPs(ip: IsotopicPattern, theoIP: TheoreticalIsotopePattern, pklTree: PeakListTree,
                                        maxZ: Int = 5, maxIpShift: Int = 3): Array[OverlappingIsotopicPattern] = {
+    
     require(maxZ > 0, "maximum charge must be strictly positive")
     require(maxIpShift > 0, "maximum IP shift must be strictly positive")
 
@@ -91,17 +93,14 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
       // Try several m/z shifts
       for (ipShift <- (-maxIpShift) until 0) {
 
-        // Skip current feature peaks
-        if (ipShift != 0 && !(ipShift > 0 && z == ip.charge)) {
-
           val olpIpMz = ip.mz + (ipShift.toDouble / z)
-          val olpIpNbPeaks = ipShift.abs
+          val olpIpNbPeaksToReachMonoistopicPeakel = ipShift + 1
           
           // Configure a new theoretical isotope pattern
           val tmpTheoIP = theoIP.copy(
             mz = olpIpMz,
             charge = z,
-            relativeAbundances = theoIP.relativeAbundances.take(olpIpNbPeaks)
+            relativeAbundances = theoIP.relativeAbundances.take(olpIpNbPeaksToReachMonoistopicPeakel)//olpIpNbPeaks)
           )
 
           // Try to extract a putative overlapping isotopic pattern
@@ -113,22 +112,26 @@ abstract class AbstractSupervisedFtExtractor extends AbstractFeatureExtractor {
             overlapShift = ipShift
           )
 
-          //System.out.println( "putativeFt.mz=" + putativeFt.mz + " z="  + z + " shift="+ ipShift + " olpIpMz="+ olpIpMz );
-
           // Check that we retrieved enough peaks
-          if (tmpOlpIp.isDefined && olpIpNbPeaks == tmpOlpIp.get.peaks.length) {
+          if (tmpOlpIp.isDefined && olpIpNbPeaksToReachMonoistopicPeakel <= tmpOlpIp.get.peaks.length) {
             // Set overlapping IP elution time
             //tmpOlpIp.elutionTime = ip.getElutionTime;
             olpIPs += tmpOlpIp.get
-          }
-        }
-
+          } 
       }
     }
     olpIPs.toArray
   }
 
-  protected def _checkIsMonoisotopicPeakel(f: Feature) {
-    //TODO
+  protected def _checkIsMonoisotopicPeakel(f: Feature, pf: PutativeFeature, pklTree:PeakListTree): Boolean = {
+    f.getIsotopicPatterns.map(this._extractOverlappingIPs(_, pf.theoreticalIP , pklTree))
+    true
   }
+  
+  protected def _checkIsMonoisotopicPeakel(peakel: Peakel, pf: PutativeFeature, charge:Int, pklTree:PeakListTree): Boolean = {
+    val f = Feature(Feature.generateNewId, peakel.getMz, charge, Array[Peakel](peakel))
+    this._checkIsMonoisotopicPeakel(f, pf, pklTree)
+  }
+  
+  
 }

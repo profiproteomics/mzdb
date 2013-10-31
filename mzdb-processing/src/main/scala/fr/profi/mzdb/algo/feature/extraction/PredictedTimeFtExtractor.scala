@@ -33,11 +33,10 @@ class PredictedTimeFtExtractor(
   nfByScanId,
   mzTolPPM,
   maxNbPeaksInIP,
-  minNbOverlappingIPs) { // with RidgesFinder { => not seems to be a good solution
+  minNbOverlappingIPs) { 
 
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
-    //System.out.println("extracting feature with m/z="+putativeFt.mz +" at time="+putativeFt.elutionTime);
     val startingScanId = this._findStartingScanId(putativeFt, pklTree)
     //val startingScanIdCwt = _findStartingScanIDUsingCwt(putativeFt, pklTree)
 
@@ -133,7 +132,10 @@ class PredictedTimeFtExtractor(
     var scanId = 0
 
     //TODO: check if they are really the monoisotopic peakel of a feature (overlapping test)
+    //(peakel: Peakel, pf: PutativeFeature, charge:Int, pklTree:PeakListTree)
+    val monoIsos = peakels(0).filter(peakel => this._checkIsMonoisotopicPeakel(peakel, putativeFt, putativeFt.charge, pklTree));
     
+
     //find longest path between all peakels belonging to different isotopes lovels
     val longestRidges = this._distCalc(peakels).groupBy(_.length).maxBy(_._1)._2
     
