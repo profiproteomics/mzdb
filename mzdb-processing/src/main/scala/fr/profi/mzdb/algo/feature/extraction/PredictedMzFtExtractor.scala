@@ -55,7 +55,7 @@ class PredictedMzFtExtractor(
 	//take the highest peakel since we have to return only one feature ?
 	//val highestPeakel = peakels.sortBy( x=> xic(x.apex).getIntensity ).last
 	//by elutionTime ? Some work TODO here LcContext well filled ?
-	val highestPeakel = peakels.sortBy( x => math.abs(xic(x.apex).getLcContext().getElutionTime() - putativeFt.getElutionTime)).first
+	val highestPeakel = peakels.sortBy( x => math.abs(xic(x.index).getLcContext().getElutionTime() - putativeFt.getElutionTime)).first
 
 	val isotopicPatterns = new Array[Option[IsotopicPattern]](highestPeakel.maxIdx - highestPeakel.minIdx + 1)
 
