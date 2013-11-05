@@ -22,6 +22,9 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 
+import fr.profi.mzdb.db.model.IMzDBParamNameGetter;
+import fr.profi.mzdb.db.model.MzDBParamName_0_8;
+import fr.profi.mzdb.db.model.MzDBParamName_0_9;
 import fr.profi.mzdb.db.model.MzDbHeader;
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
@@ -43,23 +46,6 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
  * @author David
  */
 public class MzDbReader {
-
-	public enum BBSizesUserParamNames {
-		BB_MZ_HEIGHT_MS1_STR("BB_height_ms1"),
-		BB_MZ_HEIGHT_MSn_STR("BB_height_msn"),
-		BB_RT_WIDTH_MS1_STR("BB_width_ms1"),
-		BB_RT_WIDTH_MSn_STR("BB_width_msn");
-
-		private final String userParamName;
-
-		private BBSizesUserParamNames(String val) {
-			userParamName = val;
-		}
-
-		public String toString() {
-			return userParamName;
-		}
-	};
 
 	public class BBSizes {
 
@@ -95,6 +81,9 @@ public class MzDbReader {
 	private RunSliceHeaderReader _runSliceHeaderReader = null;
 
 	private BBSizes _boundingBoxSizes = null;
+	
+	/**paramname getter */
+	private IMzDBParamNameGetter _paramNameGetter = null;
 	
 	protected String dbLocation = null;
 
@@ -236,13 +225,25 @@ public class MzDbReader {
 	public void close() {
 		connection.dispose();
 	}
-
+	
+	public String getSoftwareVersion() throws SQLiteException {
+	  String sqlString = "SELECT version FROM software WHERE name=mzDB";
+	  return new SQLiteQuery(connection, sqlString).extractSingleString();
+	  
+	}
+	
 	public boolean isNoLossMode() throws SQLiteException {
 
 		if (this.isNoLossMode == null) {
 			MzDbHeader p = this._mzDbHeaderReader.getMzDbHeader();
-
-			if (p.getUserParam("is_no_loss").getValue().equals("false"))
+			
+			//ugly workaround for the moment
+			if ( this._paramNameGetter == null) {
+			  String softVersion = this.getSoftwareVersion();
+	      this._paramNameGetter = (softVersion.contains("0.9") ) ? new MzDBParamName_0_9() : new MzDBParamName_0_8(); 
+			}
+			
+			if (p.getUserParam(this._paramNameGetter.getLossStateParamName()).getValue().equals("false"))
 				this.isNoLossMode = false;
 			else
 				this.isNoLossMode = true;
@@ -251,7 +252,7 @@ public class MzDbReader {
 		return this.isNoLossMode;
 	}
 	
-	public BBSizes getBBSizes() {
+	public BBSizes getBBSizes() throws SQLiteException {
 		if (_boundingBoxSizes == null) {
 			_boundingBoxSizes = new BBSizes();
 			 MzDbHeader header = null;
@@ -260,14 +261,13 @@ public class MzDbReader {
 			} catch (SQLiteException e) {
 				e.printStackTrace();
 			}
-			 _boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(
-				BBSizesUserParamNames.BB_MZ_HEIGHT_MS1_STR.toString()).getValue());
-			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(
-				BBSizesUserParamNames.BB_MZ_HEIGHT_MSn_STR.toString()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(
-				BBSizesUserParamNames.BB_RT_WIDTH_MS1_STR.toString()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(
-				BBSizesUserParamNames.BB_RT_WIDTH_MSn_STR.toString()).getValue());
+			
+			String softVersion = this.getSoftwareVersion();
+			this._paramNameGetter = (softVersion.contains("0.9") ) ? new MzDBParamName_0_9() : new MzDBParamName_0_8(); 
+			 _boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMs1BBMzWidthParamName()).getValue());
+			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMsnBBMzWidthParamName()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMs1BBTimeWidthParamName()).getValue());
+			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMs1BBTimeWidthParamName()).getValue());
 		}
 		return _boundingBoxSizes;
 	}

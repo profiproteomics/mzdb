@@ -42,5 +42,9 @@ public class MzDbHeader extends AbstractTableModel {
 	public MzDbHeader(String version, int creationTimestamp) {
 		this(version, creationTimestamp, null);
 	}
+	
+	public String getVersion() {
+	  return this.version;
+	}
 
 }
