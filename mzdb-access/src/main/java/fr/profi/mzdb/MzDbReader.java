@@ -227,7 +227,7 @@ public class MzDbReader {
 	}
 	
 	public String getSoftwareVersion() throws SQLiteException {
-	  String sqlString = "SELECT version FROM software WHERE name=mzDB";
+	  String sqlString = "SELECT version FROM software WHERE name='mzDB'";
 	  return new SQLiteQuery(connection, sqlString).extractSingleString();
 	  
 	}
