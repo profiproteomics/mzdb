@@ -43,13 +43,14 @@ object IsotopicPatternLookup extends Logging {
   
   // A mass (not m/z) must be provided
   def getTheoreticalPattern(mz: Double, charge: Int): TheoreticalIsotopePattern = {
-    
-    // Convert m/z into mass
-    val mass = mozToMass(mz,charge)
-    
     val keys = lookupTable.keys.toBuffer
-    require(mass >= keys.first && mass <= keys.last, "provided m/z is out of lookup table bounds: " + mass)
-      
+    //require(mass >= keys.head && mass <= keys.last, "provided m/z is out of lookup table bounds: " + mass)
+    
+    // Convert m/z into mass    
+    var mass = mozToMass(mz,charge)
+    if (mass > keys.last ) 
+      mass= keys.last
+     
     val idx = keys.indexWhere(_ >= mass)
     val (x1, x2) = (keys(idx - 1), keys(idx))
     val (minArray, maxArray) = (lookupTable(x1), lookupTable(x2) )
@@ -62,7 +63,8 @@ object IsotopicPatternLookup extends Logging {
         if (y1 > 0 || y2 > 0) {
           val (slope, intercept) = calcLineParams(x1, y1, x2, y2)
           pat += ( (slope * mass) + intercept ).toFloat
-        } else break
+        } else 
+          break
       }
     }
     
