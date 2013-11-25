@@ -27,6 +27,7 @@ object FeatureScorer {
   // First results min = 5 ; max = 110
 	
   /*****************************************************************
+   * CORRELATION
    *  Estimation of the correlation factor
    ****************************************************************/
   /**mean correlation */
@@ -67,10 +68,11 @@ object FeatureScorer {
   
   
   /*****************************************************************
-   *  Estimation of the overlapping factor
-   *  For the moment, an overlapping factor is computed based 
-   *  only the first peakel of the considered feature 
+   * OVERLAPPING FACTOR
    ****************************************************************/
+  
+  /**Estimation of the overlapping factor*/
+  /**For the moment, an overlapping factor is computed based only the first peakel of the considered feature */
   def calcOverlappingFactor(f: Feature,  mzTolInPpm: Double) : Float = {
     if (f.overlappingFeatures == null) 
       return 0f
@@ -99,7 +101,7 @@ object FeatureScorer {
     calcMeanOverlappingFactor(overlappingMap) toFloat
   }
   
-  
+  /** utility function */
   def calcMeanOverlappingFactor( peakels: Seq[Tuple3[Peakel, Option[Peakel], Option[Peakel]]] ) : Float = {
     if (peakels.isEmpty)
       return 0f
@@ -110,6 +112,7 @@ object FeatureScorer {
   
   
   /**
+   * Experimental approach (not used)
    * overlap factor weighted with the intensity of the overlapping peakel
    * (the overlapping factor for one peakel should be bigger when the overlapping
    * peakel is a lot more intense.)
@@ -154,11 +157,16 @@ object FeatureScorer {
     of
   }
   
-  /*****************************************************************
+  
+  /****************************************************************
+   * ISOTOPIC PATTERN RATIOS
+   ****************************************************************/
+  
+  /**
    *  Estimation of the quality of the Isotopic Pattern
    *  rmsd of peakel's area observed vs peakel's area calculated
-   ****************************************************************/
-  def calcIsotopicDistance(f : Feature): Float = {
+   */
+  def calcRmsdIsotopicPattern(f : Feature): Float = {
     if (f.peakelsCount < 2)
       return Float.NaN
       
@@ -182,6 +190,7 @@ object FeatureScorer {
   
   
   /*****************************************************************
+   *  SIGNAL FLUCTUATION
    *  Perform a local max detection on each peakels
    ****************************************************************/
   
@@ -200,7 +209,9 @@ object FeatureScorer {
     shape / f.peakelsCount
   }
   
+  
   /*****************************************************************
+   *  SHAPE
    *  Estimation of the shape
    *  weighting of the rmsd value (fit vs observed) by the peakel area
    *  return the weighted mean 
@@ -259,6 +270,7 @@ object FeatureScorer {
   }
   
   /*****************************************************************
+   *  WIDTH
    *  Evaluation of the peakel width 
    ****************************************************************/
   
@@ -300,6 +312,10 @@ object FeatureScorer {
       Float.NaN
   }
   
+  
+  /******************************************************************
+   * MZ PRECISION
+   ******************************************************************/
   /**standard deviation on mz for each peakel ponderate by the area*/
   def calcStdDevPeakelsMzPrecision( f:Feature): Float = {
     var peakelsMzPrecision = new ArrayBuffer[Double]
@@ -314,6 +330,9 @@ object FeatureScorer {
   }
   
   
+  /******************************************************************
+   * PEAKEL AMPLITUDE
+   ******************************************************************/
   /**Peakel amplitude */
   def calcPeakelsAmplitude(f: Feature): Float = {
       if (f.getPeakels.isEmpty)
@@ -326,6 +345,7 @@ object FeatureScorer {
   }
   
   /***********************************************************
+   * PEAKEL VELOCITY
    * Peakel velocity WILL NOT BE USED
    ***********************************************************/
   private def getDistanceBetweenTwoPoints(x1:Float, y1:Float, x2:Float, y2:Float): Float = {
@@ -347,9 +367,30 @@ object FeatureScorer {
     m / math.pow(f.getPeakels.map(_.getIntensity).sum, 2) toFloat
   }
   
-}
+  
+  /****************************************************************
+   * APEX DEVIATION
+   ****************************************************************/
+  
+  def calcMeanPeakelsApexDeviation(peakels:Array[Peakel]) :Float = {
+    var m = 0f
+    var count = 0
+    peakels.sliding(2).withFilter(_.length == 2).foreach{
+        x => m += math.abs( x(0).apexIndex - x(1).apexIndex); count +=1 
+      }
+    m/count
+    
+  }
+  
+}//en feature scorer
 
 
+
+
+
+/************************************************************
+ * PROBABILISTIC APPROACHES
+ ************************************************************/
 
 object SideEstimator extends Enumeration {
     type SideEstimator = Value
