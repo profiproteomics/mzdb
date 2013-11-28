@@ -50,14 +50,14 @@ case class minMonoisotopicThreshold ()
  * inherit from Ms2DrivenExtractor essentially to fetch parameters
  */
 class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
-                                     val scanHeaderById: Map[Int,ScanHeader],
-                                    val nfByScanId: Map[Int,Float],
-                                    val mzTolPPM: Float,
-                                    val maxNbPeaksInIP: Int, // TODO: remove this param
-                                    val minNbOverlappingIPs: Int,
-                                    val maxConsecutiveGaps: Int = 2,
-                                    val maxTimeWindow: Float = 1200f,
-                                    val minPercentageOfMaxInt: Float = 0.005f) 
+                                    override val scanHeaderById: Map[Int,ScanHeader],
+                                    override val nfByScanId: Map[Int,Float],
+                                    override val mzTolPPM: Float,
+                                    override val maxNbPeaksInIP: Int, // TODO: remove this param
+                                    override val minNbOverlappingIPs: Int,
+                                    override val maxConsecutiveGaps: Int = 2,
+                                    override val maxTimeWindow: Float = 1200f,
+                                    override val minPercentageOfMaxInt: Float = 0.005f) 
                                     
         extends Ms2DrivenFtExtractor (scanHeaderById: Map[Int,ScanHeader],
                                       nfByScanId: Map[Int,Float],
