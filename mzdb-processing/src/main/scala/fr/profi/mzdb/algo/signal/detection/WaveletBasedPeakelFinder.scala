@@ -23,34 +23,33 @@ import scala.collection.mutable.HashMap
 import fr.profi.mzdb.utils.math.SmoothingUtils
 import fr.profi.mzdb.utils.math.UWTSmoother
 import fr.profi.mzdb.utils.math.SGSmoother
-import com.weiglewilczek.slf4s.Logging
+import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 import fr.profi.mzdb.utils.math.wavelet.GaussianFirstDerivative
 import scala.util.control.Breaks._
 import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
 import org.jfree.chart.renderer.LookupPaintScale
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 
 
 /**
  * result of the algorithm
  * too many attributes, no ? LcContextSummary 
  */
-case class CwtPeakel( override val index:Int,
-                      override val peaks: Array[Option[Peak]],
-                      apexLcContext: ILcContext,
-                      minIdx: Int,
-                      startLcContext: ILcContext,
-                      maxIdx: Int,
-                      endLcContext: ILcContext,
-                      xMax: Float,
-                      intensityMax: Float, //
-                      centroid: Float,  
-                      snr: Float,
-                      coeffsAtMaxScale: Array[Pair[Peak, Double]]= null) 
-                      extends Peakel( index:Int, 
-                                      peaks:Array[Option[Peak]]) {
-  
+class CwtPeakel(
+  override val index:Int,
+  override val peaks: Array[Option[Peak]],
+  val apexLcContext: ILcContext,
+  val minIdx: Int,
+  val startLcContext: ILcContext,
+  val maxIdx: Int,
+  val endLcContext: ILcContext,
+  val xMax: Float,
+  val intensityMax: Float, //
+  val centroid: Float,  
+  val snr: Float,
+  val coeffsAtMaxScale: Array[Pair[Peak, Double]]= null
+) extends Peakel( index:Int, peaks:Array[Option[Peak]]) {
   
   override def toString(): String = {
     "apex:" + index + ", minIdx:" + minIdx + ", maxIdx:" + maxIdx + ", xmax:" + xMax + ", intensityMax:" + intensityMax + ", centroid:" + centroid + ", snr:" + snr + ", minTime:"+ startLcContext.getElutionTime() + ", maxtime:" + endLcContext.getElutionTime() 
@@ -435,18 +434,20 @@ class WaveletBasedPeakelFinder(val peaks: Seq[Peak] ) extends RidgesFinder with 
         val intensityMax = intensities.max 
         val xmax =  xvalues(intensities.indexOf(intensityMax)) 
         val r = this.peaks.slice(minIdx, maxIdx + 1).zip(coeffs(maxScale).slice(minIdx, maxIdx)).toArray
-        peakels += CwtPeakel(index = intensities.indexOf(intensityMax),
-                            peaks = slicedPeaks.map(Some(_)) toArray,
-                            apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
-                            minIdx = minIdx, 
-                            startLcContext = peaks(minIdx).getLcContext,  
-                            maxIdx = maxIdx, 
-                            endLcContext = peaks(maxIdx).getLcContext,
-                            xMax = xmax toFloat,
-                            intensityMax = intensityMax toFloat,
-                            centroid = centroid toFloat,
-                            snr = ridge.SNR,
-                            coeffsAtMaxScale = r)
+        peakels += new CwtPeakel(
+          index = intensities.indexOf(intensityMax),
+	        peaks = slicedPeaks.map(Some(_)) toArray,
+	        apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
+	        minIdx = minIdx, 
+	        startLcContext = peaks(minIdx).getLcContext,  
+	        maxIdx = maxIdx, 
+	        endLcContext = peaks(maxIdx).getLcContext,
+	        xMax = xmax toFloat,
+	        intensityMax = intensityMax toFloat,
+	        centroid = centroid toFloat,
+	        snr = ridge.SNR,
+	        coeffsAtMaxScale = r
+	      )
       }
 
     }
@@ -498,17 +499,19 @@ class WaveletBasedPeakelFinder(val peaks: Seq[Peak] ) extends RidgesFinder with 
         }
         
         //we may need to refined min and max indexes TODO
-        CwtPeakel(index = intensities.indexOf(intensities.max),
-                  peaks = slicedPeaks.map(Some(_)) toArray,
-                  apexLcContext = peaks(maxIndex).getLcContext,
-                  minIdx = maxIdxAtFirstScale, 
-                  startLcContext = peaks(maxIdxAtFirstScale).getLcContext, 
-                  maxIdx = minIdxAtFirstScale, 
-                  endLcContext = peaks(minIdxAtFirstScale).getLcContext, 
-                  xMax = xvalues(maxIndex) toFloat,
-                  intensityMax = intensityMax toFloat,
-                  centroid = centroid toFloat,
-                  snr = (pair._1.SNR + pair._2.SNR) / 2f)
+        new CwtPeakel(
+          index = intensities.indexOf(intensities.max),
+          peaks = slicedPeaks.map(Some(_)) toArray,
+          apexLcContext = peaks(maxIndex).getLcContext,
+          minIdx = maxIdxAtFirstScale, 
+          startLcContext = peaks(maxIdxAtFirstScale).getLcContext, 
+          maxIdx = minIdxAtFirstScale, 
+          endLcContext = peaks(minIdxAtFirstScale).getLcContext, 
+          xMax = xvalues(maxIndex) toFloat,
+          intensityMax = intensityMax toFloat,
+          centroid = centroid toFloat,
+          snr = (pair._1.SNR + pair._2.SNR) / 2f
+        )
       } else
         null
     }.filter(_ != null)

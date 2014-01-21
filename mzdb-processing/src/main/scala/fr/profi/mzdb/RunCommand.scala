@@ -1,7 +1,7 @@
 package fr.profi.mzdb
 
 import com.beust.jcommander.{JCommander, MissingCommandException, Parameter, ParameterException, Parameters}
-import com.weiglewilczek.slf4s.Logging
+import com.typesafe.scalalogging.slf4j.Logging
 import scala.collection.mutable.ArrayBuffer
 /**
  * @author David Bouyssie

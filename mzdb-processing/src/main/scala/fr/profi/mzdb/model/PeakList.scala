@@ -1,6 +1,6 @@
 package fr.profi.mzdb.model
 
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
@@ -12,8 +12,8 @@ object PeakList {
     var( minMz, maxMz ) = (0.0,0.0)
     
     if (peaks.length > 0) { //assume this peaks are sorted
-      minMz = peaks.first.getMz();
-      maxMz = peaks.last.getMz();
+      minMz = peaks.head.getMz()
+      maxMz = peaks.last.getMz()
     }
     
     MzRange( minMz, maxMz )
@@ -52,7 +52,7 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
     val peaksInRange = getPeaksInRange( mzToExtract - mzTolDa, mzToExtract + mzTolDa )
     if( peaksInRange == None || peaksInRange.get.length == 0 ) return Option.empty[Peak]
     
-    Some( peaksInRange.get.sortBy { p => Math.abs(p.getMz() - mzToExtract) } first )
+    Some( peaksInRange.get.sortBy { p => (p.getMz() - mzToExtract).abs } head )
   }
   
   /** Gets the peaks in range.

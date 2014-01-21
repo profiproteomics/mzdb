@@ -1,6 +1,6 @@
 package fr.profi.mzdb.model
 
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 
 /**
  * @author David Bouyssie

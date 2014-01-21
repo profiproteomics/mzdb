@@ -6,7 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.weiglewilczek.slf4s.Logging
+import com.typesafe.scalalogging.slf4j.Logging
 
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.IsotopicPattern

@@ -6,7 +6,7 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import fr.profi.mzdb.model.AveragineComputer
 import fr.profi.mzdb.model.MercuryLauncher
 import util.control.Breaks._
@@ -80,7 +80,7 @@ object FeatureScorer {
     //this point is supposed to be shared by the two overlapping peakels. A baseline removal should be useful
     //at this point
     val lastIntens = peakel.definedPeaks.last.getIntensity()
-    val firstIntens = peakel.definedPeaks.first.getIntensity()
+    val firstIntens = peakel.definedPeaks.head.getIntensity()
     if (math.abs( (lastIntens / firstIntens) - 1) > 0.25f) {
       // do know which side is overlapping, real overlapping ?
       //or that means we do not see overlapping of low intensity

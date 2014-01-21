@@ -2,7 +2,7 @@ package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.ListBuffer
-import com.weiglewilczek.slf4s.Logging
+import com.typesafe.scalalogging.slf4j.Logging
 import scala.util.control.Breaks._
 
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder

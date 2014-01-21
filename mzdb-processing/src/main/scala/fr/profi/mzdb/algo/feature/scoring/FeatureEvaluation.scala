@@ -1,7 +1,7 @@
 package fr.profi.mzdb.algo.feature.scoring
 
 import fr.profi.mzdb.model.Feature
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder

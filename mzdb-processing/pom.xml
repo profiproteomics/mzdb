@@ -30,26 +30,7 @@
       <artifactId>scala-library</artifactId>
       <!-- Version inherited from ProFI-Pom -->
     </dependency>
-
-    <!-- Test -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
-    </dependency>
-
-    <dependency>
-      <groupId>org.scala-tools.testing</groupId>
-      <artifactId>specs_${scala.version}</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
-    </dependency>
-
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.version}</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
-    </dependency>
-
+    
     <!-- Logging -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -58,9 +39,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.weiglewilczek.slf4s</groupId>
-      <artifactId>slf4s_2.9.1</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
+      <groupId>com.typesafe</groupId>
+      <artifactId>scalalogging-slf4j_2.10</artifactId>
+      <!-- Version inherited from ProFI-Pom ${scala.version} -->
     </dependency>
 
     <!-- Commons -->
@@ -104,6 +85,25 @@
       <artifactId>ProFI-Commons-Scala</artifactId>
       <version>0.0.7-SNAPSHOT</version>
     </dependency>
+    
+    <!-- Test -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <!-- Version and scope inherited from ProFI-Pom -->
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-tools.testing</groupId>
+      <artifactId>specs_${scala.version}</artifactId>
+      <!-- Version and scope inherited from ProFI-Pom -->
+    </dependency>
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${scala.version}</artifactId>
+      <!-- Version and scope inherited from ProFI-Pom -->
+    </dependency>
 
   </dependencies>
 
@@ -111,41 +111,10 @@
 
     <plugins>
       <plugin>
-        <groupId>org.scala-tools</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>compile</id>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <phase>compile</phase>
-          </execution>
-          <execution>
-            <id>test-compile</id>
-            <goals>
-              <goal>testCompile</goal>
-            </goals>
-            <phase>test-compile</phase>
-          </execution>
-          <execution>
-            <id>scala-compile-first</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>add-source</goal>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>scala-test-compile</id>
-            <phase>process-test-resources</phase>
-            <goals>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <version>3.1.6</version>
         <configuration>
-          <scalaVersion>2.9.1</scalaVersion>
           <launchers>
             <launcher>
               <id>RunCommand</id>
@@ -160,11 +129,6 @@
               </jvmArgs>
             </launcher>
           </launchers>
-          <args>
-            <arg>-make:transitivenocp</arg>
-            <arg>-dependencyfile</arg>
-            <arg>${project.build.directory}/.scala_dependencies</arg>
-          </args>
         </configuration>
       </plugin>
 

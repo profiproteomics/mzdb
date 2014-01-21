@@ -4,7 +4,7 @@
 package fr.profi.mzdb.algo.signal.fitting
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import org.apache.commons.math.analysis.DifferentiableMultivariateVectorialFunction
 import org.apache.commons.math.optimization.fitting.ParametricRealFunction
 import org.apache.commons.math.analysis.MultivariateMatrixFunction

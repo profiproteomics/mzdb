@@ -206,7 +206,7 @@ object SQLiteFeatureStorer {
     val dyValues = new ArrayBuffer[Float]()
     if( xic._1.length <= 1 ) return (dxValues.toArray, dyValues.toArray)
     
-    xic.zip.sliding(2).foreach { buffer =>
+    xic._1.zip(xic._2).sliding(2).foreach { buffer =>
       val aPoint = buffer(0)
       val bPoint = buffer(1)
       
@@ -223,10 +223,10 @@ object SQLiteFeatureStorer {
     
     val newXValues = new ArrayBuffer[Float]()
     val newYValues = new ArrayBuffer[Float]()
-    newXValues += xic._1.first
+    newXValues += xic._1.head
     newYValues += 0
     
-    xic.zip.sliding(3).foreach { buffer =>
+    xic._1.zip(xic._2).sliding(3).foreach { buffer =>
       val yVals = buffer.map(_._2.toDouble)
       val stdDev = math.sqrt( StatUtils.variance(yVals) )
       val mean = StatUtils.mean(yVals)
@@ -247,7 +247,7 @@ object SQLiteFeatureStorer {
     val newXValues = new ArrayBuffer[Float]()
     val newYValues = new ArrayBuffer[Float]()
     
-    xic.zip.foreach { dp =>
+    xic._1.zip(xic._2).foreach { dp =>
       if( dp._2 >= threshold) {
         newXValues += dp._1
         newYValues += dp._2
@@ -337,7 +337,7 @@ object SQLiteFeatureStorer {
     
     val series = new XYSeries("XIC")
     
-    xic.zip.foreach { dataPoint =>
+    xic._1.zip(xic._2).foreach { dataPoint =>
       series.add(dataPoint._1 / 60, dataPoint._2 ) // convert seconds into minutes
     }
     

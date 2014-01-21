@@ -5,7 +5,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.TreeMap
 import scala.util.control.Breaks._
-import com.weiglewilczek.slf4s.Logging
+import com.typesafe.scalalogging.slf4j.Logging
 
 import fr.profi.mzdb.model.TheoreticalIsotopePattern
 import fr.proline.util.math.calcLineParams

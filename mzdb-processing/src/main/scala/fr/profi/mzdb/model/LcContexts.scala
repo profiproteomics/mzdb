@@ -1,6 +1,6 @@
 package fr.profi.mzdb.model
 
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 
 /** The Class ElutionTimeContext.
  * @author David Bouyssie

@@ -76,7 +76,7 @@ object MzTSVFeatureWriter {
         val olpFtJSONObject = new HashMap[String,Any]()
         olpFtJSONObject.put("id", bestOlpFt.id )
         olpFtJSONObject.put("apex_scan", bestOlpFt.apexScanHeader.getInitialId )
-        olpFtJSONObject.put("first_scan", bestOlpFt.scanHeaders.first.getInitialId )
+        olpFtJSONObject.put("first_scan", bestOlpFt.scanHeaders.head.getInitialId )
         olpFtJSONObject.put("last_scan", bestOlpFt.scanHeaders.last.getInitialId )
         olpFtJSONObject.put("elution_time",bestOlpFt.elutionTime)
         olpFtJSONObject.put("charge",bestOlpFt.charge)
@@ -106,7 +106,7 @@ object MzTSVFeatureWriter {
       
       val ftValues = List( ft.id,
                            ft.apexScanHeader.getInitialId,
-                           ft.scanHeaders.first.getInitialId,
+                           ft.scanHeaders.head.getInitialId,
                            ft.scanHeaders.last.getInitialId,
                            ft.elutionTime,
                            ft.charge,

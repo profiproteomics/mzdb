@@ -3,7 +3,7 @@ package fr.profi.mzdb
 import collection.mutable.ArrayBuffer
 import collection.mutable.HashMap
 import collection.JavaConversions.mapAsScalaMap
-import com.weiglewilczek.slf4s.Logging
+import com.typesafe.scalalogging.slf4j.Logging
 
 import fr.profi.mzdb.algo.FeatureExtractor
 import fr.profi.mzdb.algo.ms.normalization.MsScanNormalizer
@@ -145,13 +145,13 @@ class MzDbFeatureExtractor( mzDbReader: MzDbReader,
           try {
             xft = ftExtractor.extractFeature(pft, pklTree)
           } catch {
-            case e => error = e
+            case e: Throwable => error = e
           }
           
           xft
         } toArray;
         
-        if( error != null ) throw error        
+        if( error != null ) throw error
         else for( xft <- tmpXFts if xft != None ) extractedFeatures += xft.get
         
       }

@@ -6,7 +6,7 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import util.control.Breaks._
 import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
@@ -245,7 +245,7 @@ object FeatureScorer {
            VectorSimilarity.rmsd(yObs, yCalc) * p.getArea
          }catch {
            case optimzExcept : OptimizationException => Float.NaN
-           case _  => Float.NaN
+           case _: Throwable  => Float.NaN
          }
        }else {
          Float.NaN
@@ -445,7 +445,7 @@ trait IDataTransformer {
   protected def transformValues(): Array[Double]
 }
 
-abstract case class ZScoreEvaluator(featureQualityVectors: Array[FeatureQualityVector], sideEstimation: SideEstimator)  
+abstract class ZScoreEvaluator(featureQualityVectors: Array[FeatureQualityVector], sideEstimation: SideEstimator)  
 extends DistributionParametrizer with DistributionNormalizer with IDataTransformer{
   
   var values: Array[Double] = null
@@ -467,8 +467,8 @@ extends DistributionParametrizer with DistributionNormalizer with IDataTransform
   }
 }
 
-case class IsotopesPatternZScoreScorer( override val featureQualityVectors: Array[FeatureQualityVector])
-                                        extends ZScoreEvaluator(featureQualityVectors, SideEstimator.Q1_ESTIMATION) {
+case class IsotopesPatternZScoreScorer( featureQualityVectors: Array[FeatureQualityVector] )
+extends ZScoreEvaluator(featureQualityVectors, SideEstimator.Q1_ESTIMATION) {
     
   def transformValues(): Array[Double] = {
       featureQualityVectors.map( x => if (x.isotopesPattern != Double.NaN) - math.log10(x.isotopesPattern toDouble)
@@ -478,8 +478,8 @@ case class IsotopesPatternZScoreScorer( override val featureQualityVectors: Arra
 }
 
 
-case class MzPrecisionZScoreZScorer( override val featureQualityVectors: Array[FeatureQualityVector])
-                                     extends ZScoreEvaluator(featureQualityVectors, SideEstimator.Q3_ESTIMATION){
+case class MzPrecisionZScoreZScorer( featureQualityVectors: Array[FeatureQualityVector] )
+extends ZScoreEvaluator(featureQualityVectors, SideEstimator.Q3_ESTIMATION){
   
   /*uses ppm instead da, put this directly when calculating the score ?*/
   def transformValues(): Array[Double] = {
@@ -490,7 +490,7 @@ case class MzPrecisionZScoreZScorer( override val featureQualityVectors: Array[F
 }
 
 
-case class PeakWidthZScoreZScorer( override val featureQualityVectors: Array[FeatureQualityVector])
+case class PeakWidthZScoreZScorer( featureQualityVectors: Array[FeatureQualityVector] )
                                    extends ZScoreEvaluator(featureQualityVectors, SideEstimator.Q3_ESTIMATION){
    def transformValues(): Array[Double] = {
       featureQualityVectors.map(x=> if (x.peakelsWidth != Double.NaN) x.peakelsWidth * 1e6

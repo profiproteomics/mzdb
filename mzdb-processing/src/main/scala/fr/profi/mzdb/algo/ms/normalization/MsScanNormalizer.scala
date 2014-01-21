@@ -60,7 +60,7 @@ object MsScanNormalizer {
     
     val(nl,nr,order) = (10,10,1)
     
-    val leftPad = Array.fill(nl)( values.first )
+    val leftPad = Array.fill(nl)( values.head )
     val rightPad = Array.fill(nl)( values.last )
     val coeffs = SGFilter.computeSGCoefficients(nl,nr,order)    
     val sgFilter = new SGFilter(nl,nr)
