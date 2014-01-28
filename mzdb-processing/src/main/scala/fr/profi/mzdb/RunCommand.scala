@@ -87,15 +87,6 @@ object RunCommand extends App with Logging {
   override def main(args: Array[String]): Unit = {
 
     // Instantiate a JCommander object and affect some commands
-    val argsDumpRegion = List("dump_region_and_bin",
-                            """--mzdb_file ="D:/LCMS/raw_files/OTAGP070308_23_small tests/OTAGP070308_23_small.RAW.mzdb" """, 
-                             """--output_file = "D:/LCMS/raw_files/OTAGP070308_23_small tests/dumpedRegion.txt" """,
-                             "--nb_bins = 100",
-                             "--mzmin = 500.0", 
-                             "--mzmax = 650.0",
-                             "--rtmin = 1250.12",
-                             "--rtmax = 1400.12").toArray
-    
     val jCmd = new JCommander()
     jCmd.addCommand(GenerateXICs)
     jCmd.addCommand(DumpRegion)
@@ -103,7 +94,7 @@ object RunCommand extends App with Logging {
     // Try to parse the command line
     var parsedCommand = ""
     try {
-      jCmd.parse(argsDumpRegion:_*)//(args: _*)
+      jCmd.parse(args: _*)
 
       parsedCommand = jCmd.getParsedCommand()
       println("Running '" + parsedCommand + "' command...")
