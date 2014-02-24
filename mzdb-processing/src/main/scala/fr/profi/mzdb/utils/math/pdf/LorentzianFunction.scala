@@ -4,7 +4,7 @@
 package fr.profi.mzdb.utils.math.pdf
 
 import org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 
 /**
  * @author Marco

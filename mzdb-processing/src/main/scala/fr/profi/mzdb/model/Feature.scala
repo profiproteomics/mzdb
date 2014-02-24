@@ -1,22 +1,28 @@
 package fr.profi.mzdb.model
 
-import reflect.BeanProperty
+import beans.BeanProperty
 import collection.mutable.ArrayBuffer
 import collection.mutable.HashMap
 import fr.profi.mzdb.utils.misc.InMemoryIdGen
+import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
+import scala.util.control.Breaks._
+
 
 object Feature extends InMemoryIdGen {
   
-  var nbPeakelsToIntegrate = 2
+  var nbPeakelsToIntegrate = 3
+  var c = 0
   
   def getPeakelsScanHeaders( peakels: Seq[Peakel] ): Array[ScanHeader] = {
     
-    var scanHeaders = new ArrayBuffer[ScanHeader]
+    val scanHeaders = new ArrayBuffer[ScanHeader]
     
     val nbScans = peakels(0).peaks.length
+    
     for (scanIdx <- 0 until nbScans ) {
-      val firstDefinedPeak = peakels.find( _.peaks(scanIdx) != None ).get.peaks(scanIdx).get
-      scanHeaders += firstDefinedPeak.getLcContext.asInstanceOf[ScanHeader]
+      val firstDefinedPeak = peakels.find( _.peaks(scanIdx) != null)
+      if (firstDefinedPeak.isDefined)
+        scanHeaders += firstDefinedPeak.get.peaks(scanIdx).getLcContext.asInstanceOf[ScanHeader]
     }
     
     scanHeaders.toArray
@@ -43,37 +49,41 @@ object Feature extends InMemoryIdGen {
   def buildPeakels( ips: Seq[IsotopicPatternLike] ): Array[Peakel] = {
     
     // Determine the maximum number of peaks
-    var maxNbPeaks = 0
-    for( ip <- ips ) {  
-      val nbPeaks = ip.peaks.length
-      if( nbPeaks > maxNbPeaks ) maxNbPeaks = nbPeaks
-    }
+    val maxNbPeaks = ips.map(_.peaks.length).max
   
-    val peakels = new ArrayBuffer[Peakel](maxNbPeaks)
-    
-    for( peakelIdx <- 0 until maxNbPeaks ) {
-      val peakelOpt = this._buildPeakel(ips, peakelIdx)
-      if( peakelOpt.isDefined ) peakels += peakelOpt.get
+    val peakels = new ArrayBuffer[Peakel]()
+    breakable {
+      for( peakelIdx <- 0 until maxNbPeaks ) {
+        val peakelOpt = this._buildPeakel(ips, peakelIdx)
+        if( peakelOpt.isDefined ) 
+          peakels += peakelOpt.get
+        else
+          break
+      }
     }
-
     peakels.toArray
   }
 
   protected def _buildPeakel( ips: Seq[IsotopicPatternLike], peakelIdx: Int ): Option[Peakel] = {
     
-    val peaks = new ArrayBuffer[Option[Peak]]()
+    val peaks = new ArrayBuffer[Peak]()
     var definedPeaksCount = 0
     
     for( ip <- ips ) {
-      if( peakelIdx < ip.peaks.length ) {
-        val peak = ip.peaks(peakelIdx)
-        peaks += peak
-        if( peak.isDefined ) definedPeaksCount += 1
-      } else peaks += Option.empty[Peak]
+        if( peakelIdx < ip.peaks.length ) {
+          val peak = ip.peaks(peakelIdx)
+          peaks += peak
+          if( peak != null ) 
+            definedPeaksCount += 1
+        } else 
+          peaks += null
+     
     }
     
-    if( definedPeaksCount > 0 ) Some( new Peakel( peakelIdx, peaks.toArray ) )
-    else Option.empty[Peakel]
+    if( definedPeaksCount > 0 ) 
+      Some( new Peakel( peakelIdx, peaks.toArray ) )
+    else 
+      Option.empty[Peakel]
   }
   
   def calcPeakelsAreaRatios( peakels: Seq[Peakel] ): Option[Array[Float]] = {
@@ -164,11 +174,15 @@ case class Feature (
   
   // Define some mutable attributes
   @BeanProperty var qualityScore = 0f
+  @BeanProperty var isRelevant = true
   @BeanProperty var meanPeakelCorrelation = 0f //(float) FeatureScorer.computeMeanPeakelCorrelation(peakels);
   @BeanProperty var overlapPMCC = 0f
   @BeanProperty var overlapRelativeFactor = 0f
   @BeanProperty var overlappingFeatures : Array[Feature] = null
   @BeanProperty var bestOverlappingFeature: Feature = null
+  //debug purposes
+  @BeanProperty var  parentXIC : Peakel = null
+  
   //@BeanProperty var filteredXIC: Chromatogram = null // x-axis = time ; y-axis = IP intensities
   
 
@@ -178,7 +192,13 @@ case class Feature (
   
   def getIsotopicPattern( idx: Int ): IsotopicPattern = {
     val ipPeaks = peakels.map { _.peaks(idx) }
-    val mz = if( ipPeaks(0) != None ) ipPeaks(0).get.mz else this.mz
+    
+    // FIX BUG: at predicted tume ft extractor
+    //if (ipPeaks.forall(_ == null))
+    //  return null
+    
+    val mz = if( ipPeaks(0) != null ) ipPeaks(0).mz else this.mz
+    
     val intensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, Feature.nbPeakelsToIntegrate)
     
     new IsotopicPattern(
@@ -186,10 +206,7 @@ case class Feature (
           intensity = intensity,
           charge = this.charge,
           peaks = ipPeaks,
-          scanHeader = scanHeaders(idx),
-          null,
-          0f
-         )
+          scanHeader = scanHeaders(idx) )
   }
   
   def getIsotopicPatternAtApex(): IsotopicPattern = {
@@ -217,19 +234,19 @@ case class Feature (
     (xValues,yValues)
   }
   
-  def getSummedXIC(): Tuple2[Array[Float], Array[Float]] = {
+  def getSummedXIC(nbPeaksToSum:Int = this.peakels(0).peaks.length): Tuple2[Array[Float], Array[Float]] = {
     
-    val nbPeaks = this.peakels(0).peaks.length
-    val xValues = Array.fill(nbPeaks)(0f)
-    val yValues = Array.fill(nbPeaks)(0f)
+    //val nbPeaksToSum = this.peakels(0).peaks.length
+    val xValues = Array.fill(nbPeaksToSum)(0f)
+    val yValues = Array.fill(nbPeaksToSum)(0f)
     
     for( peakel <- this.peakels ) {
       val peaks = peakel.peaks
-      for( idx <- 0 until nbPeaks ) {
+      for( idx <- 0 until nbPeaksToSum ) {
         val peak = peaks(idx)
-        if( peak != None ) {
-          xValues(idx) = peak.get.getLcContext.getElutionTime
-          yValues(idx) += peak.get.getIntensity()
+        if( peak != null ) {
+          xValues(idx) = peak.getLcContext.getElutionTime
+          yValues(idx) += peak.getIntensity()
         }
       }
     }
@@ -237,7 +254,8 @@ case class Feature (
     (xValues,yValues)
   }
   
-  
+ 
+   
   override def toString() : String = {
     "" + this.mz + "/" + this.elutionTime
   }

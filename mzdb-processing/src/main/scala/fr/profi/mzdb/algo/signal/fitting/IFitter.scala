@@ -3,7 +3,7 @@ package fr.profi.mzdb.algo.signal.fitting
 import org.apache.commons.math.analysis.DifferentiableMultivariateVectorialFunction
 import org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimizer
 import org.apache.commons.math.optimization.VectorialPointValuePair
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 import org.apache.commons.math.optimization.fitting.GaussianFunction
 import org.apache.commons.math.analysis.polynomials.PolynomialFunction
 import scala.collection.mutable.ArrayBuffer

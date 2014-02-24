@@ -1,7 +1,7 @@
 package fr.profi.mzdb.algo.feature.extraction
 
 import fr.profi.mzdb.MzDbReader
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 
 /**
  * @author David Bouyssie

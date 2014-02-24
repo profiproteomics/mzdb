@@ -1,6 +1,6 @@
 package fr.profi.mzdb.model
 
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
@@ -12,8 +12,8 @@ object PeakList {
     var( minMz, maxMz ) = (0.0,0.0)
     
     if (peaks.length > 0) { //assume this peaks are sorted
-      minMz = peaks.head.getMz()
-      maxMz = peaks.last.getMz()
+      minMz = peaks.head.getMz();
+      maxMz = peaks.last.getMz();
     }
     
     MzRange( minMz, maxMz )
@@ -47,12 +47,12 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
    * @param mzTolDa tolerance in mz dimension in Dalton
    * @return nearest Peak or null
    */
-  def getNearestPeak( mzToExtract: Double, mzTolDa: Double ): Option[Peak] = {
+  def getNearestPeak( mzToExtract: Double, mzTolDa: Double ): Peak = {
     
     val peaksInRange = getPeaksInRange( mzToExtract - mzTolDa, mzToExtract + mzTolDa )
-    if( peaksInRange == None || peaksInRange.get.length == 0 ) return Option.empty[Peak]
+    if( peaksInRange == None || peaksInRange.get.length == 0 ) return null
     
-    Some( peaksInRange.get.sortBy { p => (p.getMz() - mzToExtract).abs } head )
+    peaksInRange.get.minBy { p => math.abs(p.getMz() - mzToExtract) }
   }
   
   /** Gets the peaks in range.
@@ -74,10 +74,9 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
 
     // Initialize the minimum m/z difference with the provided m/z tolerance
     val peaksInRange = new ArrayBuffer[Peak];
-
+    
     for( idx <- minMzIndex to maxMzIndex ) {
       val peaks = indexedPeaks.get(idx) //peaks are sorted
-      
       if(peaks != None ) {
         this._getPeaksInRange( searchedMinMz, searchedMaxMz, peaks.get, peaksInRange )
       }

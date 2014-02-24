@@ -7,7 +7,7 @@ import scala.Numeric
 import org.apache.commons.math.transform.FastFourierTransformer
 import org.apache.commons.math.complex.Complex
 import org.apache.commons.math.MathRuntimeException
-//import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D
+import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D
 //import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D
 
 /**
@@ -84,7 +84,7 @@ object WaveletUtils {
     for (i <- 0 until a) {
       val temp1 = sig(2 * i)
       val temp2 = sig.last
-      sig.insert(0, temp2)
+      sig.+=:(temp2)
       sig += temp1
     }
     sig.toArray
@@ -105,7 +105,7 @@ object WaveletUtils {
   }
   
   /**for the cwt we need */
-  /*def convolveUsingJtransform(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean = false): Array[Double] = {
+  def convolveUsingJtransform(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean = true): Array[Double] = {
     val N = y.length
     val fft = new DoubleFFT_1D(N)
     
@@ -132,7 +132,7 @@ object WaveletUtils {
     }
     fft.complexInverse(x, true)
     x.zipWithIndex.collect{case (value, idx) if idx % 2 == 0 => value}
-  }*/
+  }
   
   
   /**
@@ -143,16 +143,16 @@ object WaveletUtils {
    * @param scales, scales to perform cwt, scale belongs to R
    * @return Coefficients matrix
    */
-  def cwt(ydata: Array[Double], wavelet: MotherWavelet = MexicanHat(), scales: Array[Float]): Array[Array[Double]] = {
+  def cwt(ydata: Array[Double], wavelet: MotherWavelet = MexicanHat(), scales: Array[Float]): HashMap[Float, Array[Double]] = {
 
     //make y data periodic to avoid boundary effect
-    //var ydataf = periodicExtend(ydata.toBuffer, wavelet.nbPoints / 3).map( x =>0.0)
+    val extendLength = wavelet.nbPoints / 3
+    val ydataExtended = periodicExtend(ydata.toBuffer, extendLength) //.map( x =>0.0)
 
     //var ffdata = transformer.transform(makePowerOf2(ydata))
 
-    var coeffs = Array.ofDim[Double](scales.length, ydata.length)
-    val ydataExtended = makePowerOf2(ydata)
-    var row = 0
+    var coeffs = new HashMap[Float, Array[Double]]//Array.ofDim[Double](scales.length, ydata.length)
+    //val ydataExtended = makePowerOf2(ydata)
     val waveletValues = wavelet.values()
 
     val psiXval = wavelet.getPsiXval()
@@ -161,12 +161,17 @@ object WaveletUtils {
     
     var prevExiting = scales.length
     breakable {
-      for (scale <- scales) {
-  
-        //build scales wavelet @see MassSpecWavelet, calc indexes of wavelet upSampling
-        var f = ( for (i <- 0 until ydataExtended.length) yield 0d) toArray
+      for (scaleIndex <- 0 until scales.length) {//scale <- scales) {
         
-        val indexes = (0 to (scale * xmax).toInt).map { x =>math.floor( x / (scale * dxval) ).toInt }.toArray[Int]
+        val scale = scales(scaleIndex)
+        //build scales wavelet @see MassSpecWavelet, calc indexes of wavelet upSampling
+        var f = ( for (i <- 0 until ydataExtended.length) yield 0d) toArray //ydata
+        
+        //println("buggy stuff:"  + (scale * xmax).toInt +", " + scale )
+        val maxStuff = (scale * xmax).toInt
+        val indexes: Array[Int] = (0 to maxStuff by 1).toArray.map { x => math.floor( x / (scale * dxval) ).toInt }
+       
+        
         val lenWave = indexes.length
   
         val waveletCoeffs = indexes.map { waveletValues(_) }
@@ -177,19 +182,19 @@ object WaveletUtils {
           f(i) = v(i)
         }
         
-        if (f.length > ydataExtended.length) {
+        if (f.length > ydataExtended.length) {//ydata
           //logger.debug("exiting loop, scale was too large")
-          prevExiting = scale.toInt
+          prevExiting = scaleIndex//scale.toInt
           break
         }
-  
-        val convolvingResult = this.convolveUsingFft(ydataExtended, f)
+        
+        val convolvingResult : Array[Double] = this.convolveUsingJtransform(ydataExtended, f)//ydataExtended
         val scaleogram = convolvingResult.map { _ * (1.0 / math.sqrt(scale)) }
   
         //flip an assign to row
-        val p = ydataExtended.length - math.floor(lenWave / 2f).toInt
-        coeffs(row) = ((scaleogram.slice(p, ydataExtended.length)) ++ (scaleogram.slice(0, p))).slice(0, ydata.length)
-        row += 1
+        val p = ydataExtended.length - math.floor(lenWave / 2f).toInt //Extended
+        //coeffs(scale) = ((scaleogram.slice(p, ydataExtended.length)) ++ (scaleogram.slice(0, p))).slice(0, ydata.length)
+        coeffs(scale) = ( scaleogram.slice(p, ydataExtended.length) ++ scaleogram.slice(0, p) ).slice(extendLength, ydata.length + extendLength)
       }
     }
     if (prevExiting == scales.length) {
@@ -337,7 +342,7 @@ object WaveletUtils {
 
       iswt_output = new ArrayBuffer[Double]
       for (i <- 0 until N) {
-        iswt_output += 0.
+        iswt_output += 0.0
       }
 
       for (count <- 0 until value) {
@@ -489,7 +494,7 @@ object WaveletUtils {
 
     for (i <- 0 until coeffs.length) {
       if (coeffs(i) < thresh) {
-        coeffs(i) = 0.
+        coeffs(i) = 0.0
       }
     }
   }

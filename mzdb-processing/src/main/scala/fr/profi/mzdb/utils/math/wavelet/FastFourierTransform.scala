@@ -20,12 +20,12 @@ object fft {
 
     for (i <- 0 until a.length) {
       var temp = a(i)
-      inp += new Complex(temp, 0.)
+      inp += new Complex(temp, 0.0)
     }
 
     for (i <- 0 until b.length) {
       var temp = b(i)
-      filt += new Complex(temp, 0.)
+      filt += new Complex(temp, 0.0)
     }
     fft(inp, 1, N)
     fft(filt, 1, N)
@@ -101,7 +101,7 @@ object fft {
     if (len != N_) {
       var al = N_ - len;
       for (i <- 0 until al) {
-        data += new Complex(0., 0.)
+        data += new Complex(0.0, 0.0)
       }
     }
 

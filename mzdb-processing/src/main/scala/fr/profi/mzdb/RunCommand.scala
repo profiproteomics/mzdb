@@ -3,6 +3,8 @@ package fr.profi.mzdb
 import com.beust.jcommander.{JCommander, MissingCommandException, Parameter, ParameterException, Parameters}
 import com.typesafe.scalalogging.slf4j.Logging
 import scala.collection.mutable.ArrayBuffer
+import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+
 /**
  * @author David Bouyssie
  *
@@ -20,9 +22,12 @@ object RunCommand extends App with Logging {
     }
   }
   
+  /*
+   * XIC EXTRACTION
+   */
   @Parameters(commandNames = Array("xics"), commandDescription = "Generate multiple XICs from a list of peptides", separators = "=")
   private object GenerateXICs extends JCommandReflection {
-    @Parameter(names = Array("--mzdb_file"), description = "The path to the mzDB file", required = true)
+    @Parameter(names = Array("--mzdb_file"), description = "The path to the mzDB list file", required = true)
     var mzdbFilePath: String = ""
       
     @Parameter(names = Array("--peplist_file"), description = "The path to the peptide list file", required = true)
@@ -33,6 +38,9 @@ object RunCommand extends App with Logging {
      
     @Parameter(names = Array("--mztol_ppm"), description = "The m/z tolerance in PPM for signal extraction", required = true)
     var mzTol: Float = 0f
+    
+    @Parameter(names = Array("--algo"), description="The algorithm used to detect XIC: 'basic' or 'wavelet' ", required = false)
+    var algo: String = "basic"
   }
   
   //ExportRegion
@@ -86,35 +94,39 @@ object RunCommand extends App with Logging {
   
   override def main(args: Array[String]): Unit = {
 
-    // Instantiate a JCommander object and affect some commands
+    // Instantiate a JCommander object and affect some commands    
     val jCmd = new JCommander()
     jCmd.addCommand(GenerateXICs)
     jCmd.addCommand(DumpRegion)
     jCmd.addCommand(DumpRegionBinning)
+    
     // Try to parse the command line
     var parsedCommand = ""
     try {
       jCmd.parse(args: _*)
 
       parsedCommand = jCmd.getParsedCommand()
-      println("Running '" + parsedCommand + "' command...")
+      this.logger.info("Running '" + parsedCommand + "' command...")
 
       // Execute parsed command
       parsedCommand match {
         case GenerateXICs.Parameters.firstName => {
           val p = GenerateXICs
-          generateXICs(p.mzdbFilePath,p.peplistFilePath,p.outputFilePath,p.mzTol)
+          generateXICs(p.mzdbFilePath,p.peplistFilePath,p.outputFilePath,p.mzTol,p.algo)
         }
         case DumpRegion.Parameters.firstName => {
           val p = DumpRegion
-          println("" + p.mzmin + ", " +  p.mzmax +  ", "  + p.rtmin + ", " + p.rtmax)
+          this.logger.info("" + p.mzmin + ", " +  p.mzmax +  ", "  + p.rtmin + ", " + p.rtmax)
           dumpRegion(p.mzdbFilePath, p.outputFilePath, p.mzmin, p.mzmax, p.rtmin, p.rtmax)
           
         }
         case DumpRegionBinning.Parameters.firstName => {
           val p = DumpRegionBinning
-          println("" + p.mzmin + ", " +  p.mzmax +  ", "  + p.rtmin + ", " + p.rtmax)
+          this.logger.info("" + p.mzmin + ", " +  p.mzmax +  ", "  + p.rtmin + ", " + p.rtmax)
           dumpRegionBinning(p.mzdbFilePath, p.outputFilePath, p.nbBins, p.mzmin, p.mzmax, p.rtmin, p.rtmax)
+        }
+        case _ => {
+          throw new MissingCommandException("unknown command '" + jCmd.getParsedCommand() + "'")
         }
       }
     } catch {
@@ -134,7 +146,7 @@ object RunCommand extends App with Logging {
     
   }
   
-  def generateXICs(mzdbFilePath: String, peplistFilePath: String, outputFilePath: String, mzTolInPPM: Float) {
+  def generateXICs(mzdblistFilePath: String, peplistFilePath: String, outputFilePath: String, mzTolInPPM: Float, algo:String) {
     
     import java.io.File
     import java.io.FileOutputStream
@@ -145,26 +157,88 @@ object RunCommand extends App with Logging {
     import fr.profi.mzdb.model.Peakel
     import fr.profi.mzdb.MzDbReader
     
-    case class DetectedPeak(mz: Double, time: Float, duration: Float, area:Float, intensity: Float)
+    case class DetectedPeak(mz: Double, apex: Peak, duration: Float, area: Float ) {
+      lazy val intensity: Float = apex.getIntensity()
+      lazy val time: Float = apex.getLcContext().getElutionTime()
+      
+      def getApexFullScanIntensity( mzDb: MzDbReader ): Float = {
+        val scan = mzDb.getScan(apex.getLcContext().getScanId())
+        scan.getHeader().getTIC()
+      }
+      
+    }
     
     // Define some helper functions
-    def peakTime(p: Peak): Float = p.getLcContext().getElutionTime()
+    //def peakTime(p: Peak): Float = p.getLcContext().getElutionTime()
     def sumPeaks( peaks: Seq[Peak]): Float = peaks.foldLeft(0f)( (s,p) => s + p.getIntensity() )
     def highestPeakIntensity( peaks: Seq[Peak]): Float = peaks.sortWith( (a,b) => a.getIntensity() > b.getIntensity() ).head.getIntensity()
     
-    def extractXICs( mzDb: MzDbReader, mzList: Array[Double] ): Array[Tuple2[Double,Option[DetectedPeak]]] = {
-      
-      mzList.map { mz =>
+    def getMzdbList() : Array[String] = {
+       val a = Source.fromFile(mzdblistFilePath).getLines.toArray
+       this.logger.info( s"Found #${a.length} files to analyse" )
+       a
+    }
+    
+    
+    def getPeptideList ( pepFile: java.io.File): Array[Tuple3[Double, Float, Float]] = {
+      val mzList = Source.fromFile(pepFile.getAbsolutePath()).getLines.map{l => 
+        val splitted = "\\s".r.split(l)
+        var returnVal : Tuple3[Double, Float, Float] = null;
         
+        if (splitted.length == 1)
+          returnVal = new Tuple3[Double, Float, Float](splitted(0).toDouble, 0f, 0f)
+        else if (splitted.length == 3) {
+          val mz = splitted(0).toDouble
+          var (rtmin, rtmax) = (splitted(1).toFloat, splitted(2).toFloat)
+          if (rtmin > rtmax) {
+            logger.warn("rtmin is bigger than rtmax: switching both...")
+            val tmp = rtmin
+            rtmin = rtmax
+            rtmax = tmp
+            }
+          returnVal = new Tuple3[Double, Float, Float](mz, rtmin, rtmax)
+        } else {
+          throw new Exception("can not parse correctly pepList file, line:" + l)
+        }
+        returnVal
+      }.toArray
+      mzList
+    }
+    
+    
+    def extractXICs( mzDb: MzDbReader, mzList: Array[Tuple3[Double, Float, Float]] ): Array[Tuple2[Double,Option[DetectedPeak]]] = {
+      
+      // extract xics NOT in parallel sqlite4java fails
+      val peakMatrix = mzList.map { case (mz, rtmin, rtmax)  => 
         val mzTolInDa = mzTolInPPM * mz / 1e6
         val( minMz, maxMz ) = (mz - mzTolInDa, mz + mzTolInDa)
         val peaks = mzDb.getXIC(minMz, maxMz, 1, MzDbReader.XicMethod.MAX )
-        val peakelsIndexes = BasicPeakelFinder.findPeakelsIndexes(peaks)
-        
-        // Retrieve the peakel corresponding to the feature apex
-        val peakels = peakelsIndexes.map { peakelIdx =>
-          ( peakelIdx._1 to peakelIdx._2 ).toArray.map( peaks(_) )
+        this.logger.info(s"XIC for mass ${mz} contains #${peaks.length} peaks")                                     
+        (mz, peaks, (rtmin, rtmax))
+      }
+      
+      if (algo == "basic") this.logger.info("basic algorithm")
+      else if (algo == "wavelet") this.logger.info("wavelet algorithm")
+      else throw new Exception("Specified algorithm is not defined:" + algo)
+
+
+      // peaks detection on xics on parallel
+      peakMatrix.par.map { case (mz, peaks, (rtmin, rtmax)) =>
+        var peakelIndexes : Array[(Int, Int)] = null
+        if (algo == "basic") {
+          peakelIndexes = BasicPeakelFinder.findPeakelsIndexes(peaks)
+        } else if (algo == "wavelet") {
+          val wpf = new WaveletBasedPeakelFinder(peaks)
+          wpf.ridgeFilteringParams.minSNR = 0.0f
+          peakelIndexes = wpf.findPeakelsIndexes(asScanId= false)
         }
+        // Retrieve the peakel corresponding to the feature apex
+        val peakels = if (rtmin == 0f && rtmax == 0f) 
+                        peakelIndexes.map { peakelIdx => ( peakelIdx._1 to peakelIdx._2 ).toArray.map( peaks(_) ) }
+                      else 
+                        peakelIndexes.withFilter(x=> peaks(x._1).getLcContext().getElutionTime()/60.0 > rtmin && 
+                                                     peaks(x._2).getLcContext().getElutionTime()/60.0 < rtmax )
+                                     .map{ peakelIdx => ( peakelIdx._1 to peakelIdx._2 ).toArray.map( peaks(_) ) }
         
         val sortedPeakels = peakels.sortWith( (a,b) => highestPeakIntensity(a) > highestPeakIntensity(b) )
         
@@ -179,53 +253,78 @@ object RunCommand extends App with Logging {
           val filteredPeaks = peaks.filter( p => p.getIntensity() > threshold )
           
           // Build a peakel
-          val peakel = new Peakel(0,filteredPeaks.map(Some(_)))
-          
+          val peakel = new Peakel(0,filteredPeaks)//.map(Some(_)))
           /*
           // Compute the duration
           val duration = peakTime(filteredPeaks.last) - peakTime(filteredPeaks.head)
           
           apex.getMz(), peakTime(apex), duration, sumPeaks(filteredPeaks),
           */
-          
-          mz -> Some( DetectedPeak( peakel.mz, peakTime(apex), peakel.duration, peakel.area, apex.getIntensity ) )
+          mz -> Some( DetectedPeak( peakel.mz, apex, peakel.duration, peakel.area ) )
         } else mz -> None
         
         intSum
+      } toArray
+    
+    }//ends function
+    
+    def extractXICsForOneFile(mzdbFilePath: String, mzList: Array[(Double, Float, Float)]) : Array[String] = {
+      val start = System.currentTimeMillis()
+      
+      var mzDb: MzDbReader = null
+      try {
+       val mzDb = new MzDbReader( mzdbFilePath, true )
+        val xicsBuilder = new ArrayBuffer[String]
+  
+        // Output the results
+        val peptides = extractXICs( mzDb, mzList )
+        for( pep <- peptides ) {
+          val mz = pep._1
+          if( pep._2.isDefined) {
+            val peak = pep._2.get
+            val(expMz,time,dur,area,int,msScanInt) = (peak.mz,peak.time/60,peak.duration/60,peak.area,peak.intensity, peak.getApexFullScanIntensity(mzDb) )
+            xicsBuilder +=  List(mzdbFilePath, mz,expMz,time,dur,area,int,msScanInt).mkString("\t") 
+            //writer.println(List(mzdbFilePath, mz,expMz,time,dur,area,int,msScanInt).mkString("\t"))
+            println("found peptide ion of intensity |" + int + "| and duration |"+ dur +"| at |"+time+"|" )
+          }
+          else println("can't find peptide ion of m/z=" + mz )
+        }
+       
+        
+        val took = (System.currentTimeMillis - start)/1000f
+        this.logger.info("extraction took: "+took)
+        xicsBuilder.toArray
+        
+      } catch {
+        case e: Exception => {
+          this.logger.error("Extraction failed for file " + mzdbFilePath + " because: " + e.getMessage() )
+          //e.printStackTrace()
+          Array.empty[String]
+        }
+      } finally {
+         if (mzDb != null) 
+           mzDb.close()
       }
 
-    }
+    }//end function
     
-    val start = System.currentTimeMillis()
+    val mzList = getPeptideList(new java.io.File(peplistFilePath))
+
+    val writer = new PrintWriter(new FileOutputStream(outputFilePath))
+    writer.println( List("file name","input m/z","exp m/z","time","duration","area","intensity","ms1_intensity").mkString("\t") )
+    writer.flush()
     
-    val mzDb = new MzDbReader( mzdbFilePath, true )      
-    val mzList = Source.fromFile(peplistFilePath).getLines.map( _.toDouble ).toArray    
-    val outStream = new PrintWriter(new FileOutputStream(outputFilePath))
+    this.logger.info("Starting the extraction of XICs..." )
+    val xics = getMzdbList().map(extractXICsForOneFile(_, mzList ))
+    xics.flatMap(x=>x).foreach(writer.println(_))
+    writer.close()
     
-    outStream.println( List("input m/z","exp m/z","time","duration","area","intensity").mkString("\t") )
-    
-    // Output the results
-    val peptides = extractXICs( mzDb, mzList )
-    for( pep <- peptides ) {
-      val mz = pep._1
-      if( pep._2.isDefined) {
-        val peak = pep._2.get
-        val(expMz,time,dur,area,int) = (peak.mz,peak.time/60,peak.duration/60,peak.area,peak.intensity )
-        outStream.println( List(mz,expMz,time,dur,area,int).mkString("\t") )
-        outStream.flush
-        println("found peptide ion of intensity |" + int + "| and duration |"+ dur +"| at |"+time+"|" )
-      }
-      else println("can't find peptide ion of m/z=" + mz )
-    }
-    outStream.close()
-    mzDb.close()
-    
-    val took = (System.currentTimeMillis - start)/1000f
-    println("extraction took: "+took)
-    
-    ()
+    this.logger.info("Extraction of XICs finished !" )
   }
   
+  /**
+   * 
+   */
   def dumpRegion(mzdbFilePath:String, outputFilePath:String, mzmin:Double, mzmax: Double, rtmin:Float, rtmax:Float) {
     //import java.io.File
     import java.io.FileOutputStream

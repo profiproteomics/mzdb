@@ -19,15 +19,15 @@ case class FixedErrorGenerator( override val stdDevCoeff: Double ) extends IErro
 
 }
 
-case class BinnedErrorGenerator {
+case class BinnedErrorGenerator() {
 
 }
 
-case class LinearErrorGenerator {
+case class LinearErrorGenerator() {
 
 }
 
-case class NonLinearErrorGenerator {
+case class NonLinearErrorGenerator() {
 
 }
 

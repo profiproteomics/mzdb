@@ -1,7 +1,7 @@
 package fr.profi.mzdb.algo.feature.scoring
 
 import fr.profi.mzdb.model.Feature
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
@@ -175,39 +175,39 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
     val (overlappingPeakelsCorrelationMin, overlappingPeakelsCorrelationMax) = _getOverlappingPeakelsCorrelationBounds(qualityVec)
     
     new QualityVectorThresholds(FeatureQualityVector(ms1CountMin,
-                              mzPrecisionMin,
-                              shapeMin,
-                              //signalFluctuationMin,
-                              isotopesCountMin, 
-                              isotopesPatternMin,
-                              //isotopesRatiosMin,
-                              peakelsWidthMin,
-                              peakelsCorrelationMin,
-                              
-                              peakelsApexDeviationMin,
-                              
-                              //peakelsVelocityMin,
-                              //peakelsAmplitudeMin,
-                              overlappingPeakelsCorrelationMin,
-                              overlappingFactorMin),
-         FeatureQualityVector(ms1CountMax,
-                              mzPrecisionMax,
-                              shapeMax,
-                              
-                              //signalFluctuationMax,
-                              
-                              isotopesCountMax, 
-                              isotopesPatternMax,
-                              //isotopesRatiosMax,
-                              peakelsWidthMax,
-                              peakelsCorrelationMax,
-                              
-                              peakelsApexDeviationMax,
-                              
-                              //peakelsVelocityMax,
-                              //peakelsAmplitudeMax,
-                              overlappingPeakelsCorrelationMax,
-                              overlappingFactorMax))
+                                                    mzPrecisionMin,
+                                                    shapeMin,
+                                                    //signalFluctuationMin,
+                                                    isotopesCountMin, 
+                                                    isotopesPatternMin,
+                                                    //isotopesRatiosMin,
+                                                    peakelsWidthMin,
+                                                    peakelsCorrelationMin,
+                                                    
+                                                    peakelsApexDeviationMin,
+                                                    
+                                                    //peakelsVelocityMin,
+                                                    //peakelsAmplitudeMin,
+                                                    overlappingPeakelsCorrelationMin,
+                                                    overlappingFactorMin),
+                                       FeatureQualityVector(ms1CountMax,
+                                                            mzPrecisionMax,
+                                                            shapeMax,
+                                                            
+                                                            //signalFluctuationMax,
+                                                            
+                                                            isotopesCountMax, 
+                                                            isotopesPatternMax,
+                                                            //isotopesRatiosMax,
+                                                            peakelsWidthMax,
+                                                            peakelsCorrelationMax,
+                                                            
+                                                            peakelsApexDeviationMax,
+                                                            
+                                                            //peakelsVelocityMax,
+                                                            //peakelsAmplitudeMax,
+                                                            overlappingPeakelsCorrelationMax,
+                                                            overlappingFactorMax))
   }
   
   private def _calcFeatureQ1Q3Indexes( values: Seq[Any] ): Pair[Int,Int] = {

@@ -48,9 +48,9 @@ object SQLiteFeatureStorer {
       " intensity REAL,\n" +
       " ms1_count INTEGER,\n" +
       " isotopes_count INTEGER,\n" +
-      " xic1 BLOB,\n" +
-      " xic2 BLOB,\n" +
-      " xic3 BLOB" +
+      " mono_xic BLOB,\n" +
+      //" sum_xic BLOB,\n" +
+      " large_xic BLOB" +
       ")"
     )
     
@@ -58,21 +58,18 @@ object SQLiteFeatureStorer {
     connection.exec("BEGIN TRANSACTION")
     
     // Prepare INSERT statement
-    val stmt = connection.prepare("INSERT INTO feature VALUES (?,?,?,?,?,?,?,?,?)",true)
+    val stmt = connection.prepare("INSERT INTO feature VALUES (?,?,?,?,?,?,?,?)",true)
     
-    var i = 0
-    features.sortBy(_.id).grouped(1000).foreach { ftBuffer =>      
+    //var i = 0
+    features.sortBy(_.id).foreach { ft =>      
       
-      if( i < 1000 ) {
         // Compute XICs in parallel
-        val xicsBuffer = ftBuffer.par.map { ft => 
-          val xic = ft.getXIC(0)
-          Pair(createFeatureChart(xic._1, xic._2),createFeatureChart(ft.getSummedXIC()))
-        }.toArray
-
-        ftBuffer.zip(xicsBuffer).foreach { case (ft,xics) =>
-          i += 1
+          val xic = ft.getXIC( 0 )//ft.peakels.maxBy(_.area).index)
+          val xics = Pair(createFeatureChart(xic._1, xic._2),createFeatureChart(ft.getSummedXIC()))
           
+          val t = ft.parentXIC.definedPeaks.map(x=> x.getLcContext().getElutionTime())
+          val i = ft.parentXIC.definedPeaks.map(x=> x.getIntensity())
+          val largeXics = createFeatureChart(t, i) 
           stmt.bind(1, ft.id )
           stmt.bind(2, ft.mz )
           stmt.bind(3, ft.elutionTime/60 )
@@ -80,12 +77,10 @@ object SQLiteFeatureStorer {
           stmt.bind(5, ft.ms1Count )
           stmt.bind(6, ft.peakelsCount )
           stmt.bind(7, xics._1 )
-          stmt.bind(8, xics._2 )
-          stmt.bind(9, Array.empty[Byte] )
+          //stmt.bind(8, xics._2 )
+          stmt.bind(8, largeXics )
           stmt.step()
           stmt.reset()
-        }
-      }
 
     }
     
@@ -96,7 +91,7 @@ object SQLiteFeatureStorer {
     connection.dispose()
     
   }
-
+  /*
   def storeFeaturesAndComputations(features: Seq[Feature], dbLocation: File ) {
     
     val connection = new SQLiteConnection(dbLocation)
@@ -206,7 +201,7 @@ object SQLiteFeatureStorer {
     val dyValues = new ArrayBuffer[Float]()
     if( xic._1.length <= 1 ) return (dxValues.toArray, dyValues.toArray)
     
-    xic._1.zip(xic._2).sliding(2).foreach { buffer =>
+    xic.zip.sliding(2).foreach { buffer =>
       val aPoint = buffer(0)
       val bPoint = buffer(1)
       
@@ -226,7 +221,7 @@ object SQLiteFeatureStorer {
     newXValues += xic._1.head
     newYValues += 0
     
-    xic._1.zip(xic._2).sliding(3).foreach { buffer =>
+    xic.zip.sliding(3).foreach { buffer =>
       val yVals = buffer.map(_._2.toDouble)
       val stdDev = math.sqrt( StatUtils.variance(yVals) )
       val mean = StatUtils.mean(yVals)
@@ -247,7 +242,7 @@ object SQLiteFeatureStorer {
     val newXValues = new ArrayBuffer[Float]()
     val newYValues = new ArrayBuffer[Float]()
     
-    xic._1.zip(xic._2).foreach { dp =>
+    xic.zip.foreach { dp =>
       if( dp._2 >= threshold) {
         newXValues += dp._1
         newYValues += dp._2
@@ -331,7 +326,7 @@ object SQLiteFeatureStorer {
     }
     
     slopeSigns.toArray
-  }
+  }*/
   
   def createFeatureChart( xic: Tuple2[ Array[Float], Array[Float]] ): Array[Byte] = {
     

@@ -6,7 +6,7 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 import fr.profi.mzdb.model.AveragineComputer
 import fr.profi.mzdb.model.MercuryLauncher
 import util.control.Breaks._
@@ -104,7 +104,7 @@ object FeatureScorer {
 	  //several possibilities calculate the istopicdistance at the apex
 	  //or everywhere
 	  val peaks = f.getIsotopicPatternAtApex.getPeaks
-	  var (mzObs, intensObs) =  (peaks.map( x=> if (x != None) x.get.getMz() else 0), peaks.map( x=> if (x != None) x.get.getIntensity() else 0))
+	  var (mzObs, intensObs) =  (peaks.map( x=> if (x != null) x.getMz() else 0), peaks.map( x=> if (x != null) x.getIntensity() else 0))
 	  val maxIntensity = intensObs.max
 	  intensObs = intensObs.map(x => x * 100 / maxIntensity)
 	  var rmsd = 0d

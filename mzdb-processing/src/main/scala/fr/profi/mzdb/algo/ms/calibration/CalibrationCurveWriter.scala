@@ -50,8 +50,8 @@ object CalibrationCurveWriter {
 
 			if ( mergedSpectrum(i).order != mergedSpectrum(i+1).order ){
 				
-				var mzFirst = 0.
-				var mzSecond = 0.
+				var mzFirst = 0.0
+				var mzSecond = 0.0
 				var pFirst :ClassedPeakScala = null
 				var pSecond : ClassedPeakScala = null
 				var gap = 1
@@ -101,14 +101,14 @@ object CalibrationCurveWriter {
 			i+=1
 		}//end first while
 	    
-	    var peak445 = new PeakList(firstScan.getPeaks(), 100.).getNearestPeak(445.12, 445.12 * maxDeltaPpm / 1e6)
-	    if (peak445 != None) m445.put(firstScan.getHeader().getId(), peak445.get.getMz)
+	    var peak445 = new PeakList(firstScan.getPeaks(), 100.0).getNearestPeak(445.12, 445.12 * maxDeltaPpm / 1e6)
+	    if (peak445 != null) m445.put(firstScan.getHeader().getId(), peak445.getMz)
 	    
 	    result.put(firstScan.getHeader().getId, deltaMass.sum / deltaMass.length)
 	  }//end iterator
 	  
 	  var output = new TreeMap[Int, Double]
-	  var sum = 0.
+	  var sum = 0.0
 	  for (entry <- result.entrySet()) {
 	    sum += entry.getValue
 	    output.put(entry.getKey, sum)

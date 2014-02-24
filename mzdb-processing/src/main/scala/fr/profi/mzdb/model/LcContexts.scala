@@ -1,6 +1,6 @@
 package fr.profi.mzdb.model
 
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 
 /** The Class ElutionTimeContext.
  * @author David Bouyssie
@@ -27,3 +27,7 @@ case class ScanIdContext( @BeanProperty scanId: Int ) extends ILcContext {
   def getElutionTime = 0
 
 }
+
+
+case class FullLcContext( @BeanProperty scanId: Int,
+                          @BeanProperty elutionTime: Float ) extends ILcContext 

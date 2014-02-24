@@ -15,15 +15,14 @@ class FeatureExtractor(
   val mzDbReader: MzDbReader,
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
-  val mzTolPPM: Float,
-  val maxNbPeaksInIP: Int,
-  val minNbOverlappingIPs: Int
-) extends AbstractFeatureExtractor {
+  val xtractConfig:FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 10),
+  val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()) 
+  extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
 
-  protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
-  protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
-  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
-  protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor( scanHeaderById, nfByScanId, mzTolPPM, maxNbPeaksInIP, minNbOverlappingIPs );
+  protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
+  protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
+  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor( scanHeaderById, nfByScanId,  minConsecutiveScans= 4, predictedTimeTol = 120,xtractConfig, overlapXtractConfig );
+  protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
     
   def extractFeatures( putativeFeatures: Seq[PutativeFeature], 
                        extractedFeatures: ArrayBuffer[Feature], // store newly extracted features
@@ -41,48 +40,41 @@ class FeatureExtractor(
     if( putativeFt.isPredicted == false ) { // we know that signal is there
       
       if( putativeFt.firstScanId > 0 && putativeFt.lastScanId > 0 ) { // have a full feature knowledge
-        //println("Fully supervised")
         ft = this.fullySupervisedFtExtractor.extractFeature(putativeFt, pklTree )
 
       }  else if( putativeFt.scanId > 0 ) { // only know feature m/z and a related MS scan event
-        //println("MS2 driven")
         ft = this.ms2DrivenFtExtractor.extractFeature(putativeFt, pklTree )
         
       }
-
     }  else { // don't know if signal is there
       
       if( putativeFt.elutionTime > 0 ) { // only know m/z, elution time is predicted
-        //println("Predicted time")
-
-        ft = this.predictedTimeFtExtractor.extractFeature(putativeFt, pklTree )
+        ft = this.predictedTimeFtExtractor.extractFeature(putativeFt, pklTree );
         
       }  else if( putativeFt.mz > 0 ) { // search best feature for this m/z
-        //println("Predicted Mz")
-        ft = this.predictedMzFtExtractor.extractFeature(putativeFt, pklTree )
+        ft = this.predictedMzFtExtractor.extractFeature(putativeFt, pklTree );
       }
     }
     
     // Update MS2 scan ids of the feature
     for( foundFt <- ft ) {
-      
+
       val ms2ScanIds = new ArrayBuffer[Int]
-      
       // Retrieve the first peakel
+
       val firstPeakel = foundFt.peakels(0)
-      
+
       // Iterate over each peak of this peakel
+
       for( peak <- firstPeakel.definedPeaks ) {
-        
         // Retrieve the cycles surrounding the next MS2 scans
         val thisScanId = peak.getLcContext.getScanId
         val thisCycleNum = scanHeaderById(thisScanId).getCycle
         val nextCycleNum = thisCycleNum + 1
-        
+
         // Do the job only if next cycle can be found
         if( ms1ScanHeaderByCycleNum.contains(nextCycleNum) ) {
           val nextCycleScanId = ms1ScanHeaderByCycleNum(nextCycleNum).getId
-           
           // Iterate over MS2 scans
           for( scanId <- thisScanId until nextCycleScanId ) {
             val scanH = this.scanHeaderById(scanId)
@@ -97,30 +89,13 @@ class FeatureExtractor(
           }
         }
       }
-      
       foundFt.ms2ScanIds = ms2ScanIds.toArray
-
-      /*val ftScanHeaders = foundFt.getScanHeaders
-      
-      val firstScanId = ftScanHeaders.head.getId
-      val lastCycleNum = ftScanHeaders.last.getCycle + 1 // jump to next cycle
-        
-      val lastScanId = if( scanHeaderByCycleNum.contains(lastCycleNum) ) scanHeaderByCycleNum(lastCycleNum).getId
-      else scanHeaderByCycleNum(lastCycleNum - 1).getId
-      
-      for( scanId <- firstScanId until lastScanId ) {
-        val scanH = this.scanHeaderById(scanId)
-        if( scanH.getMsLevel == 2 ) {
-          val mzDiffPPM = MsUtils.DaToPPM(foundFt.mz, (scanH.getPrecursorMz - foundFt.mz).abs )
-          if( mzDiffPPM < mzTolPPM ) {
-            ms2ScanIds += scanId
-          }
-        }
-      }*/
-      
     }
 
     ft
+
   }
+
   
+
 }

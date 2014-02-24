@@ -13,7 +13,7 @@ abstract class MotherWavelet(val lowerBound: Int = -6,
                              val nbPoints: Int = 256) extends IWaveletInterface[Double] {
 
   val psiXval = (lowerBound.toDouble until upperBound.toDouble by ((upperBound - lowerBound) / nbPoints.toDouble)).toArray[Double]
-  println("psiXval length:"+ psiXval.length)
+  //println("psiXval length:"+ psiXval.length)
 
   def getPsiXval(): Array[Double] = {
     val f = psiXval(0)

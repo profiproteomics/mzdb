@@ -5,30 +5,20 @@ package fr.profi.mzdb.utils.math
 import mr.go.sgfilter.SGFilter
 import fr.profi.mzdb.utils.math.wavelet.WaveletUtils
 import scala.collection.immutable.HashMap
+import scala.beans.BeanProperty
 
 
 trait Smoother {
-  def smooth(args:Map[String, Float]) : Array[Double]
-}
-
-abstract class AbstractSmoother(data: Array[Double]) extends Smoother
-
-object SmoothingUtils{
-  def smooth(s: Smoother, args:Map[String, Float] = new HashMap[String, Float]): Array[Double] = {
-    s.smooth(args)
-  }
+  def smooth(data:Array[Double]) : Array[Double]
 }
 
 /** UWT equivalent to SWT*/
-class UWTSmoother( data: Array[Double]) extends AbstractSmoother(data) {
+object UWTSmoother extends Smoother{
   
-  /*object PARAMS extends Enumeration {
-    type PARAMS = Value
-    val Iter = "iter"
-    val filter = "filter"
-  }*/
-  
-  def smooth(args: Map[String, Float]): Array[Double] = {
+  @BeanProperty var smoothMethod = "Soft"
+  @BeanProperty var nbIter = 6
+
+  def smooth(data:Array[Double]): Array[Double] = {
     val coeffs = WaveletUtils.swt(data) //, args.getOrElse("iter", 6))
     WaveletUtils.denoiseSoft(coeffs) //, 6)
     WaveletUtils.iswt(coeffs) // , 6)
@@ -36,9 +26,9 @@ class UWTSmoother( data: Array[Double]) extends AbstractSmoother(data) {
 }
 
 /** smooth signal with a SG smoother */
-class SGSmoother( data: Array[Double]) extends AbstractSmoother(data) {
+object SGSmoother extends Smoother {
   
-  def smooth(args:Map[String, Float]): Array[Double] = {  
+  def smooth(data:Array[Double]): Array[Double] = {  
     val (nl, nr, order) = (5, 5, 4)
     val polycoef = SGFilter.computeSGCoefficients(nl, nr, order)
 

@@ -1,6 +1,6 @@
 package fr.profi.mzdb.algo.signal.fitting
 
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.math.analysis.MultivariateMatrixFunction
 import org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimizer

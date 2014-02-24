@@ -12,14 +12,11 @@ import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
 import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 
-class PredictedMzFtExtractor(
-  //val mzDbReader: MzDbReader,
-  val scanHeaderById: Map[Int,ScanHeader],
-  val nfByScanId: Map[Int,Float],
-  val mzTolPPM: Float,
-  val maxNbPeaksInIP: Int,
-  val minNbOverlappingIPs: Int
-) extends AbstractSupervisedFtExtractor {
+class PredictedMzFtExtractor(val scanHeaderById: Map[Int,ScanHeader],
+                             val nfByScanId: Map[Int,Float],
+                             val xtractConfig:FeatureExtractorConfig,
+                             val overlapXtractConfig: OverlappingFeatureExtractorConfig) 
+                             extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
     
@@ -38,8 +35,8 @@ class PredictedMzFtExtractor(
     //buid the xic with getNearestPeak for each scan
     for (id  <- pklTree.scansIDs) { 
       val p = pklTree.getNearestPeak(id, moz, mzTolDa)
-      if ( ! p.isEmpty ) {
-    	  xic += pklTree.getNearestPeak(id, moz, mzTolDa).get 
+      if ( p != null) {
+    	  xic += p 
     	  xicScanIDs += id
       }
     }
@@ -63,20 +60,7 @@ class PredictedMzFtExtractor(
 	for ( i <- highestPeakel.minIdx to highestPeakel.maxIdx) {
 	  val peak = xic(i)
 	  val scanID = xicScanIDs(i)
-	  val ipOpt = pklTree.extractIsotopicPattern(scanHeaderById(scanID), theoIP, mzTolPPM, 2)
-	  if( ipOpt.isDefined ) {
-        val ip = ipOpt.get
-        val intensity = ip.intensity
-        // If we have peaks
-        if( ip.peaks.length > 0 ) {
-          val olpIPs = this._extractOverlappingIPs( ip, theoIP, pklTree )
-          // Set overlapping IPs if at least one has been found
-          val nbOlpIPs = olpIPs.length
-          if( nbOlpIPs > 0 ) {
-            ip.overlappingIps = olpIPs.toArray
-          }
-        }
-	  }
+	  val ipOpt = pklTree.extractIsotopicPattern(scanHeaderById(scanID), theoIP, mzTolPPM )
 	  isotopicPatterns(c) = ipOpt
 	}
 	
@@ -84,18 +68,9 @@ class PredictedMzFtExtractor(
 	val definedIps = isotopicPatterns.filter(ip => ip != null && ip.isDefined).map(_.get)
 	
 	// use of the constructor that build peakels
-    val f =  new Feature(
-      Feature.generateNewId(),
-      moz,
-      charge,
-      definedIps
-    )
+    val f =  new Feature(moz, charge, definedIps)
     
-    this.updateFtOverlappingFeatures(
-      f,
-      definedIps,
-      this.minNbOverlappingIPs
-    )
+    this.overlappingFeaturesExtractor.extractOverlappingFeatures(f, theoIP, pklTree)
     
     Some(f)
     

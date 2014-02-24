@@ -5,7 +5,7 @@ import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
 
 object Peakel {
   
-  def calcPeaksIndexRange( peaks: Array[Option[Peak]] ): Pair[Int,Int] = {
+  def calcPeaksIndexRange( peaks: Array[Peak] ): Pair[Int,Int] = {
     
     var firstLcContext: ILcContext = null
     var lastLcContext: ILcContext = null
@@ -15,8 +15,8 @@ object Peakel {
     
     var idx = 0
     for( p <- peaks ) {
-      if( firstIdx == -1 && p != None ) firstIdx = idx
-      if( firstIdx >= 0 && lastIdx == -1 && p == None ) lastIdx = idx - 1
+      if( firstIdx == -1 && p != null ) firstIdx = idx
+      if( firstIdx >= 0 && lastIdx == -1 && p == null ) lastIdx = idx - 1
       idx += 1
     }
     
@@ -48,25 +48,25 @@ object Peakel {
 case class Peakel(
   @BeanProperty index: Int,
   //@BeanProperty var mz: Double,
-  @BeanProperty peaks: Array[Option[Peak]]
+  @BeanProperty peaks: Array[Peak]
 ) {
   
   // Make some requirements
   require( peaks != null && peaks.length > 0,"some peaks must be provided" )
   
   // Define other Peakel attributes
-  @BeanProperty val definedPeaks = for( p<- peaks if p != None) yield p.get
+  @BeanProperty val definedPeaks = for( p<- peaks if p != null) yield p
   require( definedPeaks.length > 0,"some defined peaks must be provided" )
   
   @BeanProperty val definedPeaksIndexRange = Peakel.calcPeaksIndexRange( peaks )
   @BeanProperty val lcContextRange = Peakel.calcLcContextRange( definedPeaks )
   @BeanProperty val firstScanContext = lcContextRange._1
   @BeanProperty val lastScanContext = lcContextRange._2
-  @BeanProperty val apexIndex = peaks.indices.filter( peaks(_) != None ).reduce { (a,b) =>
-                                  if( peaks(a).get.intensity > peaks(b).get.intensity ) a else b
+  @BeanProperty val apexIndex = peaks.indices.filter( peaks(_) != null ).reduce { (a,b) =>
+                                  if( peaks(a).intensity > peaks(b).intensity ) a else b
                                 }
   
-  @BeanProperty val apexScanContext = peaks(apexIndex).get.lcContext
+  @BeanProperty val apexScanContext = peaks(apexIndex).lcContext
   @BeanProperty val mz = this.getApex().mz
   @BeanProperty var intensity = 0f
   @BeanProperty var area = 0f
@@ -115,7 +115,7 @@ case class Peakel(
     
   }  
   
-  def getApex(): Peak = peaks(apexIndex).get
+  def getApex(): Peak = peaks(apexIndex)
   
   def getIntensities(): Array[Float] = getDefinedPeaks.map { _.intensity }
   

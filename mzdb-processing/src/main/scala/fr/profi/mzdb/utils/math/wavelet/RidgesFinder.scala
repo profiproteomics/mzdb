@@ -2,7 +2,7 @@ package fr.profi.mzdb.utils.math.wavelet
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
-import scala.beans.BeanProperty
+import scala.reflect.BeanProperty
 
 /**
  * class for modelize Ridge
@@ -12,7 +12,7 @@ import scala.beans.BeanProperty
 
 case class Ridge(var gap: Int = 0) {
   /** internal map stocking the scale as key the maxIdx and the max value as Option may not exist (gap) */
-  val maximaIndexPerScale = HashMap[Int, Option[Pair[Int, Double]]]()
+  val maximaIndexPerScale = HashMap[Float, Option[Pair[Int, Double]]]()
   var totalGaps = 0
   var SNR : Float = 0
   var id:Int = -1
@@ -23,7 +23,7 @@ case class Ridge(var gap: Int = 0) {
   /**in theory the peak centroid
    * @return a Tuple3 containing scale, maxIdx, value
    * */
-  lazy val maxCoeffPos: Tuple3[Int, Int, Double] = {
+  lazy val maxCoeffPos: Tuple3[Float, Int, Double] = {
     val v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._2.get._2) //order by value of the coefficient
     (v._1, v._2.get._1, v._2.get._2)
   }
@@ -31,25 +31,25 @@ case class Ridge(var gap: Int = 0) {
   /** in theory the peak apex
    *  @return a Tuple3 containing scale, maxIdx, value
    *  */
-  lazy val firstScaleMaxCoeffPos: Tuple3[Int, Int, Double] = {
+  lazy val firstScaleMaxCoeffPos: Tuple3[Float, Int, Double] = {
     val v = maximaIndexPerScale.filter(x => x._2 != None).minBy(x => x._1) //order by scale
     (v._1, v._2.get._1, v._2.get._2)
   }
   
   
-  lazy val lastScaleMaxCoeffPos: Tuple3[Int, Int, Double] = {
+  lazy val lastScaleMaxCoeffPos: Tuple3[Float, Int, Double] = {
     val v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
     (v._1, v._2.get._1, v._2.get._2)
   }
 
-  def add(scaleIdx: Int, maxima: Option[Pair[Int, Double]]) { maximaIndexPerScale(scaleIdx) = maxima }
-  def hasScale(scaleIdx: Int): Boolean = { maximaIndexPerScale.get(scaleIdx) == None }
-  def get(scaleIdx: Int): Option[Pair[Int, Double]] = { maximaIndexPerScale.get(scaleIdx).get }
+  def add(scale: Float, maxima: Option[Pair[Int, Double]]) { maximaIndexPerScale(scale) = maxima }
+  def hasScale(scale: Float): Boolean = { maximaIndexPerScale.get(scale) == None }
+  def get(scale: Float): Option[Pair[Int, Double]] = { maximaIndexPerScale(scale) }
   def incGap() = {gap += 1; totalGaps +=1 }
   def initGap() = {gap = 0}
   def length(): Int = { maximaIndexPerScale.size }//with gap since we stop it 
 
-  def startingScale(): Int = {
+  def startingScale(): Float = {
     val v = maximaIndexPerScale.filter(x => x._2 != None).maxBy(x => x._1)
     v._1
   }
@@ -65,58 +65,86 @@ trait RidgesFinder {
    *
    * winLength: minWindow window is proportionnal to the scale: scale * 2 + 1
    */
+  var coeffs: HashMap[Float, Array[Double]]
   
-  def findRidges(maximaIndexesPerScale: Array[Array[Int]], coeffs: Array[Array[Double]], winLength: Int = 5, maxGap:Int = 4): Pair[Array[Ridge], Array[Ridge]] = {
-     
+  def findRidges(maximaIndexesPerScale: HashMap[Float, Array[Int]],  winLength: Int = 5, maxGap:Int = 4): Pair[Array[Ridge], Array[Ridge]] = {
+    //check emptyness
     if (maximaIndexesPerScale.isEmpty)
       return new Pair[Array[Ridge], Array[Ridge]](Array[Ridge](), Array[Ridge]())
+   
       
-    val lastMaximaRow = maximaIndexesPerScale.last
+    val sortedScales = maximaIndexesPerScale.keys.toBuffer.sorted
+    val lastMaximaRow = maximaIndexesPerScale(sortedScales.last)
     val ridges = new ArrayBuffer[Ridge]
     val orphanRidges = new ArrayBuffer[Ridge]
     
+    //init a ridge for each max
     for (m <- lastMaximaRow) { 
       var r = Ridge()
-      r.add(maximaIndexesPerScale.length - 1, Some(Pair(m, coeffs.last(m))))
+      r.add(sortedScales.last, Some(Pair(m, coeffs(sortedScales.last)(m))))
       ridges += r
     }
     
-    for (i <- maximaIndexesPerScale.length - 2 to 0 by -1) {
-      val currentRow = maximaIndexesPerScale(i)
-      val winSize: Int = if ((i / 2 + 1).toInt > winLength) (i / 2 + 1).toInt else winLength // winLength is th minimal window
+    //if only one scale
+    if (sortedScales.length == 1) {
+      return Pair(ridges.toArray, orphanRidges.toArray)
+    }
+    
+    //else
+    for (i <- sortedScales.length - 2 to 0 by -1)  {
       
-      var treatedIdx = Set[Int]()
-
-      for (ridge <- ridges if !ridge.isEnded(maxGap) ) {
-        var prevMaxIndex = ridge.maximaIndexPerScale(i + 1)
-        //the prev max could be None because of gap
-        //looking for a valid prevMax
-        if (prevMaxIndex == None) {
-          var k = i + 2
-          while (ridge.maximaIndexPerScale(k) == None) {
+      val currentScale = sortedScales(i)
+      val currentRow = maximaIndexesPerScale(currentScale)
+      
+      if (! currentRow.isEmpty) {
+        
+        val winSize: Int = if ((currentScale / 2 + 1).toInt > winLength) (currentScale / 2 + 1).toInt else winLength // winLength is th minimal window
+        
+        var treatedIdx = Set[Int]()
+  
+        for (ridge <- ridges if !ridge.isEnded(maxGap) ) {
+          var k = i + 1
+          //println(sortedScales(k))
+          var prevMaxIndex:Option[(Int, Double)] = None
+          //try {
+            prevMaxIndex = ridge.maximaIndexPerScale(sortedScales(k))
+          /*}catch {
+            case e :Exception => {
+              println(e.getMessage())
+              ridge.maximaIndexPerScale.foreach(x=>println(x._1))
+            }
+          }*/
+          //find a valid max
+          while (prevMaxIndex == None) {
             k += 1
+            prevMaxIndex = ridge.maximaIndexPerScale(sortedScales(k))
           }
-          prevMaxIndex = ridge.maximaIndexPerScale(k)
+          
+          //check buggy stuff
+          if (! prevMaxIndex.isDefined)
+            throw new Exception("prevMaxIndex must be defined")
+          
+           
+          val closestMax = currentRow.minBy(x => math.abs(prevMaxIndex.get._1 - x)) 
+  
+          if (math.abs(prevMaxIndex.get._1 - closestMax) < winSize / 2) { // /2
+            ridge.add(currentScale, Some(Pair(closestMax, coeffs(currentScale)(closestMax))))
+            ridge.initGap()
+            treatedIdx += closestMax
+  
+          } else {
+            ridge.incGap()
+            ridge.add(currentScale, None)
+          }
+          
+          
         }
-
-        val closestMax = currentRow.minBy(x => math.abs(prevMaxIndex.get._1 - x)) //sortBy(x => math.abs(prevMaxIndex.get - x))
-
-        if (math.abs(prevMaxIndex.get._1 - closestMax) < winSize / 2) { // /2
-          ridge.add(i, Some(Pair(closestMax, coeffs(i)(closestMax))))
-          ridge.initGap()
-          treatedIdx += closestMax
-
-        } else {
-          ridge.incGap()
-          ridge.add(i, None)
+        //start a new ridge for all max not assigned to a ridge
+        for (maxIdx <- currentRow if !treatedIdx.contains(maxIdx)) {
+          val r_ = Ridge()
+          r_.add(currentScale, Some(Pair(maxIdx, coeffs(currentScale)(maxIdx))))
+          ridges += r_
         }
-
-      }
-      //start a new ridge for all max not assigned to a ridge
-      for (maxIdx <- currentRow if !treatedIdx.contains(maxIdx)) {
-        val r_ = Ridge()
-        r_.add(i, Some(Pair(maxIdx, coeffs(i)(maxIdx))))
-        ridges += r_
       }
     }
     

@@ -27,6 +27,9 @@ case class PutativeFeature(
   @BeanProperty var evidenceMsLevel: Int = 0 // TODO: comment this attribute
   @BeanProperty var isPredicted: Boolean = false
   @BeanProperty var peakelsCount: Int = 0
+  var durations: Array[Float] = null
+  var areas : Array[Float] = null
+  var mozs : Array[Double] = null
   
   def this( id: Int, mz: Double, charge: Int, firstScanId: Int, lastScanId: Int, evidenceMsLevel: Int ) = {
     this( id, mz, charge )

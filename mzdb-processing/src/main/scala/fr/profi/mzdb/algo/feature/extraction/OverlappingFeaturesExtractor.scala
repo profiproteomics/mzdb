@@ -20,261 +20,41 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
 import fr.profi.mzdb.utils.ms.MsUtils
+import beans.BeanProperty
+import com.typesafe.scalalogging.slf4j.Logging
 
-/**
- * 
- */
-case class OverlappingExtractorParameters(//mzTolPPM: Float,
-                                          minNbOverlappingIPs: Int = 1,  
-                                          maxZ: Int = 6, 
-                                          maxIpShift: Int = 3,
-                                          minPeakelCorrToMono:Float = 0.75f,
-                                          minIntensityToMono: Float = 0.6f)
-                                          //maxConsecutiveGaps:Int = 2,
-                                          //maxTimeWindow:Float = 500) //make it adaptive to the theoIP
 
-/**
- * 
- */
-case class OverlapStatus( overlapEvidence: Boolean,
-                          foundPossibleMonoisotopic: Boolean,
-                          possibleMonosisotopicPeakel: Pair[Option[Peakel], Option[Feature]], 
-                          apexDeviation: Float)
 
-case class minMonoisotopicThreshold ()
-
+                        
+                          
 /**
  * StraitForward implementation
  * @author Marco
  * params: set as var, so parameters values can be changed after OverlappingFeaturesExtractor creation
  * inherit from Ms2DrivenExtractor essentially to fetch parameters
  */
-class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
-                                    override val scanHeaderById: Map[Int,ScanHeader],
-                                    override val nfByScanId: Map[Int,Float],
-                                    override val mzTolPPM: Float,
-                                    override val maxNbPeaksInIP: Int, // TODO: remove this param
-                                    override val minNbOverlappingIPs: Int,
-                                    override val maxConsecutiveGaps: Int = 2,
-                                    override val maxTimeWindow: Float = 1200f,
-                                    override val minPercentageOfMaxInt: Float = 0.005f) 
-                                    
-        extends Ms2DrivenFtExtractor (scanHeaderById: Map[Int,ScanHeader],
-                                      nfByScanId: Map[Int,Float],
-                                      mzTolPPM: Float,
-                                      maxNbPeaksInIP: Int, // TODO: remove this param
-                                      minNbOverlappingIPs: Int,
-                                      maxConsecutiveGaps: Int,
-                                      maxTimeWindow: Float,
-                                      minPercentageOfMaxInt: Float) {
+
+
+
+class OverlappingFeaturesExtractor( val scanHeaderById: Map[Int,ScanHeader],
+                                    val ms1ScanIdByCycleNum: Map[Int,Int],
+                                    val xtractConfig: FeatureExtractorConfig,
+                                    val overlapXtractConfig:OverlappingFeatureExtractorConfig) 
+                                    extends IExtractorHelper with Logging{
   
-  /********************************************************************
-   * UTILITY FUNCTIONS
-   ********************************************************************/
   
-  /**
-   * specialized implementation
-   */
-  protected def _getIntensityAscendantDirection(  mzToExtract:Double,
-                                                  pklTree: PeakListTree,
-                                                  cycleNum: Int,
-                                                  range: Pair[Int, Int]): Int = {
-     var (firstCycleNum, lastCycleNum) = (0, 0)
-
-    // Left check
-    firstCycleNum = cycleNum - range._2
-    lastCycleNum = cycleNum - range._1
-    val leftIntSum = this._integrateIntensity( mzToExtract, pklTree, firstCycleNum, lastCycleNum)
-
-    // Right check
-    firstCycleNum = cycleNum + range._1
-    lastCycleNum = cycleNum + range._2
-    val rightIntSum = this._integrateIntensity(mzToExtract, pklTree, firstCycleNum, lastCycleNum )
-
-    // Determine the direction by comparing the summed intensities
-    var ascDirection = 0
-    if (leftIntSum >= 0 || rightIntSum >= 0) {
-      if (rightIntSum > leftIntSum) {
-        ascDirection = 1
-      } else {
-        ascDirection = -1
-      }
-    }
-    ascDirection
-  }
   
-  /**
-   * specialized implementation
-   */
-  protected def _integrateIntensity(mzToExtract:Double,
-                                    pklTree: PeakListTree,
-                                    firstCycle: Int, lastCycle: Int): Double = {
-
-    var intensitySum = 0.0
-
-    // Sum the forward isotopic profile intensities
-    breakable {
-      for (curCycleNum <- firstCycle to lastCycle) {
-
-        if (this.ms1ScanIdByCycleNum.contains(curCycleNum) == false) break
-
-        val curScanId = this.ms1ScanIdByCycleNum(curCycleNum)
-        val curScanH = this.scanHeaderById(curScanId)
-
-        val ip = pklTree.getNearestPeak(curScanId, mzToExtract, mzToExtract * this.mzTolPPM / 1e6)
-
-        if (ip.isDefined) {
-          intensitySum += ip.get.getIntensity()
-        }
-      }
-    }
-
-    intensitySum
-  }
-    
-  
-  /**
-   * 
-   */
-  protected def _extractXIC( mzToExtract: Double,
-                             //putativeFt: PutativeFeature,
-                             pklTree: PeakListTree,
-                             startingScanHeader: ScanHeader ): Array[Peak] = {
-    
-    val peaks = new ArrayBuffer[Peak]()
-    
-    val cycleNum = startingScanHeader.getCycle
-    var apexTime = startingScanHeader.getTime
-    
-    //val theoIP = putativeFt.theoreticalIP
-    
-    // Determine intensity ascendant direction
-    val range = Pair(1,15)
-    var ascDirection = this._getIntensityAscendantDirection( mzToExtract, 
-                                                             pklTree,
-                                                             cycleNum, 
-                                                             range)
-    // 1 => right
-    // -1 => left
-    if( ascDirection == 0 ) // if no signal found on both sides
-      return peaks.toArray
-    
-    // --- Extract isotopic patterns --- //
-    var curMaxIntensity = 0.0
-    var lastIntensity = 0f
-    
-    // Iterate until left and right directions have been analyzed
-    var numOfAnalyzedDirections = 0
-        
-    while( numOfAnalyzedDirections < 2 ) {
-      
-      var timeOverRange = false
-      var consecutiveGapCount = 0
-      var cycleShift = 0
-      
-      // Stop extraction in this direction if we have too much gaps or if we exceed run time range
-      breakable {
-        while( consecutiveGapCount <= this.maxConsecutiveGaps && !timeOverRange ) {
-          
-          // Decrease cycle shift if LEFT direction
-          if( ascDirection == -1 ) {
-            cycleShift -= 1 
-          }
-          
-          // Determine current cycle number
-          val curCycleNum = cycleNum + cycleShift
-          
-          // Try to retrieve the scan id
-          var curScanHOpt = Option.empty[ScanHeader]
-          if( this.ms1ScanIdByCycleNum.contains(curCycleNum) ) {
-            // Retrieve the wanted scan header
-            curScanHOpt = this.scanHeaderById.get(this.ms1ScanIdByCycleNum(curCycleNum))
-          }
-          
-          if( curScanHOpt.isEmpty ) {//if wrong scanID
-            timeOverRange = true
-            break
-          } else {
-            val curScanH = curScanHOpt.get
-            val curTime = curScanH.getTime
-              
-            // check if total time does not exceed the provided threshold
-            if( this.maxTimeWindow > 0 && math.abs(curTime - apexTime) > this.maxTimeWindow / 2 ) {
-              timeOverRange = true
-              break
-            }
-            
-            //get peaks here IMPORTANT
-            val curScanId = curScanH.getId
-            val ipOpt = pklTree.getNearestPeak(curScanId, mzToExtract, mzToExtract * this.mzTolPPM / 1e6 ) //the last need tol in dalton
-            //val ipOpt = pklTree.extractIsotopicPattern( curScanH, theoIP, mzTolPPM, 2 )
-            
-            //WEIRD CASES
-            if( cycleShift == 0 && ipOpt.isEmpty ) {
-              // Sometimes the precursor m/z is wrong => just skip these weird cases
-              //this.logger.trace( "supervised ft extraction failed at scan id=%06d & mz=%f".format(curScanH.getId, putativeFt.getMz) )
-            }
-            
-            // Check if an isotopic pattern has been found
-            if( ipOpt.isDefined ) {
-              
-              val ip = ipOpt.get
-              val intensity = ip.getIntensity()
-              
-              // Add the isotopic pattern to the list of extracted IPs
-              if( ascDirection == 1 )
-                peaks += ip // append IP
-              else if( ascDirection == -1 )
-                peaks.+=:(ip) // prepend IP
-                
-              // Analysis of the isotopic pattern intensity
-              if( intensity > curMaxIntensity ) {
-                // Update information about the apex
-                curMaxIntensity = intensity
-                apexTime = curTime
-              }
-                
-                //lastIntensity = intensity
-              //}
-              
-              // test intensity < intensityThreshold
-              if( intensity == 0 || intensity < curMaxIntensity * this.minPercentageOfMaxInt )
-                consecutiveGapCount += 1
-              else 
-                consecutiveGapCount = 0
-            
-            } else { //ip not defined
-              consecutiveGapCount += 1
-            }
-  
-            // Increase cycle shift if right direction
-            if( ascDirection == 1 ) 
-              cycleShift += 1
-            
-          }// END OF ELSE
-        } // END OF WHILE
-      }
-      ascDirection *= -1
-      numOfAnalyzedDirections += 1
-    }
-    
-    peaks.toArray
-  }
-  
-  /************************************************************************************************
+  /* ***********************************************************************************************
    * EXTRACTION OVERLAPPING FEATURES, FIRST METHOD
-   ************************************************************************************************/
-  /**
-   * classical 
-   */
+   ************************************************************************************************
   protected def _extractOverlappingIps(ip: IsotopicPattern, 
                                        theoIP: TheoreticalIsotopePattern, 
                                        pklTree: PeakListTree): Array[OverlappingIsotopicPattern] = {
     
     // Unpack parameters
-    val maxZ = this.params.maxZ
-    val maxIpShift = this.params.maxIpShift
-    val mzTolPPM = this.mzTolPPM
+    val maxZ = overlapXtractConfig.maxZ
+    val maxIpShift = overlapXtractConfig.maxIpShift
+    val mzTolPPM = extractionParams.mzTolPPM
     
     // Some require statements
     require(maxZ > 0, "maximum charge must be strictly positive")
@@ -304,7 +84,6 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
           scanHeader = ip.scanHeader,
           theoreticalIP = tmpTheoIP,
           mzTolPPM = mzTolPPM,
-          nbPeaksToSum = 2,
           overlapShift = ipShift
         )
 
@@ -320,16 +99,14 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
     olpIPs.toArray
   }
   
-   /**
-   * use in conjugation with _extractOverlappingIps
-   */
-  def _buildOverlappingFeatures( feature: Feature ): Array[Feature] = { // minNbIPs: Int = 3
+  
+  def _buildOverlappingFeatures( feature: Feature): Array[Feature] = { // minNbIPs: Int = 3
 
     // Check that the current features has peak
     if (feature.peakelsCount == 0)
       return null
     
-    val minNbOverlappingIPs = this.params.minNbOverlappingIPs
+    val minNbOverlappingIPs = overlapXtractConfig.minNbOverlappingIPs
     val maxConsecutiveGapInEachPeakels = 1
       
     val isotopicPatterns = feature.getIsotopicPatterns
@@ -355,7 +132,7 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
        ovlIpsByShift.foreach{ case (shift, ovlIps) =>
          //test if we find two ovlIps corresponding to the same ScanId, euh ? not possible
          
-         if ( ovlIps.length >= params.minNbOverlappingIPs ) {
+         if ( ovlIps.length >= overlapXtractConfig.minNbOverlappingIPs ) {
            val ovlFt = new Feature(ovlIps(0).mz, charge, ovlIps)
            ovlFt.mz = ovlFt.peakels.head.getApex.getMz()
            ovlFts += ovlFt
@@ -372,7 +149,7 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
           val peaks = peakel.peaks
           var gapCount = 0
           for (i  <- 0 until peaks.length) {
-            if (peaks(i).isDefined)
+            if (peaks(i) != null)
               gapCount = 0
             else {
               gapCount += 1
@@ -390,91 +167,90 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
        
     finalOvlFts.toArray
   }
+  */
   
-  /************************************************************************************************
-   * EXTRACTION OVERLAPPING FEATURES, SECOND METHOD
-   ************************************************************************************************/
   
   /**
+   * EXTRACTION OVERLAPPING FEATURES, SECOND METHOD
+   * 
    * same as above but using wavelet
    * depnds on what we will do, but could be called: extractOverlappingPeakel
    */
-  protected def  _extractOverlappingFeatures(ftFirstPeakel:Peakel, //Seq[IsotopicPattern],
+  protected def  _extractOverlappingFeatures(ft:Feature,
                                              ftZ: Int,
-                                             //theoIP: TheoreticalIsotopePattern, 
                                              pklTree: PeakListTree): Array[Feature] = {
     
     // Unpack parameters
-    val maxZ = this.params.maxZ
-    val maxIpShift = this.params.maxIpShift
-    val mzTolPPM = this.mzTolPPM
+    val minZ = if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.minZ else ft.charge
+    val maxZ = if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.maxZ else ft.charge
+    val maxIpShift = if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.maxIpShift else 1
+    
+    val mzTolPPM = this.xtractConfig.mzTolPPM
+    
     
     // Some require statements
     require(maxZ > 0, "maximum charge must be strictly positive")
     require(maxIpShift > 0, "maximum IP shift must be strictly positive")
     
+    
+    val firstFtPeakel = ft.peakels.head
     //getting the maxScanId
     //the idea is to use extractIsotopicPattern and use only first peakel
-    val maxScanId = ftFirstPeakel.peaks.filter(x=> x.isDefined)
-                                       .sortBy(x => x.get.getIntensity())
-                                       .last.get
-                                       .getLcContext().getScanId()
+    val maxScanId = firstFtPeakel.definedPeaks.maxBy(x => x.getIntensity())
+                                              .getLcContext().getScanId()
     
-    // Search for overlapping isotopic patterns
-    val olpIPs = new ArrayBuffer[OverlappingIsotopicPattern]()
-    val peakelsByCharge = new HashMap[Int, Array[Peakel]]
+    //if we do not have a defined scanId, we stop                                          
+    require(maxScanId != 0)                                        
     
     
-    var mozAlreadyCheck = Set[Int]()
-    // Try several charge states
-    for (z <- 1 to maxZ) {
-      val sameChargedPeakels = new ArrayBuffer[Peakel] 
-      // Try several m/z shifts
-      for (ipShift <- (-maxIpShift) until 2) { //enter only once into that boucle
-        val mzToExtract = ftFirstPeakel.mz + (ipShift.toDouble / z)
-        val mzToExtractId = math.round( (mzToExtract * 1000) toFloat)
-        
-        //Extract a the mass if not XIC not already computed
-        val peaks = new ArrayBuffer[Peak]()
-        if ( ! mozAlreadyCheck.contains(mzToExtractId) ) {
-          peaks ++ this._extractXIC( mzToExtract, pklTree, this.scanHeaderById(maxScanId) )
-          mozAlreadyCheck += mzToExtractId
-        }
-        
-        if (! peaks.isEmpty) {
-          val wpf = new WaveletBasedPeakelFinder(peaks)
-          wpf.ridgeFilteringParams.minSNR = 1.5f
-          val peakelsIndexes = wpf.findPeakelsIndexes
-          if (! peakelsIndexes.isEmpty) {
-            // TODO:We take the most intense, the closest ?
-            val (minIdx, maxIdx) = (peakelsIndexes.head._1, math.min(peakelsIndexes.head._2, peaks.length))
-            // here the first index in the constructor is the index of the peakel in the feature
-            // we do not need it in our case, so set it to 0
-            sameChargedPeakels += new Peakel( 0, peaks.slice(minIdx, maxIdx).map(Some(_) ) toArray ) 
-          }
-        }
-      }//end ipShift for
-      peakelsByCharge(z) = sameChargedPeakels.toArray
-    }//end z for
+    //val threshMzMin = ft.mz  - ( (ft.mz * this.mzTolPPM ) / 1e6 )
+    val maxMz = if(this.overlapXtractConfig.extractAllOvlFts ) ft.mz + (1.0027 / ft.charge) * ft.peakelsCount else  ft.mz 
+    val threshMzMax = maxMz + ( (maxMz * this.mzTolPPM) / 1e6 )
+
+    //avoid many same peakels
+    //val peakelByMass = new HashMap[Int, Peakel]
     
+    //val allPeakelMass = collection.mutable.Set[Int]()
     
-    // got more confidence in the extract pattern of the pkltree
-    //in order to avoid changing the model re-extract isotopicPattern objects
-    peakelsByCharge.foreach{ case (charge, peakels) =>
-      if (! peakels.isEmpty) {
-        val farthestpeakel = peakels.sortBy(_.mz).head
-        farthestpeakel.peaks.map { p =>
-          if (p.isDefined) {
-            val scanH = this.scanHeaderById(p.get.getLcContext().getScanId())
-            pklTree.extractIsotopicPattern( scanH, IsotopicPatternLookup.getTheoreticalPattern(farthestpeakel.mz, charge), this.mzTolPPM, 2)
-          } else {
-              None
-          }
+    val ovlFts = new ArrayBuffer[Feature]
+
+    for (z <- minZ to maxZ) {
+      breakable {
+        for (ipShift <- -maxIpShift to maxIpShift)  if (z != ft.charge && maxIpShift != 0) {
+          
+          //try to restrict nb features to check
+          val mzToExtract = firstFtPeakel.mz + (ipShift.toDouble / z)
+          
+          //if (mzToExtract > threshMzMax)
+          //  break
+            
+          //if ( allPeakelMass.contains( (mzToExtract * 1000).toInt ) == false ) {
+          
+            //build fictive putative feature
+            val putativeFt = new PutativeFeature(-1, mzToExtract, z, maxScanId, evidenceMsLevel = 1)
+            //extract feature
+            val conf = this.xtractConfig.copy(refineDetection=false) // skip the refine extraction to gain time
+            val featureAsOpt = this._extractFeature(putativeFt, pklTree, conf, method=1)//, minSNR = 0.0f)
+            
+            if (featureAsOpt.isDefined) {
+              val ovlFt = featureAsOpt.get
+              
+              //val abundances = IsotopicPatternLookup.getTheoreticalPattern(mzToExtract, z).getRelativeAbundances.filter(_ > 5)
+              //val maxPeakelIndex = abundances.indexOf(abundances.max)
+              
+              //basic if extracted peakel is relevant
+              //if ( this._nbGapInMaxPeakelRespectful(ovlFt, maxPeakelIndex, 2) && ovlFt.peakels(ovlFt.peakelsCount - 1).mz > threshMzMin) {// && //ovlFt.peakels(0).mz < threshMzMax )
+                //for (peakel <- ovlFt.peakels) {
+                //  allPeakelMass.add( (peakel.mz * 1000).toInt )
+                //}
+                ovlFts += ovlFt
+             // }
+            }
+          //}
         }
       }
     }
-    
-    null
+    ovlFts.toArray
   }
 
   
@@ -490,10 +266,7 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
   def _evaluateOverlappingStatus( ft:Feature, ovlFeatures: Array[Feature] ) : OverlapStatus = {
     //simple case
     if (ovlFeatures.isEmpty) {
-      return OverlapStatus(overlapEvidence = false, 
-                          foundPossibleMonoisotopic = false,
-                          possibleMonosisotopicPeakel= Pair(None, None),
-                          apexDeviation =  0f)
+      return OverlapStatus(overlapEvidence = false, false, null, null)
     }
     //difficult cases
     //apply peak detection on the first peakel
@@ -501,80 +274,90 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
     //build an inverse mapping
     
     val overlapEvidence = true
-        
+    
     //setting overlappingFeatures
     ft.overlappingFeatures = ovlFeatures
      
     //determining best overlappingFeature
-    if (ovlFeatures.length == 1)
-      ft.bestOverlappingFeature = ovlFeatures(0)
-    else {
-      //best overlapping calculation, HighestPMCC
-      //TODO: take the most intense, the closestPeakel to the monoisotopic ?
-      ft.bestOverlappingFeature = ovlFeatures(0)
-      FeatureScorer.calcOverlappingFactor(ft, this.mzTolPPM)
-    }
     
-    // Determine if there is a possible monoIsotopic which would be good
-    val featureByPeakels = new HashMap[Peakel, Feature]()
-    ovlFeatures.foreach{ ovlFt => ovlFt.peakels.foreach( featureByPeakels(_) = ovlFt) } 
+    val bestOvlFts = this._selectBestOverlappingFeatures(ft, ovlFeatures)
+    if ( ! bestOvlFts.isEmpty)
+      ft.bestOverlappingFeature = bestOvlFts(0).ft
+      
+    OverlapStatus(overlapEvidence = true, ! bestOvlFts.isEmpty, ovlFeatures, bestOvlFts)
     
-    //if (!ovlFt.peakels.isEmpty) {
-    //  val peaks = ovlFt.peakels.head.definedPeaks
-    //  val wpf = new WaveletBasedPeakelFinder(peaks)
-    //  wpf.ridgeFilteringParams.minSNR = 1.2f
-    //  if (wpf.findPeakelsIndexes().isEmpty)
-    //    broke = true
-    //}
     
-    val allPeakels = ovlFeatures.map (_.peakels).flatten
-    
-    // we assume than if ft has several peakel, the most possible monoisotopic peakel
-    // mass must correpond to a moz difference corresponding to the charge of the 
-    // feature of interest
-    if (ft.peakelsCount > 1) {
-      val mozToCheck = ft.mz - (1.0027/ft.charge)    //TODO: grab the hydrogen mass from a static, enum definition
-      val mzTolDa = MsUtils.ppmToDa(mozToCheck, this.mzTolPPM)
-      val mzBounds = Pair(mozToCheck - mzTolDa, mozToCheck + mzTolDa)
-      val monoisotopicCandidates = allPeakels.filter(peakel => peakel.mz > mzBounds._1 && peakel.mz < mzBounds._2 )
-      
-      if (monoisotopicCandidates.isEmpty) {
-        return OverlapStatus(overlapEvidence = true, 
-                            foundPossibleMonoisotopic = false,
-                            possibleMonosisotopicPeakel= Pair(None, None),
-                            apexDeviation =  0f)
-      }
-      
-      //monoisotopic founds, which one the best ?
-      //Tuple4
-      // correlation, intensity, apexIndex,  
-      val scoring = new HashMap[Peakel, Tuple3[Float, Float, Int]]
-      monoisotopicCandidates.map{ peakel => peakel-> Tuple3[Float, Float, Int](peakel.computeCorrelationWith(ft.peakels(0)) toFloat,
-                                                                               peakel.intensity / ft.peakels(0).intensity,
-                                                                               math.abs(peakel.apexIndex - ft.peakels(0).apexIndex))
-        
-      }
-      
-      val choosenOnes = scoring.filter{ case (peakel, scores) => scores._1 > this.params.minPeakelCorrToMono &&
-                                                                scores._2 > this.params.minIntensityToMono &&
-                                                                scores._3 < 10 
-      }.keys toArray
-    }
-                            
-            
-      
-                          
-                          
-    null
   }
+  
+   
+  /**
+   * 
+   */
+  def _selectBestOverlappingFeatures( ft: Feature, ovlFts: Array[Feature]): Array[ProvedOverlappingFeaturesWithMono] = {
+    
+    val bestOvlFeatures = new ArrayBuffer[ProvedOverlappingFeaturesWithMono]
+    val monoFtPeakel = ft.peakels.head
+    val currFtMonoMz = monoFtPeakel.mz
+    
+    val filteredOvlFts = if (this.overlapXtractConfig.extractAllOvlFts) ovlFts else ovlFts.filter(_.charge == ft.charge) 
+    
+    filteredOvlFts.foreach { ovlFt =>
+      //find closest peakel to current mono of considered ft
+      val insideTolPeakels = ovlFt.peakels.filter(p => math.abs(p.mz - currFtMonoMz) < this.mzTolPPM * p.mz / 1e6)
+      
+      //found interesting peakels with the mono
+      if  ( insideTolPeakels.isEmpty == false ) {
+        
+        println(s"Several possible elution peak in overlap with the monoisotope of feature of mass: ${ft.mz} and charge: ${ft.charge}. \nConsidering the closest in mz range...")
+        val closestPeakel = insideTolPeakels.minBy(p=>math.abs(currFtMonoMz - p.mz))
+        
+        val closestPeakelIndex = closestPeakel.index
+        
+        //assume they are the same XIC now
+        val previousOvlFtIndex = math.min(math.max(closestPeakelIndex - 1, 0), ovlFt.peakelsCount - 1)
+        
+        if (previousOvlFtIndex == 0) {
+          //we have rextract the same feature
+          //println("OvlFt and considered Feature seem to have the same monoisotopicPeakel")
+        } else {
+            val previousOvlFtPeakel = ovlFt.peakels(previousOvlFtIndex)
+           
+            val apexDistanceInCycle = math.abs( this.scanHeaderById(previousOvlFtPeakel.getApexScanContext.getScanId).getCycle - 
+                                                this.scanHeaderById(monoFtPeakel.getApexScanContext.getScanId).getCycle )
+            
+            val correlation  = previousOvlFtPeakel.computeCorrelationWith(monoFtPeakel) toFloat
+            //experimental intensity quotient vs averagine
+            val theoIP = IsotopicPatternLookup.getTheoreticalPattern(ovlFt.mz, ovlFt.charge)
+            val abundances = theoIP.getRelativeAbundances()
+            if (previousOvlFtIndex + 1 > abundances.length)
+              println("Reached max peakel, pass")
+            else {
+              val theoriticalQuotient = abundances(previousOvlFtIndex) / abundances(previousOvlFtIndex + 1)
+              val observedQuotient = previousOvlFtPeakel.area / monoFtPeakel.area
+              val quotient = if (observedQuotient > theoriticalQuotient) observedQuotient / theoriticalQuotient else theoriticalQuotient / observedQuotient
+              
+              //sign of death for the feature
+              if ( apexDistanceInCycle <= 20 && //quotient < 2
+                  correlation != Double.NaN && correlation > this.overlapXtractConfig.minPeakelCorrToMono) {
+                println("Wrong feature in a cross-assignment (wrong monoisotopic selection). Ignore it...")
+                ft.isRelevant = false
+                bestOvlFeatures += ProvedOverlappingFeaturesWithMono(ovlFt, closestPeakelIndex, apexDistanceInCycle, correlation, quotient)//ovlFt
+              }
+            }
+        }
+      } //end if inside tol
+    }
+    bestOvlFeatures.toArray
+  }
+  
   
   
   /************************************************************************************************
    * EXPOSED FUNCTIONS 
    ************************************************************************************************/
-  /**
+  /* *
    * fill feature overlapping related attributes 
-   */
+   *
   def extractOverlappingFeatures(ft: Feature, theoIP: TheoreticalIsotopePattern, pklTree: PeakListTree) : OverlapStatus = {
       if (ft.peakels.isEmpty)
         throw new Exception("can not extract overlapping features of an empty feature. Returning Error")
@@ -582,16 +365,18 @@ class OverlappingFeaturesExtractor ( var params: OverlappingExtractorParameters,
       ft.getIsotopicPatterns.par.map( ip => this._extractOverlappingIps(ip, theoIP, pklTree) )
       val ovlFeatures = this._buildOverlappingFeatures( ft )
       this._evaluateOverlappingStatus( ft, ovlFeatures )
-  }
+  }*/
   
   /**
    * 
    */
-  def extractOverlappingFeaturesUsingWaveletApproaches( ft: Feature, theoIP: TheoreticalIsotopePattern, pklTree: PeakListTree) : OverlapStatus = {
+  def extractOverlappingFeatures( ft: Feature, 
+                                  theoIP: TheoreticalIsotopePattern, 
+                                  pklTree: PeakListTree) : OverlapStatus = {
       if (ft.peakels.isEmpty)
         throw new Exception("can not extract overlapping features of an empty feature. Returning Error")
       
-      val ovlFeatures = this._extractOverlappingFeatures(ft.peakels(0), ft.charge, pklTree)
+      val ovlFeatures = this._extractOverlappingFeatures(ft, ft.charge, pklTree)
       this._evaluateOverlappingStatus(ft, ovlFeatures)
   }
 
