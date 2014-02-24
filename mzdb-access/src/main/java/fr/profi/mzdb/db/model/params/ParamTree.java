@@ -44,10 +44,7 @@ public class ParamTree implements IParamContainer {
 		super();
 	}
 
-	/*
-	 * public ParamTree( IParamContainer params ) { this(); if( params != null ) { this.cvParams =
-	 * params.getCVParams(); this.userParams = params.getUserParams(); } }
-	 */
+	
 
 	/*
 	 * (non-Javadoc)
@@ -84,6 +81,7 @@ public class ParamTree implements IParamContainer {
 	public UserParam getUserParam(String name) {
 		UserParam p = null;
 		for (UserParam up : this.getUserParams()) {
+		  //System.out.println(up.getName());
 			if (up.getName().equals(name)) {
 				p = up;
 				break;

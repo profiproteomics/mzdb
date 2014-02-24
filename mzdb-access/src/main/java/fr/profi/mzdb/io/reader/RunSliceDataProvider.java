@@ -28,10 +28,10 @@ public class RunSliceDataProvider {
 	 * @param mzDBInstance
 	 *            the mz db instance
 	 */
-	public RunSliceDataProvider(MzDbReader mzDBInstance) {
+	/*public RunSliceDataProvider(MzDbReader mzDBInstance) {
 		super();
 		this.mzDBInstance = mzDBInstance;
-	}
+	}*/
 
 	/**
 	 * Instantiates a new run slice data provider.
@@ -53,13 +53,13 @@ public class RunSliceDataProvider {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public RunSliceData getRunSliceData(int runSliceId) throws SQLiteException {
-
-		if (rsdIter != null) {
-			return _getNextMatchingRunSliceData(runSliceId);
-		} else {
-			return mzDBInstance.getRunSliceData(runSliceId);
-		}
+	public RunSliceData getRunSliceData(int runSliceNumber) throws SQLiteException {
+	    RunSliceData data =  this._getNextMatchingRunSliceData(runSliceNumber);
+	    if (data == null) {
+	      System.out.println("Non optimal run slice data fetching");
+	      return mzDBInstance.getRunSliceData(runSliceNumber);
+	    }
+	    return data;
 	}
 
 	/**
@@ -74,11 +74,7 @@ public class RunSliceDataProvider {
 	private RunSliceData _getNextMatchingRunSliceData(int runSliceNumber) throws SQLiteException {
 
 		// Iterate over run slices to retrieve the wanted run slice
-		/*
-		 * Iterator<RunSlice> iter = mzDBInstance.getRunSliceDataIterator(); RunSlice tmpRs = iter.next();
-		 * while( iter.hasNext() && tmpRs.getHeader().number != runSliceNumber) { tmpRs = iter.next(); }
-		 * return tmpRs.getData(); }
-		 */
+		
 		while (rsdIter.hasNext()) {
 			RunSlice tmpRs = rsdIter.next();
 			// return tmpRs.getData();
@@ -87,17 +83,9 @@ public class RunSliceDataProvider {
 
 			if (curRsNumber == runSliceNumber)
 				return tmpRs.getData();
-			else if (curRsNumber > runSliceNumber)
+			else if (curRsNumber > runSliceNumber) 
 				return null;
 		}
 		return null;
 	}
-	// return tmpRs.getData();
-	// if( tmpRs.getHeader().number == runSliceNumber )
-	// return tmpRs.getData();
-	// else if( tmpRs.getHeader().number > runSliceNumber )
-	// return null;
 }
-
-// return null;
-

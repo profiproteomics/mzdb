@@ -2,11 +2,15 @@ package fr.profi.mzdb.db.model;
 
 import java.util.List;
 
+import com.almworks.sqlite4java.SQLiteException;
+
+import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.IParamContainer;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
+import fr.profi.mzdb.model.ScanHeader;
 import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
 
 // TODO: Auto-generated Javadoc
@@ -64,7 +68,13 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * 
 	 * @return the param tree
 	 */
-	public ParamTree getParamTree() {
+	public ParamTree getParamTree(MzDbReader mzDbReader) {
+	  if (! this.hasParamTree()){}
+	    try {
+	      this.loadParamTree(mzDbReader);
+	    } catch (SQLiteException e) {
+	      System.out.println(e.getMessage());
+	    }
 		return paramTree;
 	}
 
@@ -77,6 +87,14 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	public void setParamTree(ParamTree paramTree) {
 		this.paramTree = paramTree;
 	}
+	
+  /**
+   * Loads the param tree.
+   * 
+   * @param paramTree
+   *            the new param tree
+   */
+  abstract public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException;
 
 	/*
 	 * (non-Javadoc)

@@ -77,7 +77,8 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 				bbFirstSpectrumId
 			);
 
-			sh.setParamTree(paramTree);
+			//sh.setParamTree(paramTree);
+			
 			return sh;
 
 		}

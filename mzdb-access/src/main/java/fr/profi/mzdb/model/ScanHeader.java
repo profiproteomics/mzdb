@@ -6,7 +6,12 @@ package fr.profi.mzdb.model;
 
 import java.util.Comparator;
 
+import com.almworks.sqlite4java.SQLiteException;
+
+import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.AbstractTableModel;
+import fr.profi.mzdb.io.reader.ParamTreeParser;
+import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -258,5 +263,25 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	public float getTIC() {
 		return tic;
 	}
+	
+	public static void loadParamTrees( ScanHeader[] scanHeaders, MzDbReader mzDbReader ) {
+	  for (ScanHeader headers: scanHeaders) {
+	    if (! headers.hasParamTree())
+        try {
+          headers.loadParamTree(mzDbReader);
+        } catch (SQLiteException e) {
+          e.printStackTrace();
+        }
+	  }
+	}
+
+  @Override
+  public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException {
+    if ( ! this.hasParamTree()) {
+      String sqlString = "SELECT param_tree FROM spectrum";
+      String paramTreeAsStr =  new SQLiteQuery(mzDbReader.getConnection(), sqlString).extractSingleString();
+      this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
+    }
+  }
 
 }
