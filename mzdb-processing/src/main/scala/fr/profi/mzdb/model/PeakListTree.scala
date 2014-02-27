@@ -31,7 +31,7 @@ object PeakListTree {
         val nearestPeak = pklGroup.getNearestPeak( mzToExtract, mzTolDa)
         
         // If nearest peak is found, add it it to the list of peaks
-        if (nearestPeak == null && peakPos >= maxTheoreticalPeakelIndex) {
+        if (nearestPeak == null && peakPos > maxTheoreticalPeakelIndex) {
             break
         } //else
         peaks += nearestPeak
