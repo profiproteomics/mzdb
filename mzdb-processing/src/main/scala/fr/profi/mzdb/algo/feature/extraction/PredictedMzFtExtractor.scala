@@ -23,6 +23,7 @@ class PredictedMzFtExtractor(val scanHeaderById: Map[Int,ScanHeader],
     val theoIP = putativeFt.theoreticalIP
     val moz = putativeFt.getMz // suppose to be the mz of the monoisotopic right ?
     val charge = putativeFt.getCharge // charge magically deduced by the machine
+    val mzTolPPM = xtractConfig.mzTolPPM 
     
     val mzTolDa = MsUtils.ppmToDa(moz, mzTolPPM)
     
@@ -50,8 +51,7 @@ class PredictedMzFtExtractor(val scanHeaderById: Map[Int,ScanHeader],
 	  return Option.empty[Feature]
 	
 	//take the highest peakel since we have to return only one feature ?
-	//val highestPeakel = peakels.sortBy( x=> xic(x.apex).getIntensity ).last
-	//by elutionTime ? Some work TODO here LcContext well filled ?
+	//by elutionTime ?
 	val highestPeakel = peakels.sortBy( x => math.abs(xic(x.index).getLcContext().getElutionTime() - putativeFt.getElutionTime)).head
 
 	val isotopicPatterns = new Array[Option[IsotopicPattern]](highestPeakel.maxIdx - highestPeakel.minIdx + 1)

@@ -17,8 +17,6 @@ import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 import fr.profi.mzdb.utils.math.wavelet.Ridge
 import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
 
 /**
  * Try to select the best peakel in cross assignment
@@ -42,22 +40,18 @@ import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
 class PredictedTimeFtExtractor(
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
-  val minConsecutiveScans: Int = 4,
-  val predictedTimeTol: Int = 90,
   val xtractConfig: FeatureExtractorConfig,
   val overlapXtractConfig: OverlappingFeatureExtractorConfig)
   extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig)
   with IExtractorHelper {
 
-  /**
-   * use wavelet technique to dertermine starting point to extract
-   */
+  /** use wavelet technique to dertermine starting point to extract */
   def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
     def getScanId(peak: Peak) = peak.getLcContext().getScanId()
     // Extract some vars
     val elutionTime = putativeFt.elutionTime
-
+    val predictedTimeTol = this.xtractConfig.predictedTimeTol
     //get the scanHeaders
     val curScanH = this.getScanHeaderForTime(elutionTime, 1)
     var leftmostScanH = this.getScanHeaderForTime(elutionTime - predictedTimeTol, 1)
@@ -70,7 +64,7 @@ class PredictedTimeFtExtractor(
     if (rightmostScanH == null)
       rightmostScanH = this.scanHeaders.last
 
-    if (leftmostScanH.getId == rightmostScanH.getId)
+    if (leftmostScanH.getId == rightmostScanH.getId) // FIXEME use == directly ?
       return Option.empty[Feature]
 
     val scanIds = pklTree.scansIDs
@@ -83,8 +77,8 @@ class PredictedTimeFtExtractor(
       pklTree.extractIsotopicPattern(
         this.scanHeaderById(id),
         putativeFt.theoreticalIP,
-        this.mzTolPPM,
-        maxNbPeaksInIP = Some(3),
+        xtractConfig.mzTolPPM,
+        xtractConfig.maxNbPeaksInIP,
         maxTheoreticalPeakelIndex = maxTheoreticalPeakelIndex).orNull
     }
     val filteredIps = ips.filter(ip => ip != null && ip.peaks.count(_ != null) > 0) // FIXME: should never happen but still have a bug
@@ -100,13 +94,15 @@ class PredictedTimeFtExtractor(
         //inside map  
         val (realMinIdx, realMaxIdx) = (ips.indexOf(filteredIps(minIdx)), ips.indexOf(filteredIps(maxIdx)))
         //--- find apexIdx TODO can be retrieved by the waveletpeakelfinder
-        val maxIP:IsotopicPattern = ips.slice(realMinIdx, realMaxIdx + 1).maxBy { ip =>
-          if (ip.peaks(maxTheoreticalPeakelIndex) != null)
+        val maxIP: IsotopicPattern = ips.slice(realMinIdx, realMaxIdx + 1).maxBy { ip =>
+          if (ip == null)
+            0.0
+          else if (maxTheoreticalPeakelIndex < ip.peaks.length && ip.peaks(maxTheoreticalPeakelIndex) != null)
             ip.peaks(maxTheoreticalPeakelIndex).getIntensity
           else 0.0
         }
-        
-        val apexIdx = ips.indexOf(maxIP) 
+
+        val apexIdx = ips.indexOf(maxIP)
 
         val selectedIPsIdx = new ArrayBuffer[Int]
         var consecutiveGaps: Int = 0
@@ -118,6 +114,7 @@ class PredictedTimeFtExtractor(
             consecutiveGaps += 1
           } else
             selectedIPsIdx.+=:(i)
+          i -= 1
         }
         //--- go threw the right second
         i = apexIdx + 1
@@ -128,25 +125,29 @@ class PredictedTimeFtExtractor(
             consecutiveGaps += 1
           } else
             selectedIPsIdx += i
+          i += 1
         }
 
         var ft: Feature = null
         if (selectedIPsIdx.isEmpty == false) {
-          val f = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, selectedIPsIdx.map(ips(_))
-            .filter(x => x != null && x.peaks.count(_ != null) > 0)
-            .toArray)
-          if (f.peakelsCount > 0 && f.peakels(0).peaks.length > 5)
-            ft = f
+          val peakels = Feature.buildPeakels(selectedIPsIdx.map(ips(_)).filter(_ != null))
+          
+          if (peakels.isEmpty == false && peakels(0) != null) {
+            val f = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
+            if (f.peakelsCount > 0 && f.peakels(0).peaks.length > 5)
+              ft = f
+          }
         }
         ft // return ft
-        
-    }.filter(_ != null)
+
+    }.filter(_ != null) // remove null features
+    
 
     //--- filter features
-    this._getBestMatchingFeatures(putativeFt, features, pklTree)
+    this._getBestMatchingFeature(putativeFt, features, pklTree)
   }
 
-  def _getBestMatchingFeatures(putativeFt: PutativeFeature, features: Array[Feature], pklTree: PeakListTree): Option[Feature] = {
+  def _getBestMatchingFeature(putativeFt: PutativeFeature, features: Array[Feature], pklTree: PeakListTree): Option[Feature] = {
 
     val elutionTime = putativeFt.elutionTime
     val mz = if (putativeFt.mozs != null) putativeFt.mozs.sum / putativeFt.mozs.length else putativeFt.mz
@@ -217,12 +218,13 @@ class PredictedTimeFtExtractor(
     val maxIntensityPeakel = tmpFt.peakels(peakelIndex)
 
     // ensure peakel duration  is at least 5 scans
-    if (this._isPeakelGoodForPeakDetection(maxIntensityPeakel) == false)
+    if (this._isPeakelGoodForPeakDetection(maxIntensityPeakel, this.xtractConfig.minConsecutiveScans) == false)
       return Array.empty[Feature]
 
     val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
     // launch peak detection
-    val peakelIndexes = this._findPeakelsIndexes(definedPeaks, method = 2, minSNR = 1.0f)
+    val peakelIndexes = this._findPeakelsIndexes(definedPeaks, xtractConfig.predictedTimeExtraction.detectionAlgorithm,
+      xtractConfig.predictedTimeExtraction.minSNR)
 
     val detectedFts = new ArrayBuffer[Feature]
 
@@ -237,9 +239,7 @@ class PredictedTimeFtExtractor(
     detectedFts.toArray
   }
 
-  /**
-   * Same as above but return an
-   */
+  /** Same as above but return an */
   def _getPeakelsIndexesFromExtractedIPs(putativeFt: PutativeFeature,
                                          ips: Array[IsotopicPattern],
                                          maxPeakelIndex: Int): Array[(Int, Int)] = {
@@ -258,12 +258,13 @@ class PredictedTimeFtExtractor(
     val maxIntensityPeakel = tmpFt.peakels(peakelIndex)
 
     // ensure peakel duration  is at least 5 scans
-    if (this._isPeakelGoodForPeakDetection(maxIntensityPeakel) == false)
+    if (this._isPeakelGoodForPeakDetection(maxIntensityPeakel, xtractConfig.minConsecutiveScans) == false)
       return Array.empty[(Int, Int)]
 
     val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
     // launch peak detection
-    val peakelIndexes = this._findPeakelsIndexes(definedPeaks, method = 2, minSNR = 1.0f)
+    val peakelIndexes = this._findPeakelsIndexes(definedPeaks, xtractConfig.predictedTimeExtraction.detectionAlgorithm, 
+        xtractConfig.predictedTimeExtraction.minSNR)
     peakelIndexes
   }
 

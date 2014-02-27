@@ -23,10 +23,7 @@ abstract class AbstractFeatureExtractor extends Logging  {
   
 
   private val TIME_INDEX_WIDTH = 15
-  
-  /**
-   * 
-   */
+
   private val _scanIdsByTimeIndex: HashMap[Int, ArrayBuffer[Int]] = {
 
     val _tmpScanIdsMap = new HashMap[Int, ArrayBuffer[Int]]()
@@ -39,9 +36,6 @@ abstract class AbstractFeatureExtractor extends Logging  {
     _tmpScanIdsMap
   }
   
-  /**
-   * 
-   */
   def getScanHeaderForTime(time: Float, msLevel: Int) = {
 
     val timeIndex = (time / TIME_INDEX_WIDTH).toInt
@@ -65,10 +59,6 @@ abstract class AbstractFeatureExtractor extends Logging  {
     nearestScanHeader
   }
 
-  protected def normalizeIPs(isotopicPatterns: Seq[IsotopicPatternLike]) {
-    //isotopicPatterns.foreach( _.normalizeIntensities(nfByScanId) )
-    ()
-  }
 
 }
 

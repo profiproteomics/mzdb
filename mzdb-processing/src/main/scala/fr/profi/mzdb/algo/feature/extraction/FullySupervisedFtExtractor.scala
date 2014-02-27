@@ -32,7 +32,7 @@ class FullySupervisedFtExtractor(val scanHeaderById: Map[Int,ScanHeader],
       for( curScanH <- this.scanHeaderById.get(scanId) ) {
         //println(curScanH.msLevel);
         
-        val ipOpt = pklTree.extractIsotopicPattern( curScanH, theoIP, mzTolPPM )
+        val ipOpt = pklTree.extractIsotopicPattern( curScanH, theoIP, xtractConfig.mzTolPPM )
         
         // Check if an isotopic pattern has been found
         if( ipOpt != None  ) {

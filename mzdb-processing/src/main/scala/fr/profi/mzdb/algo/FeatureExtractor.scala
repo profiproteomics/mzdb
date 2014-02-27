@@ -15,13 +15,13 @@ class FeatureExtractor(
   val mzDbReader: MzDbReader,
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
-  val xtractConfig:FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 10),
+  val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()) 
   extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
 
   protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
   protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
-  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor( scanHeaderById, nfByScanId,  minConsecutiveScans= 4, predictedTimeTol = 120,xtractConfig, overlapXtractConfig );
+  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
   protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
     
   def extractFeatures( putativeFeatures: Seq[PutativeFeature], 
@@ -35,7 +35,7 @@ class FeatureExtractor(
   }
   
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
-      
+    val mzTolPPM = this.xtractConfig.mzTolPPM
     var ft = Option.empty[Feature]
     if( putativeFt.isPredicted == false ) { // we know that signal is there
       
