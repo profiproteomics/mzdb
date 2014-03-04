@@ -30,7 +30,7 @@
       <artifactId>scala-library</artifactId>
       <!-- Version inherited from ProFI-Pom -->
     </dependency>
-    
+
     <!-- Logging -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -64,7 +64,7 @@
       <artifactId>sgfilter</artifactId>
       <version>v1_2r25</version>
     </dependency>
-    
+
     <!-- wavelet -->
     <dependency>
 		<groupId>edu.emory.mathcs</groupId>
@@ -78,31 +78,25 @@
       <artifactId>mzdb-access</artifactId>
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
-    
+
     <!-- Command Line Interface -->
     <dependency>
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
       <version>1.30</version>
     </dependency>
-    
+
     <!-- ProFI commons Scala -->
     <dependency>
       <groupId>fr.proline.util</groupId>
       <artifactId>ProFI-Commons-Scala</artifactId>
       <version>0.0.7-SNAPSHOT</version>
     </dependency>
-    
+
     <!-- Test -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <!-- Version and scope inherited from ProFI-Pom -->
-    </dependency>
-
-    <dependency>
-      <groupId>org.scala-tools.testing</groupId>
-      <artifactId>specs_${scala.version}</artifactId>
       <!-- Version and scope inherited from ProFI-Pom -->
     </dependency>
 
@@ -115,7 +109,7 @@
   </dependencies>
 
   <build>
-  
+
     <pluginManagement>
       <plugins>
         <!-- For Eclipse build -->
@@ -168,7 +162,7 @@
           </launchers>
         </configuration>
       </plugin>
-      
+
        <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <!-- Version inherited from ProFI-Pom -->
