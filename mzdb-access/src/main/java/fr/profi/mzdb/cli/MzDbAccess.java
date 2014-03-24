@@ -2,11 +2,18 @@ package fr.profi.mzdb.cli;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.commons.cli.*;
 import com.almworks.sqlite4java.SQLiteException;
+
+import fr.profi.mzdb.io.writer.MgfWriter;
+import fr.profi.mzdb.io.writer.MgfWriter.PrecursorMassStrategy;
 import fr.profi.mzdb.model.*;
 import fr.profi.mzdb.MzDbReader;
+
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
 
 /***
  * This class allows to access to a mzDB file and to make some range queries on it. A list of putative
@@ -30,144 +37,149 @@ public class MzDbAccess {
 	protected static void println(String string) {
 		System.out.println(string);
 	}
-
-	/**
-	 * Print a string in the standard output. Works only if mode<-PRINT_MODE.
-	 * 
-	 * @param string
-	 *            the string to print
-	 * @param mode
-	 *            can only assume values PRINT_ALWAYS or PRINT_DEBUG.
-	 */
-	protected static void print(String string) {
-		System.out.print(string);
+	
+	 /**
+   * Print a string in the standard output. Works only if mode<-PRINT_MODE.
+   * 
+   * @param string
+   *            the string to print
+   * @param mode
+   *            can only assume values PRINT_ALWAYS or PRINT_DEBUG.
+   */
+  protected static void print(String string) {
+    System.out.print(string);
+  }
+  
+	public static class ExtractPeaksCommand {
+	  @Parameter
+	  private List<String> parameters = new ArrayList<String>();
+	  
+	  @Parameter(names="-dbFile", description="mzDB file to perform extraction", required=true)
+	  private String dbFile = "";
+	  
+	  @Parameter(names="-minmz", description="minimum m/z value", required=true)
+	  private Double minmz = 0.0;
+	  
+	  @Parameter(names="-maxmz", description="maximum m/z value", required=true)
+	  private Double maxmz = 0.0;
+	  
+	  @Parameter(names="-mintime", description="minimum elution time")
+	  private Double mintime = 0.0;
+	  
+	  @Parameter(names="-maxtime", description="maximum elution time")
+	  private Double maxtime = 0.0;
 	}
-
-	protected static Options getOptions() {
-
-		// Define command line options
-		Options tmpOptions = new Options();
-		tmpOptions.addOption("file", true, "the file path to the mzDB");
-		tmpOptions.addOption("min_mz", true, "minimum m/z value");
-		tmpOptions.addOption("max_mz", true, "maximum m/z value");
-		tmpOptions.addOption("min_time", true, "minimum elution time");
-		tmpOptions.addOption("max_time", true, "maximum elution time");
-
-		Options options = new Options();
-
-		// iterate over the options to set them required
-		Object[] optList = tmpOptions.getOptions().toArray();
-		for (int i = 0; i < optList.length; i++) {
-			// get the next Option
-			Option option = (Option) optList[i];
-			option.setRequired(true);
-			options.addOption(option);
-		}
-
-		// Add non required options
-		// options.addOption("charge", true, "feature charge");
-		// options.addOption("peakels_count", true,
-		// "number of feature eluting peaks");
-
-		return options;
+	
+	
+	public static class CreateMgfCommand {
+	  
+	  @Parameter
+    private List<String> parameters = new ArrayList<String>();
+    
+    @Parameter(names="-dbFile", description="mzDB file to perform extraction", required=true)
+    private String dbFile = "";
+    
+    @Parameter(names="-output", description="mgf output file path", required=true)
+    private String output = "";
+    
+    @Parameter(names="-precursor-strategy", description="must be on of 'default, nearest, refined'", required=false)
+    private PrecursorMassStrategy precStrategy = PrecursorMassStrategy.DEFAULT;
 	}
+	
+	
+  private static Peak[] extractPeaks(ExtractPeaksCommand epc) {
+      String dbPath = epc.dbFile;
+	    double min_mz = epc.minmz;
+	    double max_mz = epc.maxmz;
+	    double min_time = epc.mintime;
+	    double max_time = epc.maxtime;
 
-	public static int _binSearchIndexToNearestIndex(int binSearchIndex, int length) {
-		if (binSearchIndex >= 0)
-			return binSearchIndex;
-		else {
-			int idx = -binSearchIndex - 1;
-			if (idx == 0)
-				return -1;
-			else
-				return idx;
-		}
-	}
+	    System.out.println("Running mzDBaccess with following parameters :");
+	    System.out.println("- min_mz=" + min_mz);
+	    System.out.println("- max_mz=" + max_mz);
+	    System.out.println("- min_time=" + min_time);
+	    System.out.println("- max_time=" + max_time);
 
-	/**
-	 * @param args
-	 * @throws SQLiteException
-	 */
-	public static void main(String[] args) throws SQLiteException {
+	    // String dbPath = "F:/LCMS/huvec/mzdb/OENYD100205_05.raw.mzDB.sqlite";
+	    println("accessing to mzDB located at " + dbPath);
+	    
+	    // Instantiate the mzDB
+	    MzDbReader mzDbInstance = null;
+	    try {
+	      mzDbInstance = new MzDbReader(new File(dbPath), true);
+	    } catch (SQLiteException e) {
+	      e.printStackTrace();
+	    } catch (ClassNotFoundException e) {
+	      e.printStackTrace();
+	    } catch (FileNotFoundException e) {
+	      e.printStackTrace();
+	    } 
 
-		// Retrieve command line options
-		Options options = getOptions();
-
-		// Parse command line options
-		CommandLineParser parser = new GnuParser();
-		CommandLine cmdLine = null;
-		try {
-			cmdLine = parser.parse(options, args);
-		} catch (ParseException pe) {
-
-			// Display error message
-			System.err.println("Parsing command line arguments failed: " + pe.getMessage());
-
-			// Display help message
-			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp("options to provide are", options);
-
-			return;
-		}
-
-		double min_mz = Double.parseDouble(cmdLine.getOptionValue("min_mz"));
-		double max_mz = Double.parseDouble(cmdLine.getOptionValue("max_mz"));
-		int min_time = Integer.parseInt(cmdLine.getOptionValue("min_time"));
-		int max_time = Integer.parseInt(cmdLine.getOptionValue("max_time"));
-
-		System.out.println("Running mzDBaccess with following parameters :");
-		System.out.println("- min_mz=" + min_mz);
-		System.out.println("- max_mz=" + max_mz);
-		System.out.println("- min_time=" + min_time);
-		System.out.println("- max_time=" + max_time);
-
-		// String dbPath = "F:/LCMS/huvec/mzdb/OENYD100205_05.raw.mzDB.sqlite";
-		String dbPath = cmdLine.getOptionValue("file");
-		println("accessing to mzDB located at " + dbPath);
-
-		/*
-		 * double[] values = {10.0,40.0,50.0}; int minBinSearchIndex = Arrays.binarySearch(values, 9.0); int
-		 * minIdx = _binSearchIndexToNearestIndex(minBinSearchIndex,values.length); System.out.println( minIdx
-		 * ); Object t = null; System.out.println( t.hashCode() );
-		 */
-
-		// Instantiate the mzDB
-		MzDbReader mzDbInstance = null;
-		try {
-			mzDbInstance = new MzDbReader(new File(dbPath), true);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		// Retrieve peaks
-		try {
-
-			Peak[] peaks = mzDbInstance.getPeaks(min_mz, max_mz, min_time, max_time, 1);
-
-			if (peaks != null) {
-
-				for (Peak peak : peaks) {
-					println(peak.getMz() + "\t" + peak.getIntensity() + "\t" + peak.getLeftHwhm() + "\t"
-							+ peak.getRightHwhm());
-
-				}
-
-				// println(peaks.toString());
-				// println( "peaks count: " + peaks.size() );
-			}
-
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		mzDbInstance.close();
-
-	}
+	    // Retrieve peaks
+	    try {
+	      Peak[] peaks = mzDbInstance.getPeaks(min_mz, max_mz, min_time, max_time, 1);
+	      if (peaks != null) {
+	        for (Peak peak : peaks) {
+	          println(peak.getMz() + "\t" + peak.getIntensity() + "\t" + peak.getLeftHwhm() + "\t"
+	              + peak.getRightHwhm());
+	        }
+	      }
+	      return peaks;
+	    } catch (SQLiteException e) {
+	      e.printStackTrace();
+	    } catch (Exception e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+	    }
+	    mzDbInstance.close();
+	    return null;
+	 }
+    
+    private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, FileNotFoundException {
+      String dbFile = cmd.dbFile;
+      String output = cmd.output;
+      PrecursorMassStrategy pm = cmd.precStrategy;
+      MgfWriter writer = new MgfWriter(dbFile);
+      writer.write(output, pm);
+    }
+  
+  
+   public static void printAvailableCommands(JCommander jc) {
+     println("Available commands:");
+     for (JCommander e: jc.getCommands().values() ) {
+       e.usage();
+     }
+   }
+	 
+	 /**
+	   * @param args
+	   * @throws SQLiteException
+	   */
+	  public static void main(String[] args) throws SQLiteException {
+	    
+	    JCommander jc = new JCommander();
+	    ExtractPeaksCommand epc = new MzDbAccess.ExtractPeaksCommand();
+	    CreateMgfCommand cmgf = new MzDbAccess.CreateMgfCommand();
+	    jc.addCommand("extract_peaks", epc);
+	    jc.addCommand("create_mgf", cmgf);
+	    
+	    try {
+	      jc.parse(args);
+	      
+	      String parsedCommand = jc.getParsedCommand();
+	      if (parsedCommand == null || parsedCommand == "") {
+	        println("No command provided. Exiting");
+	        printAvailableCommands(jc);
+	        System.exit(1);
+	      }
+	      if (parsedCommand.equals("extract_peaks")) {
+	        extractPeaks(epc);
+	      } else if (parsedCommand.equals("create_mgf")) {
+	        createMgf(cmgf);
+	      }
+	    } catch (Exception e) {
+	      e.printStackTrace();  
+	    }
+	  }
 
 }
