@@ -31,28 +31,28 @@ public class ParamTreeParser {
 
 		ParamTree paramTree = null;
 		try {
-		  //JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
-      //Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+			// JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
+			// Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 			paramTree = (ParamTree) MzDbReader.unmarshaller.unmarshal(new StringReader(paramTreeAsStr));
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
-		//ParamTreeParser.class.notify();
+		// ParamTreeParser.class.notify();
 		return paramTree;
 	}
-	
+
 	public ParamTree parseParamTree_(String paramTreeAsStr) {
 
-    ParamTree paramTree = null;
-    try {
-      JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
-      Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-      paramTree = (ParamTree) unmarshaller.unmarshal(new StringReader(paramTreeAsStr));
-    } catch (JAXBException e) {
-      e.printStackTrace();
-    }  
-    return paramTree;
-  }
+		ParamTree paramTree = null;
+		try {
+			JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
+			Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+			paramTree = (ParamTree) unmarshaller.unmarshal(new StringReader(paramTreeAsStr));
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+		return paramTree;
+	}
 
 	/**
 	 * Parses the instrument config param tree.
@@ -65,11 +65,12 @@ public class ParamTreeParser {
 
 		ComponentList paramTree = null;
 		try {
-			paramTree = (ComponentList)MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(paramTreeAsStr));
+			paramTree = (ComponentList) MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(
+					paramTreeAsStr));
 		} catch (JAXBException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		ParamTreeParser.class.notify();
 		return paramTree;
 	}
