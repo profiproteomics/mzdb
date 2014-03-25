@@ -69,7 +69,7 @@ public class MzDbReader {
 	/** The _mz db header reader. */
 	private MzDbHeaderReader _mzDbHeaderReader = null;
 	
-	private InstrumentConfigReader _instrumentConfigReader = null;
+	//private InstrumentConfigReader _instrumentConfigReader = null;
 
 	/** The _data encoding reader. */
 	private DataEncodingReader _dataEncodingReader = null;
@@ -124,31 +124,31 @@ public class MzDbReader {
 		if (!dbLocation.exists()) {
 			throw (new FileNotFoundException("can't find the mzDB file at the given path"));
 		}
-		
+
 		this.dbLocation = dbLocation.getAbsolutePath();
-		
+
 		connection = new SQLiteConnection(dbLocation);
-		connection.openReadonly();//(false);
+		connection.openReadonly();// (false);
 
 		// SQLite optimization
 		connection.exec("PRAGMA synchronous=OFF;");
 		connection.exec("PRAGMA journal_mode=OFF;");
 		connection.exec("PRAGMA temp_store=2;");
 		connection.exec("PRAGMA cache_size=8000;");
-		
-		/**set the marshalling*/
-    try {
-      JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
-      MzDbReader.unmarshaller = jaxbContext.createUnmarshaller();
-      JAXBContext jaxbContext_ = JAXBContext.newInstance(ComponentList.class);
-      MzDbReader.instrumentConfigUnmarshaller = jaxbContext_.createUnmarshaller();
 
-    } catch (JAXBException e) {
-      e.printStackTrace();
-    }
-		
+		/** set the marshalling */
+		try {
+			JAXBContext paramTreeJaxbContext = JAXBContext.newInstance(ParamTree.class);
+			MzDbReader.unmarshaller = paramTreeJaxbContext.createUnmarshaller();
+			JAXBContext instConfigJxbContext = JAXBContext.newInstance(ComponentList.class);
+			MzDbReader.instrumentConfigUnmarshaller = instConfigJxbContext.createUnmarshaller();
+
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+
 		this._mzDbHeaderReader = new MzDbHeaderReader(connection);
-		this._instrumentConfigReader = new InstrumentConfigReader(connection);
+		//this._instrumentConfigReader = new InstrumentConfigReader(connection);
 		this._dataEncodingReader = new DataEncodingReader(this);
 		this._scanHeaderReader = new ScanHeaderReader(this);
 		this._runSliceHeaderReader = new RunSliceHeaderReader(this);
