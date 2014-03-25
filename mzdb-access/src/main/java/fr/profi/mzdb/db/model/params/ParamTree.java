@@ -10,6 +10,7 @@ import fr.profi.mzdb.db.model.params.param.UserText;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlElement;
+
 // TODO: Auto-generated Javadoc
 /**
  * The Class ParamTree.
@@ -20,21 +21,21 @@ import javax.xml.bind.annotation.XmlElement;
 public class ParamTree implements IParamContainer {
 
 	/** The cv params. */
-  
-	@XmlElement(name="cvParam", type = CVParam.class, required=false)
+
+	@XmlElement(name = "cvParam", type = CVParam.class, required = false)
 	@XmlElementWrapper
 	protected List<CVParam> cvParams;
 
 	/** The user params. */
-	@XmlElement(name="userParam", type = UserParam.class, required=false)
+	@XmlElement(name = "userParam", type = UserParam.class, required = false)
 	@XmlElementWrapper
 	protected List<UserParam> userParams;
-	
-	/**The useText params: newly introduced for handling Thermo metadata in
-	 * text field
+
+	/**
+	 * The useText params: newly introduced for handling Thermo metadata in text field
 	 */
-  @XmlElement(name="userText", type = UserText.class, required= false)
-  @XmlElementWrapper
+	@XmlElement(name = "userText", type = UserText.class, required = false)
+	@XmlElementWrapper
 	protected List<UserText> userTexts;
 
 	/**
@@ -43,8 +44,6 @@ public class ParamTree implements IParamContainer {
 	protected ParamTree() {
 		super();
 	}
-
-	
 
 	/*
 	 * (non-Javadoc)
@@ -81,7 +80,7 @@ public class ParamTree implements IParamContainer {
 	public UserParam getUserParam(String name) {
 		UserParam p = null;
 		for (UserParam up : this.getUserParams()) {
-		  //System.out.println(up.getName());
+			// System.out.println(up.getName());
 			if (up.getName().equals(name)) {
 				p = up;
 				break;
@@ -89,10 +88,10 @@ public class ParamTree implements IParamContainer {
 		}
 		return p;
 	}
-	
+
 	public List<UserText> getUserTexts() {
-    if (this.userTexts == null)
-      this.userTexts = new ArrayList<UserText>();
-    return this.userTexts;
-  }
+		if (this.userTexts == null)
+			this.userTexts = new ArrayList<UserText>();
+		return this.userTexts;
+	}
 }
