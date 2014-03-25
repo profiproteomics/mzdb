@@ -11,9 +11,11 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 
 import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.io.writer.MgfWriter;
 import fr.profi.mzdb.io.writer.MgfWriter.PrecursorMzComputation;
 import fr.profi.mzdb.model.Peak;
+import fr.profi.mzdb.model.ScanHeader;
 
 /***
  * This class allows to access to a mzDB file and to make some range queries on it. A list of putative
@@ -83,6 +85,18 @@ public class MzDbAccess {
 
 		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'default, nearest, refined'", required = false)
 		private PrecursorMzComputation precMzComputation = PrecursorMzComputation.DEFAULT;
+		
+		@Parameter(names = { "-cutoff", "--intensity_cutoff" }, description = "optional intensity cutoff to use", required = false)
+		private float intensityCutoff = 0f;
+	}
+	
+	public static class DebugCommand {
+
+		@Parameter
+		private List<String> parameters = new ArrayList<String>();
+
+		@Parameter(names = { "-mzdb", "--mzdb_file_path" }, description = "mzDB file to perform extraction", required = true)
+		private String mzdbFile = "";
 	}
 	
 	/**
@@ -95,10 +109,12 @@ public class MzDbAccess {
 		Locale.setDefault(englishLocale);
 
 		JCommander jc = new JCommander();
-		ExtractPeaksCommand epc = new MzDbAccess.ExtractPeaksCommand();
-		CreateMgfCommand cmgf = new MzDbAccess.CreateMgfCommand();
-		jc.addCommand("extract_peaks", epc);
-		jc.addCommand("create_mgf", cmgf);
+		ExtractPeaksCommand xicCmd = new MzDbAccess.ExtractPeaksCommand();
+		CreateMgfCommand mgfCmd = new MzDbAccess.CreateMgfCommand();
+		DebugCommand dbgCmd = new MzDbAccess.DebugCommand();
+		jc.addCommand("extract_peaks", xicCmd);
+		jc.addCommand("create_mgf", mgfCmd);
+		jc.addCommand("debug", dbgCmd);
 
 		try {
 			jc.parse(args);
@@ -110,9 +126,11 @@ public class MzDbAccess {
 				System.exit(1);
 			}
 			if (parsedCommand.equals("extract_peaks")) {
-				extractPeaks(epc);
+				extractPeaks(xicCmd);
 			} else if (parsedCommand.equals("create_mgf")) {
-				createMgf(cmgf);
+				createMgf(mgfCmd);
+			} else if (parsedCommand.equals("debug")) {
+				debug(dbgCmd);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -175,11 +193,48 @@ public class MzDbAccess {
 	}
 
 	private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, FileNotFoundException {
-		String dbFile = cmd.mzdbFile;
-		String output = cmd.outputFile;
-		PrecursorMzComputation pm = cmd.precMzComputation;
-		MgfWriter writer = new MgfWriter(dbFile);
-		writer.write(output, pm);
+
+		MgfWriter writer = new MgfWriter(cmd.mzdbFile);
+		writer.write(cmd.outputFile, cmd.precMzComputation,cmd.intensityCutoff);
+	}
+	
+	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException {
+		
+		MzDbReader mzDbReader = null;
+		try {
+			mzDbReader = new MzDbReader(cmd.mzdbFile, true);
+			ScanHeader[] headers = mzDbReader.getScanHeaders();
+			
+			for( ScanHeader header: headers ) {
+				if( header.getMsLevel() == 2 ) {
+					header.loadScanList(mzDbReader);
+					header.getParamTree(mzDbReader);
+					
+					UserParam precMzParam = header
+						.getScanList()
+						.getScans()
+						.get(0)
+						.getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
+					
+					//<userParam name="[Thermo Trailer Extra]Monoisotopic M/Z:" value="815.21484375" type="xsd:float"/>
+					System.out.println(precMzParam.getValue());
+					
+					//.getUserParams().get(0).getValue()
+					break;
+				}
+			}
+			
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			if( mzDbReader != null )
+				mzDbReader.close();
+		}
+
 	}
 
 }

@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * 
  * @author David Bouyssie
  */
-public class Component extends ParamTree {
+public class Component extends AbstractParamTree {
 
 	/** The order. */
   @XmlAttribute

@@ -2,15 +2,14 @@ package fr.profi.mzdb.io.reader;
 
 import java.io.StringReader;
 
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 
 import org.xml.sax.InputSource;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.db.model.params.ScanList;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -33,15 +32,27 @@ public class ParamTreeParser {
 		try {
 			// JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
 			// Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-			paramTree = (ParamTree) MzDbReader.unmarshaller.unmarshal(new StringReader(paramTreeAsStr));
+			paramTree = (ParamTree) MzDbReader.paramTreeUnmarshaller.unmarshal(new StringReader(paramTreeAsStr));
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
 		// ParamTreeParser.class.notify();
 		return paramTree;
 	}
+	
+	synchronized public static ScanList parseScanList(String scanListAsStr) {
 
-	public ParamTree parseParamTree_(String paramTreeAsStr) {
+		ScanList scanList = null;
+		try {
+			scanList = (ScanList) MzDbReader.scanListUnmarshaller.unmarshal(new StringReader(scanListAsStr));
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+
+		return scanList;
+	}
+
+	/*public ParamTree parseParamTree_(String paramTreeAsStr) {
 
 		ParamTree paramTree = null;
 		try {
@@ -52,7 +63,7 @@ public class ParamTreeParser {
 			e.printStackTrace();
 		}
 		return paramTree;
-	}
+	}*/
 
 	/**
 	 * Parses the instrument config param tree.

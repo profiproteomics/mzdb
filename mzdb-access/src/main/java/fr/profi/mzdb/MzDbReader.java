@@ -28,6 +28,7 @@ import fr.profi.mzdb.db.model.MzDBParamName_0_9;
 import fr.profi.mzdb.db.model.MzDbHeader;
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.db.model.params.ScanList;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
 import fr.profi.mzdb.io.reader.*;
 import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
@@ -89,8 +90,9 @@ public class MzDbReader {
 
 	/** The xml mapper. */
 	
-	public static Unmarshaller unmarshaller;
+	public static Unmarshaller paramTreeUnmarshaller;
 	public static Unmarshaller instrumentConfigUnmarshaller;
+	public static Unmarshaller scanListUnmarshaller;
 
 	/**
 	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
@@ -138,11 +140,9 @@ public class MzDbReader {
 
 		/** set the marshalling */
 		try {
-			JAXBContext paramTreeJaxbContext = JAXBContext.newInstance(ParamTree.class);
-			MzDbReader.unmarshaller = paramTreeJaxbContext.createUnmarshaller();
-			JAXBContext instConfigJxbContext = JAXBContext.newInstance(ComponentList.class);
-			MzDbReader.instrumentConfigUnmarshaller = instConfigJxbContext.createUnmarshaller();
-
+			MzDbReader.paramTreeUnmarshaller = JAXBContext.newInstance(ParamTree.class).createUnmarshaller();
+			MzDbReader.instrumentConfigUnmarshaller = JAXBContext.newInstance(ComponentList.class).createUnmarshaller();
+			MzDbReader.scanListUnmarshaller = JAXBContext.newInstance(ScanList.class).createUnmarshaller();
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}

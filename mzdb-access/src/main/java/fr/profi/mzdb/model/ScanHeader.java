@@ -10,6 +10,7 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.AbstractTableModel;
+import fr.profi.mzdb.db.model.params.ScanList;
 import fr.profi.mzdb.io.reader.ParamTreeParser;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 
@@ -59,6 +60,9 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 
 	// protected final float tic;
 	protected final int bbFirstSpectrumId;
+	
+	/** The scan list. */
+	protected ScanList scanList = null;
 	
 	/**
 	 * Instantiates a new scan header.
@@ -246,6 +250,10 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	public int getBBFirstSpectrumId() {
 	  return this.bbFirstSpectrumId;
 	}
+	
+	public ScanList getScanList() {
+		return this.scanList;
+	}
 
 	/** The rt comp. */
 	public static Comparator<ScanHeader> rtComp = new Comparator<ScanHeader>() {
@@ -264,24 +272,35 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 		return tic;
 	}
 	
-	public static void loadParamTrees( ScanHeader[] scanHeaders, MzDbReader mzDbReader ) {
-	  for (ScanHeader headers: scanHeaders) {
-	    if (! headers.hasParamTree())
-        try {
-          headers.loadParamTree(mzDbReader);
-        } catch (SQLiteException e) {
-          e.printStackTrace();
-        }
-	  }
+	public static void loadParamTrees(ScanHeader[] scanHeaders, MzDbReader mzDbReader) {
+		// TODO: load all param_trees in a single SQL query
+		for (ScanHeader header : scanHeaders) {
+			if (!header.hasParamTree())
+				try {
+					header.loadParamTree(mzDbReader);
+				} catch (SQLiteException e) {
+					e.printStackTrace();
+				}
+		}
 	}
-
-  @Override
-  public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException {
-    if ( ! this.hasParamTree()) {
-      String sqlString = "SELECT param_tree FROM spectrum";
-      String paramTreeAsStr =  new SQLiteQuery(mzDbReader.getConnection(), sqlString).extractSingleString();
-      this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
-    }
-  }
+	
+	@Override
+	public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException {
+		if (!this.hasParamTree()) {
+			String sqlString = "SELECT param_tree FROM spectrum WHERE id = ?";
+			String paramTreeAsStr = new SQLiteQuery(mzDbReader.getConnection(), sqlString)
+				.bind(1, this.getId()).extractSingleString();
+			this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
+		}
+	}
+	
+	public void loadScanList(MzDbReader mzDbReader) throws SQLiteException {
+		if (!this.hasParamTree()) {
+			String sqlString = "SELECT scan_list FROM spectrum WHERE id = ?";
+			String scanListAsStr = new SQLiteQuery(mzDbReader.getConnection(), sqlString)
+				.bind(1, this.getId()).extractSingleString();
+			this.scanList = ParamTreeParser.parseScanList(scanListAsStr);
+		}
+	}
 
 }

@@ -69,12 +69,13 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 */
 	public ParamTree getParamTree(MzDbReader mzDbReader) {
 		if (!this.hasParamTree()) {
+			try {
+				this.loadParamTree(mzDbReader);
+			} catch (SQLiteException e) {
+				System.out.println(e.getMessage());
+			}
 		}
-		try {
-			this.loadParamTree(mzDbReader);
-		} catch (SQLiteException e) {
-			System.out.println(e.getMessage());
-		}
+
 		return paramTree;
 	}
 
