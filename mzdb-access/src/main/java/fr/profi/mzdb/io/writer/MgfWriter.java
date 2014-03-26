@@ -34,7 +34,7 @@ public class MgfWriter {
 
 	/** */
 	private enum MgfField {
-		BEGION_IONS("BEGION IONS"),
+		BEGIN_IONS("BEGIN IONS"),
 		END_IONS("END IONS"),
 		TITLE("TITLE"),
 		PEPMASS("PEPMASS"),
@@ -156,13 +156,13 @@ public class MgfWriter {
 			DataEncoding dataEnc = dataEncodingByScanId.get(s.getHeader().getId());
 			String spectrumAsStr = this.stringifySpectrum(s, dataEnc, precComp, intensityCutoff);
 			
-			// make a space between to spectrum
+			// make a space between two spectra
 			mgfWriter.println(spectrumAsStr);
 			mgfWriter.println();
 			spectraCount++;
 		}
 		
-		this.logger.info( String.format("MGF file successgully created: %d spectra exported.", spectraCount) );
+		this.logger.info( "MGF file successgully created: %d spectra exported.", spectraCount );
 		
 		mgfWriter.flush();
 		mgfWriter.close();
@@ -263,11 +263,11 @@ public class MgfWriter {
 		 * @param charge
 		 * @return a new MgfHeader
 		 */
-		public MgfHeader(String title, double pepMass, int charge) {
+		public MgfHeader(String title, double precMz, int charge) {
 			this(
 				new MgfHeaderEntry[] { 
 					new MgfHeaderEntry(MgfField.TITLE, title),
-					new MgfHeaderEntry(MgfField.PEPMASS, pepMass),
+					new MgfHeaderEntry(MgfField.PEPMASS, String.format("%.4f", precMz) ),
 					// TODO: use the trailer corresponding to the acquisition polarity (see mzDB meta-data)
 					new MgfHeaderEntry(MgfField.CHARGE, charge, "+")
 				}
@@ -282,12 +282,12 @@ public class MgfWriter {
 		 * @param rt
 		 * @return a new MgfHeader
 		 */
-		public MgfHeader(String title, double pepMass, int charge, float rt) {
+		public MgfHeader(String title, double precMz, int charge, float rt) {
 			
 			this(
 				new MgfHeaderEntry[] { 
 					new MgfHeaderEntry(MgfField.TITLE, title),
-					new MgfHeaderEntry(MgfField.PEPMASS, pepMass),
+					new MgfHeaderEntry(MgfField.PEPMASS, String.format("%.4f", precMz) ),
 					// TODO: use the trailer corresponding to the acquisition polarity (see mzDB meta-data)
 					new MgfHeaderEntry(MgfField.CHARGE, charge, "+"),
 					new MgfHeaderEntry(MgfField.RTINSECONDS, String.format("%.2f", rt) )
@@ -297,7 +297,7 @@ public class MgfWriter {
 		
 		public StringBuilder appendToStringBuilder(StringBuilder sb) {
 
-			sb.append(MgfField.BEGION_IONS).append(LINE_SPERATOR);
+			sb.append(MgfField.BEGIN_IONS).append(LINE_SPERATOR);
 
 			for (MgfHeaderEntry entry : entries) {
 				entry.appendToStringBuilder(sb).append(LINE_SPERATOR);
