@@ -232,15 +232,19 @@ public class MzDbReader {
 	  
 	}
 	
+	/**
+	 * 
+	 * @return
+	 * @throws SQLiteException
+	 */
 	public boolean isNoLossMode() throws SQLiteException {
 
 		if (this.isNoLossMode == null) {
 			MzDbHeader p = this._mzDbHeaderReader.getMzDbHeader();
 			
-			//ugly workaround for the moment
 			if ( this._paramNameGetter == null) {
 			  String softVersion = this.getSoftwareVersion();
-	      this._paramNameGetter = (softVersion.contains("0.9") ) ? new MzDBParamName_0_9() : new MzDBParamName_0_8(); 
+	      this._paramNameGetter = (softVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8(); 
 			}
 			
 			if (p.getUserParam(this._paramNameGetter.getLossStateParamName()).getValue().equals("false"))
@@ -252,7 +256,29 @@ public class MzDbReader {
 		return this.isNoLossMode;
 	}
 	
+	/**
+	 * @param bbSizes
+	 * @param paramNameGetter
+	 * @param header
+	 */
+	static void _setBBSizes(BBSizes bbSizes, IMzDBParamNameGetter paramNameGetter, MzDbHeader header) {
+	  bbSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(
+	      header.getUserParam(paramNameGetter.getMs1BBMzWidthParamName()).getValue());
+	  bbSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(
+	      header.getUserParam(paramNameGetter.getMsnBBMzWidthParamName()).getValue());
+	  bbSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(
+	      header.getUserParam(paramNameGetter.getMs1BBTimeWidthParamName()).getValue());
+	  bbSizes.BB_RT_WIDTH_MSn = Double.parseDouble(
+	      header.getUserParam(paramNameGetter.getMs1BBTimeWidthParamName()).getValue());
+	}
+	
+	/**
+	 * 
+	 * @return
+	 * @throws SQLiteException
+	 */
 	public BBSizes getBBSizes() throws SQLiteException {
+
 		if (_boundingBoxSizes == null) {
 			_boundingBoxSizes = new BBSizes();
 			 MzDbHeader header = null;
@@ -263,11 +289,21 @@ public class MzDbReader {
 			}
 			
 			String softVersion = this.getSoftwareVersion();
-			this._paramNameGetter = (softVersion.contains("0.9") ) ? new MzDBParamName_0_9() : new MzDBParamName_0_8(); 
-			 _boundingBoxSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMs1BBMzWidthParamName()).getValue());
-			_boundingBoxSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMsnBBMzWidthParamName()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMs1BBTimeWidthParamName()).getValue());
-			_boundingBoxSizes.BB_RT_WIDTH_MSn = Double.parseDouble(header.getUserParam(this._paramNameGetter.getMs1BBTimeWidthParamName()).getValue());
+			this._paramNameGetter = (softVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
+      MzDbReader._setBBSizes(_boundingBoxSizes, this._paramNameGetter, header);
+      
+      // More robust but moire verbose and ugly
+			/*try {
+			  MzDbReader._setBBSizes(_boundingBoxSizes, this._paramNameGetter, header);
+			} catch(NullPointerException e) {
+			  try {
+  			  this._paramNameGetter = new MzDBParamName_0_8();
+  	      MzDbReader._setBBSizes(_boundingBoxSizes, this._paramNameGetter, header);
+			  } catch(NullPointerException e_) {
+			    this.logger.error("Can not parse sizes of BoundingBox in mzDbHeader. This a fatal error");
+			    throw e_;
+			  }
+			}*/
 		}
 		return _boundingBoxSizes;
 	}
@@ -680,6 +716,7 @@ public class MzDbReader {
 	public Map<Integer, ScanHeader> getScanHeaderById() throws SQLiteException {
 		return this._scanHeaderReader.getScanHeaderById();
 	}
+	
 
 	/**
 	 * Gets the scan header for time.
@@ -1004,7 +1041,7 @@ public class MzDbReader {
 
 	public Peak[] getXIC(double minMz, double maxMz, int msLevel, XicMethod method) throws SQLiteException {
 
-		ScanHeader[] headers = getScanHeaders();
+		ScanHeader[] headers = this.getScanHeaders();
 		if (headers == null || headers.length == 0) {
 			logger.error("[getXIC]: Can not retrieve headers, returning null");
 			return null;
