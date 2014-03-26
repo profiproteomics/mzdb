@@ -73,7 +73,7 @@ public class MgfWriter {
 
 	final Logger logger = LoggerFactory.getLogger(MgfWriter.class);
 
-	private static String titleQuery = "SELECT id, title FROM spectrum";
+	private static String titleQuery = "SELECT id, title FROM spectrum WHERE ms_level='2'";
 
 	private final String mzDBFilePath;
 
@@ -158,6 +158,7 @@ public class MgfWriter {
 			
 			// make a space between to spectrum
 			mgfWriter.println(spectrumAsStr);
+			mgfWriter.println();
 			spectraCount++;
 		}
 		
