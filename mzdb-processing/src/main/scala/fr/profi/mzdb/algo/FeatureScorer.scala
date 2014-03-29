@@ -6,9 +6,9 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import fr.profi.mzdb.model.AveragineComputer
-import fr.profi.mzdb.model.MercuryLauncher
+//import fr.profi.mzdb.model.MercuryLauncher
 import util.control.Breaks._
 
 
@@ -98,7 +98,8 @@ object FeatureScorer {
   /*****************************************************************
    *  Estimation of the quality of the Isotopic Pattern
    ****************************************************************/
-  def calcIsotopicDistance(f : Feature, customAveragine: Float = 0f) :Double =  {
+  // TODO: find another way than Mercury
+  /*def calcIsotopicDistance(f : Feature, customAveragine: Float = 0f) :Double =  {
 	  val mf = AveragineComputer.computeAveragine(f)
 	  val (mz, intens) = mf.computeIsotopicDistribution(mf, f.getCharge)
 	  //several possibilities calculate the istopicdistance at the apex
@@ -118,5 +119,5 @@ object FeatureScorer {
 		  }
 	  }
 	  rmsd
-  }   
+  }   */
 }

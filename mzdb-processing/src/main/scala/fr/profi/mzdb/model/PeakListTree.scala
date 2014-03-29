@@ -41,28 +41,33 @@ object PeakListTree {
   }  
 }
 
-case class PeakListTree( private var pklGroupByScanId: Map[Int,PeakListGroup] ) {
+case class PeakListTree( pklGroupByScanId: Map[Int,PeakListGroup] ) {
 
+  lazy val scanIds: Array[Int] = pklGroupByScanId.keys.toArray.sorted
+  
   /*def this( peakListsByScanId: Map[Int, Seq[PeakList]] ) = {
     this( PeakListTree.groupPeaklists(peakListsByScanId) )
   }*/
   
+  /**
+   * Returns all peaks contained in the PeakListTree.
+   * @return an array containing all peakLists peaks (assumed to be sorted by scan then m/z).
+   */
+  def getAllPeaks(): Array[Peak] = {
+    this.scanIds.flatMap( pklGroupByScanId(_).getAllPeaks() )
+  }
+  
   def getNearestPeak( scanId: Int, mzToExtract: Double, mzTolDa: Double ): Peak = {
-    pklGroupByScanId(scanId).getNearestPeak( mzToExtract, mzTolDa )    
+    pklGroupByScanId(scanId).getNearestPeak( mzToExtract, mzTolDa )
   }
   
   def getPeaksInRange( scanId: Int, minMz: Double, maxMz: Double ): Array[Peak] = {
-    pklGroupByScanId(scanId).getPeaksInRange( minMz, maxMz )    
+    pklGroupByScanId(scanId).getPeaksInRange( minMz, maxMz )
   }
-  
-  def scansIDs() : Array[Int] = { pklGroupByScanId.keys.toArray.sortWith(_ < _) }
-  
-  lazy val scansIds = this.scansIDs()
  
   def getXic(mz:Double, mzTolPPM: Double) : Array[Peak] = {
-    this.scansIds.map( pklGroupByScanId(_).getNearestPeak(mz, mz * mzTolPPM / 1e6))
+    this.scanIds.map( pklGroupByScanId(_).getNearestPeak(mz, mz * mzTolPPM / 1e6))
   }
-  
   
   protected def extractIsotopicPattern(
     scanHeader: ScanHeader, 
@@ -79,7 +84,7 @@ case class PeakListTree( private var pklGroupByScanId: Map[Int,PeakListGroup] ) 
     val scanId = scanHeader.id
     val pklGroupAsOpt = pklGroupByScanId.get(scanId)
     
-    if( charge < 1 || pklGroupAsOpt == None ) 
+    if( charge < 1 || pklGroupAsOpt == None )
       return Option.empty[IsotopicPatternLike]
     
     val pklGroup = pklGroupAsOpt.get

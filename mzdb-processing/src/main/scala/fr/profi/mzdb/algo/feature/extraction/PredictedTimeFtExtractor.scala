@@ -1,22 +1,13 @@
 package fr.profi.mzdb.algo.feature.extraction
 
-import collection.mutable.HashMap
-import util.control.Breaks._
-import fr.profi.mzdb.MzDbReader
-import fr.profi.mzdb.model.Feature
-import fr.profi.mzdb.model.PeakListTree
-import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.ScanHeader
-import fr.profi.mzdb.model.IsotopicPattern
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.CwtPeakel
+import scala.collection.mutable.HashMap
+import scala.util.control.Breaks._
+import fr.profi.mzdb.MzDbReader
+import fr.profi.mzdb.model._
+import fr.profi.mzdb.algo.signal.detection._
 import fr.profi.mzdb.utils.math.VectorSimilarity
-import fr.profi.mzdb.utils.math.wavelet.MexicanHat
-import fr.profi.mzdb.utils.math.wavelet.Ridge
-import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
-import fr.profi.mzdb.model.Peakel
+import fr.profi.mzdb.utils.math.wavelet._
 
 /**
  * Try to select the best peakel in cross assignment
@@ -41,34 +32,29 @@ class PredictedTimeFtExtractor(
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   val xtractConfig: FeatureExtractorConfig,
-  val overlapXtractConfig: OverlappingFeatureExtractorConfig)
-  extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig)
-  with IExtractorHelper {
+  val overlapXtractConfig: OverlappingFeatureExtractorConfig
+) extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
 
   /** use wavelet technique to dertermine starting point to extract */
   def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
     def getScanId(peak: Peak) = peak.getLcContext().getScanId()
-    // Extract some vars
-    val elutionTime = putativeFt.elutionTime
+    
+    // Retrieve some vars
+    val pftTime = putativeFt.elutionTime
     val predictedTimeTol = this.xtractConfig.predictedTimeTol
-    //get the scanHeaders
-    val curScanH = this.getScanHeaderForTime(elutionTime, 1)
-    var leftmostScanH = this.getScanHeaderForTime(elutionTime - predictedTimeTol, 1)
-    var rightmostScanH = this.getScanHeaderForTime(elutionTime + predictedTimeTol, 1)
+    
+    // Get the scanHeaders
+    val curScanHOpt = this.getScanHeaderForTime(pftTime, 1)
+    val leftMostScanH = this.getScanHeaderForTime(pftTime - predictedTimeTol, 1).getOrElse(this.scanHeaders.head)
+    val rightMostScanH = this.getScanHeaderForTime(pftTime + predictedTimeTol, 1).getOrElse(this.scanHeaders.last)
 
-    //checks scanHeaders
-    if (leftmostScanH == null)
-      leftmostScanH = this.scanHeaders.head
-
-    if (rightmostScanH == null)
-      rightmostScanH = this.scanHeaders.last
-
-    if (leftmostScanH.getId == rightmostScanH.getId) // FIXEME use == directly ?
+    // Checks scanHeaders
+    if (leftMostScanH.getId == rightMostScanH.getId)
       return Option.empty[Feature]
 
-    val scanIds = pklTree.scansIDs
-    val ids = (for (i <- leftmostScanH.getId to rightmostScanH.getId) yield i) toArray
+    val scanIds = pklTree.scanIds
+    val ids = (for (i <- leftMostScanH.getId to rightMostScanH.getId) yield i) toArray
     val selectedScanIds = ids.filter(scanIds.contains(_))
 
     val maxTheoreticalPeakelIndex = this._getTheoriticalMaxPeakelIndex(putativeFt.theoreticalIP)

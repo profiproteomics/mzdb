@@ -1,22 +1,17 @@
 package fr.profi.mzdb.algo.feature.extraction
 
-import fr.profi.mzdb.MzDbReader
-import fr.profi.mzdb.model.Feature
-import fr.profi.mzdb.model.PeakListTree
-import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.ScanHeader
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.ms.MsUtils
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
-import fr.profi.mzdb.model.IsotopicPattern
-import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 
-class PredictedMzFtExtractor(val scanHeaderById: Map[Int,ScanHeader],
-                             val nfByScanId: Map[Int,Float],
-                             val xtractConfig:FeatureExtractorConfig,
-                             val overlapXtractConfig: OverlappingFeatureExtractorConfig) 
-                             extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
+import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.model._
+import fr.profi.mzdb.utils.ms.MsUtils
+
+class PredictedMzFtExtractor(
+  val scanHeaderById: Map[Int,ScanHeader],
+  val nfByScanId: Map[Int,Float],
+  val xtractConfig:FeatureExtractorConfig,
+  val overlapXtractConfig: OverlappingFeatureExtractorConfig
+) extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
     
@@ -34,7 +29,7 @@ class PredictedMzFtExtractor(val scanHeaderById: Map[Int,ScanHeader],
     val xicScanIDs = new ArrayBuffer[Int]
     
     //buid the xic with getNearestPeak for each scan
-    for (id  <- pklTree.scansIDs) { 
+    for (id  <- pklTree.scanIds) { 
       val p = pklTree.getNearestPeak(id, moz, mzTolDa)
       if ( p != null) {
     	  xic += p 

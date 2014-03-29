@@ -1,9 +1,6 @@
 package fr.profi.mzdb.model
 
-import scala.reflect.BeanProperty
-//import com.codahale.jerkson.JsonSnakeCase
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonInclude.Include
+import scala.beans.BeanProperty
 
 object IsotopicPatternLike {
   
@@ -15,12 +12,11 @@ object IsotopicPatternLike {
    * @return the double
    */
   def sumPeakIntensities( peaks: Array[Peak], maxNbPeaks: Int ): Float = {    
-    val filteredPeaks = if( maxNbPeaks > 0 ) peaks.take( maxNbPeaks ) else peaks 
-    var sum = 0f
-    for( p <- peaks if p!=null ) 
-      sum += p.getIntensity()
+    val filteredPeaks = if( maxNbPeaks > 0 ) peaks.take( maxNbPeaks ) else peaks
     
-    sum
+    peaks.foldLeft(0f) { (intSum,peak) =>
+      if (peak != null) intSum + peak.getIntensity() else intSum
+    }
   }
 }
 
@@ -36,7 +32,6 @@ trait IsotopicPatternLike {
 }
 
 
-@JsonInclude( Include.NON_NULL )
 case class OverlappingIsotopicPattern(
   @BeanProperty val mz: Double,
   @BeanProperty var intensity: Float,
@@ -49,7 +44,6 @@ case class OverlappingIsotopicPattern(
  * @author David Bouyssie
  *
  */
-@JsonInclude( Include.NON_NULL )
 case class IsotopicPattern (
   @BeanProperty mz: Double,
   @BeanProperty var intensity: Float,
@@ -60,7 +54,7 @@ case class IsotopicPattern (
   @BeanProperty var qualityScore: Float = 0f
 ) extends IsotopicPatternLike {
   
-  require(peaks.count(_ != null) > 0)
+  require(peaks.count(_ != null) > 0, "no defined peak provided")
   
   lazy val scanInitialId = scanHeader.getInitialId
   

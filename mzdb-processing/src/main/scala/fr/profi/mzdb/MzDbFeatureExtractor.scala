@@ -1,39 +1,29 @@
 package fr.profi.mzdb
 
-import collection.mutable.ArrayBuffer
-import collection.mutable.HashMap
-import collection.JavaConversions.mapAsScalaMap
+import java.io.File
+import scala.collection.JavaConversions.mapAsScalaMap
+import scala.collection.immutable.TreeMap
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.Buffer
+import scala.collection.mutable.HashMap
+import scala.util.control.Breaks._
 import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.mzdb.algo.FeatureExtractor
 import fr.profi.mzdb.algo.ms.normalization.MsScanNormalizer
 import fr.profi.mzdb.io.reader.RunSliceDataProvider
-import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.Feature
-import fr.profi.mzdb.model.PeakList
-import fr.profi.mzdb.model.RunSliceData
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.model.RunSliceHeader
-import fr.profi.mzdb.model.PeakListGroup
-import fr.profi.mzdb.model.PeakListTree
-import fr.profi.mzdb.model.ScanHeader
-import scala.util.control.Breaks._
-import scala.collection.immutable.TreeMap
-import java.io.File
-import scala.collection.mutable.Buffer
 import fr.profi.mzdb.io.reader.iterator.RunSliceIterator
+import fr.profi.mzdb.model._
 
 /**
  *
  * @author David Bouyssie
  *
  */
-
-
-
-
-class MzDbFeatureExtractor( mzDbReader: MzDbReader,
-                            maxNbPeaksInIP: Int = 3,
-                            minNbOverlappingIPs: Int = 3 ) extends Logging {
+class MzDbFeatureExtractor(
+  mzDbReader: MzDbReader,
+  maxNbPeaksInIP: Int = 3,
+  minNbOverlappingIPs: Int = 3
+) extends Logging {
   
   class RichRunSliceData(self: RunSliceData) {
     def getPeakListByScanId(): Map[Int,PeakList] = {

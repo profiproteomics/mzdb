@@ -22,19 +22,18 @@ object Ms2DrivenFtExtractor {
   var wrong: Int = 0
 }
 
-class Ms2DrivenFtExtractor(val scanHeaderById: Map[Int, ScanHeader],
-                           val nfByScanId: Map[Int, Float],
-                           val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
-                           val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig())
-  extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig)
-  with Logging with IExtractorHelper {
-
-  /** */
+class Ms2DrivenFtExtractor(
+ val scanHeaderById: Map[Int,ScanHeader],
+ val nfByScanId: Map[Int,Float],
+ val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
+ val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
+) extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with Logging with IExtractorHelper  {
+  
   def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
     // Retrieve the scan header corresponding to the starting scan id
     val ftAsopt = this._extractFeature(putativeFt, pklTree, this.xtractConfig, ExtractionAlgorithm.MS2_DRIVEN)
-
+    
     //Actually never seen error with our parameters monisotopes detection, remove it
     //extract overlapping features
     /*if ( ! ftAsopt.isDefined) {
@@ -53,10 +52,7 @@ class Ms2DrivenFtExtractor(val scanHeaderById: Map[Int, ScanHeader],
     ftAsopt
 
   }
-
-  /**
-   *
-   */
+  
   protected def refinePrecursorMz(mz: Double, pklTree: PeakListTree, scanId: Int): Option[Double] = {
 
     val nearestPeak = pklTree.getNearestPeak(scanId, mz, this.xtractConfig.mzTolPPM)

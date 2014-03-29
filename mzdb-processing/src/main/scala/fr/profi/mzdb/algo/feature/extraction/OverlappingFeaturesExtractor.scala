@@ -1,27 +1,12 @@
-/**
- *
- */
 package fr.profi.mzdb.algo.feature.extraction
 
-import fr.profi.mzdb.model.PeakListTree
-import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.IsotopicPattern
-import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.model.OverlappingIsotopicPattern
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.model.Feature
-import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
-import fr.profi.mzdb.model.TheoreticalIsotopePattern
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
-import scala.collection.mutable.ListBuffer
-import fr.profi.mzdb.model.ScanHeader
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
-import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
-import fr.profi.mzdb.utils.ms.MsUtils
-import beans.BeanProperty
+
 import com.typesafe.scalalogging.slf4j.Logging
+
+import fr.profi.mzdb.model._
+import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 
 /**
  * StraitForward implementation
@@ -29,11 +14,12 @@ import com.typesafe.scalalogging.slf4j.Logging
  * params: set as var, so parameters values can be changed after OverlappingFeaturesExtractor creation
  * inherit from Ms2DrivenExtractor essentially to fetch parameters
  */
-class OverlappingFeaturesExtractor(val scanHeaderById: Map[Int, ScanHeader],
-                                   val ms1ScanIdByCycleNum: Map[Int, Int],
-                                   val xtractConfig: FeatureExtractorConfig,
-                                   val overlapXtractConfig: OverlappingFeatureExtractorConfig)
-  extends IExtractorHelper with Logging {
+class OverlappingFeaturesExtractor(
+  val scanHeaderById: Map[Int, ScanHeader],
+  val ms1ScanIdByCycleNum: Map[Int, Int],
+  val xtractConfig: FeatureExtractorConfig,
+  val overlapXtractConfig: OverlappingFeatureExtractorConfig
+) extends IExtractorHelper with Logging {
 
   /**
    * EXTRACTION OVERLAPPING FEATURES
@@ -147,12 +133,9 @@ class OverlappingFeaturesExtractor(val scanHeaderById: Map[Int, ScanHeader],
 
   }
 
-  /**
-   *
-   */
-  def _selectBestOverlappingFeatures(ft: Feature, ovlFts: Array[Feature]): Array[ProvedOverlappingFeaturesWithMono] = {
+  def _selectBestOverlappingFeatures(ft: Feature, ovlFts: Array[Feature]): Array[ProvenOverlappingFeaturesWithMono] = {
 
-    val bestOvlFeatures = new ArrayBuffer[ProvedOverlappingFeaturesWithMono]
+    val bestOvlFeatures = new ArrayBuffer[ProvenOverlappingFeaturesWithMono]
     val monoFtPeakel = ft.peakels.head
     val currFtMonoMz = monoFtPeakel.mz
 
@@ -198,7 +181,7 @@ class OverlappingFeaturesExtractor(val scanHeaderById: Map[Int, ScanHeader],
               correlation != Double.NaN && correlation > this.overlapXtractConfig.minPeakelCorrToMono) {
               println("Wrong feature in a cross-assignment (wrong monoisotopic selection). Ignore it...")
               ft.isRelevant = false
-              bestOvlFeatures += ProvedOverlappingFeaturesWithMono(ovlFt, closestPeakelIndex, apexDistanceInCycle, correlation, quotient) //ovlFt
+              bestOvlFeatures += ProvenOverlappingFeaturesWithMono(ovlFt, closestPeakelIndex, apexDistanceInCycle, correlation, quotient) //ovlFt
             }
           }
         }
@@ -224,9 +207,6 @@ class OverlappingFeaturesExtractor(val scanHeaderById: Map[Int, ScanHeader],
       this._evaluateOverlappingStatus( ft, ovlFeatures )
   }*/
 
-  /**
-   *
-   */
   def extractOverlappingFeatures(ft: Feature,
                                  theoIP: TheoreticalIsotopePattern,
                                  pklTree: PeakListTree): OverlapStatus = {

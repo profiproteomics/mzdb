@@ -18,8 +18,6 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.source>1.6</maven.compiler.source>
-    <maven.compiler.target>1.6</maven.compiler.target>
   </properties>
 
   <dependencies>
@@ -65,12 +63,12 @@
       <version>v1_2r25</version>
     </dependency>
 
-    <!-- wavelet -->
+    <!-- Wavelet -->
     <dependency>
-		<groupId>edu.emory.mathcs</groupId>
-		<artifactId>JTransforms</artifactId>
-		<version>2.4</version>
-	</dependency>
+      <groupId>edu.emory.mathcs</groupId>
+      <artifactId>JTransforms</artifactId>
+      <version>2.4</version>
+    </dependency>
 
     <!-- mzdb-access -->
     <dependency>
@@ -110,6 +108,8 @@
 
   <build>
 
+    <!-- This plugin's configuration is used to store Eclipse m2e settings 
+      only. It has no influence on the Maven build itself. -->
     <pluginManagement>
       <plugins>
         <!-- For Eclipse build -->
@@ -141,29 +141,8 @@
     </pluginManagement>
 
     <plugins>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>3.1.6</version>
-        <configuration>
-          <launchers>
-            <launcher>
-              <id>RunCommand</id>
-              <mainClass>fr.profi.mzdb.RunCommand</mainClass>
-              <!-- args are optional <args> <arg>arg1</arg> </args> -->
-              <!-- jvmArgs are optional -->
-              <jvmArgs>
-                <jvmArg>-Xmx1024m</jvmArg>
-                <jvmArg>-Xms512m</jvmArg>
-                <jvmArg>-Duser.language=en</jvmArg>
-                <jvmArg>-Djava.library.path=./lib</jvmArg>
-              </jvmArgs>
-            </launcher>
-          </launchers>
-        </configuration>
-      </plugin>
 
-       <plugin>
+      <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <!-- Version inherited from ProFI-Pom -->
         <executions>
@@ -199,6 +178,42 @@
           </execution>
 
         </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.12.4</version>
+        <configuration>
+          <systemProperties>
+            <property>
+              <name>sqlite4java.library.path</name>
+              <value>${project.build.directory}/lib</value>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <!-- Version inherited from ProFI-Pom -->
+        <configuration>
+          <launchers>
+            <launcher>
+              <id>RunCommand</id>
+              <mainClass>fr.profi.mzdb.RunCommand</mainClass>
+              <!-- args are optional <args> <arg>arg1</arg> </args> -->
+              <!-- jvmArgs are optional -->
+              <jvmArgs>
+                <jvmArg>-Xmx1024m</jvmArg>
+                <jvmArg>-Xms512m</jvmArg>
+                <jvmArg>-Duser.language=en</jvmArg>
+                <jvmArg>-Djava.library.path=./lib</jvmArg>
+              </jvmArgs>
+            </launcher>
+          </launchers>
+        </configuration>
       </plugin>
 
     </plugins>

@@ -9,12 +9,12 @@ import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
              
-class FullySupervisedFtExtractor(val scanHeaderById: Map[Int,ScanHeader],
-                                 val nfByScanId: Map[Int,Float],
-                                 val xtractConfig: FeatureExtractorConfig,
-                                 val overlapXtractConfig: OverlappingFeatureExtractorConfig ) 
-                                 extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) 
-                                 with IExtractorHelper{
+class FullySupervisedFtExtractor(
+  val scanHeaderById: Map[Int,ScanHeader],
+  val nfByScanId: Map[Int,Float],
+  val xtractConfig: FeatureExtractorConfig,
+  val overlapXtractConfig: OverlappingFeatureExtractorConfig
+) extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree) : Option[Feature] = {
     

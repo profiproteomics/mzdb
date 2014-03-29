@@ -17,20 +17,27 @@ import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
 import fr.profi.mzdb.model.FullLcContext
 import fr.profi.mzdb.model.ILcContext
 
-abstract class AbstractSupervisedFtExtractor(xtractConfig: FeatureExtractorConfig,
-                                             ovlerlapXtractConfig: OverlappingFeatureExtractorConfig) 
-                                             extends AbstractFeatureExtractor {
+abstract class AbstractSupervisedFtExtractor(
+  xtractConfig: FeatureExtractorConfig,
+  ovlerlapXtractConfig: OverlappingFeatureExtractorConfig
+) extends AbstractFeatureExtractor {
   
   // Build scanIdByCycleNum
-  val ms1ScanIdByCycleNum = this.scanHeaderById.values.filter { _.getMsLevel == 1 }.map { sh => sh.getCycle -> sh.getId } toMap
-  val overlappingFeaturesExtractor = new OverlappingFeaturesExtractor(this.scanHeaderById, 
-                                                                      this.ms1ScanIdByCycleNum,
-                                                                      xtractConfig, 
-                                                                      ovlerlapXtractConfig)
+  val ms1ScanIdByCycleNum = scanHeaderById.values
+    .withFilter( _.getMsLevel == 1 )
+    .map( sh => sh.getCycle -> sh.getId )
+    .toMap
+  
+  val overlappingFeaturesExtractor = new OverlappingFeaturesExtractor(
+    this.scanHeaderById, 
+    this.ms1ScanIdByCycleNum,
+    xtractConfig, 
+    ovlerlapXtractConfig
+  )
       
   /**
    * Abstract 
    */
-  def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree):Option[Feature]
+  def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature]
 
 }
