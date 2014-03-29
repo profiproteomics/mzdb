@@ -162,7 +162,7 @@ public class MgfWriter {
 			spectraCount++;
 		}
 		
-		this.logger.info( "MGF file successgully created: %d spectra exported.", spectraCount );
+		this.logger.info( String.format("MGF file successfully created: %d spectra exported.", spectraCount) );
 		
 		mgfWriter.flush();
 		mgfWriter.close();
