@@ -73,8 +73,7 @@ class MzDbFeatureExtractor(
     var( prevRSH, nextRSH ) = (Option.empty[RunSliceHeader], Option.empty[RunSliceHeader])
     
     for ( rsh <- rsHeaders if rsh.getMsLevel == 1 ) {
-      //this.logger.debug("processing run slice with id =" + rsh.getId);
-      println("processing run slice with id =" + rsh.getId)
+      this.logger.debug("processing run slice with id =" + rsh.getId);
 
       // Retrieve run slices and their corresponding id
       val rsNum = rsh.getNumber
