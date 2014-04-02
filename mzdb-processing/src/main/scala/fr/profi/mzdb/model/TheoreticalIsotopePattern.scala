@@ -14,4 +14,13 @@ case class TheoreticalIsotopePattern(
   
   lazy val isotopesCount = relativeAbundances.length
   
+  /** Gets the index of the max theoretical elution peak */
+  def getTheoriticalMaxPeakelIndex(): Int = {
+    
+    val relativeAbundances = this.getRelativeAbundances
+    val maxValue = relativeAbundances.maxBy(x => x)
+    
+    relativeAbundances.indexOf(maxValue)
+  }
+  
 }

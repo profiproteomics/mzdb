@@ -27,12 +27,12 @@ class Ms2DrivenFtExtractor(
  val nfByScanId: Map[Int,Float],
  val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
  val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
-) extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with Logging with IExtractorHelper  {
+) extends AbstractSupervisedFtExtractor with Logging {
   
-  def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
+  override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
     // Retrieve the scan header corresponding to the starting scan id
-    val ftAsopt = this._extractFeature(putativeFt, pklTree, this.xtractConfig, ExtractionAlgorithm.MS2_DRIVEN)
+    val ftAsopt = this.extractFeature(putativeFt, pklTree, this.xtractConfig, ExtractionAlgorithm.MS2_DRIVEN)
     
     //Actually never seen error with our parameters monisotopes detection, remove it
     //extract overlapping features

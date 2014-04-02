@@ -64,7 +64,7 @@ object FeatureScorer {
       peakIndex += 1
     }
     if (!firstPeakelIntensities.isEmpty)
-      return VectorSimilarity.pearsonCorrelation( firstPeakelIntensities.toArray, secondPeakelIntensities.toArray );
+      return VectorSimilarity.pearsonCorrelation( firstPeakelIntensities.toArray, secondPeakelIntensities.toArray )
     else
       Double.NaN
   }
@@ -88,19 +88,22 @@ object FeatureScorer {
     val refScanID = peakel.getApexScanContext.getScanId()
     //get the best overlapping peakel in overlapping feature set
     var (leftOverlappingPeaks, rightOverlappingPeaks) = (Option.empty[Peakel], Option.empty[Peakel])
-    
-    f.overlappingFeatures.foreach{ ofeature => ofeature.getPeakels.foreach{ p => 
-                                  if ( (p.getMz - mz) < mzTolInDa) {
-                                    if (p.getApexScanContext.getScanId() < refScanID) {
-                                      leftOverlappingPeaks = Some(p)
-                                    }
-                                    if (p.getApexScanContext.getScanId() > refScanID) {
-                                      rightOverlappingPeaks = Some(p)
-                                    }
-                                  }
-                             }
-    overlappingMap +=  Tuple3(peakel, leftOverlappingPeaks, rightOverlappingPeaks)
+
+    f.overlappingFeatures.foreach { ovlFeature =>
+      ovlFeature.feature.getPeakels.foreach { p =>
+        if ((p.getMz - mz) < mzTolInDa) {
+          if (p.getApexScanContext.getScanId() < refScanID) {
+            leftOverlappingPeaks = Some(p)
+          }
+          if (p.getApexScanContext.getScanId() > refScanID) {
+            rightOverlappingPeaks = Some(p)
+          }
+        }
+      }
+      
+      overlappingMap += Tuple3(peakel, leftOverlappingPeaks, rightOverlappingPeaks)
     }
+    
     calcMeanOverlappingFactor(overlappingMap) toFloat
   }
   

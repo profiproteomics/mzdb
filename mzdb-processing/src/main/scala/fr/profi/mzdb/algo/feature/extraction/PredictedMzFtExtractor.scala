@@ -11,7 +11,7 @@ class PredictedMzFtExtractor(
   val nfByScanId: Map[Int,Float],
   val xtractConfig:FeatureExtractorConfig,
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
-) extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
+) extends AbstractSupervisedFtExtractor {
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
     

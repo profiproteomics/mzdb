@@ -25,6 +25,7 @@ case class ExtractionAlgorithmConfig(
 )
 
 case class FeatureExtractorConfig(
+    
   // ppm tolerance
   var mzTolPPM: Float, 
   var ms2DrivenExtraction: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.BASIC),
@@ -70,36 +71,5 @@ case class OverlappingFeatureExtractorConfig(
   var minAvgQuot: Float = 1.5f
 )
 
-case class ProvenOverlappingFeaturesWithMono(
-  
-  // feature with ambiguous monositopic peak
-  ft: Feature,
-  
-  // index of the peakel being polluted
-  peakelIndex: Int,
-  
-  // distance in cycle between overlapped peak and and overlapping peak
-  apexDistanceInNbCycle: Int,
-  
-  // correlation between the peakel 'shape'
-  pCorr: Float,
-  
-  // quotient to check against the averagine
-  avgQuot: Float
-) 
 
-case class OverlapStatus(
-    
-  // true if there is an overlapping feature detected
-  overlapEvidence: Boolean,
-  
-  // true if an overlapping with the monoisotopic peak is affected
-  overlapWithMonoEvidence: Boolean,
-  
-  // all overlapping features
-  overlappingFeatures: Array[Feature],
-  
-  // overlapping features with the monoisotopic
-  overlappingFeaturesWithMono: Array[ProvenOverlappingFeaturesWithMono]
-)
                           

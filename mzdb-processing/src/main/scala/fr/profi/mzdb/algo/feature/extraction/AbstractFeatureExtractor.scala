@@ -1,21 +1,28 @@
 package fr.profi.mzdb.algo.feature.extraction
 
-import scala.annotation.migration
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks._
+
 import com.typesafe.scalalogging.slf4j.Logging
+
 import fr.profi.mzdb.model._
 
 abstract class AbstractFeatureExtractor extends Logging {
-
+  
+  /** Required parameters */
   val scanHeaderById: Map[Int, ScanHeader]
   val nfByScanId: Map[Int, Float]
-  val scanHeaders = scanHeaderById.values.toArray.sortBy(_.getId)
-  val ms1ScanHeaderByCycleNum = Map() ++ scanHeaders.filter(_.getMsLevel() == 1 ).map(sh => sh.getCycle -> sh)
+  
+  /** Computed values */
+  protected val scanHeaders = scanHeaderById.values.toArray.sortBy(_.getId)
+  protected val ms1ScanHeaderByCycleNum = scanHeaders.withFilter(_.getMsLevel() == 1 ).map(sh => sh.getCycle -> sh).toMap
+  protected val ms1ScanIdByCycleNum: Map[Int, Int] = ms1ScanHeaderByCycleNum.map { case (cycle,sh) => cycle -> sh.getId }
   
   private val TIME_INDEX_WIDTH = 15
   
-  private val _scanIdsByTimeIndex: HashMap[Int, ArrayBuffer[Int]] = {
+  private val scanIdsByTimeIndex: HashMap[Int, ArrayBuffer[Int]] = {
 
     val _tmpScanIdsMap = new HashMap[Int, ArrayBuffer[Int]]()
 
@@ -27,12 +34,12 @@ abstract class AbstractFeatureExtractor extends Logging {
     _tmpScanIdsMap
   }
   
-  def getScanHeaderForTime(time: Float, msLevel: Int): Option[ScanHeader] = {
+  protected def getScanHeaderForTime(time: Float, msLevel: Int): Option[ScanHeader] = {
 
     val timeIndex = (time / TIME_INDEX_WIDTH).toInt
 
     var nearestSH: ScanHeader = null
-    val scanIdsByTimeIndex = this._scanIdsByTimeIndex
+    val scanIdsByTimeIndex = this.scanIdsByTimeIndex
 
     for (index <- timeIndex - 1 to timeIndex + 1) {
   
@@ -50,7 +57,8 @@ abstract class AbstractFeatureExtractor extends Logging {
     
     Option(nearestSH)
   }
-
+  
+  //def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature]
 
 }
 

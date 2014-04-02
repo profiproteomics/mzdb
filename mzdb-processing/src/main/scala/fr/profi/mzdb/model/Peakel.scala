@@ -135,4 +135,19 @@ case class Peakel(
     FeatureScorer.calcPeakelCorrelation(this, otherPeakel)    
   }
   
+  /** Just check elution peak in terms of duration in nb scans */
+  def isGoodForPeakDetection(minConsecutiveScans:Int): Boolean = {
+    
+    val peaks = this.peaks
+    if (peaks.length < minConsecutiveScans)
+      return false
+
+    val definedPeaks = this.definedPeaks
+    // Note: 3 definedPeaks are required for SG filter
+    if (definedPeaks.length <= 3)
+      return false
+    
+    true
+  }
+  
 }

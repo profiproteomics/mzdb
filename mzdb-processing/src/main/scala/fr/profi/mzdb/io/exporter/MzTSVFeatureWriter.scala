@@ -58,7 +58,7 @@ object MzTSVFeatureWriter {
       
       var overlapCorrelationStr = ""
       var bestOlpFtJSONString = ""
-      val bestOlpFt = ft.getBestOverlappingFeature()
+      val bestOlpFt = ft.getBestOverlappingFeature().feature
       
       if( bestOlpFt!= null ) {
         overlapCorrelationStr = "%.8f".formatLocal( locale, bestOlpFt.getOverlapPMCC() )

@@ -17,7 +17,7 @@ class FeatureExtractor(
   val nfByScanId: Map[Int,Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
-) extends AbstractSupervisedFtExtractor(xtractConfig, overlapXtractConfig) with IExtractorHelper {
+) extends AbstractSupervisedFtExtractor with IExtractorHelper {
 
   protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
   protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );

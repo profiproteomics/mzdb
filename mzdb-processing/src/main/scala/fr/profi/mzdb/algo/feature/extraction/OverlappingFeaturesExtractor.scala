@@ -8,23 +8,75 @@ import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 
+case class OverlappingStatus(
+    
+  // true if there is an overlapping feature detected
+  overlapEvidence: Boolean,
+  
+  // true if an overlapping with the monoisotopic peak is affected
+  overlapWithMonoEvidence: Boolean,
+  
+  // all overlapping features
+  overlappingFeatures: Array[Feature],
+  
+  // overlapping features with the monoisotopic
+  overlappingFeaturesWithMono: Array[OverlappingFeature]
+)
+
 /**
- * StraitForward implementation
+ * Straightforward implementation
+ * 
  * @author Marco
  * params: set as var, so parameters values can be changed after OverlappingFeaturesExtractor creation
  * inherit from Ms2DrivenExtractor essentially to fetch parameters
  */
 class OverlappingFeaturesExtractor(
   val scanHeaderById: Map[Int, ScanHeader],
-  val ms1ScanIdByCycleNum: Map[Int, Int],
+  val nfByScanId: Map[Int,Float] = Map(),
   val xtractConfig: FeatureExtractorConfig,
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
-) extends IExtractorHelper with Logging {
+) extends AbstractSupervisedFtExtractor with Logging {
+  
+  def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
+    this.extractFeature(putativeFt, pklTree, xtractConfig, ExtractionAlgorithm.MS2_DRIVEN)
+  }
+  
+  /**
+   * **********************************************************************************************
+   * EXPOSED FUNCTIONS
+   * **********************************************************************************************
+   */
+  /* *
+   * fill feature overlapping related attributes 
+   *
+  def extractOverlappingFeatures(ft: Feature, theoIP: TheoreticalIsotopePattern, pklTree: PeakListTree) : OverlapStatus = {
+      if (ft.peakels.isEmpty)
+        throw new Exception("can not extract overlapping features of an empty feature. Returning Error")
+      
+      ft.getIsotopicPatterns.par.map( ip => this._extractOverlappingIps(ip, theoIP, pklTree) )
+      val ovlFeatures = this._buildOverlappingFeatures( ft )
+      this._evaluateOverlappingStatus( ft, ovlFeatures )
+  }*/
+
+  def extractOverlappingFeatures(
+    ft: Feature,
+    theoIP: TheoreticalIsotopePattern,
+    pklTree: PeakListTree
+  ): OverlappingStatus = {
+    
+    require(
+      ft.peakels.isEmpty == false,
+      "can not extract overlapping features of an empty feature. Returning Error"
+    )
+
+    val ovlFeatures = this._extractOverlappingFeatures(ft, ft.charge, pklTree)
+    this._evaluateOverlappingStatus(ft, ovlFeatures)
+  }
 
   /**
    * EXTRACTION OVERLAPPING FEATURES
    */
-  protected def _extractOverlappingFeatures(ft: Feature, ftZ: Int, pklTree: PeakListTree): Array[Feature] = {
+  private def _extractOverlappingFeatures(ft: Feature, ftZ: Int, pklTree: PeakListTree): Array[Feature] = {
 
     // Unpack parameters
     val minZ = if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.minZ else ft.charge
@@ -74,7 +126,7 @@ class OverlappingFeaturesExtractor(
           //extract feature
           val conf = this.xtractConfig.ms2DrivenExtraction.copy(refineDetection = false) // skip the refine extraction to gain time
           this.xtractConfig.ms2DrivenExtraction = conf
-          val featureAsOpt = this._extractFeature(putativeFt, pklTree, xtractConfig, ExtractionAlgorithm.MS2_DRIVEN)
+          val featureAsOpt = this.extractFeature(putativeFt, pklTree)
 
           if (featureAsOpt.isDefined) {
             val ovlFt = featureAsOpt.get
@@ -94,6 +146,7 @@ class OverlappingFeaturesExtractor(
         }
       }
     }
+    
     ovlFts.toArray
   }
 
@@ -108,10 +161,10 @@ class OverlappingFeaturesExtractor(
    *  look for overlapping feature with the same charge than the considered feature
    *  and check intensity and apex deviation of the considered peakel
    */
-  def _evaluateOverlappingStatus(ft: Feature, ovlFeatures: Array[Feature]): OverlapStatus = {
+  private def _evaluateOverlappingStatus(ft: Feature, ovlFeatures: Array[Feature]): OverlappingStatus = {
     //simple case
     if (ovlFeatures.isEmpty) {
-      return OverlapStatus(overlapEvidence = false, false, null, null)
+      return OverlappingStatus(overlapEvidence = false, false, null, null)
     }
     //difficult cases
     //apply peak detection on the first peakel
@@ -121,21 +174,30 @@ class OverlappingFeaturesExtractor(
     val overlapEvidence = true
 
     //setting overlappingFeatures
-    ft.overlappingFeatures = ovlFeatures
+    //ft.overlappingFeatures = ovlFeatures
 
     //determining best overlappingFeature
 
     val bestOvlFts = this._selectBestOverlappingFeatures(ft, ovlFeatures)
-    if (!bestOvlFts.isEmpty)
-      ft.bestOverlappingFeature = bestOvlFts(0).ft
+    ft.overlappingFeatures = bestOvlFts
+    
+    if (!bestOvlFts.isEmpty) {
+      
+      // Sort overlapping features by ascending area of peakel preceding the overlapping peakel
+      // TODO: find an other way to select the best one
+      val sortedOvlFts = bestOvlFts.sortBy { ovlFt =>
+        ovlFt.feature.peakels( math.max(ovlFt.overlappingPeakelIndex - 1,0) ).area
+      }
+      
+      ft.bestOverlappingFeature = sortedOvlFts.last
+    }
 
-    OverlapStatus(overlapEvidence = true, !bestOvlFts.isEmpty, ovlFeatures, bestOvlFts)
-
+    OverlappingStatus(overlapEvidence = true, !bestOvlFts.isEmpty, ovlFeatures, bestOvlFts)
   }
 
-  def _selectBestOverlappingFeatures(ft: Feature, ovlFts: Array[Feature]): Array[ProvenOverlappingFeaturesWithMono] = {
+  private def _selectBestOverlappingFeatures(ft: Feature, ovlFts: Array[Feature]): Array[OverlappingFeature] = {
 
-    val bestOvlFeatures = new ArrayBuffer[ProvenOverlappingFeaturesWithMono]
+    val bestOvlFeatures = new ArrayBuffer[OverlappingFeature]
     val monoFtPeakel = ft.peakels.head
     val currFtMonoMz = monoFtPeakel.mz
 
@@ -148,7 +210,11 @@ class OverlappingFeaturesExtractor(
       //found interesting peakels with the mono
       if (insideTolPeakels.isEmpty == false) {
 
-        println(s"Several possible elution peak in overlap with the monoisotope of feature of mass: ${ft.mz} and charge: ${ft.charge}. \nConsidering the closest in mz range...")
+        logger.trace(
+          "Several possible elution peak in overlap with the monoisotope of feature of mass: "+
+         s"${ft.mz} and charge: ${ft.charge}. \nConsidering the closest in mz range..."
+        )
+        
         val closestPeakel = insideTolPeakels.minBy(p => math.abs(currFtMonoMz - p.mz))
 
         val closestPeakelIndex = closestPeakel.index
@@ -162,15 +228,18 @@ class OverlappingFeaturesExtractor(
         } else {
           val previousOvlFtPeakel = ovlFt.peakels(previousOvlFtIndex)
 
-          val apexDistanceInCycle = math.abs(this.scanHeaderById(previousOvlFtPeakel.getApexScanContext.getScanId).getCycle -
-            this.scanHeaderById(monoFtPeakel.getApexScanContext.getScanId).getCycle)
+          val apexDistanceInCycle = math.abs(
+            this.scanHeaderById(previousOvlFtPeakel.getApexScanContext.getScanId).getCycle -
+            this.scanHeaderById(monoFtPeakel.getApexScanContext.getScanId).getCycle
+          )
 
           val correlation = previousOvlFtPeakel.computeCorrelationWith(monoFtPeakel) toFloat
           //experimental intensity quotient vs averagine
           val theoIP = IsotopicPatternLookup.getTheoreticalPattern(ovlFt.mz, ovlFt.charge)
           val abundances = theoIP.getRelativeAbundances()
-          if (previousOvlFtIndex + 1 > abundances.length)
-            println("Reached max peakel, pass")
+          if (previousOvlFtIndex + 1 > abundances.length) {
+            logger.trace("Reached max peakel, pass")
+          }
           else {
             val theoriticalQuotient = abundances(previousOvlFtIndex) / abundances(previousOvlFtIndex + 1)
             val observedQuotient = previousOvlFtPeakel.area / monoFtPeakel.area
@@ -178,43 +247,20 @@ class OverlappingFeaturesExtractor(
 
             //sign of death for the feature
             if (apexDistanceInCycle <= 20 && //quotient < 2
-              correlation != Double.NaN && correlation > this.overlapXtractConfig.minPeakelCorrToMono) {
-              println("Wrong feature in a cross-assignment (wrong monoisotopic selection). Ignore it...")
+                correlation != Double.NaN && correlation > this.overlapXtractConfig.minPeakelCorrToMono) {
+              logger.debug("Wrong feature in a cross-assignment (wrong monoisotopic selection). Ignore it...")
+              
               ft.isRelevant = false
-              bestOvlFeatures += ProvenOverlappingFeaturesWithMono(ovlFt, closestPeakelIndex, apexDistanceInCycle, correlation, quotient) //ovlFt
+              
+              // 0 means mono-isotopic in overlapped feature
+              bestOvlFeatures += OverlappingFeature(ovlFt, 0, closestPeakelIndex, apexDistanceInCycle, correlation, quotient) //ovlFt
             }
           }
         }
       } //end if inside tol
     }
+    
     bestOvlFeatures.toArray
-  }
-
-  /**
-   * **********************************************************************************************
-   * EXPOSED FUNCTIONS
-   * **********************************************************************************************
-   */
-  /* *
-   * fill feature overlapping related attributes 
-   *
-  def extractOverlappingFeatures(ft: Feature, theoIP: TheoreticalIsotopePattern, pklTree: PeakListTree) : OverlapStatus = {
-      if (ft.peakels.isEmpty)
-        throw new Exception("can not extract overlapping features of an empty feature. Returning Error")
-      
-      ft.getIsotopicPatterns.par.map( ip => this._extractOverlappingIps(ip, theoIP, pklTree) )
-      val ovlFeatures = this._buildOverlappingFeatures( ft )
-      this._evaluateOverlappingStatus( ft, ovlFeatures )
-  }*/
-
-  def extractOverlappingFeatures(ft: Feature,
-                                 theoIP: TheoreticalIsotopePattern,
-                                 pklTree: PeakListTree): OverlapStatus = {
-    if (ft.peakels.isEmpty)
-      throw new Exception("can not extract overlapping features of an empty feature. Returning Error")
-
-    val ovlFeatures = this._extractOverlappingFeatures(ft, ft.charge, pklTree)
-    this._evaluateOverlappingStatus(ft, ovlFeatures)
   }
 
 }//end stuff

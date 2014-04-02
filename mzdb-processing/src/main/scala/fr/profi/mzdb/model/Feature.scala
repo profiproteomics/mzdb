@@ -177,8 +177,8 @@ case class Feature(
   @BeanProperty var meanPeakelCorrelation = 0f //(float) FeatureScorer.computeMeanPeakelCorrelation(peakels);
   @BeanProperty var overlapPMCC = 0f
   @BeanProperty var overlapRelativeFactor = 0f
-  @BeanProperty var overlappingFeatures: Array[Feature] = null
-  @BeanProperty var bestOverlappingFeature: Feature = null
+  @BeanProperty var overlappingFeatures: Array[OverlappingFeature] = null
+  @BeanProperty var bestOverlappingFeature: OverlappingFeature = null
   //debug purposes
   @BeanProperty var parentXIC: Peakel = null
 
@@ -262,5 +262,37 @@ case class Feature(
   // then try to deconvolute signal if overlapping features
   // Return a raw XIC if not enough peaks
   //def computeFilteredXIC() { throw new Exception("NYI") }
+  
+  /**
+   * Creates a feature object from ips and averagine
+   * @param peakelIdxRange a range of peakel indexes used to restrict the number of peakels
+   * @retrun a new Feature or null if there are no peaks in the provided index range
+   */
+  def restrictToPeakelIdxRange(
+    peakelIdxRange: Pair[Int, Int]
+  ): Feature = {
+    require(peakelIdxRange._1 != peakelIdxRange._2)
+    
+    val (minIdx, maxIdx) = (peakelIdxRange._1, peakelIdxRange._2)
+    val peakels = new ArrayBuffer[Peakel]()
+    
+    breakable {
+      for (peakel <- this.peakels) {
+        
+        val idx = peakel.index        
+        val peaks = peakel.peaks.slice(minIdx, maxIdx + 1)
+        
+        if (peaks.count(_ != null) > 0)
+          peakels += peakel.copy(peaks = peaks)
+        else
+          break
+      }
+    }
+
+    if (peakels.isEmpty || peakels.forall(_ == null) == true)
+      return null
+
+    new Feature(this.id, this.mz, this.charge, peakels.toArray)
+  }
 
 }
