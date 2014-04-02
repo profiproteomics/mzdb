@@ -28,8 +28,8 @@ case class FeatureExtractorConfig(
     
   // ppm tolerance
   var mzTolPPM: Float, 
-  var ms2DrivenExtraction: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.BASIC),
-  var predictedTimeExtraction: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.WAVELET),
+  var ms2DrivenXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.BASIC),
+  var predictedTimeXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.WAVELET),
   
   // minimum scan duration to consider the detected feature (PredictedTime)
   var minConsecutiveScans: Int = 5,
@@ -68,7 +68,7 @@ case class OverlappingFeatureExtractorConfig(
   var minPeakelCorrToMono: Float = 0.6f,
   
   // quotient averagine
-  var minAvgQuot: Float = 1.5f
+  var minAveragineRatio: Float = 1.5f
 )
 
 

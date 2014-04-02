@@ -17,7 +17,7 @@ class FeatureExtractor(
   val nfByScanId: Map[Int,Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
-) extends AbstractSupervisedFtExtractor with IExtractorHelper {
+) extends AbstractSupervisedFtExtractor {
 
   protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
   protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
@@ -75,9 +75,11 @@ class FeatureExtractor(
         // Do the job only if next cycle can be found
         if( ms1ScanHeaderByCycleNum.contains(nextCycleNum) ) {
           val nextCycleScanId = ms1ScanHeaderByCycleNum(nextCycleNum).getId
+          
           // Iterate over MS2 scans
           for( scanId <- thisScanId until nextCycleScanId ) {
             val scanH = this.scanHeaderById(scanId)
+            
             // TODO: log charge conflicts
             if( scanH.getMsLevel == 2 && scanH.getPrecursorCharge() == foundFt.charge ) {
               // Compute m/z difference between the current peak and MS2 scan precursor m/z

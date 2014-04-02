@@ -124,8 +124,8 @@ class OverlappingFeaturesExtractor(
           //build fictive putative feature
           val putativeFt = new PutativeFeature(-1, mzToExtract, z, maxScanId, evidenceMsLevel = 1)
           //extract feature
-          val conf = this.xtractConfig.ms2DrivenExtraction.copy(refineDetection = false) // skip the refine extraction to gain time
-          this.xtractConfig.ms2DrivenExtraction = conf
+          val conf = this.xtractConfig.ms2DrivenXtractConfig.copy(refineDetection = false) // skip the refine extraction to gain time
+          this.xtractConfig.ms2DrivenXtractConfig = conf
           val featureAsOpt = this.extractFeature(putativeFt, pklTree)
 
           if (featureAsOpt.isDefined) {

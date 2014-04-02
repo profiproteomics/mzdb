@@ -33,8 +33,8 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     xtractAlgoConfig: ExtractionAlgorithm.Value
   ): Option[Feature] = {
     
-    val extractionAlgorithm = if (xtractAlgoConfig == ExtractionAlgorithm.MS2_DRIVEN) xtractConfig.ms2DrivenExtraction
-                              else xtractConfig.predictedTimeExtraction
+    val extractionAlgorithm = if (xtractAlgoConfig == ExtractionAlgorithm.MS2_DRIVEN) xtractConfig.ms2DrivenXtractConfig
+                              else xtractConfig.predictedTimeXtractConfig
     // Retrieve the scan header corresponding to the starting scan id
     val scanHeaderOpt = this.scanHeaderById.get(putativeFt.scanId)
 

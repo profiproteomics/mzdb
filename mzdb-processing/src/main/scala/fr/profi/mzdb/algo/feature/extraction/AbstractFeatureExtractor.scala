@@ -57,8 +57,6 @@ abstract class AbstractFeatureExtractor extends Logging {
     
     Option(nearestSH)
   }
-  
-  //def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature]
 
 }
 
