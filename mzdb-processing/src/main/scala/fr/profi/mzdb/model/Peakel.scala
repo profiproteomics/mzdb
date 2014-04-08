@@ -1,7 +1,8 @@
 package fr.profi.mzdb.model
 
-import reflect.BeanProperty
+import beans.BeanProperty
 import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
+import fr.proline.util.math.linearInterpolation
 
 object Peakel {
   
@@ -70,6 +71,7 @@ case class Peakel(
   @BeanProperty val mz = this.getApex().mz
   @BeanProperty var intensity = 0f
   @BeanProperty var area = 0f
+  @BeanProperty var uahm = 0f
   
   // Define lazy attributes
   @BeanProperty lazy val peakByElutionTime = definedPeaks.map { p => p.getLcContext.getElutionTime -> p } toMap
@@ -79,41 +81,86 @@ case class Peakel(
   // Update feature intensity and area
   this._integratePeakel()
   
-  
-  
+  protected def getPeakTime(p: Peak): Float = p.getLcContext().getElutionTime()
+  protected def getPeakIntensityTimePair(p: Peak): Pair[Float,Float] = (p.getIntensity(),p.getLcContext().getElutionTime())
+    
   protected def _integratePeakel() {
     
+    val apex = this.getApex()
+    val apexIntensity = apex.getIntensity()
+    val halfApexIntensity = apex.getIntensity() / 2
+    val defPeaks = this.definedPeaks
+    val lastTime = getPeakTime(defPeaks.last)
+    
+    // --- interpolate the time of peaks at the half maximum peakel intensity ---
+    
+    val leftTimeAtHalfApex = _interpolateFirstPeakTimeAtHalfMaximum(defPeaks, halfApexIntensity)
+    val rightTimeAtHalfApex = _interpolateFirstPeakTimeAtHalfMaximum(defPeaks.reverse, halfApexIntensity)    
+    
     // Search for the apex and integrate IPs
-    var intensitySum = 0f
-    var intensityArea = 0f
+    var computedSum = 0f
+    var computedArea = 0f
+    var computedUAHM = 0f
     var prevPeakTime = 0f
     var prevPeakIntensity = 0f
+    var prevPeakIntensityAboveHM = halfApexIntensity
+    var prevPeakTimeAboveHM = leftTimeAtHalfApex
     
-    val defPeaks = this.definedPeaks
     for( peakIndex <- 0 until defPeaks.length ) {
-
+      
+      // Compute intensity sum
       val peak = defPeaks(peakIndex)
-      intensitySum += peak.intensity
-      
       val curPeakTime = peak.lcContext.getElutionTime
+
+      computedSum += peak.intensity
       
+      // Compute intensity area
       if( peakIndex > 0 ) {
         val deltaTime = curPeakTime - prevPeakTime
-        intensityArea += (peak.intensity + prevPeakIntensity ) * deltaTime / 2
+        computedArea += (peak.intensity + prevPeakIntensity ) * deltaTime / 2
+      }
+      
+      // Compute intensity uahm
+      if (curPeakTime >= leftTimeAtHalfApex && prevPeakTimeAboveHM < lastTime ) { // && curPeakTime <= rightTimeAtHalfApex
+        
+        if( curPeakTime <= rightTimeAtHalfApex)  {
+          val deltaTime = curPeakTime - prevPeakTimeAboveHM
+          computedUAHM += (peak.intensity + prevPeakIntensityAboveHM - apexIntensity) * deltaTime / 2
+          prevPeakTimeAboveHM = curPeakTime
+          prevPeakIntensityAboveHM = peak.intensity
+        } else {
+          val deltaTime = curPeakTime - prevPeakTimeAboveHM
+          computedUAHM += (prevPeakIntensityAboveHM - halfApexIntensity) * deltaTime / 2
+          prevPeakIntensityAboveHM = halfApexIntensity
+          prevPeakTimeAboveHM = lastTime
+        }
       }
       
       prevPeakTime = curPeakTime
       prevPeakIntensity = peak.intensity
-      
     }
     
-    if( intensityArea == 0 ) 
-      intensityArea = intensitySum
+    if( computedArea == 0 ) 
+      computedArea = computedSum
     
-    this.intensity = intensitySum
-    this.area = intensityArea
-    
-  }  
+    this.intensity = computedSum
+    this.area = computedArea
+    this.uahm = computedUAHM
+  }
+  
+  private def _interpolateFirstPeakTimeAtHalfMaximum(peaks: Array[Peak], halfApexIntensity: Float): Float = {
+    val firstPeakIndex2 = peaks.indexWhere(_.getIntensity() > halfApexIntensity)
+    val firstPeakIndex1 = if (firstPeakIndex2 > 0) firstPeakIndex2 - 1 else 0
+    // If we don't have two distinct peaks, return time value of the first peakel peak
+    val firstPeakTime = if (firstPeakIndex2 <= firstPeakIndex1) getPeakTime(definedPeaks(0))
+    else{
+      val (p1, p2) = (definedPeaks(firstPeakIndex1), definedPeaks(firstPeakIndex2))
+      // Linear interpolation
+      val interpolatedTime = linearInterpolation(halfApexIntensity, Seq( getPeakIntensityTimePair(p1), getPeakIntensityTimePair(p2) ), fixOutOfRange = false)
+      interpolatedTime
+    }
+    firstPeakTime
+  }
   
   def getApex(): Peak = peaks(apexIndex)
   

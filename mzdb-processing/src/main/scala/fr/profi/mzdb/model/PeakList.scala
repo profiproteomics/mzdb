@@ -8,6 +8,8 @@ case class MzRange( minMz: Double, maxMz: Double )
 
 object PeakList {
   
+  final val DEFAULT_INDEX_PRECISION = 0.1
+  
   def calcMzRange( peaks: Array[Peak] ): MzRange = {
     var( minMz, maxMz ) = (0.0,0.0)
     
@@ -25,7 +27,7 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
   
   private val indexedPeaks = new HashMap[Int,ArrayBuffer[Peak]]
   
-  def this( peaks: Array[Peak], indexPrecision: Double = 0.1 ) = {
+  def this( peaks: Array[Peak], indexPrecision: Double = PeakList.DEFAULT_INDEX_PRECISION ) = {
     this( indexPrecision, PeakList.calcMzRange( peaks ) )
     
     // Index the peaks
