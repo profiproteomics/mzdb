@@ -5,7 +5,6 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
 import fr.profi.mzdb.utils.misc.InMemoryIdGen
-import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 
 object Feature extends InMemoryIdGen {
 
