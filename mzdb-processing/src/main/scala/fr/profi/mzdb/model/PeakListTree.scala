@@ -4,6 +4,7 @@ import collection.mutable.MapBuilder
 import collection.mutable.ArrayBuffer
 import util.control.Breaks._
 import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.ms.model.TheoreticalIsotopePattern
 
 object PeakListTree {
   
@@ -78,9 +79,9 @@ case class PeakListTree( pklGroupByScanId: Map[Int,PeakListGroup] ) {
     maxTheoreticalPeakelIndex:Int
   ): Option[IsotopicPatternLike] = {
     
-    val mz = theoreticalIP.mz
+    val mz = theoreticalIP.monoMz
     val charge = theoreticalIP.charge
-    val maxNbPeaks = if (maxNbPeaksInIP != null) maxNbPeaksInIP.get else theoreticalIP.getRelativeAbundances.filter(_ >= 5).length
+    val maxNbPeaks = if (maxNbPeaksInIP != null) maxNbPeaksInIP.get else theoreticalIP.abundances.filter(_ >= 5).length
     val scanId = scanHeader.id
     val pklGroupAsOpt = pklGroupByScanId.get(scanId)
     

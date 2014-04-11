@@ -6,9 +6,8 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import util.control.Breaks._
-import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
 import fr.profi.mzdb.algo.signal.fitting.GaussFitter
@@ -19,6 +18,7 @@ import org.apache.commons.math.optimization.OptimizationException
 import org.apache.commons.math.stat.StatUtils
 import fr.profi.mzdb.utils.math.StatisticsConversion
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
+import fr.profi.ms.algo.IsotopePatternInterpolator
 
 object FeatureScorer {
   
@@ -180,8 +180,8 @@ object FeatureScorer {
     val mz = f.getMz
     
     // Retrieve theoretical and observed abundances
-    val theoPattern = IsotopicPatternLookup.getTheoreticalPattern(mz,f.getCharge)
-    val theoAbundances = theoPattern.relativeAbundances.map(_ / 100 toDouble)
+    val theoPattern = IsotopePatternInterpolator.getTheoreticalPattern(mz,f.getCharge)
+    val theoAbundances = theoPattern.abundances.map(_ / 100 toDouble)
     val obsAbundances = f.getPeakels.map(_.area.toDouble)
     
     // Normalize observed abundances
@@ -403,7 +403,6 @@ object SideEstimator extends Enumeration {
     type SideEstimator = Value
     val Q3_ESTIMATION, Q1_ESTIMATION = Value
 }
-import SideEstimator._
 
 case class DistributionParameters(median: Double, q1: Double, q3:Double, iqr: Double, sigma: Double)
 
@@ -428,15 +427,15 @@ trait DistributionParametrizer {
     DistributionParameters(median, q1, q3, iqr, sigma)
   }
   
-  def getEstimatedParameters(values: Array[Double], side: SideEstimator): DistributionParameters = {
+  def getEstimatedParameters(values: Array[Double], side: SideEstimator.Value): DistributionParameters = {
     val median = StatUtils.percentile(values, 50)
     var (q3, q1) = (0d, 0d)
     side match {
-      case Q3_ESTIMATION =>  { 
+      case SideEstimator.Q3_ESTIMATION =>  { 
         q1 = StatUtils.percentile(values, 25)
         q3 = median + (median - q1)
       }
-      case Q1_ESTIMATION => {
+      case SideEstimator.Q1_ESTIMATION => {
         q3 = StatUtils.percentile(values, 75)
         q1 = median - (q3- median)
       }
@@ -452,7 +451,7 @@ trait IDataTransformer {
   protected def transformValues(): Array[Double]
 }
 
-abstract class ZScoreEvaluator(featureQualityVectors: Array[FeatureQualityVector], sideEstimation: SideEstimator)  
+abstract class ZScoreEvaluator(featureQualityVectors: Array[FeatureQualityVector], sideEstimation: SideEstimator.Value)  
 extends DistributionParametrizer with DistributionNormalizer with IDataTransformer{
   
   var values: Array[Double] = null

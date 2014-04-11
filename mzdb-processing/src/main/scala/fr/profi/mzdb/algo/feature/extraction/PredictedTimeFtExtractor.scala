@@ -107,7 +107,7 @@ class PredictedTimeFtExtractor(
     val cycles = ( leftMostScanH.getCycle() to rightMostScanH.getCycle() ).toArray
     val selectedScanIds = cycles.map( c => this.ms1ScanHeaderByCycleNum(c).getId )
 
-    val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.getTheoriticalMaxPeakelIndex()
+    val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.theoreticalMaxPeakelIndex
     
     //val t1 = System.currentTimeMillis().toDouble / 1000
     progressPlan( STEP1 ).incrementAndGetCount(1)

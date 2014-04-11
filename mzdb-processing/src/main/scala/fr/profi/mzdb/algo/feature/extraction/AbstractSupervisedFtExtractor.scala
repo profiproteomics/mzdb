@@ -42,7 +42,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     val scanHeader = scanHeaderOpt.get
     val ftTime = scanHeader.getElutionTime()
 
-    val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.getTheoriticalMaxPeakelIndex()
+    val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.theoreticalMaxPeakelIndex
 
     // Extract isotopic patterns around the starting scan, by default extract a maxNbPeaks given by the averagine
     // ips never null

@@ -2,11 +2,10 @@ package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
-
 import com.typesafe.scalalogging.slf4j.Logging
-
 import fr.profi.mzdb.model._
-import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
+import fr.profi.ms.algo.IsotopePatternInterpolator
+import fr.profi.ms.model.TheoreticalIsotopePattern
 
 case class OverlappingStatus(
     
@@ -248,8 +247,8 @@ class OverlappingFeaturesExtractor(
 
         val correlation = previousOvlFtPeakel.computeCorrelationWith(monoFtPeakel) toFloat
         //experimental intensity quotient vs averagine
-        val theoIP = IsotopicPatternLookup.getTheoreticalPattern(ovlFt.mz, ovlFt.charge)
-        val abundances = theoIP.getRelativeAbundances()
+        val theoIP = IsotopePatternInterpolator.getTheoreticalPattern(ovlFt.mz, ovlFt.charge)
+        val abundances = theoIP.abundances
 //        if (previousOvlFtIndex + 1 > abundances.length) {
 //          logger.trace("Reached max peakel, pass")
 //        }
