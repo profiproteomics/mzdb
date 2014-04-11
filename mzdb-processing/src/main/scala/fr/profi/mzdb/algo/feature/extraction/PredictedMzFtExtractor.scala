@@ -2,7 +2,7 @@ package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
 
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.waveletImpl._
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 
@@ -10,6 +10,7 @@ class PredictedMzFtExtractor(
   val scanHeaderById: Map[Int, ScanHeader],
   val nfByScanId: Map[Int, Float],
   val xtractConfig: FeatureExtractorConfig,
+  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
 ) extends AbstractSupervisedFtExtractor {
 
@@ -38,7 +39,7 @@ class PredictedMzFtExtractor(
     }
 
     //build cwt, if no good ...
-    val peakelFinder = new WaveletBasedPeakelFinder(xic) //gaussainfirstder (Coombes) by default
+    val peakelFinder = new WaveletPeakelFinderNeumann(xic) //gaussainfirstder (Coombes) by default
     val peakels = peakelFinder.findCwtPeakels()
 
     //return Option[Feature] if cwt did not found any peaks

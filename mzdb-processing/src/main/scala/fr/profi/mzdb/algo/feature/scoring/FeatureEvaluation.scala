@@ -5,7 +5,7 @@ import scala.reflect.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
 import scala.collection.parallel.mutable.ParArray
 
 /**

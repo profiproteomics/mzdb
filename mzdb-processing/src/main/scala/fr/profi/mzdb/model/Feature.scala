@@ -173,7 +173,8 @@ case class Feature(
 
   // Define some mutable attributes
   @BeanProperty var qualityScore = 0f
-  @BeanProperty var isRelevant = true
+  @BeanProperty var isGoodQuality = true
+  @BeanProperty var hasMonoPeakel = true
   @BeanProperty var meanPeakelCorrelation = 0f //(float) FeatureScorer.computeMeanPeakelCorrelation(peakels);
   @BeanProperty var overlapPMCC = 0f
   @BeanProperty var overlapRelativeFactor = 0f

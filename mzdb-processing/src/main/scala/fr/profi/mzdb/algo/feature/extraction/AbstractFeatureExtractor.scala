@@ -22,7 +22,7 @@ abstract class AbstractFeatureExtractor extends Logging {
   
   private val TIME_INDEX_WIDTH = 15
   
-  private val scanIdsByTimeIndex: HashMap[Int, ArrayBuffer[Int]] = {
+  /*private val scanIdsByTimeIndex: HashMap[Int, ArrayBuffer[Int]] = {
 
     val _tmpScanIdsMap = new HashMap[Int, ArrayBuffer[Int]]()
 
@@ -32,9 +32,44 @@ abstract class AbstractFeatureExtractor extends Logging {
     }
 
     _tmpScanIdsMap
+  }*/
+  
+  private val scanHeadersByTimeIndex: HashMap[Int, ArrayBuffer[ScanHeader]] = {
+
+    val _tmpScanHeaderMap = new HashMap[Int, ArrayBuffer[ScanHeader]]()
+
+    for ( scanH <- scanHeaders ) {
+      val timeIndex = (scanH.getTime / TIME_INDEX_WIDTH).toInt
+      _tmpScanHeaderMap.getOrElseUpdate(timeIndex, new ArrayBuffer[ScanHeader]()) += scanH
+    }
+
+    _tmpScanHeaderMap
   }
   
   protected def getScanHeaderForTime(time: Float, msLevel: Int): Option[ScanHeader] = {
+
+    val timeIndex = (time / TIME_INDEX_WIDTH).toInt
+
+    var nearestSH: ScanHeader = null
+
+    val timeIndexes = (timeIndex - 1 to timeIndex + 1).toArray
+    val matchingScanHeadersOpts = timeIndexes.map( scanHeadersByTimeIndex.get(_) )
+    
+    for(
+      matchingScanHeadersOpt <- matchingScanHeadersOpts;
+      matchingScanHeaders <- matchingScanHeadersOpt;
+      scanH <- matchingScanHeaders
+      if scanH.getMsLevel() == msLevel
+    ) {
+      if ( nearestSH == null || (scanH.getTime() - time).abs < (nearestSH.getTime() - time).abs) {
+        nearestSH = scanH
+      }
+    }
+    
+    Option(nearestSH)
+  }
+  
+  /*protected def getScanHeaderForTime(time: Float, msLevel: Int): Option[ScanHeader] = {
 
     val timeIndex = (time / TIME_INDEX_WIDTH).toInt
 
@@ -56,7 +91,7 @@ abstract class AbstractFeatureExtractor extends Logging {
     }
     
     Option(nearestSH)
-  }
+  }*/
 
 }
 

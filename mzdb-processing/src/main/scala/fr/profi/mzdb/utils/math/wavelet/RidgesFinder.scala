@@ -65,12 +65,12 @@ trait RidgesFinder {
    *
    * winLength: minWindow window is proportionnal to the scale: scale * 2 + 1
    */
-  var coeffs: HashMap[Float, Array[Double]]
+  var coeffs: HashMap[Float, Array[Float]]
   
   def findRidges(maximaIndexesPerScale: HashMap[Float, Array[Int]],  winLength: Int = 5, maxGap:Int = 4): Pair[Array[Ridge], Array[Ridge]] = {
     //check emptyness
     if (maximaIndexesPerScale.isEmpty)
-      return new Pair[Array[Ridge], Array[Ridge]](Array[Ridge](), Array[Ridge]())
+      return new Pair(Array[Ridge](), Array[Ridge]())
    
       
     val sortedScales = maximaIndexesPerScale.keys.toBuffer.sorted
@@ -79,10 +79,10 @@ trait RidgesFinder {
     val orphanRidges = new ArrayBuffer[Ridge]
     
     //init a ridge for each max
-    for (m <- lastMaximaRow) { 
-      var r = Ridge()
-      r.add(sortedScales.last, Some(Pair(m, coeffs(sortedScales.last)(m))))
-      ridges += r
+    for (maxVal <- lastMaximaRow) { 
+      val ridge = Ridge()
+      ridge.add(sortedScales.last, Some(Pair(maxVal, coeffs(sortedScales.last)(maxVal))))
+      ridges += ridge
     }
     
     //if only one scale
@@ -104,16 +104,8 @@ trait RidgesFinder {
   
         for (ridge <- ridges if !ridge.isEnded(maxGap) ) {
           var k = i + 1
-          //println(sortedScales(k))
-          var prevMaxIndex:Option[(Int, Double)] = None
-          //try {
-            prevMaxIndex = ridge.maximaIndexPerScale(sortedScales(k))
-          /*}catch {
-            case e :Exception => {
-              println(e.getMessage())
-              ridge.maximaIndexPerScale.foreach(x=>println(x._1))
-            }
-          }*/
+          var prevMaxIndex = ridge.maximaIndexPerScale.getOrElse(sortedScales(k), None)
+         
           //find a valid max
           while (prevMaxIndex == None) {
             k += 1
@@ -124,7 +116,6 @@ trait RidgesFinder {
           if (! prevMaxIndex.isDefined)
             throw new Exception("prevMaxIndex must be defined")
           
-           
           val closestMax = currentRow.minBy(x => math.abs(prevMaxIndex.get._1 - x)) 
   
           if (math.abs(prevMaxIndex.get._1 - closestMax) < winSize / 2) { // /2
@@ -136,14 +127,12 @@ trait RidgesFinder {
             ridge.incGap()
             ridge.add(currentScale, None)
           }
-          
-          
         }
         //start a new ridge for all max not assigned to a ridge
         for (maxIdx <- currentRow if !treatedIdx.contains(maxIdx)) {
-          val r_ = Ridge()
-          r_.add(currentScale, Some(Pair(maxIdx, coeffs(currentScale)(maxIdx))))
-          ridges += r_
+          val ridge = Ridge()
+          ridge.add(currentScale, Some(Pair(maxIdx, coeffs(currentScale)(maxIdx))))
+          ridges += ridge
         }
       }
     }

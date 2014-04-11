@@ -13,17 +13,17 @@ trait Smoother {
 }
 
 /** UWT equivalent to SWT*/
-object UWTSmoother extends Smoother{
-  
-  @BeanProperty var smoothMethod = "Soft"
-  @BeanProperty var nbIter = 6
-
-  def smooth(data:Array[Double]): Array[Double] = {
-    val coeffs = WaveletUtils.swt(data) //, args.getOrElse("iter", 6))
-    WaveletUtils.denoiseSoft(coeffs) //, 6)
-    WaveletUtils.iswt(coeffs) // , 6)
-  }
-}
+//object UWTSmoother extends Smoother{
+//  
+//  @BeanProperty var smoothMethod = "Soft"
+//  @BeanProperty var nbIter = 6
+//
+//  def smooth(data:Array[Double]): Array[Double] = {
+//    val coeffs = WaveletUtils.swt(data) //, args.getOrElse("iter", 6))
+//    WaveletUtils.denoiseSoft(coeffs) //, 6)
+//    WaveletUtils.iswt(coeffs) // , 6)
+//  }
+//}
 
 /** smooth signal with a SG smoother */
 object SGSmoother extends Smoother {

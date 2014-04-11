@@ -13,6 +13,7 @@ class FullySupervisedFtExtractor(
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
   val xtractConfig: FeatureExtractorConfig,
+  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
 ) extends AbstractSupervisedFtExtractor {
 

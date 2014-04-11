@@ -9,6 +9,10 @@ import fr.profi.mzdb.algo.signal.detection._
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.utils.math.wavelet._
 import FeatureExtractionUtils._
+import java.io.PrintWriter
+import java.io.File
+import java.io.Closeable
+import fr.proline.api.progress._
 
 /**
  * Try to select the best peakel in cross assignment
@@ -33,13 +37,58 @@ class PredictedTimeFtExtractor(
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   val xtractConfig: FeatureExtractorConfig,
+  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
-) extends AbstractSupervisedFtExtractor {
-
+) extends AbstractSupervisedFtExtractor with ProgressComputing {
+  
+  final case object STEP0 extends IProgressStepIdentity {
+    val stepDescription = "fake initialization step"
+  }
+  final case object STEP0b extends IProgressStepIdentity {
+    val stepDescription = "before before extraction step"
+  }
+  final case object STEP1 extends IProgressStepIdentity {
+    val stepDescription = "before extraction step"
+  }  
+  final case object STEP2 extends IProgressStepIdentity {
+    val stepDescription = "ExtractIsotopicPattern step"
+  }  
+  final case object STEP3 extends IProgressStepIdentity {
+    val stepDescription = "GetPeakelsIndexesFromExtractedIPs step"
+  }
+  final case object STEP4 extends IProgressStepIdentity {
+    val stepDescription = "Feature building step"
+  }
+  final case object STEP5 extends IProgressStepIdentity {
+    val stepDescription = "GetBestMatchingFeature step"
+  }
+  
+  trait PredictedTimeFtExtractorSequence extends IProgressPlanSequence
+  val progressPlan = ProgressPlan[PredictedTimeFtExtractorSequence](
+    name = "PredictedTimeFtExtractor progression",
+    steps = Seq(
+      ProgressStep( STEP0, maxCount = 1, weight = 1),
+      ProgressStep( STEP0b, maxCount = 1, weight = 1),
+      ProgressStep( STEP1, maxCount = 1, weight = 1),
+      ProgressStep( STEP2, maxCount = 1, weight = 1),
+      ProgressStep( STEP3, maxCount = 1, weight = 1),
+      ProgressStep( STEP4, maxCount = 1, weight = 1),
+      ProgressStep( STEP5, maxCount = 1, weight = 1)
+    )
+  )
+  
+  //for debug purpose
+//  val printWriter = new PrintWriter(new File("timing_xics.txt"))
+//  val printWriter2 = new PrintWriter(new File("timing_detection.txt"));
+//  
+//  def close() = {
+//    printWriter.close()
+//    printWriter2.close()
+//  }
+  
   /** use wavelet technique to dertermine starting point to extract */
   def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
-
-    def getScanId(peak: Peak) = peak.getLcContext().getScanId()
+    progressPlan( STEP0 ).incrementAndGetCount(1)
 
     // Retrieve some vars
     val pftTime = putativeFt.elutionTime
@@ -49,17 +98,20 @@ class PredictedTimeFtExtractor(
     val curScanHOpt = this.getScanHeaderForTime(pftTime, 1)
     val leftMostScanH = this.getScanHeaderForTime(pftTime - predictedTimeTol, 1).getOrElse(this.scanHeaders.head)
     val rightMostScanH = this.getScanHeaderForTime(pftTime + predictedTimeTol, 1).getOrElse(this.scanHeaders.last)
+    progressPlan( STEP0b ).incrementAndGetCount(1)
 
     // Checks scanHeaders
     if (leftMostScanH.getId == rightMostScanH.getId)
       return Option.empty[Feature]
 
-    val scanIds = pklTree.scanIds
-    val ids = (for (i <- leftMostScanH.getId to rightMostScanH.getId) yield i) toArray
-    val selectedScanIds = ids.filter(scanIds.contains(_))
+    val cycles = ( leftMostScanH.getCycle() to rightMostScanH.getCycle() ).toArray
+    val selectedScanIds = cycles.map( c => this.ms1ScanHeaderByCycleNum(c).getId )
 
     val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.getTheoriticalMaxPeakelIndex()
-
+    
+    //val t1 = System.currentTimeMillis().toDouble / 1000
+    progressPlan( STEP1 ).incrementAndGetCount(1)
+    
     val ips = selectedScanIds.map { id =>
       pklTree.extractIsotopicPattern(
         this.scanHeaderById(id),
@@ -68,13 +120,22 @@ class PredictedTimeFtExtractor(
         xtractConfig.maxNbPeaksInIP,
         maxTheoreticalPeakelIndex = maxTheoreticalPeakelIndex).orNull
     }
+    
+    
+    //this.printWriter.println("" + (System.currentTimeMillis().toDouble / 1000 - t1))
+    progressPlan( STEP2 ).incrementAndGetCount(1)
+    //logger.trace("" + (System.currentTimeMillis() / 1000 - t1))
+    
     val filteredIps = ips.filter(ip => ip != null && ip.peaks.count(_ != null) > 0) // FIXME: should never happen but still have a bug
 
     // --- FIXME: old implementation
     //val features = this._detectFeaturesFromExtractedIPs(putativeFt, filteredIps, maxTheoreticalPeakelIndex)
-
+    
+    //val t2 = System.currentTimeMillis().toDouble / 1000
     val peakelsIndexes = this._getPeakelsIndexesFromExtractedIPs(putativeFt, filteredIps, maxTheoreticalPeakelIndex)
-
+    //this.printWriter2.println("" + (System.currentTimeMillis().toDouble / 1000 - t2))
+    progressPlan( STEP3 ).incrementAndGetCount(1)
+    
     val features = peakelsIndexes.map {
       case (minIdx, maxIdx) =>
 
@@ -93,7 +154,7 @@ class PredictedTimeFtExtractor(
 
         val selectedIPsIdx = new ArrayBuffer[Int]
         var consecutiveGaps: Int = 0
-        //--- go threw the left first
+        //--- go through the left first
         var i: Int = apexIdx - 1
         while (i >= realMinIdx && consecutiveGaps <= this.xtractConfig.maxConsecutiveGaps) {
           val currIP = ips(i)
@@ -103,7 +164,7 @@ class PredictedTimeFtExtractor(
             selectedIPsIdx.+=:(i)
           i -= 1
         }
-        //--- go threw the right second
+        //--- go through the right second
         i = apexIdx + 1
         consecutiveGaps = 0
         while (i <= realMaxIdx && consecutiveGaps <= this.xtractConfig.maxConsecutiveGaps) {
@@ -128,57 +189,66 @@ class PredictedTimeFtExtractor(
         ft // return ft
 
     }.filter(_ != null) // remove null features
+    progressPlan( STEP4 ).incrementAndGetCount(1)
 
     //--- filter features
-    this._getBestMatchingFeature(putativeFt, features, pklTree)
+    val bestFt = this._getBestMatchingFeature(putativeFt, features, pklTree)    
+    progressPlan( STEP5 ).incrementAndGetCount(1)
+    
+    bestFt
   }
 
   def _getBestMatchingFeature(putativeFt: PutativeFeature, features: Array[Feature], pklTree: PeakListTree): Option[Feature] = {
-
+    
+    if (features.isEmpty)
+      return Option.empty[Feature]
+    
     val elutionTime = putativeFt.elutionTime
     val mz = if (putativeFt.mozs != null) putativeFt.mozs.sum / putativeFt.mozs.length else putativeFt.mz
 
-    //val area = if (putativeFt.areas != null) putativeFt.areas.sum / putativeFt.areas.length else 0f
-    //val minFold = area * 1.45 
+//    val area = if (putativeFt.areas != null) putativeFt.areas.sum / putativeFt.areas.length else 0f
+//    val minFold = area * 1.45 
 
     val charge = putativeFt.charge
-    val (minDuration, maxDuration) = if (putativeFt.durations != null) (putativeFt.durations.min, putativeFt.durations.max)
-    else (0f, 0f)
-    if (features.isEmpty)
-      return Option.empty[Feature]
+//    val (minDuration, maxDuration) = if (putativeFt.durations != null) (putativeFt.durations.min, putativeFt.durations.max)
+//    else (0f, 0f)
+   
 
     //check detected features contains a real monoisotope as first elution peak 
     val nonAmbiguousFeatures = features.filter { ft =>
-      //val gapRespect = if (this._nbGapInMaxPeakelRespectful(ft, maxTheoreticalPeakelIndex, 2)) true else false
+//      val gapRespect = if (this._nbGapInMaxPeakelRespectful(ft, maxTheoreticalPeakelIndex, 2)) true else false
       val overlapStatus = this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, putativeFt.theoreticalIP, pklTree)
-      (ft.isRelevant) //&& gapRespect)
+//      if (! ft.hasMonoPeakel)
+//        this.logger.info("Detected feature does not have monoisotopic elution peak")
+      (ft.hasMonoPeakel) //&& gapRespect)
     }
 
     if (nonAmbiguousFeatures.isEmpty)
       return Option.empty[Feature]
 
-    // filter the feature based duration...     
-    val durationFilteredFts = if (minDuration != 0f && maxDuration != 0f) {
-      features.filter { f =>
-        val duration = f.scanHeaders.last.getElutionTime - f.scanHeaders.head.getElutionTime
-        duration >= minDuration - (minDuration * 0.5) && duration <= maxDuration + (maxDuration * 0.5)
-      }
-    } else nonAmbiguousFeatures
+// ---filter the feature based duration...deprecated
+//    val durationFilteredFts = if (minDuration != 0f && maxDuration != 0f) {
+//      features.filter { f =>
+//        val duration = f.scanHeaders.last.getElutionTime - f.scanHeaders.head.getElutionTime
+//        duration >= minDuration - (minDuration * 0.5) && duration <= maxDuration + (maxDuration * 0.5)
+//      }
+//    } else nonAmbiguousFeatures
+//
+//    if (durationFilteredFts.isEmpty)
+//      return Option.empty[Feature]
 
-    if (durationFilteredFts.isEmpty)
-      return Option.empty[Feature]
-
-    //little cheat filter on intensity
-    /*val variablesFts = if (area != 0 ) durationFilteredFts.filter{ f => f.area > area + minFold || f.area < area - minFold }
-                         else  Array.empty[Feature]
-
-      val intensityFilteredFts = if (variablesFts.isEmpty) durationFilteredFts else variablesFts*/
+// ---little cheat filter on intensity...deprecated
+//    val variablesFts = if (area != 0 ) durationFilteredFts.filter{ f => f.area > area + minFold || f.area < area - minFold }
+//                         else  Array.empty[Feature]
+//
+//    val intensityFilteredFts = if (variablesFts.isEmpty) durationFilteredFts else variablesFts
 
     //finally filter the feature based on the mass (since we have no information on intensity, duration...)
-    val bestFeature = durationFilteredFts.sortBy(f => math.abs(f.getElutionTime - elutionTime)).slice(0, 3) // take the top 3 feature
-      .minBy(f => math.abs(f.mz - mz))
+//    val bestFeature = durationFilteredFts.sortBy(f => math.abs(f.getElutionTime - elutionTime)).slice(0, 3) // take the top 3 feature
+//                                         .minBy(f => math.abs(f.mz - mz))
+    val bestFeature = nonAmbiguousFeatures.sortBy(ovlft => math.abs(ovlft.getElutionTime - elutionTime)).take(3)
+                                          .minBy(f => math.abs(f.mz - mz))
     Some(bestFeature)
-
   }
 
   /**
@@ -214,8 +284,8 @@ class PredictedTimeFtExtractor(
 
     val peakelIndexes = findPeakelsIndexes(
       definedPeaks,
-      xtractConfig.predictedTimeXtractConfig.detectionAlgorithm,
-      xtractConfig.predictedTimeXtractConfig.minSNR
+      peakelDetectionConfig.detectionAlgorithm,
+      peakelDetectionConfig.minSNR
     )
 
     val detectedFts = new ArrayBuffer[Feature](peakelIndexes.length)
@@ -257,10 +327,12 @@ class PredictedTimeFtExtractor(
 
     val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
     // launch peak detection
-    val peakelIndexes = findPeakelsIndexes(definedPeaks, xtractConfig.predictedTimeXtractConfig.detectionAlgorithm,
-      xtractConfig.predictedTimeXtractConfig.minSNR)
+    val peakelIndexes = findPeakelsIndexes(definedPeaks, peakelDetectionConfig.detectionAlgorithm,peakelDetectionConfig.minSNR)
+    
     peakelIndexes
   }
+  
+  //protected def getScanId(peak: Peak) = peak.getLcContext().getScanId()
 
   /**
    *

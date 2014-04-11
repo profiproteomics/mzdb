@@ -5,7 +5,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
 
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 import FeatureExtractionUtils._
@@ -14,27 +14,28 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
   
   // Required attributes
   val xtractConfig: FeatureExtractorConfig
+  val peakelDetectionConfig: PeakelDetectionConfig
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
   
   val overlappingFeaturesExtractor = new OverlappingFeaturesExtractor(
     this.scanHeaderById,
     Map(),
-    xtractConfig,
-    overlapXtractConfig
+    this
   )
   
   /** Method to be implemented in concreted classes */
   def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature]
   
-  protected def extractFeature(
+  def searchAndExtractFeature(
     putativeFt: PutativeFeature,
     pklTree: PeakListTree,
-    xtractConfig: FeatureExtractorConfig,
-    xtractAlgoConfig: ExtractionAlgorithm.Value
+    ftXtractConfig: FeatureExtractorConfig = this.xtractConfig,
+    ftXtractAlgoConfig: PeakelDetectionConfig = this.peakelDetectionConfig
   ): Option[Feature] = {
     
-    val extractionAlgorithm = if (xtractAlgoConfig == ExtractionAlgorithm.MS2_DRIVEN) xtractConfig.ms2DrivenXtractConfig
-                              else xtractConfig.predictedTimeXtractConfig
+    //unpack some config parameters
+    val minConsecutiveScans = ftXtractConfig.minConsecutiveScans
+    
     // Retrieve the scan header corresponding to the starting scan id
     val scanHeaderOpt = this.scanHeaderById.get(putativeFt.scanId)
 
@@ -43,8 +44,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
 
     val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.getTheoriticalMaxPeakelIndex()
 
-    // Extract isotopic patterns around the starting scan
-    // by default extract a maxNbPeaks given by the averagine
+    // Extract isotopic patterns around the starting scan, by default extract a maxNbPeaks given by the averagine
     // ips never null
     val ips = this.extractIsotopicPatterns(putativeFt, maxTheoreticalPeakelIndex, pklTree, scanHeader, xtractConfig) 
 
@@ -61,24 +61,24 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       return Option.empty[Feature]
 
     var tmpFt = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
+    
+    // Find maxpeakelIndex
+    val maxPeakelIndex = if (maxTheoreticalPeakelIndex < tmpFt.peakelsCount) maxTheoreticalPeakelIndex else 0
+
+    // Get the defined peaks
+    val maxPeakel = tmpFt.peakels(maxPeakelIndex)
+
+    // Check definedPeaks length > 3 and peaks length >= 5
+    if ( maxPeakel.isGoodForPeakDetection(minConsecutiveScans) == false )
+      return Option.empty[Feature]
 
     //-------- REFINE PEAKEL OPTIONAL STEP --------
-    if ( extractionAlgorithm.refineDetection ) {
-      
-      // Find maxpeakelIndex
-      val maxPeakelIndex = if (maxTheoreticalPeakelIndex < tmpFt.peakelsCount) maxTheoreticalPeakelIndex else 0
-
-      // Get the defined peaks
-      val maxPeakel = tmpFt.peakels(maxPeakelIndex)
-
-      // Check definedPeaks length > 3 and peaks length >= 5
-      if ( maxPeakel.isGoodForPeakDetection(xtractConfig.minConsecutiveScans) == false )
-        return Option.empty[Feature]
+    if ( ftXtractAlgoConfig.refineDetection ) {
 
       val (peaks, definedPeaks) = (maxPeakel.peaks, maxPeakel.definedPeaks)
 
       // Detect peaks
-      val peakelIndexes = findPeakelsIndexes(definedPeaks, extractionAlgorithm.detectionAlgorithm, extractionAlgorithm.minSNR)
+      val peakelIndexes = findPeakelsIndexes(definedPeaks, ftXtractAlgoConfig.detectionAlgorithm, ftXtractAlgoConfig.minSNR)
 
       // Treat matching Idx
       var matchingPeakIdx: (Int, Int) = null
@@ -108,8 +108,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
 
       Some(ft)
 
-    } else Some(tmpFt)
-
+    } else { Some(tmpFt)  }
   } //end extractFeature
   
   /**

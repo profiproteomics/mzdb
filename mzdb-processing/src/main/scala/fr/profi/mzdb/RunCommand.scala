@@ -3,7 +3,8 @@ package fr.profi.mzdb
 import com.beust.jcommander.{JCommander, MissingCommandException, Parameter, ParameterException, Parameters}
 import com.typesafe.scalalogging.slf4j.Logging
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
 
 /**
  * @author David Bouyssie
@@ -29,6 +30,9 @@ object RunCommand extends App with Logging {
   private object GenerateXICs extends JCommandReflection {
     @Parameter(names = Array("--mzdb_file"), description = "The path to the mzDB list file", required = true)
     var mzdbFilePath: String = ""
+      
+    @Parameter(names = Array("--area"), description = "The kind of area to compute: 'uahm' or 'total', default:'total'", required = false)
+    var area: String = "uahm"
       
     @Parameter(names = Array("--peplist_file"), description = "The path to the peptide list file", required = true)
     var peplistFilePath: String = ""
@@ -112,7 +116,7 @@ object RunCommand extends App with Logging {
       parsedCommand match {
         case GenerateXICs.Parameters.firstName => {
           val p = GenerateXICs
-          generateXICs(p.mzdbFilePath,p.peplistFilePath,p.outputFilePath,p.mzTol,p.algo)
+          generateXICs(p.mzdbFilePath,p.peplistFilePath,p.outputFilePath, p.area, p.mzTol,p.algo)
         }
         case DumpRegion.Parameters.firstName => {
           val p = DumpRegion
@@ -146,7 +150,7 @@ object RunCommand extends App with Logging {
     
   }
   
-  def generateXICs(mzdblistFilePath: String, peplistFilePath: String, outputFilePath: String, mzTolInPPM: Float, algo:String) {
+  def generateXICs(mzdblistFilePath: String, peplistFilePath: String, outputFilePath: String, area: String, mzTolInPPM: Float, algo:String) {
     
     import java.io.File
     import java.io.FileOutputStream
@@ -168,6 +172,7 @@ object RunCommand extends App with Logging {
       
     }
     
+     def getArea(p:Peakel):Float = {if (area == "uahm") p.uahm else p.area } 
     // Define some helper functions
     //def peakTime(p: Peak): Float = p.getLcContext().getElutionTime()
     def sumPeaks( peaks: Seq[Peak]): Float = peaks.foldLeft(0f)( (s,p) => s + p.getIntensity() )
@@ -228,7 +233,7 @@ object RunCommand extends App with Logging {
         if (algo == "basic") {
           peakelIndexes = BasicPeakelFinder.findPeakelsIndexes(peaks)
         } else if (algo == "wavelet") {
-          val wpf = new WaveletBasedPeakelFinder(peaks)
+          val wpf = new WaveletDetectorDuMethod(peaks)
           wpf.ridgeFilteringParams.minSNR = 0.0f
           peakelIndexes = wpf.findPeakelsIndexes(asScanId= false)
         }
@@ -260,7 +265,7 @@ object RunCommand extends App with Logging {
           
           apex.getMz(), peakTime(apex), duration, sumPeaks(filteredPeaks),
           */
-          mz -> Some( DetectedPeak( peakel.mz, apex, peakel.duration, peakel.area ) )
+          mz -> Some( DetectedPeak( peakel.mz, apex, peakel.duration, getArea(peakel)) )
         } else mz -> None
         
         intSum

@@ -10,6 +10,7 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.utils.ms.MsUtils
+import fr.proline.api.progress._
 
 class FeatureExtractor(
   val mzDbReader: MzDbReader,
@@ -17,13 +18,61 @@ class FeatureExtractor(
   val nfByScanId: Map[Int,Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
-) extends AbstractSupervisedFtExtractor {
+) extends AbstractFeatureExtractor with ProgressComputing {
+  
+  final case object STEP1 extends IProgressStepIdentity {
+    val stepDescription = "Feature extraction step"
+  }  
+  
+  trait FeatureExtractorSequence extends IProgressPlanSequence
+  val progressPlan = ProgressPlan[FeatureExtractorSequence](
+    name = "FeatureExtractor progression",
+    steps = Seq(
+      ProgressStep( STEP1, maxCount = 1, weight = 1)
+    )
+  )
+ 
+  protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor(
+    scanHeaderById,
+    nfByScanId,
+    xtractConfig = xtractConfig,
+    overlapXtractConfig = overlapXtractConfig
+  )
+  protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor(
+    scanHeaderById,
+    nfByScanId,
+    xtractConfig = xtractConfig,
+    overlapXtractConfig = overlapXtractConfig
+   )
+  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor(
+    scanHeaderById,
+    nfByScanId,
+    xtractConfig = xtractConfig,
+    overlapXtractConfig = overlapXtractConfig
+  )
+  protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor(
+    scanHeaderById,
+    nfByScanId,
+    xtractConfig = xtractConfig,
+    overlapXtractConfig = overlapXtractConfig
+  )
+  
+  // Set current progress updater as the predicted time feature extrctor one
+  this.progressPlan(STEP1).setProgressUpdater(predictedTimeFtExtractor.progressComputer.getOnProgressUpdatedListener())
 
-  protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
-  protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
-  protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
-  protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor( scanHeaderById, nfByScanId, xtractConfig, overlapXtractConfig );
-    
+  def registerOnPredictedTimeProgressUpdatedAction( action: (IProgressStepIdentity,Float) => Unit ) = {    
+    predictedTimeFtExtractor.progressComputer.registerOnProgressUpdatedAction( (stepIdentity,progress) => {      
+      action(stepIdentity,progress)
+    })
+  }
+  
+  def setProgressPlanMaxCount( maxCount: Int ) = {
+    this.progressComputer.getCurrentStep().setMaxCount(maxCount)
+    for (step <- predictedTimeFtExtractor.progressPlan.steps) {
+      step.setMaxCount(maxCount)
+    }
+  }
+  
   def extractFeatures( putativeFeatures: Seq[PutativeFeature], 
                        extractedFeatures: ArrayBuffer[Feature], // store newly extracted features
                        pklTree: PeakListTree ) {
@@ -35,6 +84,7 @@ class FeatureExtractor(
   }
   
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree ): Option[Feature] = {
+      
     val mzTolPPM = this.xtractConfig.mzTolPPM
     var ft = Option.empty[Feature]
     if( putativeFt.isPredicted == false ) { // we know that signal is there
@@ -49,6 +99,7 @@ class FeatureExtractor(
     }  else { // don't know if signal is there
       
       if( putativeFt.elutionTime > 0 ) { // only know m/z, elution time is predicted
+        //this.logger.info(s"Predicted Time call for feature at ${putativeFt.mz}, ${putativeFt.elutionTime}")
         ft = this.predictedTimeFtExtractor.extractFeature(putativeFt, pklTree );
         
       }  else if( putativeFt.mz > 0 ) { // search best feature for this m/z

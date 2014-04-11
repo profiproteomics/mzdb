@@ -12,7 +12,7 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
 import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.utils.ms.MsUtils
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.ElutionTimeContext
 import fr.profi.mzdb.algo.signal.detection.RidgeFilteringParameters
@@ -26,31 +26,30 @@ class Ms2DrivenFtExtractor(
  val scanHeaderById: Map[Int,ScanHeader],
  val nfByScanId: Map[Int,Float],
  val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
+ val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
  val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
 ) extends AbstractSupervisedFtExtractor with Logging {
   
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
     // Retrieve the scan header corresponding to the starting scan id
-    val ftAsopt = this.extractFeature(putativeFt, pklTree, this.xtractConfig, ExtractionAlgorithm.MS2_DRIVEN)
+    val ftAsopt = this.searchAndExtractFeature(putativeFt, pklTree)
     
     //Actually never seen error with our parameters monisotopes detection, remove it
     //extract overlapping features
-    /*if ( ! ftAsopt.isDefined) {
+    if ( ! ftAsopt.isDefined) {
       return Option.empty[Feature]
     }
     
     val ft = ftAsopt.get
     val overlapStatus = this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, putativeFt.theoreticalIP, pklTree)
       
-    if (  ft.isRelevant == false ) {
+    if (  ft.hasMonoPeakel == false ) {
       //Ms2DrivenFtExtractor.wrong +=1
-      println(s"Possible wrong monoisotope selection for feature with mz:${ft.mz}.\n Ignoring it...")
+      this.logger.debug(s"Possible wrong monoisotope selection for feature with mz:${ft.mz}.\n Ignoring it...")
       return Option.empty[Feature]
-    }*/
-
+    }
     ftAsopt
-
   }
   
   protected def refinePrecursorMz(mz: Double, pklTree: PeakListTree, scanId: Int): Option[Double] = {

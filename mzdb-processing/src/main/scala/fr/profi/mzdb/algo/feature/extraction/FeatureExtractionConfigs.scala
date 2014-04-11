@@ -12,7 +12,7 @@ object ExtractionAlgorithm extends Enumeration {
   val MS2_DRIVEN, PREDICTED_TIME, FULLY_SPERVISED, UNSUPERVISED = Value
 }
 
-case class ExtractionAlgorithmConfig(
+case class PeakelDetectionConfig(
     
   // use basic peakel finder if refine detection set to true
   var detectionAlgorithm: DetectionAlgorithm.Value,
@@ -28,8 +28,10 @@ case class FeatureExtractorConfig(
     
   // ppm tolerance
   var mzTolPPM: Float, 
-  var ms2DrivenXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.BASIC),
-  var predictedTimeXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.WAVELET),
+  //var ms2DrivenPeakelDetectionAlgo: DetectionAlgorithm.Value = DetectionAlgorithm.BASIC,
+  //var predictedTimePeakelDetectionAlgo: DetectionAlgorithm.Value = DetectionAlgorithm.WAVELET,
+  //var ms2DrivenXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.BASIC),
+  //var predictedTimeXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.WAVELET),
   
   // minimum scan duration to consider the detected feature (PredictedTime)
   var minConsecutiveScans: Int = 5,
@@ -65,10 +67,13 @@ case class OverlappingFeatureExtractorConfig(
   var maxIpShift: Int = 3,
   
   // minimum correlation to considerer a 'match'
-  var minPeakelCorrToMono: Float = 0.6f,
+  var minPeakelCorrToMono: Float = 0.8f,
   
   // quotient averagine
-  var minAveragineRatio: Float = 1.5f
+  var minAveragineRatio: Float = 1.5f,
+  
+  //apex distance
+  var minApexDistance: Float = 3
 )
 
 

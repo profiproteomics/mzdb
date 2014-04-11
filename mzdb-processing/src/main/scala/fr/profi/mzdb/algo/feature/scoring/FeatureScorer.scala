@@ -10,7 +10,7 @@ import scala.reflect.BeanProperty
 import util.control.Breaks._
 import fr.profi.mzdb.utils.ms.IsotopicPatternLookup
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
 import fr.profi.mzdb.algo.signal.fitting.GaussFitter
 import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
 import fr.profi.mzdb.algo.signal.fitting.PolyFitter
@@ -18,6 +18,7 @@ import fr.profi.mzdb.algo.signal.fitting.GaussLorentzFitter
 import org.apache.commons.math.optimization.OptimizationException
 import org.apache.commons.math.stat.StatUtils
 import fr.profi.mzdb.utils.math.StatisticsConversion
+import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
 
 object FeatureScorer {
   
@@ -211,7 +212,7 @@ object FeatureScorer {
   /**using the wavelet peakel finder*/
   def calcSignalFluctuationByWaveletBasedPeakelFinder ( f:Feature ): Float =  {
     var shape = 0f
-    f.getPeakels.foreach(p=> shape +=  new WaveletBasedPeakelFinder(p.definedPeaks).findCwtPeakels().length)
+    f.getPeakels.foreach(p=> shape +=  new WaveletDetectorDuMethod(p.definedPeaks).findCwtPeakels().length)
     shape / f.peakelsCount
   }
   
@@ -403,7 +404,7 @@ object SideEstimator extends Enumeration {
     val Q3_ESTIMATION, Q1_ESTIMATION = Value
 }
 import SideEstimator._
-  
+
 case class DistributionParameters(median: Double, q1: Double, q3:Double, iqr: Double, sigma: Double)
 
 trait DistributionNormalizer {

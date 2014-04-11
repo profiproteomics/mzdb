@@ -7,8 +7,8 @@ import scala.util.control.Breaks._
 
 import com.typesafe.scalalogging.slf4j.Logging
 
-import fr.profi.mzdb.algo.signal.detection.WaveletBasedPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.waveletImpl._
 import fr.profi.mzdb.model._
 
 object FeatureExtractionUtils {
@@ -25,7 +25,7 @@ object FeatureExtractionUtils {
     if ( detectionAlgorithm == DetectionAlgorithm.BASIC ) {
       peakelIndexes = BasicPeakelFinder.findPeakelsIndexes(peaks.map(_.getIntensity toDouble), 2) 
     } else {
-      val wpf = new WaveletBasedPeakelFinder(peaks)
+      val wpf = new WaveletPeakelFinderNeumann(peaks)
       wpf.ridgeFilteringParams.minSNR = minSNR
       peakelIndexes = wpf.findPeakelsIndexes(asScanId = false) 
     }
@@ -36,7 +36,7 @@ object FeatureExtractionUtils {
   }
   
  /** naive local maxima finder*/
-  /*def findMaximaNaive(data: Array[Float]): Array[Int] = {
+  def findMaximaNaive(data: Array[Float]): Array[Int] = {
     
     val maxs = new ArrayBuffer[Int]
     
@@ -61,7 +61,7 @@ object FeatureExtractionUtils {
     }
     
     maxs.toArray
-  }*/
+  }
 
   
   /** no plans to use it */
