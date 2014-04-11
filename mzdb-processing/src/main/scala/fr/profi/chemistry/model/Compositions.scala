@@ -3,8 +3,97 @@ package fr.profi.chemistry.model
 import scala.collection.mutable.HashMap
 import implicits._
 import MolecularConstants._
+import scala.collection.MapLike
 
 // TODO: rename this file to MolecularCompositions
+
+object AbundanceMapOps {
+  
+  def sumAbundances[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ): Float = {
+    abundanceMap.foldLeft(0.f)( (sum,ab) => sum + ab._2 )
+  }
+  
+  def sumAbsoluteAbundances[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ): Float = {    
+    abundanceMap.foldLeft(0.f)( (sum,ab) => sum + math.abs(ab._2) )
+  }
+  
+  protected def calcMass[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float], massExtractor: IMolecularEntity => Double ): Double = {
+    
+    var mass = 0.0    
+    for( (entity,entityAb) <- abundanceMap ) {
+      val entityMass = massExtractor(entity)
+      mass += entityAb * entityMass
+    }
+    
+    mass
+  }
+
+  def calcMonoMass[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ): Double = {
+    this.calcMass( abundanceMap, entity => entity.monoMass )
+  }
+  
+  def calcAverageMass[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ): Double = {
+    this.calcMass( abundanceMap, entity => entity.averageMass )
+  }
+
+  def multiplyBy[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float], number: Float ): Unit = synchronized {
+    
+    for( (key,value) <- abundanceMap )
+      abundanceMap(key) *= number
+
+    abundanceMap
+  }
+  
+  def divideBy[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float], number: Float ): Unit = synchronized {    
+    for( (key,value) <- abundanceMap )
+      abundanceMap(key) /= number
+  }
+
+  def addAbundanceMap[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float], otherAbundanceMap: scala.collection.Map[M,Float] ): Unit = synchronized {
+    for( (key,value) <- otherAbundanceMap ) {
+      abundanceMap.getOrElseUpdate(key, 0f)
+      abundanceMap(key) += value
+    }
+  }
+  
+  /*def averageWithAbundanceMap[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float], otherAbundanceMap: HashMap[M,Float] ) {
+    addAbundanceMap(abundanceMap, otherAbundanceMap)
+    divideBy(abundanceMap, 2)
+  }
+
+  def normalize[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ) {
+    val sumOfAbundances = sumAbundances(abundanceMap)
+    divideBy(abundanceMap, sumOfAbundances)    
+  }*/
+  
+  def stringifyToFormula[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ): String = {
+
+    val sortedAtoms = abundanceMap.keys.toList.sortBy(_.symbol)
+     
+    val strings = for(
+      entity <- sortedAtoms;
+      abundance <- abundanceMap.get(entity).map(_.toInt);
+      if abundance != 0
+    ) yield {
+      val sb = new StringBuilder()
+      
+      if( abundance != 0 ) {
+        sb.append(entity.symbol)
+        
+        if( abundance != 1 ) {
+          sb.append("(")
+            .append(abundance)
+            .append(")")
+        }
+      }
+
+      sb.toString
+    }
+    
+    strings.mkString(" ")
+  }
+  
+}
 
 /**
  * @author David Bouyssie
@@ -15,67 +104,38 @@ abstract class AbstractMolecularEntityComposition[M <: IMolecularEntity] {
   // K=symbol ; V=abundance
   def abundanceMap: HashMap[M,Float]
   
-  def getSumOfAbundances(): Float = {    
-    abundanceMap.foldLeft(0.f)( (sum,ab) => sum + ab._2 )
-  }
-  def getSumOfAbsoluteAbundances(): Float = {    
-    abundanceMap.foldLeft(0.f)( (sum,ab) => sum + math.abs(ab._2) )
-  }
+  def getSumOfAbundances(): Float = AbundanceMapOps.sumAbundances(abundanceMap)   
+
+  def getSumOfAbsoluteAbundances(): Float = AbundanceMapOps.sumAbsoluteAbundances(abundanceMap)
   
-  protected def getMass( massExtractor: IMolecularEntity => Double ): Double = {
-    
-    var mass = 0.0    
-    for( (entity,entityAb) <- this.abundanceMap ) {
-      val entityMass = massExtractor(entity)
-      mass += entityAb * entityMass
-    }
-    
-    mass
-  }
-
-  def getMonoMass(): Double = {
-    this.getMass( entity => entity.monoMass )
-  }
+  def getMonoMass(): Double = AbundanceMapOps.calcMonoMass(abundanceMap)
   
-  def getAverageMass(): Double = {
-    this.getMass( entity => entity.averageMass )
-  }
+  def getAverageMass(): Double = AbundanceMapOps.calcAverageMass(abundanceMap)
 
-  def fitToMonoMass( monoMass: Double): Double = {
-    
-    this *= ( monoMass / this.getMonoMass() ).toFloat
-    
-    this.getMonoMass() - monoMass
-  }
-
-  def *=( number: Float ) = synchronized {
-    
-    for( (key,value) <- abundanceMap )
-      abundanceMap(key) *= number
-
+  def *=( number: Float ) = {
+    AbundanceMapOps.multiplyBy(abundanceMap, number)
     this
   }
   
-  def /=( number: Float ) = synchronized {
-    
-    for( (key,value) <- abundanceMap )
-      abundanceMap(key) /= number
-
+  def /=( number: Float ) = {
+    AbundanceMapOps.divideBy(abundanceMap, number)
     this
   }
 
-  def +=( otherComposition: AbstractMolecularEntityComposition[M] ) = synchronized {
-
-    for( (key,value) <- otherComposition.abundanceMap ) {
-      this.abundanceMap.getOrElseUpdate(key, 0f)
-      this.abundanceMap(key) += value
-    }
-    
+  def +=( otherComposition: AbstractMolecularEntityComposition[M] ) = synchronized {    
+    AbundanceMapOps.addAbundanceMap(abundanceMap, otherComposition.abundanceMap)    
     this
   }
   
   def average( otherComposition: AbstractMolecularEntityComposition[M] ) = {
     (this += otherComposition) /= 2
+  }
+  
+  def fitToMonoMass( monoMass: Double): Double = {
+    
+    this *= ( monoMass / this.getMonoMass() ).toFloat
+    
+    this.getMonoMass() - monoMass
   }
 
   def normalize() = { this /= this.getSumOfAbundances }

@@ -17,7 +17,8 @@ object IsotopeDistributionComputer {
   
   def computeIsotopeDistribution(
     compoundAtomComposition: AtomComposition,
-    isotopeCombinationsByAtom: Map[Atom,Array[IsotopeCombination]],
+    charge: Int,
+    isotopeCombinationMap: Map[(Atom,Float),Array[IsotopeCombination]],
     minProba: Float = 0f
   ): IsotopeDistribution = {
     
@@ -31,19 +32,19 @@ object IsotopeDistributionComputer {
       computedCombinations,
       emptyCombination,
       compoundAtomCountByAtom,
-      isotopeCombinationsByAtom,
+      isotopeCombinationMap,
       atoms,
       minProba
     )
     
-    IsotopeDistribution(computedCombinations.toArray)    
+    IsotopeDistribution(computedCombinations.toArray,charge)
   }
   
   private def _combineIsotopeCombinations(
     computedCombinations: ArrayBuffer[IsotopeCombination],
     lastCombination: IsotopeCombination,
     compoundAtomCountByAtom: HashMap[Atom,Float],
-    isotopeCombinationsByAtom: Map[Atom,Array[IsotopeCombination]],
+    isotopeCombinationMap: Map[(Atom,Float),Array[IsotopeCombination]],
     atoms: Array[Atom],
     minProba: Float = 0f
   ) {
@@ -56,40 +57,34 @@ object IsotopeDistributionComputer {
     
     // Extract first atom from the atoms array
     val curAtom = atoms.head
+    val curAtomCount = compoundAtomCountByAtom(curAtom)
     val remainingAtoms = atoms.tail
     
     // Retrieve matching isotope combinations for the current atom abundance
-    val isotopeCombinations = isotopeCombinationsByAtom(curAtom)
-    val matchingIsotopeCombinations = isotopeCombinations.filter { isotopeCombination =>
-      if( curAtom == BiomoleculeAtomTable.getAtom("S") ) {
-        //println( isotopeCombination.toFormula() )
-        //println( compoundAtomCountByAtom(curAtom) )
-        //println( isotopeCombination.getAtomCount == compoundAtomCountByAtom(curAtom) )
-      }
-      isotopeCombination.atomCount == compoundAtomCountByAtom(curAtom)
-      //nearlyEqual( isotopeCombination.getAtomCount, compoundAtomCountByAtom(curAtom) )
-    }
+    val matchingIsotopeCombinationsOpt = isotopeCombinationMap.get( (curAtom,curAtomCount) )
+    require(
+      matchingIsotopeCombinationsOpt.isDefined,
+      s"provided computedCombinations has no entry for atom ${curAtom.symbol} with abundance ${curAtomCount}"
+    )
     
-    for( isotopeCombination <- matchingIsotopeCombinations ) {
-      //println( isotopeCombination.toFormula() )
+    for( isotopeCombination <- matchingIsotopeCombinationsOpt.get ) {
       
       val newProbability = lastCombination.probability * isotopeCombination.probability
       
       if( newProbability >= minProba ) {
         
         // Merge last composition with the one of the current isotope combination
-        val newComposition = lastCombination.getIsotopeCompositionClone
-        newComposition += isotopeCombination.getIsotopeCompositionClone
+        val newAbundanceMap = lastCombination.getCloneOfMutableAbundanceMap()
+        AbundanceMapOps.addAbundanceMap(newAbundanceMap, isotopeCombination.abundanceMap)
         
         // Instantiate a new isotope combination corresponding to the merged composition
-        val newCombination = IsotopeCombination( newComposition.abundanceMap.toMap, newProbability )
-        //lastCombination.copy()//IsotopeCombination( lastCombination, newProbability)
+        val newCombination = IsotopeCombination( newAbundanceMap.toMap, newProbability )
         
         this._combineIsotopeCombinations(
           computedCombinations,
           newCombination,
           compoundAtomCountByAtom,
-          isotopeCombinationsByAtom,
+          isotopeCombinationMap,
           remainingAtoms,
           minProba
         )
@@ -99,14 +94,23 @@ object IsotopeDistributionComputer {
     ()
   }
   
-  
   def computeIsotopicVariantCombinations(
     maxAtomCountByAtom: Map[Atom,Int],
     minProba: Float = 0f
-  ): Map[Atom,Array[IsotopeCombination]] = {    
-    maxAtomCountByAtom.map { case (atom,maxAtomCount) =>
-      atom -> this.computeAtomIsotopicVariantCombinations(atom,maxAtomCount,minProba)
+  ): Map[(Atom,Float),Array[IsotopeCombination]] = {
+    
+    val mapBuilder = Map.newBuilder[(Atom,Float),Array[IsotopeCombination]]
+    
+    for( (atom,maxAtomCount) <- maxAtomCountByAtom ) {
+      
+      val isotopeCombinations = this.computeAtomIsotopicVariantCombinations(atom,maxAtomCount,minProba)
+      
+      for( (atomCount, combinations) <- isotopeCombinations.groupBy(_.atomCount) ) {
+        mapBuilder += (atom,atomCount) -> combinations
+      }
     }
+    
+    mapBuilder.result()
   }
   
   def computeAtomIsotopicVariantCombinations(
@@ -172,8 +176,6 @@ object IsotopeDistributionComputer {
     val atomCount = lastCombination.atomCount
     if( atomCount >= targetedAtomCount ) return
     
-    //println(s"last combination formula: ${lastCombination.toFormula()}")
-    
     // Retrieve previous abundance map
     val lastAbundanceMap = lastCombination.abundanceMap
     
@@ -188,9 +190,7 @@ object IsotopeDistributionComputer {
       newAbundanceMap(atomIsotope) += 1
       
       val formula = new AtomIsotopeComposition(newAbundanceMap).toFormula()
-      if( computedCombinationByFormula.contains(formula) ) {
-        //println(s"combination ${formula} already computed => skipped")
-      } else {
+      if( computedCombinationByFormula.contains(formula) == false ) {
         
         // Get the current count for this variant and for the total number of atoms
         val newIsotopeCount = newAbundanceMap(atomIsotope)
@@ -200,14 +200,9 @@ object IsotopeDistributionComputer {
         val newProba = lastCombination.probability * atomIsotope.isotope.abundance * newAtomCount / newIsotopeCount
         
         // Return if probability is too low
-        if( newProba < minProba ) {
-          //println( s"too low probability for combination ${formula}: " + newProba )
-        } else {
-          //println( Seq(lastCombination.probability, isotopicVariant.isotope.abundance, newCount, otherVariantsCombinationCount).mkString(", ") )
-          
+        if( newProba >= minProba ) {
+
           val newCombination = IsotopeCombination( newAbundanceMap.toMap, newProba )
-          //println( s"last combination probability = " + lastCombination.probability )
-          //println( s"combination ${formula} has a probability of " + newProba )
           
           this.synchronized {
             computedCombinationByFormula += formula -> newCombination
@@ -227,7 +222,8 @@ object IsotopeDistributionComputer {
     ()
   }
   
-  def nearlyEqual(a: Float, b: Float): Boolean = {
+  
+  /*def nearlyEqual(a: Float, b: Float): Boolean = {
     nearlyEqual(a,b,MathUtils.EPSILON_FLOAT)  
   }
   
@@ -257,6 +253,6 @@ object IsotopeDistributionComputer {
       }
     }
 
-  }
+  }*/
 
 }

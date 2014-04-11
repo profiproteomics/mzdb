@@ -130,17 +130,16 @@ case class Isotope( massNumber: Short, mass: Double, abundance: Float ) {
   
 }
 
-case class ResiduePolymer(
+case class Peptide(
   sequence: String,
   monoMass: Double,
   averageMass: Double,
   pK: Float = 0, //has 'pK' => ( is => 'rw', isa => Dict[ 'N-term' => Num, 'C-term' => Num, internal => Num ] );
-  pI: Float = 0
+  pI: Float = 0,
+  mods: Array[AminoAcidMod] = Array()
 ) extends IMolecularEntity with IPolymer {
   
   def name = sequence
   def symbol = sequence
 
 }
-
-case class Peptide( polymer: ResiduePolymer, mods: Seq[AminoAcidMod] )

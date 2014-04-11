@@ -6,26 +6,20 @@ import fr.profi.chemistry.model.MolecularConstants
  * @author David Bouyssie
  *
  */
-case class IsotopeDistribution( isotopeCombinations: Array[IsotopeCombination] ) {
+case class IsotopeDistribution( isotopeCombinations: Array[IsotopeCombination], charge: Int ) {
   
-  val isotopicVariantsByMassNumber: Int = {
+  val isotopicVariantsByNucleonCount = isotopeCombinations.groupBy( _.nucleonCount )
+  
+  lazy val theoIsotopePattern = {
     
-    /*for( isotopeCombination <- isotopeCombinations.sortBy(_.monoMass) ) {
-      val mass = isotopeCombination.monoMass - MolecularConstants.ELECTRON_MASS
-      println( isotopeCombination.formula + " "+isotopeCombination.nucleonNumber +" "+mass+" "+ (isotopeCombination.probability *100) )
-    }*/
+    val mzIntensityPairs = isotopicVariantsByNucleonCount.toArray.sortBy(_._1).map { case(nucleonCount,isotopeCombinations)  =>
+      val massSum = isotopeCombinations.foldLeft(0.0) { (m,c) => m + c.monoMass * c.probability }
+      val coeffSum = isotopeCombinations.foldLeft(0.0) { (m,c) => m + c.probability }
+      val weightedMass = (massSum / coeffSum)
+      (weightedMass - charge * MolecularConstants.ELECTRON_MASS) / charge -> coeffSum.toFloat
+    }
     
-    /*isotopeCombinations.groupBy( _.nucleonNumber ).toList.sortBy(_._1).map { kv =>
-      val combi = kv._2
-      val massSum = combi.foldLeft(0.0) { (m,c) => m + c.monoMass * c.probability }
-      val coeffSum = combi.foldLeft(0.0) { (m,c) => m + c.probability }
-      val weightedMass = (massSum / coeffSum) - MolecularConstants.ELECTRON_MASS
-      println( weightedMass+" "+ (coeffSum*100) )
-    }*/
-    
-
-    
-    0
+    TheoreticalIsotopePattern(mzIntensityPairs, charge)
   }
 
 }
