@@ -34,9 +34,8 @@ class MolecularFormula(private var internalMap: HashMap[Element, Float]) {
   def update(key: Element, v: Float): Unit = internalMap(key) = v
 
   override def toString(): String = {
-    var s = ""
-    internalMap map { case (element, nb) => s += element.abrev + nb.toInt.toString }
-    s
+    var compAsStrings = internalMap.map { case (element, nb) => s"${element.abrev}(${nb.toInt.toString})" }
+    compAsStrings.mkString(" ")
   }
 
   def &(): HashMap[Element, Float] = internalMap
@@ -54,28 +53,37 @@ object AveragineComputer {
 
   val defaultMass = 111.1254f
   var averagine = defaultAveragine
-  var mass = defaultMass
+  var averageMass = defaultMass
 
   /*
   def setAveragine(averagine_ : Map[String, Float]) {
     averagine = averagine_
     //mass = caclMassAveragine()
   }*/
-
+  
   def computeAveragine(f: Feature): MolecularFormula = {
-    val k = f.getMz * f.getCharge / mass //nb of overagine
+    computeAveragine(f.getMz, f.getCharge)
+  }
+  
+  def computeAveragine(mz: Double, charge: Int): MolecularFormula = {
+    computeAveragine(mz * charge)
+  }
+
+  def computeAveragine(mass: Double): MolecularFormula = {
+    val k = mass / averageMass //nb of overagine
 
     // Use to calculate the number of hydrogen
     var diff = averagine.& map { case (element, nb) => (element, 0d) } //toMap
     var nbElements = averagine.& map { case (element, nb) => (element, k * averagine(element)) }
     
-    var nbH = 0
-    nbElements map { case (element, nb) => nbH -= math.floor(math.round(nbElements(element)).toDouble - nbElements(element) * element.massMonoistopic).toInt }
+    /*var nbH = 0
+    nbElements.map { case (element, nb) => 
+      nbH -= math.floor(math.round(nbElements(element)).toDouble - nbElements(element) * element.massMonoistopic).toInt
+    }*/
     
     var finalElements = nbElements.map { case (element, nb) => (element, math.round(nb) toFloat) }
-    finalElements.update(Elements.H, finalElements.getOrElse(Elements.H, 0f) + nbH.toFloat)
-    //var mass = 0d
-    //finalElements map {case (element, nb) => mass += element.massMonoistopic * nb}
+    //finalElements(Elements.H) = nbH.toFloat
+
     new MolecularFormula(finalElements)
   }
 }
