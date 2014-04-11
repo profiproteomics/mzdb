@@ -5,22 +5,20 @@ package fr.profi.ms.model
  *
  */
 case class TheoreticalIsotopePattern(
-  mzIntensityPairs: Array[(Double,Float)],
+  mzAbundancePairs: Array[(Double,Float)],
   charge: Int  
 ) {
   
-  lazy val monoMz = mzIntensityPairs(0)._1
-  lazy val isotopeCount = mzIntensityPairs.length
-  
-  // TODO: compute this value
-  //lazy val relativeAbundances = null
+  lazy val monoMz = mzAbundancePairs(0)._1
+  lazy val isotopeCount = mzAbundancePairs.length  
+  lazy val abundances = mzAbundancePairs.map(_._2)
   
   /** Gets the index of the max theoretical elution peak */
-  def getTheoriticalMaxPeakelIndex(): Int = {
+  lazy val theoreticalMaxPeakelIndex: Int = {
     
-    val pairWithMaxInt = mzIntensityPairs.maxBy(mi => mi._2)
+    val pairWithMaxInt = mzAbundancePairs.maxBy(mi => mi._2)
     
-    mzIntensityPairs.indexOf(pairWithMaxInt)
+    mzAbundancePairs.indexOf(pairWithMaxInt)
   }
   
 }

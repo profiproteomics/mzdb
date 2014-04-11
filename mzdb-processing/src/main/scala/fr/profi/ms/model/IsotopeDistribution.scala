@@ -12,14 +12,14 @@ case class IsotopeDistribution( isotopeCombinations: Array[IsotopeCombination], 
   
   lazy val theoIsotopePattern = {
     
-    val mzIntensityPairs = isotopicVariantsByNucleonCount.toArray.sortBy(_._1).map { case(nucleonCount,isotopeCombinations)  =>
+    val mzAbundancePairs = isotopicVariantsByNucleonCount.toArray.sortBy(_._1).map { case(nucleonCount,isotopeCombinations)  =>
       val massSum = isotopeCombinations.foldLeft(0.0) { (m,c) => m + c.monoMass * c.probability }
       val coeffSum = isotopeCombinations.foldLeft(0.0) { (m,c) => m + c.probability }
       val weightedMass = (massSum / coeffSum)
       (weightedMass - charge * MolecularConstants.ELECTRON_MASS) / charge -> coeffSum.toFloat
     }
     
-    TheoreticalIsotopePattern(mzIntensityPairs, charge)
+    TheoreticalIsotopePattern(mzAbundancePairs, charge)
   }
 
 }
