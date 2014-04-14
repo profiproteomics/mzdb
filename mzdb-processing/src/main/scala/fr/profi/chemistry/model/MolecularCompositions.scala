@@ -10,11 +10,11 @@ import scala.collection.MapLike
 object AbundanceMapOps {
   
   def sumAbundances[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ): Float = {
-    abundanceMap.foldLeft(0.f)( (sum,ab) => sum + ab._2 )
+    abundanceMap.foldLeft(0f)( (sum,ab) => sum + ab._2 )
   }
   
   def sumAbsoluteAbundances[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float] ): Float = {    
-    abundanceMap.foldLeft(0.f)( (sum,ab) => sum + math.abs(ab._2) )
+    abundanceMap.foldLeft(0f)( (sum,ab) => sum + math.abs(ab._2) )
   }
   
   protected def calcMass[M <: IMolecularEntity]( abundanceMap: HashMap[M,Float], massExtractor: IMolecularEntity => Double ): Double = {

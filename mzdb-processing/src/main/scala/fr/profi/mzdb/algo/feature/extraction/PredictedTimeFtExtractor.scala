@@ -13,6 +13,7 @@ import java.io.PrintWriter
 import java.io.File
 import java.io.Closeable
 import fr.proline.api.progress._
+import fr.profi.ms.algo.IsotopePatternInterpolator
 
 /**
  * Try to select the best peakel in cross assignment
@@ -37,7 +38,7 @@ class PredictedTimeFtExtractor(
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   val xtractConfig: FeatureExtractorConfig,
-  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
+  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
 ) extends AbstractSupervisedFtExtractor with ProgressComputing {
   
@@ -212,10 +213,24 @@ class PredictedTimeFtExtractor(
     val charge = putativeFt.charge
 //    val (minDuration, maxDuration) = if (putativeFt.durations != null) (putativeFt.durations.min, putativeFt.durations.max)
 //    else (0f, 0f)
-   
+    
+    val matchingFts = if(xtractConfig.maxIPDeviation.isDefined) {
+      val maxIPDeviation = xtractConfig.maxIPDeviation.get
+      features
+      .map { ft =>
+        val theoAbundances = IsotopePatternInterpolator.getTheoreticalPattern(ft.mz, ft.charge).abundances
+        val peakelApexIntensities = ft.peakels.map(_.getApex().getIntensity)
+        val rmsd = this._calcRmsd(theoAbundances, peakelApexIntensities)
+        (ft,rmsd)
+      }
+      .filter { case(ft,rmsd) => ( rmsd < maxIPDeviation ) }
+      .sortBy( _._2 )
+      .map( _._1 )
+
+    } else Array.empty[Feature]
 
     //check detected features contains a real monoisotope as first elution peak 
-    val nonAmbiguousFeatures = features.filter { ft =>
+    val nonAmbiguousFeatures = matchingFts.filter { ft =>
 //      val gapRespect = if (this._nbGapInMaxPeakelRespectful(ft, maxTheoreticalPeakelIndex, 2)) true else false
       val overlapStatus = this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, putativeFt.theoreticalIP, pklTree)
 //      if (! ft.hasMonoPeakel)
@@ -223,8 +238,6 @@ class PredictedTimeFtExtractor(
       (ft.hasMonoPeakel) //&& gapRespect)
     }
 
-    if (nonAmbiguousFeatures.isEmpty)
-      return Option.empty[Feature]
 
 // ---filter the feature based duration...deprecated
 //    val durationFilteredFts = if (minDuration != 0f && maxDuration != 0f) {
@@ -246,9 +259,9 @@ class PredictedTimeFtExtractor(
     //finally filter the feature based on the mass (since we have no information on intensity, duration...)
 //    val bestFeature = durationFilteredFts.sortBy(f => math.abs(f.getElutionTime - elutionTime)).slice(0, 3) // take the top 3 feature
 //                                         .minBy(f => math.abs(f.mz - mz))
-    val bestFeature = nonAmbiguousFeatures.sortBy(ovlft => math.abs(ovlft.getElutionTime - elutionTime)).take(3)
-                                          .minBy(f => math.abs(f.mz - mz))
-    Some(bestFeature)
+    /*val bestFeature = nonAmbiguousFeatures.sortBy(ovlft => math.abs(ovlft.getElutionTime - elutionTime)).take(3)
+                                          .minBy(f => math.abs(f.mz - mz))*/
+    nonAmbiguousFeatures.headOption
   }
 
   /**
@@ -327,7 +340,7 @@ class PredictedTimeFtExtractor(
 
     val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
     // launch peak detection
-    val peakelIndexes = findPeakelsIndexes(definedPeaks, peakelDetectionConfig.detectionAlgorithm,peakelDetectionConfig.minSNR)
+    val peakelIndexes = findPeakelsIndexes(definedPeaks, peakelDetectionConfig.detectionAlgorithm, peakelDetectionConfig.minSNR)
     
     peakelIndexes
   }
@@ -345,4 +358,13 @@ class PredictedTimeFtExtractor(
       minMaxScanIds._1 <= scanId && minMaxScanIds._2 >= scanId
     })
   }
+  
+  private def _calcRmsd(theoInt: Array[Float], obsInt: Array[Float]): Double = {
+    val maxObsInt = obsInt.max
+    val scaledInt = obsInt.map(_ * 100 / maxObsInt)
+    val s = theoInt.zip(scaledInt).foldLeft(0d)( (s, ab) => s + math.pow((ab._1 - ab._2), 2) )
+    math.sqrt(s)
+  }
 }
+
+

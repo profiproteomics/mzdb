@@ -30,7 +30,7 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends WaveletPeakelFind
    
     //NOTE: also the default in centwave paper
     this.minScale = math.round( ( 20 / scanTimeDiffMean ) / 2f ) 
-    this.maxScale=  math.round( ( 110 / scanTimeDiffMean ) / 2f ) 
+    this.maxScale=  math.round( ( 100 / scanTimeDiffMean ) / 2f ) 
     
     /*baseline and noise estimation, based on CentWave*/
     val toBeTrimmed = math.round(0.1 * ydata.length) toInt

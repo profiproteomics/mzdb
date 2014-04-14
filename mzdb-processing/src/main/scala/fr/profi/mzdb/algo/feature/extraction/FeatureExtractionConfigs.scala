@@ -49,7 +49,10 @@ case class FeatureExtractorConfig(
   var maxNbPeaksInIP: Option[Int] = Some(3),
   
   // predicted time 
-  var predictedTimeTol: Int = 90
+  var predictedTimeTol: Int = 90,
+  
+  // Deviation between theoretical and experimental isotopic pattern 
+  var maxIPDeviation: Option[Float] = None
 ) 
 
 case class OverlappingFeatureExtractorConfig(

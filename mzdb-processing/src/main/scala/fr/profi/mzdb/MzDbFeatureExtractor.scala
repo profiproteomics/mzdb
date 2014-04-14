@@ -15,10 +15,10 @@ import fr.profi.mzdb.io.reader.iterator.RunSliceIterator
 import fr.profi.mzdb.model._
 import fr.proline.api.progress._
 import scala.collection.mutable.HashSet
+import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 
 
 case class StepTimer(index: Int, stepIdentity: IProgressStepIdentity, executionTime: Double)
-
 
 /**
  *
@@ -28,7 +28,8 @@ case class StepTimer(index: Int, stepIdentity: IProgressStepIdentity, executionT
 class MzDbFeatureExtractor(
   mzDbReader: MzDbReader,
   maxNbPeaksInIP: Int = 3,
-  minNbOverlappingIPs: Int = 3
+  minNbOverlappingIPs: Int = 3,
+  xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 )
 ) extends Logging with ProgressComputing {
   
   final case object MZFT_STEP0 extends IProgressStepIdentity {
@@ -157,7 +158,8 @@ class MzDbFeatureExtractor(
     // Instantiate a feature extractor
     val ftExtractor = new FeatureExtractor(mzDbReader,
       scanHeadersById,
-      null //nfByScanId,                                                                                        
+      null, //nfByScanId,  
+      xtractConfig
     )
     
     // Parameterize the ftExtractor in order to manage its progression
