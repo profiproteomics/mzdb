@@ -45,8 +45,7 @@ class Ms2DrivenFtExtractor(
     val overlapStatus = this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, putativeFt.theoreticalIP, pklTree)
       
     if (  ft.hasMonoPeakel == false ) {
-      //Ms2DrivenFtExtractor.wrong +=1
-      this.logger.debug(s"Possible wrong monoisotope selection for feature with mz:${ft.mz}.\n Ignoring it...")
+      this.logger.trace(s"Possible wrong monoisotope selection for feature with mz:${ft.mz}.\n Ignoring it...")
       return Option.empty[Feature]
     }
     ftAsopt

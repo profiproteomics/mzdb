@@ -266,9 +266,9 @@ class OverlappingFeaturesExtractor(
           
           //logger.info("Wrong feature in a cross-assignment (wrong monoisotopic selection). Ignore it...")
           ft.hasMonoPeakel = false
-          this.logger.info(s" apexDist ${apexDistanceInCycle}, correlation: ${correlation}, average ratio: ${quotient}")
+          this.logger.trace(s" apexDist ${apexDistanceInCycle}, correlation: ${correlation}, average ratio: ${quotient}")
           OverlappingFeaturesExtractor.nonMonoCount += 1
-          println(s"nonMonoCount : ${OverlappingFeaturesExtractor.nonMonoCount}")
+          //println(s"nonMonoCount : ${OverlappingFeaturesExtractor.nonMonoCount}")
           // 0 means mono-isotopic in overlapped feature
           bestOvlFeatures += OverlappingFeature(ovlFt, 0, previousOvlFtPeakelIndex, apexDistanceInCycle, correlation, quotient) //ovlFt
         }
