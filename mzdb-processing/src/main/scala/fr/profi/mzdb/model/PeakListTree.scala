@@ -81,7 +81,7 @@ case class PeakListTree( pklGroupByScanId: Map[Int,PeakListGroup] ) {
     
     val mz = theoreticalIP.monoMz
     val charge = theoreticalIP.charge
-    val maxNbPeaks = if (maxNbPeaksInIP != null) maxNbPeaksInIP.get else theoreticalIP.abundances.filter(_ >= 5).length
+    val maxNbPeaks = if (maxNbPeaksInIP.isDefined) maxNbPeaksInIP.get else theoreticalIP.abundances.filter(_ >= 5).length
     val scanId = scanHeader.id
     val pklGroupAsOpt = pklGroupByScanId.get(scanId)
     
