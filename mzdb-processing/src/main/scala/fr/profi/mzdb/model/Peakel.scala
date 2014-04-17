@@ -157,7 +157,7 @@ case class Peakel(
   
   private def _interpolateFirstPeakTimeAtHalfMaximum(peakArray: Array[Peak], halfApexIntensity: Float): Float = {
     
-    val firstPeakIndex2 = peaks.indexWhere(_.getIntensity() >= halfApexIntensity)
+    val firstPeakIndex2 = peakArray.indexWhere(_.getIntensity() >= halfApexIntensity)
     val firstPeakIndex1 = if (firstPeakIndex2 > 0) firstPeakIndex2 - 1 else 0
     
     // If we don't have two distinct peaks, return time value of the first peakel peak
