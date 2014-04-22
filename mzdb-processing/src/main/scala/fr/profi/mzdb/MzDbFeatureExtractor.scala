@@ -30,56 +30,56 @@ class MzDbFeatureExtractor(
   maxNbPeaksInIP: Int = 3,
   minNbOverlappingIPs: Int = 3,
   xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 )
-) extends Logging with ProgressComputing {
+) extends Logging { //with ProgressComputing {
   
-  final case object MZFT_STEP0 extends IProgressStepIdentity {
-    val stepDescription = "fake initialization step"
-  }
-  final case object MZFT_STEP1 extends IProgressStepIdentity {
-    val stepDescription = "Create putativeFtByRunSlice"
-  }
-  final case object MZFT_STEP2 extends IProgressStepIdentity {
-    val stepDescription = "before runSlice iteration"
-  }  
-  final case object MZFT_STEP3 extends IProgressStepIdentity {
-    val stepDescription = "Remove aged runSlices"
-  }  
-  final case object MZFT_STEP4_0 extends IProgressStepIdentity {
-    val stepDescription = "Create pkltree 0"
-  }
-  final case object MZFT_STEP4_1 extends IProgressStepIdentity {
-    val stepDescription = "Create pkltree 1"
-  }
-  final case object MZFT_STEP4_2 extends IProgressStepIdentity {
-    val stepDescription = "Create pkltree 2"
-  }
-    final case object MZFT_STEP4_3 extends IProgressStepIdentity {
-    val stepDescription = "Create pkltree 3"
-  }
-  final case object MZFT_STEP5 extends IProgressStepIdentity {
-    val stepDescription = "Extraction"
-  }
-  final case object MZFT_STEP6 extends IProgressStepIdentity {
-    val stepDescription = "Filter features with the same apex"
-  }
- 
-  
-  trait MzDbFeatureExtractorProgressSequence extends IProgressPlanSequence
-  val progressPlan = ProgressPlan[MzDbFeatureExtractorProgressSequence](
-    name = "MzDbFeatureExtractor progression",
-    steps = Seq(
-      ProgressStep( MZFT_STEP0, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP1, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP2, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP3, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP4_0, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP4_1, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP4_2, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP4_3, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP5, maxCount = 1, weight = 1),
-      ProgressStep( MZFT_STEP6, maxCount = 1, weight = 1)
-    )
-  )
+//  final case object MZFT_STEP0 extends IProgressStepIdentity {
+//    val stepDescription = "fake initialization step"
+//  }
+//  final case object MZFT_STEP1 extends IProgressStepIdentity {
+//    val stepDescription = "Create putativeFtByRunSlice"
+//  }
+//  final case object MZFT_STEP2 extends IProgressStepIdentity {
+//    val stepDescription = "before runSlice iteration"
+//  }  
+//  final case object MZFT_STEP3 extends IProgressStepIdentity {
+//    val stepDescription = "Remove aged runSlices"
+//  }  
+//  final case object MZFT_STEP4_0 extends IProgressStepIdentity {
+//    val stepDescription = "Create pkltree 0"
+//  }
+//  final case object MZFT_STEP4_1 extends IProgressStepIdentity {
+//    val stepDescription = "Create pkltree 1"
+//  }
+//  final case object MZFT_STEP4_2 extends IProgressStepIdentity {
+//    val stepDescription = "Create pkltree 2"
+//  }
+//    final case object MZFT_STEP4_3 extends IProgressStepIdentity {
+//    val stepDescription = "Create pkltree 3"
+//  }
+//  final case object MZFT_STEP5 extends IProgressStepIdentity {
+//    val stepDescription = "Extraction"
+//  }
+//  final case object MZFT_STEP6 extends IProgressStepIdentity {
+//    val stepDescription = "Filter features with the same apex"
+//  }
+// 
+//  
+//  trait MzDbFeatureExtractorProgressSequence extends IProgressPlanSequence
+//  val progressPlan = ProgressPlan[MzDbFeatureExtractorProgressSequence](
+//    name = "MzDbFeatureExtractor progression",
+//    steps = Seq(
+//      ProgressStep( MZFT_STEP0, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP1, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP2, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP3, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP4_0, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP4_1, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP4_2, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP4_3, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP5, maxCount = 1, weight = 1),
+//      ProgressStep( MZFT_STEP6, maxCount = 1, weight = 1)
+//    )
+//  )
   
 
   class RichRunSliceData(self: RunSliceData) {
@@ -102,13 +102,13 @@ class MzDbFeatureExtractor(
   val t0 = System.currentTimeMillis().toDouble
   var lastStep1 = t0
   var i = 0
-  this.progressComputer.registerOnProgressUpdatedAction( (stepIdentity, progress) => {
-    val timeAfterStep = System.currentTimeMillis().toDouble
-    val deltaTimeBetweenSteps = timeAfterStep - lastStep1
-    lastStep1 = timeAfterStep
-    mzFtStepTimers += StepTimer(i, stepIdentity, deltaTimeBetweenSteps)
-    i+= 1
-  })
+//  this.progressComputer.registerOnProgressUpdatedAction( (stepIdentity, progress) => {
+//    val timeAfterStep = System.currentTimeMillis().toDouble
+//    val deltaTimeBetweenSteps = timeAfterStep - lastStep1
+//    lastStep1 = timeAfterStep
+//    mzFtStepTimers += StepTimer(i, stepIdentity, deltaTimeBetweenSteps)
+//    i+= 1
+//  })
   
   def extractFeatures(rsdProvider: RunSliceDataProvider, putativeFeatures: Seq[PutativeFeature], mzTolPPM: Float): Seq[Feature] = {
     
@@ -116,7 +116,7 @@ class MzDbFeatureExtractor(
     
     //val putativeFeatures = putativeFeatures1.take(10000)
         
-    progressPlan( MZFT_STEP0 ).incrementAndGetCount(1)
+    //progressPlan( MZFT_STEP0 ).incrementAndGetCount(1)
 
     // Retrieve run slices and map them by their number
     val rsHeaders = mzDbReader.getRunSliceHeaders(1)
@@ -125,8 +125,8 @@ class MzDbFeatureExtractor(
     // Set the maxCount for run slice related steps
     val rsCount = rsHeaders.length
     logger.info(s"Processing ${rsCount} run slices...")
-    val rsSteps = Array(MZFT_STEP3,MZFT_STEP4_0,MZFT_STEP4_1,MZFT_STEP4_2,MZFT_STEP4_3,MZFT_STEP5)
-    rsSteps.foreach { rsStep => progressPlan(rsStep).setMaxCount(rsCount)}
+//    val rsSteps = Array(MZFT_STEP3,MZFT_STEP4_0,MZFT_STEP4_1,MZFT_STEP4_2,MZFT_STEP4_3,MZFT_STEP5)
+//    rsSteps.foreach { rsStep => progressPlan(rsStep).setMaxCount(rsCount)}
 
     if (rsHeaders.length != rsHeaderByNumber.size)
       throw new Exception("run slice headers must have a unique number")
@@ -141,7 +141,7 @@ class MzDbFeatureExtractor(
       }
     }
     
-    progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
+    //progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
 
     // Retrieve scans mapped by their initial id
     val scanHeadersById = collection.immutable.Map() ++ mzDbReader.getScanHeaderById.map { case (i, sh) => i.toInt -> sh }
@@ -163,30 +163,28 @@ class MzDbFeatureExtractor(
     )
     
     // Parameterize the ftExtractor in order to manage its progression
-    ftExtractor.setProgressPlanMaxCount(putativeFeatures.length)
+    //ftExtractor.setProgressPlanMaxCount(putativeFeatures.length)
         
-    val stepTimers = new ArrayBuffer[StepTimer]
-    
-    this.synchronized {
-      
-      val t0 = System.currentTimeMillis().toDouble
-      var lastStep1 = t0
-      var i = 0
-      ftExtractor.registerOnPredictedTimeProgressUpdatedAction( (stepIdentity, progress) => {
-        val timeAfterStep = System.currentTimeMillis().toDouble
-        val deltaTimeBetweenSteps = timeAfterStep - lastStep1
-        lastStep1 = timeAfterStep
-        stepTimers += StepTimer(i, stepIdentity, deltaTimeBetweenSteps)
-        i+= 1
-        
-        
-        /*println( "current step is:" + stepIdentity.stepName)
-        println( "current progress is:" + progress)
-        println( "deltaTimeBetweenSteps is:" + deltaTimeBetweenSteps)*/
-      })
-    }
-    
-    progressPlan( MZFT_STEP2 ).incrementAndGetCount(1)
+//    val stepTimers = new ArrayBuffer[StepTimer]
+//    
+//    this.synchronized {
+//      
+//      val t0 = System.currentTimeMillis().toDouble
+//      var lastStep1 = t0
+//      var i = 0
+//      ftExtractor.registerOnPredictedTimeProgressUpdatedAction( (stepIdentity, progress) => {
+//        val timeAfterStep = System.currentTimeMillis().toDouble
+//        val deltaTimeBetweenSteps = timeAfterStep - lastStep1
+//        lastStep1 = timeAfterStep
+//        stepTimers += StepTimer(i, stepIdentity, deltaTimeBetweenSteps)
+//        i+= 1
+//        
+//        
+//      
+//      })
+//    }
+//    
+//    progressPlan( MZFT_STEP2 ).incrementAndGetCount(1)
 
 
     // Iterate over run slice headers
@@ -213,7 +211,7 @@ class MzDbFeatureExtractor(
 
       // Clean the peaklist map => remove obsolete run slices
       runSlicesToRemove.foreach { pklByScanIdAndRsId -= _ }
-      progressPlan(MZFT_STEP3).incrementAndGetCount(1)
+      //progressPlan(MZFT_STEP3).incrementAndGetCount(1)
 
       
       // Retrieve putative features corresponding to the current run slice
@@ -246,7 +244,7 @@ class MzDbFeatureExtractor(
           }
         }
 
-        progressPlan(MZFT_STEP4_0).incrementAndGetCount(1)
+        //progressPlan(MZFT_STEP4_0).incrementAndGetCount(1)
         
         // Group run slice peakLists into a single map (key = scan id)
         val peakListsByScanId = new HashMap[Int, ArrayBuffer[PeakList]]()
@@ -256,15 +254,15 @@ class MzDbFeatureExtractor(
               peakListsByScanId.getOrElseUpdate(scanId, new ArrayBuffer[PeakList]) += pkl
           }
         }
-        progressPlan(MZFT_STEP4_1).incrementAndGetCount(1)
+        //progressPlan(MZFT_STEP4_1).incrementAndGetCount(1)
 
         // Use the map to instantiate a peakList tree which will be used for peak extraction
         val pklGroupByScanId = Map() ++ peakListsByScanId.map { kv => kv._1 -> new PeakListGroup(kv._2) }
-        progressPlan(MZFT_STEP4_2).setAsCompleted()
+        //progressPlan(MZFT_STEP4_2).setAsCompleted()
         
         val pklTree = new PeakListTree(pklGroupByScanId)
          
-        progressPlan(MZFT_STEP4_3).incrementAndGetCount(1)
+        //progressPlan(MZFT_STEP4_3).incrementAndGetCount(1)
         
         // Extract features using parallelization
         var error: Throwable = null
@@ -286,7 +284,7 @@ class MzDbFeatureExtractor(
         else
           for (xft <- tmpXFts if xft != None) extractedFeatures += xft.get
         
-        progressPlan(MZFT_STEP5).incrementAndGetCount(1)
+        //progressPlan(MZFT_STEP5).incrementAndGetCount(1)
 
 
       }
@@ -294,18 +292,18 @@ class MzDbFeatureExtractor(
 
     this.logger.debug("nb features before identity filtering:" + extractedFeatures.length);
     
-    extractedFeatures.foreach{ f =>
-      val defPeaks = f.peakels(0).definedPeaks
-      for (i <- 0 until (defPeaks.length - 1)) {
-        val p = defPeaks(i)
-        for (j <- i + 1 until defPeaks.length ) {
-          val p_ = defPeaks(j)
-          if ( math.abs(p_.getIntensity - p.getIntensity) < Float.MinValue )
-            println("HEYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
-        }
-      }
-      
-    }
+//    extractedFeatures.foreach{ f =>
+//      val defPeaks = f.peakels(0).definedPeaks
+//      for (i <- 0 until (defPeaks.length - 1)) {
+//        val p = defPeaks(i)
+//        for (j <- i + 1 until defPeaks.length ) {
+//          val p_ = defPeaks(j)
+//          if ( math.abs(p_.getIntensity - p.getIntensity) < Float.MinValue )
+//            println("HEYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY")
+//        }
+//      }
+//      
+//    }
 
     //val featuresByApex = extractedFeatures.groupBy(_.peakels(0).getApex().toString() )
 
@@ -363,7 +361,7 @@ class MzDbFeatureExtractor(
       filteredFeatures += sortedFts(0)
     }
     
-    progressPlan(MZFT_STEP6).incrementAndGetCount(1)
+    //progressPlan(MZFT_STEP6).incrementAndGetCount(1)
 
     
     
