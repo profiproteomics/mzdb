@@ -18,7 +18,7 @@ class FeatureExtractor(
   val nfByScanId: Map[Int,Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
-) extends AbstractFeatureExtractor with ProgressComputing {
+) extends AbstractFeatureExtractor { //with ProgressComputing {
   
   final case object STEP1 extends IProgressStepIdentity {
     val stepDescription = "Feature extraction step"
@@ -58,20 +58,20 @@ class FeatureExtractor(
   )
   
   // Set current progress updater as the predicted time feature extrctor one
-  this.progressPlan(STEP1).setProgressUpdater(predictedTimeFtExtractor.progressComputer.getOnProgressUpdatedListener())
-
-  def registerOnPredictedTimeProgressUpdatedAction( action: (IProgressStepIdentity,Float) => Unit ) = {    
-    predictedTimeFtExtractor.progressComputer.registerOnProgressUpdatedAction( (stepIdentity,progress) => {      
-      action(stepIdentity,progress)
-    })
-  }
-  
-  def setProgressPlanMaxCount( maxCount: Int ) = {
-    this.progressComputer.getCurrentStep().setMaxCount(maxCount)
-    for (step <- predictedTimeFtExtractor.progressPlan.steps) {
-      step.setMaxCount(maxCount)
-    }
-  }
+//  this.progressPlan(STEP1).setProgressUpdater(predictedTimeFtExtractor.progressComputer.getOnProgressUpdatedListener())
+//
+//  def registerOnPredictedTimeProgressUpdatedAction( action: (IProgressStepIdentity,Float) => Unit ) = {    
+//    predictedTimeFtExtractor.progressComputer.registerOnProgressUpdatedAction( (stepIdentity,progress) => {      
+//      action(stepIdentity,progress)
+//    })
+//  }
+//  
+//  def setProgressPlanMaxCount( maxCount: Int ) = {
+//    this.progressComputer.getCurrentStep().setMaxCount(maxCount)
+//    for (step <- predictedTimeFtExtractor.progressPlan.steps) {
+//      step.setMaxCount(maxCount)
+//    }
+//  }
   
   def extractFeatures( putativeFeatures: Seq[PutativeFeature], 
                        extractedFeatures: ArrayBuffer[Feature], // store newly extracted features
@@ -106,6 +106,10 @@ class FeatureExtractor(
         ft = this.predictedMzFtExtractor.extractFeature(putativeFt, pklTree );
       }
     }
+    
+    
+    val ftsByMs2ScanId = new HashMap[Long,ArrayBuffer[Feature]]
+    ftsByMs2ScanId.sizeHint(scanHeaderById.size)
     
     // Update MS2 scan ids of the feature
     for( foundFt <- ft ) {
@@ -143,10 +147,36 @@ class FeatureExtractor(
         }
       }
       foundFt.ms2ScanIds = ms2ScanIds.toArray
+      ms2ScanIds.foreach(ftsByMs2ScanId.getOrElseUpdate(_, new ArrayBuffer[Feature]) += foundFt)
+      
     }
-
+    
+    
+    def _getIntensitySumOfSurroundingPeak(ms2scanID: Long, f: Feature): Float = {
+      val definedPeaks = f.peakels(0).definedPeaks
+      val (p1, p2) = (definedPeaks.find(_.getLcContext().getScanId() < ms2scanID), 
+          definedPeaks.find(_.getLcContext().getScanId() > ms2scanID))
+      Array(p1, p2).withFilter(_.isDefined)
+                   .map(_.get)
+                   .foldLeft(0f){(s, peak) => s + peak.getIntensity}
+    
+    }
+    
+    // TODO: filter out ms2 events linked to multiple features
+    // Keep only a single link with the feature having two peaks surrounding the MS2 event with the highest intensity
+    ftsByMs2ScanId.foreach{ case (ms2ScanId, features) =>
+      if (features.size > 1) {
+         val surrPeaksIntByFt = features.map{f => f -> _getIntensitySumOfSurroundingPeak(ms2ScanId, f)} toMap
+         val winningFt = surrPeaksIntByFt.maxBy(_._2)
+         for (f <- features if f != winningFt) {
+           val scanIds = f.ms2ScanIds.toBuffer
+           scanIds -= ms2ScanId.toInt
+           f.ms2ScanIds = scanIds toArray
+         }
+      }
+    }
+    
     ft
-
   }
 
   
