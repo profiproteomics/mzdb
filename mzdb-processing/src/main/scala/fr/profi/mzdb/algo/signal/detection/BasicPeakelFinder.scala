@@ -7,7 +7,7 @@ import fr.profi.mzdb.model.Peak
  * @author David Bouyssie
  *
  */
-object BasicPeakelFinder {
+object BasicPeakelFinder extends IPeakelFinder {
   
   var nbConsecutiveSlope = 2
   
