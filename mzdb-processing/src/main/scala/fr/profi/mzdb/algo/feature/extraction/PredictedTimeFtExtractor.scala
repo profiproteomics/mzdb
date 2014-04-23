@@ -14,6 +14,7 @@ import java.io.File
 import java.io.Closeable
 import fr.proline.api.progress._
 import fr.profi.ms.algo.IsotopePatternInterpolator
+import fr.profi.mzdb.io.exporter.SQLiteXicStorer
 
 /**
  * Try to select the best peakel in cross assignment
@@ -38,45 +39,45 @@ class PredictedTimeFtExtractor(
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   val xtractConfig: FeatureExtractorConfig,
-  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
+  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
-) extends AbstractSupervisedFtExtractor with ProgressComputing {
+) extends AbstractSupervisedFtExtractor { //with ProgressComputing {
   
-  final case object STEP0 extends IProgressStepIdentity {
-    val stepDescription = "fake initialization step"
-  }
-  final case object STEP0b extends IProgressStepIdentity {
-    val stepDescription = "before before extraction step"
-  }
-  final case object STEP1 extends IProgressStepIdentity {
-    val stepDescription = "before extraction step"
-  }  
-  final case object STEP2 extends IProgressStepIdentity {
-    val stepDescription = "ExtractIsotopicPattern step"
-  }  
-  final case object STEP3 extends IProgressStepIdentity {
-    val stepDescription = "GetPeakelsIndexesFromExtractedIPs step"
-  }
-  final case object STEP4 extends IProgressStepIdentity {
-    val stepDescription = "Feature building step"
-  }
-  final case object STEP5 extends IProgressStepIdentity {
-    val stepDescription = "GetBestMatchingFeature step"
-  }
-  
-  trait PredictedTimeFtExtractorSequence extends IProgressPlanSequence
-  val progressPlan = ProgressPlan[PredictedTimeFtExtractorSequence](
-    name = "PredictedTimeFtExtractor progression",
-    steps = Seq(
-      ProgressStep( STEP0, maxCount = 1, weight = 1),
-      ProgressStep( STEP0b, maxCount = 1, weight = 1),
-      ProgressStep( STEP1, maxCount = 1, weight = 1),
-      ProgressStep( STEP2, maxCount = 1, weight = 1),
-      ProgressStep( STEP3, maxCount = 1, weight = 1),
-      ProgressStep( STEP4, maxCount = 1, weight = 1),
-      ProgressStep( STEP5, maxCount = 1, weight = 1)
-    )
-  )
+//  final case object STEP0 extends IProgressStepIdentity {
+//    val stepDescription = "fake initialization step"
+//  }
+//  final case object STEP0b extends IProgressStepIdentity {
+//    val stepDescription = "before before extraction step"
+//  }
+//  final case object STEP1 extends IProgressStepIdentity {
+//    val stepDescription = "before extraction step"
+//  }  
+//  final case object STEP2 extends IProgressStepIdentity {
+//    val stepDescription = "ExtractIsotopicPattern step"
+//  }  
+//  final case object STEP3 extends IProgressStepIdentity {
+//    val stepDescription = "GetPeakelsIndexesFromExtractedIPs step"
+//  }
+//  final case object STEP4 extends IProgressStepIdentity {
+//    val stepDescription = "Feature building step"
+//  }
+//  final case object STEP5 extends IProgressStepIdentity {
+//    val stepDescription = "GetBestMatchingFeature step"
+//  }
+//  
+//  trait PredictedTimeFtExtractorSequence extends IProgressPlanSequence
+//  val progressPlan = ProgressPlan[PredictedTimeFtExtractorSequence](
+//    name = "PredictedTimeFtExtractor progression",
+//    steps = Seq(
+//      ProgressStep( STEP0, maxCount = 1, weight = 1),
+//      ProgressStep( STEP0b, maxCount = 1, weight = 1),
+//      ProgressStep( STEP1, maxCount = 1, weight = 1),
+//      ProgressStep( STEP2, maxCount = 1, weight = 1),
+//      ProgressStep( STEP3, maxCount = 1, weight = 1),
+//      ProgressStep( STEP4, maxCount = 1, weight = 1),
+//      ProgressStep( STEP5, maxCount = 1, weight = 1)
+//    )
+//  )
   
   //for debug purpose
 //  val printWriter = new PrintWriter(new File("timing_xics.txt"))
@@ -89,7 +90,7 @@ class PredictedTimeFtExtractor(
   
   /** use wavelet technique to dertermine starting point to extract */
   def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
-    progressPlan( STEP0 ).incrementAndGetCount(1)
+    //progressPlan( STEP0 ).incrementAndGetCount(1)
 
     // Retrieve some vars
     val pftTime = putativeFt.elutionTime
@@ -99,7 +100,7 @@ class PredictedTimeFtExtractor(
     val curScanHOpt = this.getScanHeaderForTime(pftTime, 1)
     val leftMostScanH = this.getScanHeaderForTime(pftTime - predictedTimeTol, 1).getOrElse(this.scanHeaders.head)
     val rightMostScanH = this.getScanHeaderForTime(pftTime + predictedTimeTol, 1).getOrElse(this.scanHeaders.last)
-    progressPlan( STEP0b ).incrementAndGetCount(1)
+    //progressPlan( STEP0b ).incrementAndGetCount(1)
 
     // Checks scanHeaders
     if (leftMostScanH.getId == rightMostScanH.getId)
@@ -110,8 +111,7 @@ class PredictedTimeFtExtractor(
 
     val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.theoreticalMaxPeakelIndex
     
-    //val t1 = System.currentTimeMillis().toDouble / 1000
-    progressPlan( STEP1 ).incrementAndGetCount(1)
+    //progressPlan( STEP1 ).incrementAndGetCount(1)
     
     val ips = selectedScanIds.map { id =>
       pklTree.extractIsotopicPattern(
@@ -123,19 +123,15 @@ class PredictedTimeFtExtractor(
     }
     
     
-    //this.printWriter.println("" + (System.currentTimeMillis().toDouble / 1000 - t1))
-    progressPlan( STEP2 ).incrementAndGetCount(1)
-    //logger.trace("" + (System.currentTimeMillis() / 1000 - t1))
+    //progressPlan( STEP2 ).incrementAndGetCount(1)
     
     val filteredIps = ips.filter(ip => ip != null && ip.peaks.count(_ != null) > 0) // FIXME: should never happen but still have a bug
 
     // --- FIXME: old implementation
     //val features = this._detectFeaturesFromExtractedIPs(putativeFt, filteredIps, maxTheoreticalPeakelIndex)
     
-    //val t2 = System.currentTimeMillis().toDouble / 1000
     val peakelsIndexes = this._getPeakelsIndexesFromExtractedIPs(putativeFt, filteredIps, maxTheoreticalPeakelIndex)
-    //this.printWriter2.println("" + (System.currentTimeMillis().toDouble / 1000 - t2))
-    progressPlan( STEP3 ).incrementAndGetCount(1)
+    //progressPlan( STEP3 ).incrementAndGetCount(1)
     
     val features = peakelsIndexes.map {
       case (minIdx, maxIdx) =>
@@ -190,11 +186,12 @@ class PredictedTimeFtExtractor(
         ft // return ft
 
     }.filter(_ != null) // remove null features
-    progressPlan( STEP4 ).incrementAndGetCount(1)
+    //progressPlan( STEP4 ).incrementAndGetCount(1)
+    
 
     //--- filter features
-    val bestFt = this._getBestMatchingFeature(putativeFt, features, pklTree)    
-    progressPlan( STEP5 ).incrementAndGetCount(1)
+    val bestFt = this._getBestMatchingFeature(putativeFt, features.filter(_.peakelsCount > 1), pklTree)    
+    //progressPlan( STEP5 ).incrementAndGetCount(1)
     
     bestFt
   }
@@ -337,7 +334,10 @@ class PredictedTimeFtExtractor(
     // ensure peakel duration  is at least 5 scans
     if (maxIntensityPeakel.isGoodForPeakDetection(xtractConfig.minConsecutiveScans) == false)
       return Array.empty[(Int, Int)]
-
+    
+    //Debug stuff
+    //SQLiteXicStorer.insertXic(maxIntensityPeakel)
+    
     val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
     // launch peak detection
     val peakelIndexes = findPeakelsIndexes(definedPeaks, peakelDetectionConfig.detectionAlgorithm, peakelDetectionConfig.minSNR)

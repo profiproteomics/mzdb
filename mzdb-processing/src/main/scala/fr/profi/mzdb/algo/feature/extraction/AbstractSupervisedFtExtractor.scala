@@ -5,7 +5,7 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
 
-import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 import FeatureExtractionUtils._

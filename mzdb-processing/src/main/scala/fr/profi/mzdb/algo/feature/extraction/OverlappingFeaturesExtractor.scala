@@ -85,8 +85,8 @@ class OverlappingFeaturesExtractor(
   private def _extractOverlappingFeatures(ft: Feature, ftZ: Int, pklTree: PeakListTree): Array[Feature] = {
 
     // Unpack parameters
-    val minZ = if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.minZ else ft.charge
-    val maxZ = if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.maxZ else ft.charge
+    val minZ = 2 //if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.minZ else ft.charge
+    val maxZ = 3 //if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.maxZ else ft.charge
     val maxIpShift = if (this.overlapXtractConfig.extractAllOvlFts) this.overlapXtractConfig.maxIpShift else 1
 
     val mzTolPPM = this.xtractConfig.mzTolPPM
@@ -120,7 +120,7 @@ class OverlappingFeaturesExtractor(
           
           //this.logger.debug(s"z: ${z}, ipShift: ${ipShift}");
           //try to restrict nb features to check
-          val mzToExtract = firstFtPeakel.mz + ((ipShift + 0.0027).toDouble / z)
+          val mzToExtract = firstFtPeakel.mz + ((ipShift + ipShift * 0.0027).toDouble / z)
 
           //if (mzToExtract > threshMzMax)
           //  break
@@ -213,9 +213,9 @@ class OverlappingFeaturesExtractor(
     val minApexDistance = this.overlapXtractConfig.minApexDistance
     val minAveragineRatio = this.overlapXtractConfig.minAveragineRatio
     
-    val filteredOvlFts = if (this.overlapXtractConfig.extractAllOvlFts) ovlFts else ovlFts.filter(_.charge == ft.charge)
+    //val filteredOvlFts = if (this.overlapXtractConfig.extractAllOvlFts) ovlFts else ovlFts.filter(_.charge == ft.charge)
     
-    filteredOvlFts.foreach { ovlFt =>
+    ovlFts.foreach { ovlFt =>
       //find closest peakel to current mono of considered ft
       //val insideTolPeakels = ovlFt.peakels.filter(p => math.abs(p.mz + (1.0027 / ovlFt.getCharge) - currFtMonoMz) < this.xtractConfig.mzTolPPM * p.mz / 1e6)
 
@@ -262,7 +262,7 @@ class OverlappingFeaturesExtractor(
         //sign of death for the feature
         if (apexDistanceInCycle <= minApexDistance && 
             correlation != Double.NaN && correlation > minCorr &&
-            quotient < minAveragineRatio && quotient > 0.5) {
+            quotient < minAveragineRatio && quotient > 0.75) {
           
           //logger.info("Wrong feature in a cross-assignment (wrong monoisotopic selection). Ignore it...")
           ft.hasMonoPeakel = false

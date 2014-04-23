@@ -12,7 +12,7 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
 import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.utils.ms.MsUtils
-import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.ElutionTimeContext
 import fr.profi.mzdb.algo.signal.detection.RidgeFilteringParameters
@@ -42,12 +42,16 @@ class Ms2DrivenFtExtractor(
     }
     
     val ft = ftAsopt.get
-    val overlapStatus = this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, putativeFt.theoreticalIP, pklTree)
-      
-    if (  ft.hasMonoPeakel == false ) {
-      this.logger.trace(s"Possible wrong monoisotope selection for feature with mz:${ft.mz}.\n Ignoring it...")
+    if (ft.peakelsCount <= 1)
       return Option.empty[Feature]
-    }
+    
+//    val overlapStatus = this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, putativeFt.theoreticalIP, pklTree)
+//      
+//    if (  ft.hasMonoPeakel == false ) {
+//      this.logger.trace(s"Possible wrong monoisotope selection for feature with mz:${ft.mz}.\n Ignoring it...")
+//      println(s"Wrong monoisotopes:${Ms2DrivenFtExtractor.wrong}")
+//      return Option.empty[Feature]
+//    }
     ftAsopt
   }
   

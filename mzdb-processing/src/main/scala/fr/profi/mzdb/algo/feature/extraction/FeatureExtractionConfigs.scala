@@ -21,7 +21,7 @@ case class PeakelDetectionConfig(
   var refineDetection: Boolean = true,  
   
   // if detect algo is set to wavelet must put a SNR
-  var minSNR: Float = 3f
+  var minSNR: Float = 0f
 )
 
 case class FeatureExtractorConfig(
@@ -39,14 +39,17 @@ case class FeatureExtractorConfig(
   // maxConsectuvive gaps ( empty or null isotopic pattern) allowed in peak detection
   var maxConsecutiveGaps: Int = 1,
   
+  //total gap 
+  var maxTotalGap: Int = 3,
+  
   // maximum duration for extraction (ms2Driven)
   var maxTimeWindow: Float = 1200f,
   
   // minimum percentage of apex intensity to stop isotopic extraction
-  var minPercentageOfMaxInt: Float = 0.005f,
+  var minPercentageOfMaxInt: Float = 0.05f,
   
   // by default the nb of peak of the averagine with relative intensity >= 5%
-  var maxNbPeaksInIP: Option[Int] = Some(3),
+  var maxNbPeaksInIP: Option[Int] = None, //Some(3),
   
   // predicted time 
   var predictedTimeTol: Int = 90,
@@ -70,7 +73,7 @@ case class OverlappingFeatureExtractorConfig(
   var maxIpShift: Int = 3,
   
   // minimum correlation to considerer a 'match'
-  var minPeakelCorrToMono: Float = 0.8f,
+  var minPeakelCorrToMono: Float = 0.76f,
   
   // quotient averagine
   var minAveragineRatio: Float = 1.5f,

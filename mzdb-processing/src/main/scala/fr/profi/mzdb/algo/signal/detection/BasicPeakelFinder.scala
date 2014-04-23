@@ -8,15 +8,18 @@ import fr.profi.mzdb.model.Peak
  *
  */
 object BasicPeakelFinder {
-
+  
+  var nbConsecutiveSlope = 2
+  
   def findPeakelsIndexes(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
-    findPeakelsIndexes( peaks.map( _.getIntensity.toDouble ).toArray, 2 )
+    findPeakelsIndexes( peaks.map( _.getIntensity.toDouble ).toArray,  nbConsecutiveSlope)
   }
   
   def findPeakelsIndexes(values: Array[Double], consNbTimesThresh: Int ): Array[Tuple2[Int,Int]] = {
     
-    var peakelIndexes = new ArrayBuffer[Tuple2[Int,Int]]
-    if( values.length < 5 ) return peakelIndexes.toArray
+    val peakelIndexes = new ArrayBuffer[Tuple2[Int,Int]]
+    if( values.length < 5 ) 
+      return peakelIndexes.toArray
     
     var peakDetectionBegin = false
     var afterMinimum = true
@@ -62,18 +65,18 @@ object BasicPeakelFinder {
               afterMinimum = true
             }
           }
-          
           nbConsecutiveTimes = 1
         }
-        else if ( curSlope != 0 ) nbConsecutiveTimes += 1
-        
+        else if ( curSlope != 0 ) 
+          nbConsecutiveTimes += 1
       }
       
       prevSlope = curSlope
       peakIdx += 1
-    }
+    }//end sliding foreach
     
-    if( afterMaximum ) peakelIndexes += Tuple2(prevMinIdx,values.length-1) //|| peaks.length == 0 
+    if( afterMaximum ) 
+      peakelIndexes += Tuple2(prevMinIdx,values.length-1) //|| peaks.length == 0 
     
     peakelIndexes.toArray
   }

@@ -27,7 +27,7 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
    
     //NOTE: also the default in centwave paper
     this.minScale = math.round( ( 20 / scanTimeDiffMean ) / 2f ) 
-    this.maxScale=  math.round( ( 100 / scanTimeDiffMean ) / 2f ) 
+    this.maxScale=  math.round( ( 110 / scanTimeDiffMean ) / 2f ) 
     
     /*baseline and noise estimation, based on CentWave*/
     val toBeTrimmed = math.round(0.1 * ydata.length) toInt
@@ -43,7 +43,7 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
   /** */
   def setRidgesFilteringParams() {
     this.ridgeFilteringParams = RidgeFilteringParameters(minRidgeLength = 0,  
-                                                         minSNR =  1.5f, 
+                                                         minSNR =  0.2f, 
                                                          minPeakWidth = 15,  
                                                          maxPeakWidth = 150, 
                                                          sizeNoise = ydata.length / 10,  
@@ -120,65 +120,107 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
     maximaIndexesByScale
   }
   
-  /*
-  Identify the peaks based on the ridge lines Three rules are defined
-  to identify the major peaks:
-  (1) The scale corresponding to the maximum amplitude on the ridge line,
-  which is proportional to the width of the peak, should be within
-  a certain range;
-  (2) The SNR should be larger than a certain threshold;
-  (3) The length of ridge lines should be larger than a certain threshold;
-  */
   def ridgesToPeaks(ridges: Array[Ridge]): Array[CwtPeakel] = {
-    // Group ridges by the max at first scale
-    val ridgesByMaxIndexAtMaxScale = ridges.groupBy(ridge=>(ridge.maxCoeffPos._1, ridge.maxCoeffPos._2))
-    // Keep only one ridge for maxCoeff idx at a max scale
-    val validRidges = ridgesByMaxIndexAtMaxScale.map{case ((scale, idx), ridges) => ridges.maxBy( _.length)}.toArray
-    
-    // Unpack parameters
-    val (minRidgeLength, sizeNoise, minSNR) = (ridgeFilteringParams.minRidgeLength, 
-                                               ridgeFilteringParams.sizeNoise, ridgeFilteringParams.minSNR)
-    // Compute SNR for each ridge
-    validRidges.foreach(this.computeSNR(_))
+      this._ridgeToPeaks(ridges)
+  }
 
-    // Filter against maxScale position, SNR and length
-    val filteredRidges = validRidges.filter(r => r.maxCoeffPos._2 > minRidgeLength && r.SNR > minSNR && 
-                                                         r.length() > minRidgeLength ) 
-    // PeakWidth estimation
-    val peakels = filteredRidges.map{ ridge =>
-     
-      val (maxScale, maxIdxAtMaxScale, maxValueAtMaxScale) = ridge.maxCoeffPos
-      // go back into real data, centroid calculation
-      val approxPeakWidthHalf = maxScale / 2.0f
-      var (minIdx, maxIdx) = (math.max(maxIdxAtMaxScale - approxPeakWidthHalf, 0).toInt, 
-          math.min(maxIdxAtMaxScale + approxPeakWidthHalf, peaks.length - 1 ).toInt)
-          
-      val slicedPeaks = peaks.slice(minIdx, math.min(maxIdx + 1, peaks.length))
-      val intensities = slicedPeaks.map(_.getIntensity)
-      val xvalues = slicedPeaks.map(_.getLcContext.getElutionTime)
-      val centroid =xvalues.zip(intensities).map { case (x, y) => x * y }.reduceLeft(_ + _) / intensities.reduceLeft(_ + _)
-      val intensityMax = intensities.max 
-      val xmax =  xvalues(intensities.indexOf(intensityMax)) 
-      
-      new CwtPeakel(index = intensities.indexOf(intensityMax),
-                    peaks = slicedPeaks toArray, 
-                    apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
-                    minIdx = minIdx, 
-                    startLcContext = peaks(minIdx).getLcContext,  
-                    maxIdx = maxIdx, 
-                    endLcContext = peaks(maxIdx).getLcContext,
-                    xMax = xmax toFloat,
-                    intensityMax = intensityMax toFloat,
-                    centroid = centroid toFloat,
-                    snr = ridge.SNR)                
+  protected def _ridgeToPeaks(ridges: Array[Ridge]): Array[CwtPeakel] = {
+    val (minRidgeLength, sizeNoise, minSNR) = (ridgeFilteringParams.minRidgeLength, 
+                                               ridgeFilteringParams.sizeNoise, 
+                                               ridgeFilteringParams.minSNR)
+    val peakels = new ArrayBuffer[CwtPeakel]
+
+//    filter against selected criteria
+//    1: the ridge do not have to be ended
+//    2: it must begin at a scale > 2
+//    3: its length must be > minRidgeLength
+    var filteredRidges = ridges.filter { x => (!x.isEnded() && x.length >= 0) } //minRidgeLength) }
+
+    /*group ridges by the max at first scale*/
+    val ridgesByMaxIndexAtMaxScale = new HashMap[Pair[Float, Int], ArrayBuffer[Ridge]]()
+    filteredRidges.foreach { r =>
+      val pair = (r.maxCoeffPos._1, r.maxCoeffPos._2) // (maxScale, maxIndexAtMaxScale)
+      ridgesByMaxIndexAtMaxScale.getOrElseUpdate(pair, new ArrayBuffer[Ridge]) += r
     }
-    // remove a detected peakel which is contained in another peakel and merge overlapping peakels
+    filteredRidges = ridgesByMaxIndexAtMaxScale.map { case (i, ridges) => ridges.maxBy(_.length) } toArray
+
+    /*compute SNR for each ridge*/
+    val minimaByRidges = new HashMap[Ridge, Option[(Int, Int)]]
+    filteredRidges.foreach { ridge =>
+      val (maxScale, maxIdxAtMaxScale, maxValueAtMaxScale) = ridge.maxCoeffPos //firstScaleMaxCoeffPos
+      val sideIndexesAsOpt = this._findLocalMinima(maxScale, maxIdxAtMaxScale) //
+      
+      //update hashmap
+      minimaByRidges(ridge) = sideIndexesAsOpt
+
+      if (sideIndexesAsOpt.isDefined) {
+        val (minIdx, maxIdx) = sideIndexesAsOpt.get
+        if (minIdx < maxIdx) {
+          val sliced = this.ydata.slice(minIdx, math.min(maxIdx + 1, ydata.length))
+          if (!sliced.isEmpty)
+            ridge.SNR = (sliced.max - this.baseline) / this.noise toFloat
+          else
+            ridge.SNR = -1000
+        } else {
+          ridge.SNR = -1000
+        }
+      } else {
+        ridge.SNR = -1000
+      }
+    }
+
+    /*filter against SNR criteria*/
+    filteredRidges = filteredRidges.filter(ridge => ridge.SNR > minSNR)
+
+    /*filter against maxScale position*/
+    //filteredRidges = filteredRidges.filter(_.maxCoeffPos._1 >= 4) //put in parameters ?
+
+    /*peakWidth estimation*/
+    filteredRidges.foreach { ridge =>
+
+      val (maxScale, maxIdxAtMaxScale, maxValueAtMaxScale) = ridge.maxCoeffPos
+
+      val sideIndexesAsOpt = minimaByRidges(ridge) //this._findLocalMinima(maxScale, maxIdxAtMaxScale) // WAZRNING BEFORE maxScale 
+      //other option seems to be less performant
+      //val sideIndexesAsOpt  = this._findPeakBoundariesXCMS(maxScale, maxIdxAtMaxScale)
+
+      if (sideIndexesAsOpt.isDefined) {
+        // go back into real data, centroid calculation
+        val sidesIndexes = sideIndexesAsOpt.get
+        var (minIdx, maxIdx) = (math.max(sidesIndexes._1, 0), math.min(sidesIndexes._2, peaks.length - 1))
+        //val p = this._findLocalMinimaRealSpaceFromWaveletBounds(minIdx, maxIdx)
+        //minIdx = p._1
+        //maxIdx = p._2
+        val slicedPeaks = peaks.slice(minIdx, math.min(maxIdx + 1, peaks.length))
+        val intensities = slicedPeaks.map(_.getIntensity)
+        val xvalues = slicedPeaks.map(_.getLcContext.getElutionTime)
+        val centroid = xvalues.zip(intensities).map { case (x, y) => x * y }.reduceLeft(_ + _) / intensities.reduceLeft(_ + _)
+        val intensityMax = intensities.max
+        val xmax = xvalues(intensities.indexOf(intensityMax))
+
+        peakels += new CwtPeakel(index = intensities.indexOf(intensityMax),
+          peaks = slicedPeaks toArray,
+          apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
+          minIdx = minIdx,
+          startLcContext = peaks(minIdx).getLcContext,
+          maxIdx = maxIdx,
+          endLcContext = peaks(maxIdx).getLcContext,
+          xMax = xmax toFloat,
+          intensityMax = intensityMax toFloat,
+          centroid = centroid toFloat,
+          snr = ridge.SNR)
+      }
+
+    }
+    /*filter peakels really too small*/
+    //peakels = peakels.filter( x => math.abs(x.maxIdx - x.minIdx) >= 6) // filter the two small peakel
+
+    /*remove a detected peakel which is contained in another peakel*/
     val filteredPeakels = this._filterOverlappingPeakels(peakels);
-    //val mergedPeakels = this._mergeOverlappingPeakels(peakels)
-    // Filter the two small peakel
-    filteredPeakels.filter{ x => val diff = math.abs(peaks(x.maxIdx).getLcContext().getElutionTime() - peaks(x.minIdx).getLcContext().getElutionTime())
-                               diff > this.ridgeFilteringParams.minPeakWidth &&
-                               diff < this.ridgeFilteringParams.maxPeakWidth}
+    val mergedPeakels = this._mergeOverlappingPeakels(filteredPeakels)
+
+    //peakels.toArray
+    mergedPeakels
   }
   
   // main function
