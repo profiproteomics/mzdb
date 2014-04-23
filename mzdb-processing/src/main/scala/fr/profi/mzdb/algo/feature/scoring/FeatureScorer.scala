@@ -1,24 +1,20 @@
 package fr.profi.mzdb.algo.feature.scoring
 
-import collection.mutable.ArrayBuffer
-import collection.mutable.HashMap
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.utils.math.VectorSimilarity
-import fr.profi.mzdb.model.Feature
-import scala.beans.BeanProperty
-import util.control.Breaks._
-import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
-import fr.profi.mzdb.algo.signal.fitting.GaussFitter
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
-import fr.profi.mzdb.algo.signal.fitting.PolyFitter
-import fr.profi.mzdb.algo.signal.fitting.GaussLorentzFitter
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks._
+
 import org.apache.commons.math.optimization.OptimizationException
 import org.apache.commons.math.stat.StatUtils
-import fr.profi.mzdb.utils.math.StatisticsConversion
-import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
+import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
+
 import fr.profi.ms.algo.IsotopePatternInterpolator
+import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
+import fr.profi.mzdb.algo.signal.fitting._
+import fr.profi.mzdb.model.Feature
+import fr.profi.mzdb.model.Peakel
+import fr.profi.mzdb.utils.math.StatisticsConversion
+import fr.profi.mzdb.utils.math.VectorSimilarity
 
 object FeatureScorer {
   
