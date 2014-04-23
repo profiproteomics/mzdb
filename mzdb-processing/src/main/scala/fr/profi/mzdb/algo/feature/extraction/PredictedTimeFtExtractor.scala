@@ -14,7 +14,6 @@ import java.io.File
 import java.io.Closeable
 import fr.proline.api.progress._
 import fr.profi.ms.algo.IsotopePatternInterpolator
-import fr.profi.mzdb.io.exporter.SQLiteXicStorer
 
 /**
  * Try to select the best peakel in cross assignment
@@ -39,7 +38,7 @@ class PredictedTimeFtExtractor(
   override val scanHeaderById: Map[Int, ScanHeader],
   override val nfByScanId: Map[Int, Float],
   val xtractConfig: FeatureExtractorConfig,
-  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
+  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
 ) extends AbstractSupervisedFtExtractor { //with ProgressComputing {
   
