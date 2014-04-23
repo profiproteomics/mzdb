@@ -4,7 +4,6 @@ import java.io.File
 import com.beust.jcommander.{JCommander, MissingCommandException, Parameter, ParameterException, Parameters}
 import com.typesafe.scalalogging.slf4j.Logging
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
 
 /**

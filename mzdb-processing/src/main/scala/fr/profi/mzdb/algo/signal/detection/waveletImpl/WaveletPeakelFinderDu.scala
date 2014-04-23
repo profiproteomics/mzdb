@@ -1,21 +1,20 @@
 package fr.profi.mzdb.algo.signal.detection.waveletImpl
 
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.math.wavelet.Ridge
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
+
+import fr.profi.mzdb.algo.signal.detection._
+
+import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.utils.math.wavelet.MexicanHat
-import fr.profi.mzdb.algo.signal.detection.CwtPeakel
-import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.CwtParameters
-import fr.profi.mzdb.algo.signal.detection.RidgeFilteringParameters
+import fr.profi.mzdb.utils.math.wavelet.Ridge
 
 
 /*
 Improved peak detection in mass spectrum by incorporating
 continuous wavelet transform-based pattern matching
 */
-class WaveletDetectorDuMethod (peaks: Seq[Peak]) extends WaveletPeakelFinder(peaks) {
+class WaveletDetectorDuMethod (peaks: Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
   
   /**we performed the CWT at 33 scale levels (from 1 to 64 at an interval of 2) */
   def setCwtParametersParams() = {

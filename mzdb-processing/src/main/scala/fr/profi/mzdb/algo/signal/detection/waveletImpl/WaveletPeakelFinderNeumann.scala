@@ -1,20 +1,17 @@
 package fr.profi.mzdb.algo.signal.detection.waveletImpl
 
-import fr.profi.mzdb.utils.math.wavelet.MexicanHat
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.math.wavelet.Ridge
 import scala.collection.mutable.HashMap
-import fr.profi.mzdb.algo.signal.detection.CwtPeakel
-import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.CwtParameters
-import fr.profi.mzdb.algo.signal.detection.RidgeFilteringParameters
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
-import fr.profi.mzdb.utils.math.wavelet.Ridger
-import fr.profi.mzdb.utils.math.wavelet.MexicanHat
-import fr.profi.mzdb.algo.feature.extraction.FeatureExtractionUtils
 
-class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends WaveletPeakelFinder(peaks) {
+import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
+
+import fr.profi.mzdb.algo.signal.detection._
+import fr.profi.mzdb.model.Peak
+
+import fr.profi.mzdb.utils.math.wavelet.MexicanHat
+import fr.profi.mzdb.utils.math.wavelet.Ridge
+
+class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
   
   def setCwtParametersParams() = {
     val scanTimeDiff = peaks.map(_.getLcContext().getElutionTime())

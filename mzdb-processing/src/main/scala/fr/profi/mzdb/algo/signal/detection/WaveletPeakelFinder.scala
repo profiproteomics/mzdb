@@ -1,38 +1,28 @@
 package fr.profi.mzdb.algo.signal.detection
 
 import java.awt.Color
+
 import scala.Array.canBuildFrom
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
+import scala.util.control.Breaks._
+
 import org.jfree.chart.ChartUtilities
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.axis.NumberAxis
 import org.jfree.chart.plot.XYPlot
-import org.jfree.chart.renderer.GrayPaintScale
+import org.jfree.chart.renderer.LookupPaintScale
 import org.jfree.chart.renderer.xy.XYBlockRenderer
 import org.jfree.data.xy.DefaultXYZDataset
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.utils.math.wavelet.MexicanHat
-import fr.profi.mzdb.utils.math.wavelet.MotherWavelet
-import fr.profi.mzdb.utils.math.wavelet.Ridge
-import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
-import fr.profi.mzdb.utils.math.wavelet.WaveletUtils
-import mr.go.sgfilter.SGFilter
-import fr.profi.mzdb.model.ILcContext
-import scala.collection.mutable.HashMap
-//import fr.profi.mzdb.utils.math.UWTSmoother
-import fr.profi.mzdb.utils.math.SGSmoother
+
 import com.typesafe.scalalogging.slf4j.Logging
-import fr.profi.mzdb.utils.math.wavelet.MexicanHat
-import fr.profi.mzdb.utils.math.wavelet.Ridger
-import scala.util.control.Breaks._
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
-import org.jfree.chart.renderer.LookupPaintScale
-import scala.beans.BeanProperty
+
+import fr.profi.mzdb.model.Peak
+import fr.profi.mzdb.utils.math.wavelet._
 
 
 /** Peak Width are ~= 2 * scale where scale is the maxima point on the ridge */
-abstract class WaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDetectionMethod with Logging {
+abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDetectionMethod with Logging {
   
   require(peaks != null && !peaks.isEmpty, "provided peaks array is empty or null")
   //var ydata: Array[Double] = null
