@@ -3,7 +3,7 @@ package fr.profi.mzdb.utils.math.wavelet
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model.Peak
 import java.io.File
-import fr.profi.mzdb.algo.signal.detection.WaveletPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.Method
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 object WaveletSmoothing extends App {
