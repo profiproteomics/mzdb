@@ -7,7 +7,7 @@ import scala.util.control.Breaks._
 
 import com.typesafe.scalalogging.slf4j.Logging
 
-import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 
@@ -16,7 +16,7 @@ import fr.profi.mzdb.utils.ms.MsUtils
  * @author David Bouyssie
  *
  */
-// TODO: rename file and move to feature.detection package
+// TODO: move to feature.detection package ???
 class UnsupervisedPeakelDetector(
   val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
@@ -55,14 +55,22 @@ class UnsupervisedPeakelDetector(
         // Initiate a peakel extraction using this starting point
         val peakelOpt = this.extractPeakel(pklTree, usedPeakSet, scanHeader, peak)
         
-        if( peakelOpt.isDefined ) peakelBuffer += peakelOpt.get
+        // Check if we found one peakel
+        if( peakelOpt.isDefined ) {
+          val peakel = peakelOpt.get
+          val apexIdx = peakel.apexIndex
+          
+          // Append peakel only if its apex is not at the extrema
+          if( apexIdx > 0 && apexIdx < peakel.peaks.length - 1 )
+            peakelBuffer += peakelOpt.get
+        }
       }
     }
     
     peakelBuffer.toArray
   }
   
-  def extractPeakel(
+  protected def extractPeakel(
     pklTree: PeakListTree,
     usedPeakSet: HashSet[Peak],
     apexScanHeader: ScanHeader,
@@ -164,7 +172,7 @@ class UnsupervisedPeakelDetector(
             // Increase cycle shift if right direction
             if( isRightDirection) cycleShift += 1
             
-          } // END OF ELSE          
+          } // END OF ELSE
         } // END OF WHILE
       } // END OF BREAKABLE
       
@@ -173,15 +181,15 @@ class UnsupervisedPeakelDetector(
       numOfAnalyzedDirections += 1
     }
     
-    // TODO: define a minimum number of peaks for a peakel
+    // TODO: define a minimum number of peaks for a peakel in the config
     val peakelOpt = if( peaksBuffer.length < 5 ) None
     else {
       
       // Find all peakels in the extracted range of IPs
-      val peakelsIndexes = BasicPeakelFinder.findPeakelsIndexes( peaksBuffer )
+      val peakelsIndices = HistogramBasedPeakelFinder.findPeakelsIndices( peaksBuffer )
       
       // Retrieve the peakel corresponding to the feature apex
-      val matchingPeakelIdxOpt = peakelsIndexes.find { idx =>
+      val matchingPeakelIdxOpt = peakelsIndices.find { idx =>
         apexTime >= peaksBuffer(idx._1).getLcContext.getElutionTime && 
         apexTime <= peaksBuffer(idx._2).getLcContext.getElutionTime
       }
@@ -194,9 +202,8 @@ class UnsupervisedPeakelDetector(
       } else {
         
         val matchingPeakelIdx = matchingPeakelIdxOpt.get
-        val peakelPeaks = ( matchingPeakelIdx._1 to matchingPeakelIdx._2 ).map( peaksBuffer(_) )
+        val peakelPeaks = peaksBuffer.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 )
         
-        // TODO: remove map when Marc has committed his update
         val peakel = Peakel(index = 0, peaks = peakelPeaks.toArray )
         
         Some( peakel )
@@ -211,7 +218,8 @@ class UnsupervisedPeakelDetector(
       
       if( peakelOpt.isEmpty ) {
         // Re-add input apexPeak to usedPeakSet
-        usedPeakSet += apexPeak
+        // Marco: it may lead to missing peakel => we should not remove the apexPeak if no detected peakel
+        //usedPeakSet += apexPeak
       } else {
         // Re-add peakel peaks to usedPeakSet
         usedPeakSet ++= peakelOpt.get.definedPeaks

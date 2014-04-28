@@ -14,25 +14,26 @@ import fr.profi.mzdb.model._
 object FeatureExtractionUtils {
 
   /** Detects peakels */ 
-  def findPeakelsIndexes(
+  // TODO: keep me ???
+  def findPeakelsIndices(
     peaks: Array[Peak],
     detectionAlgorithm: DetectionAlgorithm.Value, 
     minSNR: Float = 1.0f
   ): Array[Pair[Int, Int]] = {
     
-    var peakelIndexes: Array[(Int, Int)] = null 
+    var peakelIndices: Array[(Int, Int)] = null 
     
     if ( detectionAlgorithm == DetectionAlgorithm.BASIC ) {
-      peakelIndexes = BasicPeakelFinder.findPeakelsIndexes(peaks.map(_.getIntensity toDouble), 2) 
+      peakelIndices = BasicPeakelFinder.findPeakelsIndices(peaks.map(_.getIntensity toDouble), 2) 
     } else {
       val wpf = new WaveletPeakelFinderNeumann(peaks)
       wpf.ridgeFilteringParams.minSNR = minSNR
-      peakelIndexes = wpf.findPeakelsIndexes(asScanId = false) 
+      peakelIndices = wpf.findPeakelsIndexes(asScanId = false) 
     }
     
-    require(peakelIndexes != null, "peakelIndexes is null")
+    require(peakelIndices != null, "peakelIndexes is null")
     
-    peakelIndexes
+    peakelIndices
   }
   
  /** naive local maxima finder*/

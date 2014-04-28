@@ -73,4 +73,11 @@ object IsotopePatternInterpolator extends Logging {
     TheoreticalIsotopePattern(mzIntPairs.toArray,charge)
   }
   
+  def calcAbundancesRmsd(theoInt: Array[Float], obsInt: Array[Float]): Double = {
+    val maxObsInt = obsInt.max
+    val scaledInt = obsInt.map(_ * 100 / maxObsInt)
+    val s = theoInt.zip(scaledInt).foldLeft(0d)( (s, ab) => s + math.pow((ab._1 - ab._2), 2) )
+    math.sqrt(s)
+  }
+  
 }

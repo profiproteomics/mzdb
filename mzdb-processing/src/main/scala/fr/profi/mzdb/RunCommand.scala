@@ -217,7 +217,7 @@ object RunCommand extends App with Logging {
         val mzTolInDa = mzTolInPPM * mz / 1e6
         val( minMz, maxMz ) = (mz - mzTolInDa, mz + mzTolInDa)
         val peaks = mzDb.getXIC(minMz, maxMz, 1, MzDbReader.XicMethod.MAX )
-        this.logger.info(s"XIC for mass ${mz} contains #${peaks.length} peaks")                                     
+        this.logger.info(s"XIC for mass ${mz} contains #${peaks.length} peaks")
         (mz, peaks, (rtmin, rtmax))
       }
       
@@ -229,7 +229,7 @@ object RunCommand extends App with Logging {
       peakMatrix.par.map { case (mz, peaks, (rtmin, rtmax)) =>
         var peakelIndexes : Array[(Int, Int)] = null
         if (algo == "basic") {
-          peakelIndexes = BasicPeakelFinder.findPeakelsIndexes(peaks)
+          peakelIndexes = BasicPeakelFinder.findPeakelsIndices(peaks)
         } else if (algo == "wavelet") {
           val wpf = new WaveletDetectorDuMethod(peaks)
           wpf.ridgeFilteringParams.minSNR = 0.0f

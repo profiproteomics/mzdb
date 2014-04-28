@@ -78,7 +78,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       val (peaks, definedPeaks) = (maxPeakel.peaks, maxPeakel.definedPeaks)
 
       // Detect peaks
-      val peakelIndexes = findPeakelsIndexes(definedPeaks, ftXtractAlgoConfig.detectionAlgorithm, ftXtractAlgoConfig.minSNR)
+      val peakelIndexes = findPeakelsIndices(definedPeaks, ftXtractAlgoConfig.detectionAlgorithm, ftXtractAlgoConfig.minSNR)
 
       // Treat matching Idx
       var matchingPeakIdx: (Int, Int) = null

@@ -8,15 +8,20 @@ import fr.profi.ms.model.TheoreticalIsotopePattern
 
 object PeakListTree {
   
-  val mzDiff = 1.0027
+  val avgIsotopeMassDiff = 1.0027
   
   def groupPeaklists( peakListsByScanId: Map[Int, Seq[PeakList]] ): Map[Int,PeakListGroup] = {    
     Map() ++ peakListsByScanId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }
   }
-  
-  def extractIsotopicPattern(pklGroup: PeakListGroup, mz: Double, mzTolPPM: Float, 
-		  						           charge: Int, maxNbPeaks: Int, 
-		  						           maxTheoreticalPeakelIndex:Int= 0) : Array[Peak] = {
+
+  def extractIsotopicPattern(
+    pklGroup: PeakListGroup,
+    mz: Double,
+    mzTolPPM: Float,
+    charge: Int,
+    maxNbPeaks: Int,
+    maxTheoreticalPeakelIndex: Int = 0
+  ): Array[Peak] = {
     
     val peaks = new ArrayBuffer[Peak]( maxNbPeaks )
     breakable {
@@ -25,7 +30,7 @@ object PeakListTree {
         // Compute some vars
         // TODO: check this the best way to compute isotope masses
         // TODO: use compute averagine to infer the delta mass
-        val mzToExtract =  mz + (peakPos * PeakListTree.mzDiff / charge)
+        val mzToExtract =  mz + (peakPos * PeakListTree.avgIsotopeMassDiff / charge)
         val mzTolDa = MsUtils.ppmToDa( mzToExtract, mzTolPPM )
         
         // Try to retrieve the nearest peak

@@ -10,14 +10,15 @@ import fr.profi.util.stat._
  */
 object HistogramBasedPeakelFinder extends IPeakelFinder {
 
-  def findPeakelsIndexes(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
-    findPeakelsIndexes( peaks.map( p => (p.getLcContext.getElutionTime , p.getIntensity.toDouble) ).toArray )
+  def findPeakelsIndices(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
+    findPeakelsIndices( peaks.map( p => (p.getLcContext.getElutionTime , p.getIntensity.toDouble) ).toArray )
   }
   
-  protected def findPeakelsIndexes(rtIntPairs: Array[(Float,Double)], consNbTimesThresh: Int = 2, binSize: Float = 10f ): Array[Tuple2[Int,Int]] = {
+  protected def findPeakelsIndices(rtIntPairs: Array[(Float,Double)], consNbTimesThresh: Int = 2, binSize: Float = 5f ): Array[Tuple2[Int,Int]] = {
     
-    val tmpPeakelIndexes = new ArrayBuffer[Tuple2[Int,Int]]
-    if( rtIntPairs.length < 5 ) return tmpPeakelIndexes.toArray
+    val tmpPeakelIndices = new ArrayBuffer[Tuple2[Int,Int]]
+    // Check we will have at least 3 peaks after the binning
+    if( (rtIntPairs.last._1 - rtIntPairs.head._1) / binSize < 3 ) return tmpPeakelIndices.toArray
     
     var peakDetectionBegin = false
     var afterMinimum = true
@@ -29,10 +30,11 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     
     var peakIdx = 0
     val binnedRtIntPairs = _binRtIntPairs(rtIntPairs,binSize)
+    val binnedAbValues = binnedRtIntPairs.map( _._2 )
     
     // TODO: factorize this code with the one from BasicPeakelFinder
     // or replace the BasciPeakel finder by this one
-    binnedRtIntPairs.map( _._2 ).sliding(2).foreach { buffer =>
+    this.smoothValues(binnedAbValues, times = 1 ).sliding(2).foreach { buffer =>
       val prevValue = buffer(0)
       val curValue = buffer(1)
       val curSlope = (curValue - prevValue).signum
@@ -61,7 +63,7 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
               afterMinimum = false
             }
             else if( prevSlope == -1 && afterMaximum && prevValue < prevMaxValue/2 ) {
-              tmpPeakelIndexes += Tuple2(prevMinIdx,peakIdx)
+              tmpPeakelIndices += Tuple2(prevMinIdx,peakIdx)
               prevMinIdx = peakIdx
               afterMaximum = false
               afterMinimum = true
@@ -78,20 +80,20 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
       peakIdx += 1
     }
     
-    if( afterMaximum ) tmpPeakelIndexes += Tuple2(prevMinIdx,binnedRtIntPairs.length-1) //|| peaks.length == 0 
+    if( afterMaximum ) tmpPeakelIndices += Tuple2(prevMinIdx,binnedRtIntPairs.length-1) //|| peaks.length == 0 
     
-    // Convert peakel indexes of binned values into indexes of input values    
-    val peakelIndexes = new ArrayBuffer[Tuple2[Int,Int]]( tmpPeakelIndexes.length )
+    // Convert peakel indices of binned values into indices of input values    
+    val peakelIndices = new ArrayBuffer[Tuple2[Int,Int]]( tmpPeakelIndices.length )
     val rtInPairsWithIndex = rtIntPairs.zipWithIndex
     
-    for( peakelIdx <- tmpPeakelIndexes ) {
+    for( peakelIdx <- tmpPeakelIndices ) {
       val(firstBin,lastBin) = (binnedRtIntPairs(peakelIdx._1),binnedRtIntPairs(peakelIdx._2))
       val firstIdx = rtInPairsWithIndex.find( _._1._1 >= firstBin._1 ).get._2
       val lastIdx = rtInPairsWithIndex.find( _._1._1 >= lastBin._1 ).get._2
-      peakelIndexes += (firstIdx -> lastIdx)
+      peakelIndices += (firstIdx -> lastIdx)
     }
     
-    peakelIndexes.toArray
+    peakelIndices.toArray
   }
   
   private def _binRtIntPairs( rtIntPairs: Array[(Float,Double)], binSize: Float ): Array[(Float,Double)] = {

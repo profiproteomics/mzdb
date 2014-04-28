@@ -76,6 +76,15 @@ case class Peakel(
   // Define lazy attributes
   @BeanProperty lazy val peakByElutionTime = definedPeaks.map { p => p.getLcContext.getElutionTime -> p } toMap
   @BeanProperty lazy val duration = lastScanContext.getElutionTime - firstScanContext.getElutionTime
+  @BeanProperty lazy val weightedAverageTime = {
+    var intensitySum = 0f
+    val weightedTimeSum = definedPeaks.foldLeft(0f) { (timeSum,peak) =>
+      val intensity = peak.intensity
+      intensitySum += peak.intensity
+      timeSum + (peak.getLcContext.getElutionTime * intensity)
+    }
+    weightedTimeSum / intensitySum
+  }
   @BeanProperty var localMaxima : Array[Int] = null
   
   // Update feature intensity and area

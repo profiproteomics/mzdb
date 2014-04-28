@@ -11,11 +11,11 @@ object BasicPeakelFinder extends IPeakelFinder {
   
   var nbConsecutiveSlope = 2
   
-  def findPeakelsIndexes(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
-    findPeakelsIndexes( peaks.map( _.getIntensity.toDouble ).toArray,  nbConsecutiveSlope)
+  def findPeakelsIndices(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
+    findPeakelsIndices( peaks.map( _.getIntensity.toDouble ).toArray,  nbConsecutiveSlope)
   }
   
-  def findPeakelsIndexes(values: Array[Double], consNbTimesThresh: Int ): Array[Tuple2[Int,Int]] = {
+  def findPeakelsIndices(values: Array[Double], consNbTimesThresh: Int ): Array[Tuple2[Int,Int]] = {
     
     val peakelIndexes = new ArrayBuffer[Tuple2[Int,Int]]
     if( values.length < 5 ) 
@@ -79,23 +79,6 @@ object BasicPeakelFinder extends IPeakelFinder {
       peakelIndexes += Tuple2(prevMinIdx,values.length-1) //|| peaks.length == 0 
     
     peakelIndexes.toArray
-  }
-
-  protected def smoothValues(values: Array[Double], times: Int = 3 ): Array[Double] = {
-    
-    import mr.go.sgfilter.SGFilter
-    
-    // TODO: static values ???
-    val(nl,nr,order) = (5,5,4)
-    val coeffs = SGFilter.computeSGCoefficients(nl,nr,order)
-
-    val sgFilter = new SGFilter(5,5)
-    var smoothedValues = values
-    for( i <- 1 to times ) {
-      smoothedValues = sgFilter.smooth(smoothedValues,coeffs)
-    }
-    
-    smoothedValues
   }
 
 }

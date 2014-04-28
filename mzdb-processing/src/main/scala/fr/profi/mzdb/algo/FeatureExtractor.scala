@@ -115,12 +115,11 @@ class FeatureExtractor(
     for( foundFt <- ft ) {
 
       val ms2ScanIds = new ArrayBuffer[Int]
+      
       // Retrieve the first peakel
-
       val firstPeakel = foundFt.peakels(0)
 
       // Iterate over each peak of this peakel
-
       for( peak <- firstPeakel.definedPeaks ) {
         // Retrieve the cycles surrounding the next MS2 scans
         val thisScanId = peak.getLcContext.getScanId
@@ -132,7 +131,7 @@ class FeatureExtractor(
           val nextCycleScanId = ms1ScanHeaderByCycleNum(nextCycleNum).getId
           
           // Iterate over MS2 scans
-          for( scanId <- thisScanId until nextCycleScanId ) {
+          for( scanId <- thisScanId + 1 until nextCycleScanId ) {
             val scanH = this.scanHeaderById(scanId)
             
             // TODO: log charge conflicts
@@ -146,20 +145,23 @@ class FeatureExtractor(
           }
         }
       }
-      foundFt.ms2ScanIds = ms2ScanIds.toArray
-      ms2ScanIds.foreach(ftsByMs2ScanId.getOrElseUpdate(_, new ArrayBuffer[Feature]) += foundFt)
       
+      foundFt.ms2ScanIds = ms2ScanIds.toArray
+      
+      ms2ScanIds.foreach(ftsByMs2ScanId.getOrElseUpdate(_, new ArrayBuffer[Feature]) += foundFt)
     }
-    
-    
+
     def _getIntensitySumOfSurroundingPeak(ms2scanID: Long, f: Feature): Float = {
       val definedPeaks = f.peakels(0).definedPeaks
-      val (p1, p2) = (definedPeaks.find(_.getLcContext().getScanId() < ms2scanID), 
-          definedPeaks.find(_.getLcContext().getScanId() > ms2scanID))
-      Array(p1, p2).withFilter(_.isDefined)
-                   .map(_.get)
-                   .foldLeft(0f){(s, peak) => s + peak.getIntensity}
-    
+      val (p1, p2) = (
+        definedPeaks.find(_.getLcContext().getScanId() < ms2scanID),
+        definedPeaks.find(_.getLcContext().getScanId() > ms2scanID)
+      )
+      
+      Array(p1, p2)
+        .withFilter(_.isDefined)
+        .map(_.get)
+        .foldLeft(0f) { (s, peak) => s + peak.getIntensity }
     }
     
     // TODO: filter out ms2 events linked to multiple features

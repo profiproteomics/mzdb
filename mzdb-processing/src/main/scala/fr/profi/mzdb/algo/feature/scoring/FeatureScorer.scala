@@ -201,7 +201,7 @@ object FeatureScorer {
   def calcSignalFluctuationByBasicPeakelFinder ( f: Feature): Float =  {
   // a perfect shape would be only one maximum index
     var shape = 0f
-    f.getPeakels.foreach(p=> shape += BasicPeakelFinder.findPeakelsIndexes(p.definedPeaks).length)
+    f.getPeakels.foreach(p=> shape += BasicPeakelFinder.findPeakelsIndices(p.definedPeaks).length)
     shape / f.peakelsCount
   }
   

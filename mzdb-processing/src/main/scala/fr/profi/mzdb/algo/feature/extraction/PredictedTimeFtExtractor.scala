@@ -216,7 +216,7 @@ class PredictedTimeFtExtractor(
       .map { ft =>
         val theoAbundances = IsotopePatternInterpolator.getTheoreticalPattern(ft.mz, ft.charge).abundances
         val peakelApexIntensities = ft.peakels.map(_.getApex().getIntensity)
-        val rmsd = this._calcRmsd(theoAbundances, peakelApexIntensities)
+        val rmsd = IsotopePatternInterpolator.calcAbundancesRmsd(theoAbundances, peakelApexIntensities)
         (ft,rmsd)
       }
       .filter { case(ft,rmsd) => ( rmsd < maxIPDeviation ) }
@@ -291,15 +291,15 @@ class PredictedTimeFtExtractor(
     // Launch peak detection
     val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
 
-    val peakelIndexes = findPeakelsIndexes(
+    val peakelIndices = findPeakelsIndices(
       definedPeaks,
       peakelDetectionConfig.detectionAlgorithm,
       peakelDetectionConfig.minSNR
     )
 
-    val detectedFts = new ArrayBuffer[Feature](peakelIndexes.length)
+    val detectedFts = new ArrayBuffer[Feature](peakelIndices.length)
 
-    for ((minIdx, maxIdx) <- peakelIndexes) {
+    for ((minIdx, maxIdx) <- peakelIndices) {
       val ipsIndexes = (peaks.indexOf(definedPeaks(minIdx)), peaks.indexOf(definedPeaks(maxIdx)))
       val ft = tmpFt.restrictToPeakelIdxRange(ipsIndexes)
 
@@ -339,7 +339,7 @@ class PredictedTimeFtExtractor(
     
     val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
     // launch peak detection
-    val peakelIndexes = findPeakelsIndexes(definedPeaks, peakelDetectionConfig.detectionAlgorithm, peakelDetectionConfig.minSNR)
+    val peakelIndexes = findPeakelsIndices(definedPeaks, peakelDetectionConfig.detectionAlgorithm, peakelDetectionConfig.minSNR)
     
     peakelIndexes
   }
@@ -358,12 +358,6 @@ class PredictedTimeFtExtractor(
     })
   }
   
-  private def _calcRmsd(theoInt: Array[Float], obsInt: Array[Float]): Double = {
-    val maxObsInt = obsInt.max
-    val scaledInt = obsInt.map(_ * 100 / maxObsInt)
-    val s = theoInt.zip(scaledInt).foldLeft(0d)( (s, ab) => s + math.pow((ab._1 - ab._2), 2) )
-    math.sqrt(s)
-  }
 }
 
 
