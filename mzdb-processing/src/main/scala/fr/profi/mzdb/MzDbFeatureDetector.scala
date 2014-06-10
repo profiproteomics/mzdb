@@ -406,8 +406,8 @@ class MzDbFeatureDetector(
     // --- Clusterize peakel patterns using SetClusterer fork ---
     
     // Map peakel indices by each found peakel pattern
-    val peakelIndexSetByPeakelPattern = peakelPatternsBuffer.map { peakelPattern =>
-      val peakelIndexSet = peakelPattern.peakels.map( peakelIdxByPeakel(_) ).toSet
+    val peakelIndexSetByPeakelPattern = peakelPatternsBuffer.withFilter(_ != null).map { peakelPattern =>
+      val peakelIndexSet = peakelPattern.peakels.withFilter(_ != null).map( peakelIdxByPeakel(_) ).toSet
       peakelPattern -> peakelIndexSet
     } toMap
 
