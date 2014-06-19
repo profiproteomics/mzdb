@@ -1,6 +1,6 @@
 package fr.profi.chemistry.model
 
-import fr.proline.util.StringUtils
+import fr.profi.util.StringUtils
 
 /**
  * @author David Bouyssie

@@ -2,7 +2,7 @@ package fr.profi.mzdb.model
 
 import beans.BeanProperty
 import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
-import fr.proline.util.math.linearInterpolation
+import fr.profi.util.math.linearInterpolation
 
 object Peakel {
   

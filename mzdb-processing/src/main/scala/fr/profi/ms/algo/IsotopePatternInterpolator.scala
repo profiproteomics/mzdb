@@ -7,8 +7,8 @@ import scala.collection.immutable.TreeMap
 import scala.util.control.Breaks._
 import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.ms.model.TheoreticalIsotopePattern
-import fr.proline.util.math.calcLineParams
-import fr.proline.util.ms.mozToMass
+import fr.profi.util.math.calcLineParams
+import fr.profi.util.ms.mozToMass
 
 /**
  * @author Marco

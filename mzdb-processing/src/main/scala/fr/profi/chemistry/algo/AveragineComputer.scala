@@ -5,7 +5,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import fr.profi.chemistry.model._
 import fr.profi.ms.model.IsotopeCombination
-import fr.proline.util.math.median
+import fr.profi.util.math.median
 
 /**
  * @author David Bouyssie
