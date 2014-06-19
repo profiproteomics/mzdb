@@ -88,7 +88,7 @@
     <dependency>
       <groupId>fr.proline.util</groupId>
       <artifactId>ProFI-Commons-Scala</artifactId>
-      <version>0.0.7</version>
+      <version>0.0.8-SNAPSHOT</version>
     </dependency>
 
     <!-- Test -->
