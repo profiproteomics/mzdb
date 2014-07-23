@@ -23,7 +23,7 @@ import fr.profi.mzdb.model.ScanHeader;
  * 
  * @version 0.1
  * 
- * @author David Bouyssié
+ * @author David Bouyssie
  * 
  */
 public class MzDbAccess {
@@ -195,7 +195,7 @@ public class MzDbAccess {
 	private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, FileNotFoundException {
 
 		MgfWriter writer = new MgfWriter(cmd.mzdbFile);
-		writer.write(cmd.outputFile, cmd.precMzComputation,cmd.intensityCutoff);
+		writer.write(cmd.outputFile, cmd.precMzComputation); //cmd.intensityCutoff);
 	}
 	
 	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException {
