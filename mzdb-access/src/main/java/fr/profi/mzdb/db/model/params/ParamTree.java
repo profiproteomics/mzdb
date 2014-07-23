@@ -18,32 +18,32 @@ import fr.profi.mzdb.db.model.params.param.UserText;
 @XmlRootElement(name = "params")
 public class ParamTree extends AbstractParamTree {
 
-	/**
-	 * necessary for jackson.
-	 */
-	protected ParamTree() {
-		super();
-	}
+    /**
+     * necessary for jackson.
+     */
+    protected ParamTree() {
+	super();
+    }
 
-	@Override
-	@XmlElement(name = "cvParam", type = CVParam.class, required = false)
-	@XmlElementWrapper
-	public List<CVParam> getCVParams() {
-		return super.getCVParams();
-	}
+    @Override
+    @XmlElement(name = "cvParam", type = CVParam.class, required = false)
+    @XmlElementWrapper(name = "cvParams")
+    public List<CVParam> getCVParams() {
+	return super.getCVParams();
+    }
 
-	@Override
-	@XmlElement(name = "userParam", type = UserParam.class, required = false)
-	@XmlElementWrapper
-	public List<UserParam> getUserParams() {
-		return super.getUserParams();
-	}
+    @Override
+    @XmlElement(name = "userParam", type = UserParam.class, required = false)
+    @XmlElementWrapper(name = "userParams")
+    public List<UserParam> getUserParams() {
+	return super.getUserParams();
+    }
 
-	@Override
-	@XmlElement(name = "userText", type = UserText.class, required = false)
-	@XmlElementWrapper
-	public List<UserText> getUserTexts() {
-		return super.getUserTexts();
-	}
+    @Override
+    @XmlElement(name = "userText", type = UserText.class, required = false)
+    @XmlElementWrapper(name = "userTexts")
+    public List<UserText> getUserTexts() {
+	return super.getUserTexts();
+    }
 
 }

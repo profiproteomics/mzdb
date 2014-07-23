@@ -11,57 +11,78 @@ import fr.profi.mzdb.db.model.params.param.UserText;
 
 /**
  * @author David Bouyssie
- *
+ * 
  */
-public abstract class AbstractParamTree implements IParamContainer {
-	
-	/** The cv params. */
-	protected List<CVParam> cvParams;
+public abstract class AbstractParamTree { // implements IParamContainer
 
-	/** The user params. */
-	protected List<UserParam> userParams;
+    /** The cv params. */
+    protected List<CVParam> cvParams;
 
-	/**
-	 * The userText params: newly introduced for handling Thermo metadata in text field
-	 */
-	protected List<UserText> userTexts;
-	
-	@XmlElement(name = "cvParam", type = CVParam.class, required = false)	
-	public List<CVParam> getCVParams() {
-		if (this.cvParams == null)
-			this.cvParams = new ArrayList<CVParam>();
+    /** The user params. */
+    protected List<UserParam> userParams;
 
-		return cvParams;
+    /**
+     * The userText params: newly introduced for handling Thermo metadata in text field
+     */
+    protected List<UserText> userTexts;
+
+    @XmlElement(name = "cvParam", type = CVParam.class, required = false)
+    public List<CVParam> getCVParams() {
+	if (this.cvParams == null)
+	    this.cvParams = new ArrayList<CVParam>();
+
+	return cvParams;
+    }
+
+    // Marc: most of the object does not contain any UserParam,
+    // so this is set to be non abstract to avoid to override it in subclasses
+    // DBO: why ???
+    @XmlElement(name = "userParam", type = UserParam.class, required = false)
+    public List<UserParam> getUserParams() {
+	if (this.userParams == null)
+	    this.userParams = new ArrayList<UserParam>();
+
+	return this.userParams;
+    }
+
+    @XmlElement(name = "userText", type = UserText.class, required = false)
+    public List<UserText> getUserTexts() {
+	if (this.userTexts == null)
+	    this.userTexts = new ArrayList<UserText>();
+	return this.userTexts;
+    }
+
+    public UserParam getUserParam(String name) {
+
+	UserParam p = null;
+	for (UserParam up : this.getUserParams()) {
+	    if (up.getName().equals(name)) {
+		p = up;
+		break;
+	    }
 	}
-	
-	// Marc: most of the object does not contain any UserParam,
-	// so this is set to be non abstract to avoid to override it in subclasses
-	// DBO: why ???
-	@XmlElement(name = "userParam", type = UserParam.class, required = false)
-	public List<UserParam> getUserParams() {
-		if (this.userParams == null)
-			this.userParams = new ArrayList<UserParam>();
+	return p;
+    }
 
-		return this.userParams;
+    public CVParam getCVParam(String name) {
+	CVParam cv = null;
+	for (CVParam up : this.getCVParams()) {
+	    if (up.getName().equals(name)) {
+		cv = up;
+		break;
+	    }
 	}
+	return cv;
+    }
 
-	@XmlElement(name = "userText", type = UserText.class, required = false)
-	public List<UserText> getUserTexts() {
-		if (this.userTexts == null)
-			this.userTexts = new ArrayList<UserText>();
-		return this.userTexts;
+    public CVParam[] getCVParams(String[] names) {
+	CVParam[] cvParams = new CVParam[names.length];
+	int i = 0;
+	for (String s : names) {
+	    cvParams[i] = this.getCVParam(s);
+	    i++;
 	}
-	
-	public UserParam getUserParam(String name) {
-		
-		UserParam p = null;
-		for (UserParam up : this.getUserParams()) {
-			if (up.getName().equals(name)) {
-				p = up;
-				break;
-			}
-		}
-		return p;
-	}
+	return cvParams;
+    }
 
 }

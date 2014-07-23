@@ -10,17 +10,17 @@ import javax.xml.bind.annotation.XmlAttribute;
  */
 public class Component extends AbstractParamTree {
 
-	/** The order. */
-  @XmlAttribute
-	protected int order;
+    /** The order. */
+    @XmlAttribute
+    protected int order;
 
-	/**
-	 * Gets the order.
-	 * 
-	 * @return the order
-	 */
-	public int getOrder() {
-		return order;
-	}
+    /**
+     * Gets the order.
+     * 
+     * @return the order
+     */
+    public int getOrder() {
+	return order;
+    }
 
 }
