@@ -99,7 +99,7 @@ class MzDbFeatureDetector(
     val rsIter = {
 	if (msLevel > 1 && minParentMz != 0d && maxParentMz != 0d)
 	    mzDbReader.getRunSliceIterator(msLevel, minParentMz, maxParentMz)
-	else mzDbReader.getRunSliceIterator(msLevel)
+	else mzDbReader.getRunSliceIterator(msLevel, 0.0, 0.0)
     }
     val rsHeaders = mzDbReader.getRunSliceHeaders(msLevel)
     val rsHeaderByNumber = rsHeaders.map { rsh => rsh.getNumber -> rsh } toMap
