@@ -14,7 +14,6 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,8 +41,10 @@ import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
 import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
 import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
 import fr.profi.mzdb.io.reader.iterator.RunSliceIterator;
+import fr.profi.mzdb.model.AcquisitionMethod;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.DataEncoding;
+import fr.profi.mzdb.model.IsolationWindow;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.RunSlice;
 import fr.profi.mzdb.model.RunSliceData;
@@ -73,35 +74,6 @@ public class MzDbReader {
 	public double BB_RT_WIDTH_MS1;
 	public double BB_RT_WIDTH_MSn;
     };
-
-    /**
-     * Enumeration representing the acquisition mode. It is stored as a cvParam in the run table. This list is
-     * NOT exhaustive
-     */
-    public enum AcquisitionMode {
-	DDA("DDA acquisition", "Data Dependant Acquisition (Thermo designation), Warning, "
-		+ "in ABI this is called DIA (Data Information Dependant)"), SWATH("SWATH acquisition",
-		"ABI Swath acquisition or Thermo swath acquisition"), MRM("MRM acquisition",
-		"Multiple reaction monitoring"), SRM("SRM acquisition", "Single reaction monitoring"), UNKNOWN(
-		"UNKNOWN acquisition", "unknown acquisition mode");
-	// Other one to be added
-
-	private String description;
-	private String code;
-
-	AcquisitionMode(String code, String description) {
-	    this.code = code;
-	    this.description = description;
-	}
-
-	public String getDescription() {
-	    return this.description;
-	}
-
-	public String toString() {
-	    return this.code;
-	}
-    }
 
     final Logger logger = LoggerFactory.getLogger(MzDbReader.class);
 
@@ -142,13 +114,13 @@ public class MzDbReader {
     /**
      * acquisition mode: TODO: find a cvparam representing the information better
      */
-    protected AcquisitionMode acquisitionMode = null;
+    protected AcquisitionMethod acquisitionMethod = null;
 
     /**
      * If swath acquisition, the list will be computed on first use (lazy loading) Will be always null on non
      * swath acquisition
      */
-    protected List<ImmutablePair<Double, Double>> _swathIsolationWindow = null;
+    protected IsolationWindow[] _swathIsolationWindow = null;
 
     /** The xml mappers. */
     public static Unmarshaller paramTreeUnmarshaller;
@@ -309,27 +281,27 @@ public class MzDbReader {
      * @return
      * @throws SQLiteException
      */
-    public AcquisitionMode getAcquisitionMode() throws SQLiteException {
-	if (this.acquisitionMode == null) {
+    public AcquisitionMethod getAcquisitionMode() throws SQLiteException {
+	if (this.acquisitionMethod == null) {
 	    final String sqlString = "SELECT param_tree FROM run";
 	    final String runParamTree = new SQLiteQuery(connection, sqlString).extractSingleString();
 	    final ParamTree runTree = ParamTreeParser.parseParamTree(runParamTree);
 	    final CVParam cvParam = runTree.getCVParam("acquisition parameter");
 	    final String value = cvParam.getValue();
 
-	    if (value.equals(AcquisitionMode.SWATH.toString())) {
-		this.acquisitionMode = AcquisitionMode.SWATH;
+	    if (value.equals(AcquisitionMethod.SWATH.toString())) {
+		this.acquisitionMethod = AcquisitionMethod.SWATH;
 		this.getDIAPrecurorRanges();
-	    } else if (value.equals(AcquisitionMode.DDA.toString()))
-		this.acquisitionMode = AcquisitionMode.DDA;
-	    else if (value.equals(AcquisitionMode.MRM.toString()))
-		this.acquisitionMode = AcquisitionMode.MRM;
-	    else if (value.equals(AcquisitionMode.SRM.toString()))
-		this.acquisitionMode = AcquisitionMode.SRM;
+	    } else if (value.equals(AcquisitionMethod.DDA.toString()))
+		this.acquisitionMethod = AcquisitionMethod.DDA;
+	    else if (value.equals(AcquisitionMethod.MRM.toString()))
+		this.acquisitionMethod = AcquisitionMethod.MRM;
+	    else if (value.equals(AcquisitionMethod.SRM.toString()))
+		this.acquisitionMethod = AcquisitionMethod.SRM;
 	    else
-		this.acquisitionMode = AcquisitionMode.UNKNOWN;
+		this.acquisitionMethod = AcquisitionMethod.UNKNOWN;
 	}
-	return this.acquisitionMode;
+	return this.acquisitionMethod;
     }
 
     /**
@@ -460,19 +432,20 @@ public class MzDbReader {
      * @return
      * @throws SQLiteException
      */
-    public List<ImmutablePair<Double, Double>> getDIAPrecurorRanges() throws SQLiteException {
+    public IsolationWindow[] getDIAPrecurorRanges() throws SQLiteException {
 	if (this._swathIsolationWindow == null) {
 	    final String sqlQuery = "SELECT DISTINCT parent_min_mz, "
 		    + "parent_max_mz from bounding_box_msn_rtree ORDER BY parent_min_mz";
 	    final SQLiteRecordIterator recordIt = new SQLiteQuery(connection, sqlQuery).getRecords();
 
-	    this._swathIsolationWindow = new ArrayList<ImmutablePair<Double, Double>>();
+	    ArrayList<IsolationWindow> isolationWindowList = new ArrayList<IsolationWindow>();
 	    while (recordIt.hasNext()) {
 		final SQLiteRecord record = recordIt.next();
 		final Double minMz = record.columnDouble("parent_min_mz");
 		final Double maxMz = record.columnDouble("parent_max_mz");
-		_swathIsolationWindow.add(new ImmutablePair<Double, Double>(minMz, maxMz));
+		isolationWindowList.add(new IsolationWindow(minMz, maxMz));
 	    }
+	    _swathIsolationWindow = isolationWindowList.toArray(new IsolationWindow[isolationWindowList.size()]);
 	}
 	return _swathIsolationWindow;
     }
@@ -1123,7 +1096,7 @@ public class MzDbReader {
      */
     public Iterator<RunSlice> getRunSliceIterator(int msLevel) throws SQLiteException {
 	// First pass to index data
-	SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
+	final SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
 	while (fakeStmt.step()) {
 	}
 	fakeStmt.dispose();
@@ -1144,25 +1117,26 @@ public class MzDbReader {
 	    throws SQLiteException {
 
 	// lazy loading
-	AcquisitionMode acMode = this.getAcquisitionMode();
+	final AcquisitionMethod acMode = this.getAcquisitionMode();
 
-	if (acMode == AcquisitionMode.SWATH) {
+	if (acMode == AcquisitionMethod.SWATH) {
 	    // lazy loading
-	    List<ImmutablePair<Double, Double>> swathWindows = this.getDIAPrecurorRanges();
-	    for (ImmutablePair<Double, Double> p : swathWindows) {
-		if (p.left <= minParentMz && p.right > minParentMz) {
-		    if (maxParentMz > p.right) {
+	    final IsolationWindow[] swathWindows = this.getDIAPrecurorRanges();
+	    for (final IsolationWindow p : swathWindows) {
+		final double maxMz = p.getMaxMz();
+		if (p.getMinMz() <= minParentMz && maxMz > minParentMz) {
+		    if (maxParentMz > maxMz) {
 			this.logger.warn("You provided erronous parent mzs. "
 				+ "maxParentMz is outside of the swath isolation window.");
 			// setting new value to maxParentMz
-			maxParentMz = p.right;
+			maxParentMz = maxMz;
 			break;
 		    }
 		}
 	    }
 	}
 
-	SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
+	final SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
 	while (fakeStmt.step()) {
 	}
 	fakeStmt.dispose();
