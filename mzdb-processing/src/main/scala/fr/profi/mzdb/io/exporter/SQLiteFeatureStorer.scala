@@ -15,6 +15,71 @@ import com.almworks.sqlite4java.SQLiteConnection
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
+import fr.profi.mzdb.model.Peakel
+
+
+
+object SQLiteXicStorer extends AutoCloseable {
+  val connection = new SQLiteConnection(new File("extracted_xics.sqlite"))
+  connection.open(true)
+  
+  connection.exec("PRAGMA temp_store=2;")
+  connection.exec("PRAGMA cache_size=8000;")
+
+    // Create tables
+  connection.exec("CREATE TABLE xics (" +
+    " id INTEGER primary key autoincrement,\n" +
+    " mz REAL,\n" +
+    " time REAL,\n" +
+    " ms1_count INTEGER,\n" +
+    " xic BLOB,\n" +
+    ")"
+  )
+  
+  connection.exec("BEGIN TRANSACTION")
+
+  
+  def insertXic(xic: Peakel) = {
+    val t = xic.definedPeaks.map(x=> x.getLcContext().getElutionTime())
+    val i = xic.definedPeaks.map(x=> x.getIntensity())
+    val x = createFeatureChart(t, i)
+    connection.exec(s"INSERT INTO xics VALUES (?, ${xic.mz}, ${xic.apexScanContext.getElutionTime}, ${t.length}, ${x})") //, true)
+
+  }
+  
+  def close() = { 
+    connection.exec("COMMIT TRANSACTION")
+    connection.dispose()
+    }
+  
+  def createFeatureChart( xic: Tuple2[ Array[Float], Array[Float]] ): Array[Byte] = {
+    
+    val series = new XYSeries("XIC")
+    
+    xic._1.zip(xic._2).foreach { dataPoint =>
+      series.add(dataPoint._1 / 60, dataPoint._2 ) // convert seconds into minutes
+    }
+    
+    val xyDataset = new XYSeriesCollection(series)
+    val chart = ChartFactory.createXYLineChart(
+                  "Feature XIC", "Time", "Intensity",
+                  xyDataset, PlotOrientation.VERTICAL, true, true, false
+                )
+                
+    val bi = chartToImage(chart, 400, 300)
+    ChartUtilities.encodeAsPNG( bi )
+  }
+  
+  protected def chartToImage( chart: JFreeChart, width: Int, height: Int):  BufferedImage = { 
+    val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+    val g2 = img.createGraphics();
+    chart.draw(g2, new Rectangle2D.Double(0, 0, width, height));
+    g2.dispose();
+    
+    img
+  }
+}
+
 
 
 /**
@@ -43,14 +108,19 @@ object SQLiteFeatureStorer {
     // Create tables
     connection.exec("CREATE TABLE feature (" +
   	  " id INTEGER,\n" +
+  	  " charge INTEGER,\n" +
       " mz REAL,\n" +
       " time REAL,\n" +
-      " intensity REAL,\n" +
+      " area REAL,\n" +
+      " sum_intensity_top_2 REAL,\n" +
       " ms1_count INTEGER,\n" +
       " isotopes_count INTEGER,\n" +
-      " mono_xic BLOB,\n" +
-      //" sum_xic BLOB,\n" +
-      " large_xic BLOB" +
+      " xic_1 BLOB,\n" +
+      " xic_2 BLOB,\n" +
+      " xic_3 BLOB,\n" +
+      " xic_4 BLOB,\n" +
+      " xic_5 BLOB,\n" +
+      " xic_6 BLOB" +
       ")"
     )
     
@@ -58,35 +128,40 @@ object SQLiteFeatureStorer {
     connection.exec("BEGIN TRANSACTION")
     
     // Prepare INSERT statement
-    val stmt = connection.prepare("INSERT INTO feature VALUES (?,?,?,?,?,?,?,?)",true)
-    
-    //var i = 0
-    features.sortBy(_.id).foreach { ft =>      
-      
-        // Compute XICs in parallel
-          val xic = ft.getXIC( 0 )//ft.peakels.maxBy(_.area).index)
-          val xics = Pair(createFeatureChart(xic._1, xic._2),createFeatureChart(ft.getSummedXIC()))
-          
-          val t = ft.parentXIC.definedPeaks.map(x=> x.getLcContext().getElutionTime())
-          val i = ft.parentXIC.definedPeaks.map(x=> x.getIntensity())
-          val largeXics = createFeatureChart(t, i) 
-          stmt.bind(1, ft.id )
-          stmt.bind(2, ft.mz )
-          stmt.bind(3, ft.elutionTime/60 )
-          stmt.bind(4, ft.area )
-          stmt.bind(5, ft.ms1Count )
-          stmt.bind(6, ft.peakelsCount )
-          stmt.bind(7, xics._1 )
-          //stmt.bind(8, xics._2 )
-          stmt.bind(8, largeXics )
-          stmt.step()
-          stmt.reset()
+    val stmt = connection.prepare("INSERT INTO feature VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",true)
 
+    //var i = 0
+    features.sortBy(_.id).foreach { ft => 
+      val charts = new Array[Array[Byte]](6)
+      for (i <- 0 until 6) {
+        if (i < ft.peakelsCount) {
+          charts(i) = createFeatureChart(ft.getXIC(i))
+        } else {
+          charts(i) = createFeatureChart(Array[Float](), Array[Float]())
+        }
+      }
+      
+      var j = 0
+      j+=1; stmt.bind(j, ft.id )
+      j+=1; stmt.bind(j, ft.charge )
+      j+=1; stmt.bind(j, ft.mz )
+      j+=1; stmt.bind(j, ft.elutionTime )
+      j+=1; stmt.bind(j, ft.area )
+      j+=1; stmt.bind(j, ft.peakels(0).getApex().getIntensity() + ft.peakels(1).getApex().getIntensity())
+      j+=1; stmt.bind(j, ft.ms1Count )
+      j+=1; stmt.bind(j, ft.peakelsCount )
+      j+=1; stmt.bind(j, charts(0))
+      j+=1; stmt.bind(j, charts(1))
+      j+=1; stmt.bind(j, charts(2))
+      j+=1; stmt.bind(j, charts(3))
+      j+=1; stmt.bind(j, charts(4))
+      j+=1; stmt.bind(j, charts(5))
+      stmt.step()
+      stmt.reset()
     }
     
     // Commit transaction
     connection.exec("COMMIT TRANSACTION")
-                       
     // Close SQLite file
     connection.dispose()
     

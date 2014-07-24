@@ -4,9 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
-
 import com.typesafe.scalalogging.slf4j.Logging
-
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
@@ -27,22 +25,18 @@ class UnsupervisedPeakelDetector(
   val minPercentageOfMaxInt: Float = 0.005f
 ) extends Logging {
     
-  /*@BeanProperty reader: MzDbReader, 
-	  @BeanProperty nbConsecutiveScanMin: Int = 5,
-	  @BeanProperty nbConsecutiveScanMax: Int = 100
-	*/
+  /*val msLevel = 2
   
   val ms1ScanIdByCycleNum = scanHeaderById.values
-    .withFilter( _.getMsLevel == 1 )
+    .withFilter( _.getMsLevel == this.msLevel )
     .map( sh => sh.getCycle -> sh.getId )
-    .toMap
+    .toMap*/
     
   /*def peakelsToFeatures(peakels: Array[Peakel] ): Array[Feature] = {
     
   }*/
   
   def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak], usedPeakSet: HashSet[Peak] ): Array[Peakel] = {
-    
     val peakelBuffer = new ArrayBuffer[Peakel]()
     
     // Iterate over all peaks sorted by descending order
@@ -77,11 +71,14 @@ class UnsupervisedPeakelDetector(
     apexPeak: Peak
   ): Option[Peakel] = {
     
+    // Retrieve the scan header map
+    val pklTreeShMap = pklTree.scanHeaderMap
+    
     // Define some values
     val apexMz = apexPeak.getMz
     val apexIntensity = apexPeak.getIntensity
     val apexTime = apexScanHeader.getTime
-    val cycleNum = apexScanHeader.getCycle
+    val apexShPklTreeIdx = pklTreeShMap.getScanHeaderIndex(apexScanHeader) //apexScanHeader.getCycle    
     
     // Compute the m/z tolerance in Daltons
     val mzTolDa = MsUtils.ppmToDa( apexMz, mzTolPPM )
@@ -99,24 +96,28 @@ class UnsupervisedPeakelDetector(
       // Define or reset some vars for the current direction
       var timeOverRange = false
       var consecutiveGapCount = 0
-      var cycleShift = 0
+      var shIdxShift = 0
       
       // Stop extraction in this direction if we have too much gaps or if we exceed run time range
       breakable {
         while( consecutiveGapCount <= maxConsecutiveGaps && !timeOverRange ) {
           
-          // Decrease cycle shift if LEFT direction
-          if( isRightDirection == false ) cycleShift -= 1
+          // Decrease scan header index shift if LEFT direction
+          if( isRightDirection == false ) shIdxShift -= 1
           
-          // Determine current cycle number
-          val curCycleNum = cycleNum + cycleShift
+          // Determine current scan header index
+          //val curCycleNum = cycleNum + cycleShift
+          val curShIdx = apexShPklTreeIdx + shIdxShift
           
           // Try to retrieve the scan id
-          var curScanHOpt = Option.empty[ScanHeader]
-          if( this.ms1ScanIdByCycleNum.contains(curCycleNum) ) {
+          var curScanHOpt = pklTreeShMap.getScanHeader(curShIdx)
+          /*//if( this.ms1ScanIdByCycleNum.contains(curCycleNum) ) {
+          // Check for out of bound indices
+          if( curShIdx >= 0 && curShIdx < shCount ) {
             // Retrieve the wanted scan header
-            curScanHOpt = this.scanHeaderById.get(this.ms1ScanIdByCycleNum(curCycleNum))
-          }
+            //curScanHOpt = this.scanHeaderById.get(this.ms1ScanIdByCycleNum(curCycleNum))
+            curScanHOpt = Some( pklTreeScanHeaders(curShIdx) )
+          }*/
           
           if( curScanHOpt.isEmpty ) {//if wrong scanID
             timeOverRange = true
@@ -134,7 +135,10 @@ class UnsupervisedPeakelDetector(
             
             // Try to retrieve a peaklist group for the current scan header
             val pklGroupOpt = pklTree.pklGroupByScanId.get(curScanId)    
-            if( pklGroupOpt == None ) return None
+            
+            if( pklGroupOpt == None ) {
+              return None
+            }
             val pklGroup = pklGroupOpt.get
   
             // Try to retrieve the nearest peak
@@ -169,8 +173,8 @@ class UnsupervisedPeakelDetector(
               consecutiveGapCount += 1
             }
   
-            // Increase cycle shift if right direction
-            if( isRightDirection) cycleShift += 1
+            // Increase scan header index shift if right direction
+            if( isRightDirection) shIdxShift += 1
             
           } // END OF ELSE
         } // END OF WHILE
@@ -180,11 +184,11 @@ class UnsupervisedPeakelDetector(
       
       numOfAnalyzedDirections += 1
     }
-    
     // TODO: define a minimum number of peaks for a peakel in the config
-    val peakelOpt = if( peaksBuffer.length < 5 ) None
+    val peakelOpt = if( peaksBuffer.length < 5 ) {
+      None
+    }
     else {
-      
       // Find all peakels in the extracted range of IPs
       val peakelsIndices = HistogramBasedPeakelFinder.findPeakelsIndices( peaksBuffer )
       

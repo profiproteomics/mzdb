@@ -58,7 +58,8 @@ object BasicPeakelFinder extends IPeakelFinder {
               afterMaximum = true
               afterMinimum = false
             }
-            else if( prevSlope == -1 && afterMaximum && prevValue < prevMaxValue/2 ) {
+            // Detects minimum local with the constraint of being lower than half of previous maximum
+            else if( prevSlope == -1 && afterMaximum  && prevValue < prevMaxValue / 2 ) {
               peakelIndexes += Tuple2(prevMinIdx,peakIdx)
               prevMinIdx = peakIdx
               afterMaximum = false

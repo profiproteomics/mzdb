@@ -50,7 +50,7 @@ case class Peakel(
   @BeanProperty index: Int,
   //@BeanProperty var mz: Double,
   @BeanProperty peaks: Array[Peak]
-) {
+) extends ILcContext {
   
   // Make some requirements
   require( peaks != null && peaks.length > 0,"some peaks must be provided" )
@@ -216,5 +216,9 @@ case class Peakel(
     
     true
   }
+  
+  // ILcContext java interface implementation 
+  def getScanId() : Int = { getApexScanContext().getScanId() }
+  def getElutionTime(): Float = { getApexScanContext().getElutionTime() }
   
 }

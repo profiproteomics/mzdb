@@ -47,9 +47,36 @@ object PeakListTree {
   }  
 }
 
-case class PeakListTree( pklGroupByScanId: Map[Int,PeakListGroup] ) {
+case class PeakListTree( pklGroupByScanId: Map[Int,PeakListGroup], scanHeaderById: Map[Int,ScanHeader] ) {
 
   lazy val scanIds: Array[Int] = pklGroupByScanId.keys.toArray.sorted
+  
+  class ScanHeaderMap() {
+    
+    private val shCount = scanIds.length
+      
+    private val shMapBuilder = collection.immutable.Map.newBuilder[ScanHeader,Int]
+    private val pklTreeScanHeaders = new Array[ScanHeader](shCount)
+    
+    scanIds.zipWithIndex.foreach { case (sId,idx) =>
+      val sh = scanHeaderById(sId)
+      shMapBuilder += (sh -> idx)
+      pklTreeScanHeaders(idx) = sh
+    }
+    
+    private val pklTreeShMap = shMapBuilder.result()
+    
+    def getScanHeader( shIdx: Int ): Option[ScanHeader] = {
+      if( shIdx < 0 || shIdx >= shCount ) None
+      else Some( pklTreeScanHeaders(shIdx) )
+    }
+    
+    def getScanHeaderIndex( scanHeader: ScanHeader ): Int = pklTreeShMap(scanHeader)
+  }
+  
+  lazy val scanHeaderMap = new ScanHeaderMap()
+
+    // TODO: end of move to peaklist tree or create a dedicated class ???
   
   /*def this( peakListsByScanId: Map[Int, Seq[PeakList]] ) = {
     this( PeakListTree.groupPeaklists(peakListsByScanId) )

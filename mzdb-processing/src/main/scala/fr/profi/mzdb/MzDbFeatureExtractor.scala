@@ -144,7 +144,7 @@ class MzDbFeatureExtractor(
     //progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
 
     // Retrieve scans mapped by their initial id
-    val scanHeadersById = collection.immutable.Map() ++ mzDbReader.getScanHeaderById.map { case (i, sh) => i.toInt -> sh }
+    val scanHeaderById = collection.immutable.Map() ++ mzDbReader.getScanHeaderById.map { case (i, sh) => i.toInt -> sh }
 
     // Compute MS scans normalization factors
     //val nfByScanId = MsScanNormalizer.computeNfByScanId(mzDbReader)
@@ -156,8 +156,9 @@ class MzDbFeatureExtractor(
     val extractedFeatures = new ArrayBuffer[Feature](putativeFeatures.length)
     
     // Instantiate a feature extractor
-    val ftExtractor = new FeatureExtractor(mzDbReader,
-      scanHeadersById,
+    val ftExtractor = new FeatureExtractor(
+      mzDbReader,
+      scanHeaderById,
       null, //nfByScanId,  
       xtractConfig
     )
@@ -260,7 +261,7 @@ class MzDbFeatureExtractor(
         val pklGroupByScanId = Map() ++ peakListsByScanId.map { kv => kv._1 -> new PeakListGroup(kv._2) }
         //progressPlan(MZFT_STEP4_2).setAsCompleted()
         
-        val pklTree = new PeakListTree(pklGroupByScanId)
+        val pklTree = new PeakListTree(pklGroupByScanId,scanHeaderById)
          
         //progressPlan(MZFT_STEP4_3).incrementAndGetCount(1)
         

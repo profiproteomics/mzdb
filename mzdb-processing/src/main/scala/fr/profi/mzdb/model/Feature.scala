@@ -115,7 +115,7 @@ case class Feature(
   @BeanProperty var mz: Double,
   @BeanProperty charge: Int,
   @BeanProperty peakels: Array[Peakel]
-) {
+) extends ILcContext {
 
   def this(id: Int, mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike]) = {
     this(id, mz, charge, Feature.buildPeakels(isotopicPatterns))
@@ -168,7 +168,9 @@ case class Feature(
   // Define some lazy attributes
   @BeanProperty lazy val peakelsAreaRatios = Feature.calcPeakelsAreaRatios(this.peakels)
   @BeanProperty lazy val area = Feature.sumPeakelsArea(this.peakels, Feature.nbPeakelsToIntegrate)
-  @BeanProperty lazy val elutionTime = this.apexScanHeader.time
+  @BeanProperty lazy val elutionTime = this.apexScanHeader.time // implement getElutionTime form ILcContext
+  @BeanProperty lazy val weightedAverageTime = this.basePeakel.weightedAverageTime
+  
 
   // Define some mutable attributes
   @BeanProperty var qualityScore = 0f
@@ -183,7 +185,7 @@ case class Feature(
   @BeanProperty var parentXIC: Peakel = null
 
   //@BeanProperty var filteredXIC: Chromatogram = null // x-axis = time ; y-axis = IP intensities
-
+  
   def getMs2Count(): Int = {
     if (ms2ScanIds != null) ms2ScanIds.length else 0
   }
@@ -294,5 +296,8 @@ case class Feature(
 
     new Feature(this.id, this.mz, this.charge, peakels.toArray)
   }
-
+  
+  // ILcContext java interface implementation 
+  def getScanId() : Int = { getApexScanHeader().getScanId() }
+  
 }
