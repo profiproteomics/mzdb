@@ -24,7 +24,12 @@ case class PeakelPattern(
   peakels: Array[Peakel],
   charge: Int
 ) {
-  lazy val abundance = peakels.foldLeft(0f)( (s,p) => s + p.area ) 
+  require( apex != null, "apex is null")
+  require( peakels != null, "peakels is null")
+  require( peakels.isEmpty == false, "peakels is empty")
+  
+  lazy val abundance = peakels.foldLeft(0f)( (s,p) => s + p.area )
+  def getMz = peakels.head.mz
 }
 
 /**
@@ -94,12 +99,13 @@ class MzDbFeatureDetector(
     
     // Define a peaklist map (first level = runSliceNumber, second level =scanId )
     val pklByScanIdAndRsNumber = new HashMap[Int, Map[Int, PeakList]]()
-    
+
     // Instantiates some objects
     val rsIter = {
-	if (msLevel > 1 && minParentMz != 0d && maxParentMz != 0d)
-	    mzDbReader.getRunSliceIterator(msLevel, minParentMz, maxParentMz)
-	else mzDbReader.getRunSliceIterator(msLevel, 0.0, 0.0)
+      if (msLevel > 1 && minParentMz != 0d && maxParentMz != 0d)
+        mzDbReader.getRunSliceIterator(msLevel, minParentMz, maxParentMz)
+      else
+        mzDbReader.getRunSliceIterator(msLevel, 0.0, 0.0)
     }
     val rsHeaders = mzDbReader.getRunSliceHeaders(msLevel)
     val rsHeaderByNumber = rsHeaders.map { rsh => rsh.getNumber -> rsh } toMap
@@ -447,11 +453,11 @@ class MzDbFeatureDetector(
         val bestPeakelPatterns = peakelPatternGroups.map { peakelPatternGroup =>
           
           // Minimize the RMSD with the theoretical isotope pattern
-          peakelPatternGroup.minBy { peakelPattern =>            
+          peakelPatternGroup.minBy { peakelPattern =>
             val isotopePattern = IsotopePatternInterpolator.getTheoreticalPattern(
-              peakelPattern.peakels.head.mz, peakelPattern.charge
+              peakelPattern.getMz, peakelPattern.charge
             )
-            val obsAbundances = peakelPattern.peakels.map( _.getApex.getIntensity )            
+            val obsAbundances = peakelPattern.peakels.map( _.getApex.getIntensity )
             IsotopePatternInterpolator.calcAbundancesRmsd(isotopePattern.abundances, obsAbundances)
           }
         }
@@ -463,6 +469,7 @@ class MzDbFeatureDetector(
     // --- Clusterize peakel patterns using SetClusterer fork ---
     
     // Map peakel indices by each found peakel pattern
+    // FIXME: handle nullity before this step
     val peakelIndexSetByPeakelPattern = peakelPatternsBuffer.withFilter(_ != null).map { peakelPattern =>
       val peakelIndexSet = peakelPattern.peakels.withFilter(_ != null).map( peakelIdxByPeakel(_) ).toSet
       peakelPattern -> peakelIndexSet
@@ -474,14 +481,22 @@ class MzDbFeatureDetector(
     logger.info( s"obtained ${supersetClusterCount} peakel pattern clusters" )
     
     // Output results into a file
-    val printWriter = new java.io.PrintWriter("detected_features.tsv")
+    val printWriter = new java.io.PrintWriter("detected_features_"+ (new java.util.Date().getTime / 1000) + ".tsv")
     
     val detectedFeatures = new ArrayBuffer[Feature]()
-    var i = 0
+    
     for( cluster <- clusters; if cluster.isSubset == false ) {
-      i -= 1
+      
       val peakelPattern = cluster.samesetsKeys.head
       val charge = peakelPattern.charge
+      
+      detectedFeatures += new Feature(
+        Feature.generateNewId(),
+        peakelPattern.getMz,
+        peakelPattern.charge,
+        peakelPattern.peakels
+      )
+      
       /*val peakelIndices = cluster.samesetsValues
       val values = peakelIndices.toList
         .map( peakdelIdx => peakelsBuffer(peakdelIdx) )
@@ -495,8 +510,6 @@ class MzDbFeatureDetector(
       
       printWriter.println(patternTime + "\t" + patternDuration + "\t" +charge + "\t" + values.mkString("\t") )
       printWriter.flush()
-      
-      detectedFeatures += Feature(i, peakelPattern.apex.mz, charge, peakelPattern.peakels)
     }
     
     printWriter.close()
