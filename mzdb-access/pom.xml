@@ -34,24 +34,23 @@
       <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
-    <!-- SQLite -->
+    <!-- SQLite Jar then native libraries -->
     <dependency>
       <groupId>com.almworks.sqlite4java</groupId>
       <artifactId>sqlite4java</artifactId>
-      <type>jar</type>
       <version>${sqlite4java.version}</version>
     </dependency>
     <dependency>
       <groupId>com.almworks.sqlite4java</groupId>
       <artifactId>sqlite4java-win32-x64</artifactId>
-      <type>dll</type>
       <version>${sqlite4java.version}</version>
+      <type>dll</type>
     </dependency>
     <dependency>
       <groupId>com.almworks.sqlite4java</groupId>
-	  <artifactId>libsqlite4java-linux-amd64</artifactId>
-	  <type>so</type>
+      <artifactId>libsqlite4java-linux-amd64</artifactId>
       <version>${sqlite4java.version}</version>
+      <type>so</type>
     </dependency>
 
     <dependency>
@@ -117,6 +116,7 @@
             </goals>
             <configuration>
               <artifactItems>
+
                 <artifactItem>
                   <groupId>com.almworks.sqlite4java</groupId>
                   <artifactId>sqlite4java-win32-x64</artifactId>
@@ -125,6 +125,16 @@
                   <overWrite>true</overWrite>
                   <outputDirectory>${project.build.directory}/lib</outputDirectory>
                 </artifactItem>
+
+                <artifactItem>
+                  <groupId>com.almworks.sqlite4java</groupId>
+                  <artifactId>libsqlite4java-linux-amd64</artifactId>
+                  <version>${sqlite4java.version}</version>
+                  <type>so</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                </artifactItem>
+
               </artifactItems>
             </configuration>
           </execution>
