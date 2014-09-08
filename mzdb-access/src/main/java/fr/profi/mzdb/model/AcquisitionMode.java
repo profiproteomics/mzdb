@@ -4,7 +4,7 @@ package fr.profi.mzdb.model;
  * Enumeration representing the acquisition mode. It is stored as a cvParam in the run table. This list is
  * NOT exhaustive
  */
-public enum AcquisitionMethod {
+public enum AcquisitionMode {
     DDA("DDA acquisition", "Data Dependant Acquisition (Thermo designation), Warning, "
     	+ "in ABI this is called DIA (Data Information Dependant)"), SWATH("SWATH acquisition",
     	"ABI Swath acquisition or Thermo swath acquisition"), MRM("MRM acquisition",
@@ -15,7 +15,7 @@ public enum AcquisitionMethod {
     private String description;
     private String code;
 
-    AcquisitionMethod(String code, String description) {
+    AcquisitionMode(String code, String description) {
         this.code = code;
         this.description = description;
     }

@@ -41,7 +41,7 @@ import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
 import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
 import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
 import fr.profi.mzdb.io.reader.iterator.RunSliceIterator;
-import fr.profi.mzdb.model.AcquisitionMethod;
+import fr.profi.mzdb.model.AcquisitionMode;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.IsolationWindow;
@@ -112,9 +112,9 @@ public class MzDbReader {
     protected String dbLocation = null;
 
     /**
-     * acquisition mode: TODO: find a cvparam representing the information better
+     * Acquisition mode: TODO: find a cvparam representing the information better
      */
-    protected AcquisitionMethod acquisitionMethod = null;
+    protected AcquisitionMode acquisitionMode = null;
 
     /**
      * If swath acquisition, the list will be computed on first use (lazy loading) Will be always null on non
@@ -276,32 +276,28 @@ public class MzDbReader {
     }
 
     /**
-     * Lazy loading of the acquisition method, parameter TODO: find a cvParam which matches more...
+     * Lazy loading of the acquisition mode, parameter TODO: find a cvParam which matches more...
      * 
      * @return
      * @throws SQLiteException
      */
-    public AcquisitionMethod getAcquisitionMode() throws SQLiteException {
-	if (this.acquisitionMethod == null) {
+    public AcquisitionMode getAcquisitionMode() throws SQLiteException {
+    	
+	if (this.acquisitionMode == null) {
 	    final String sqlString = "SELECT param_tree FROM run";
 	    final String runParamTree = new SQLiteQuery(connection, sqlString).extractSingleString();
 	    final ParamTree runTree = ParamTreeParser.parseParamTree(runParamTree);
 	    final CVParam cvParam = runTree.getCVParam("acquisition parameter");
 	    final String value = cvParam.getValue();
-
-	    if (value.equals(AcquisitionMethod.SWATH.toString())) {
-		this.acquisitionMethod = AcquisitionMethod.SWATH;
-		this.getDIAPrecurorRanges();
-	    } else if (value.equals(AcquisitionMethod.DDA.toString()))
-		this.acquisitionMethod = AcquisitionMethod.DDA;
-	    else if (value.equals(AcquisitionMethod.MRM.toString()))
-		this.acquisitionMethod = AcquisitionMethod.MRM;
-	    else if (value.equals(AcquisitionMethod.SRM.toString()))
-		this.acquisitionMethod = AcquisitionMethod.SRM;
-	    else
-		this.acquisitionMethod = AcquisitionMethod.UNKNOWN;
+	    
+	    try {
+	    	this.acquisitionMode = AcquisitionMode.valueOf(value);
+	    } catch (Exception e) {
+	    	this.acquisitionMode = AcquisitionMode.UNKNOWN;
+	    }
 	}
-	return this.acquisitionMethod;
+	
+	return this.acquisitionMode;
     }
 
     /**
@@ -1117,9 +1113,9 @@ public class MzDbReader {
 	    throws SQLiteException {
 
 	// lazy loading
-	final AcquisitionMethod acMode = this.getAcquisitionMode();
+	final AcquisitionMode acMode = this.getAcquisitionMode();
 
-	if (acMode == AcquisitionMethod.SWATH) {
+	if (acMode == AcquisitionMode.SWATH) {
 	    // lazy loading
 	    final IsolationWindow[] swathWindows = this.getDIAPrecurorRanges();
 	    for (final IsolationWindow p : swathWindows) {
