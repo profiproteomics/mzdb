@@ -42,6 +42,26 @@ object Feature extends InMemoryIdGen {
 
     (firstScanHeader, lastScanHeader)
   }
+  
+  /**
+   * Take independant peakels and return an array of aligned peakel.
+   */
+  def alignPeakels( unalignedPeakels: Array[Peakel] ): Array[Peakel] = {
+    
+    val distinctLcContexts = unalignedPeakels
+      .flatMap( _.definedPeaks.map( _.getLcContext ) )
+      .distinct
+      .sortBy( _.getScanId )
+    
+    for( peakel <- unalignedPeakels ) yield {
+      val peakByLcCtx = peakel.definedPeaks.map( p => p.getLcContext -> p ).toMap      
+
+      val newPeaks = distinctLcContexts.map( lcCtx => peakByLcCtx.getOrElse(lcCtx, null) )
+      
+      peakel.copy( peaks = newPeaks )
+    }
+        
+  }
 
   def buildPeakels(ips: Seq[IsotopicPatternLike]): Array[Peakel] = {
 

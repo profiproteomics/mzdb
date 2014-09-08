@@ -58,7 +58,6 @@ class MzDbFeatureDetector(
    */
   def groupCorrelatedPeakels(peakelsBuffer: Array[Peakel]):  Array[(Float,Array[Peakel])] = {
     logger.info("combining peakels into features...")
-    
     // Clusterize peakels having an apex separated by a given time value (10 secs)    
     val histoComputer = new EntityHistogramComputer( peakelsBuffer, { peakel: Peakel =>
       peakel.apexScanContext.getElutionTime
@@ -87,7 +86,8 @@ class MzDbFeatureDetector(
    * Detect peakels using the unsupervised peakel detector
    */
   def detectPeakels(minParentMz: Double=0, maxParentMz: Double=0): Array[Peakel] = {
-        // Retrieve scans mapped by their initial? id
+    
+    // Retrieve scans mapped by their initial? id
     val msLevel = ftDetectorConfig.msLevel
     val scanHeaderById = mzDbReader.getScanHeaderById.map { case (i, sh) => i.toInt -> sh } toMap
     
@@ -102,11 +102,14 @@ class MzDbFeatureDetector(
 
     // Instantiates some objects
     val rsIter = {
-      if (msLevel > 1 && minParentMz != 0d && maxParentMz != 0d)
-        mzDbReader.getRunSliceIterator(msLevel, minParentMz, maxParentMz)
-      else
-        mzDbReader.getRunSliceIterator(msLevel)
+	if (msLevel > 1 && minParentMz != 0d && maxParentMz != 0d) {
+	    mzDbReader.getRunSliceIterator(msLevel, minParentMz, maxParentMz)
+    	}
+    	else {
+    	  mzDbReader.getRunSliceIterator(msLevel)
+    	}
     }
+    
     val rsHeaders = mzDbReader.getRunSliceHeaders(msLevel)
     val rsHeaderByNumber = rsHeaders.map { rsh => rsh.getNumber -> rsh } toMap
     
@@ -192,6 +195,7 @@ class MzDbFeatureDetector(
       prevRsNumber = rsNumber
       rsOpt = nextRsOpt
     }
+    
     peakelsBuffer.toArray
   }
   
@@ -204,7 +208,17 @@ class MzDbFeatureDetector(
     val mzTolPPM = ftDetectorConfig.mzTolPPM
     val msLevel = ftDetectorConfig.msLevel
     
-    val peakelsBuffer = this.detectPeakels()
+    val detectedPeakels = this.detectPeakels()
+    val nbDetectedPeakels = detectedPeakels.length
+    
+    this.logger.debug(s"Has detected # ${nbDetectedPeakels} peakels")
+    
+    val filteredPeakels = detectedPeakels
+      .sortWith( (a,b) => b.area > a.area )
+      .take(nbDetectedPeakels / 2)
+      .filter(_.duration > 10 )
+    
+    this.logger.debug(s"Has filtered # ${filteredPeakels.length} peakels")
     
     // --- Compute some peakels statistics ---
     if (msLevel < 2) {
@@ -213,7 +227,7 @@ class MzDbFeatureDetector(
       val ms1ScanHeaderByCycleNum = scanHeaders.withFilter(_.getMsLevel == msLevel ).map(sh => sh.getCycle -> sh).toMap
       val matchedMs2ScanIdSet = new HashSet[Int]
       
-      for( peakel <- peakelsBuffer ) {
+      for( peakel <- filteredPeakels ) {
         
         val ms2ScanIds = new ArrayBuffer[Int]
         
@@ -252,14 +266,16 @@ class MzDbFeatureDetector(
     } // end computing statistics
     
     // --- Combine peakels to obtain features ---
-    val peakelsGroupedByTime = this.groupCorrelatedPeakels(peakelsBuffer)
+    val peakelsGroupedByTime = this.groupCorrelatedPeakels(filteredPeakels)
+    
+    this.logger.debug("peakelsGroupedByTime length:" +peakelsGroupedByTime.length)
     
     // Generate a sequence of possible isotope diffs for x charge states
     val maxZ = 10
     val maxIsotopesCount = 5 // TODO: use averagine ???
     val isotopeDiffTol = 0.01 // TODO: make some advanced statistics to infer this value
     val avgIsotopeMassDiff = PeakListTree.avgIsotopeMassDiff
-    val peakelIdxByPeakel = peakelsBuffer.zipWithIndex.toMap
+    val peakelIdxByPeakel = filteredPeakels.zipWithIndex.toMap
     
     val peakelPatternsBuffer = new ArrayBuffer[PeakelPattern]
     
@@ -370,7 +386,7 @@ class MzDbFeatureDetector(
                   // Else we assume previous peakel is at the beginning of the pattern
                   else if( neighboringPeakel.mz < peakelPatternBuffer.head.mz ) {
                     
-                    // Check isotopic pattern abundance ratio before prepending the peakel                    
+                    // Check isotopic pattern abundance ratio before prepending the peakel
                     val theoPattern = IsotopePatternInterpolator.getTheoreticalPattern(neighboringPeakel.mz, z)
                     val theoAbundances = theoPattern.abundances
                     val theoIsoRatio2_1 = theoAbundances(1) / theoAbundances(0)
@@ -464,7 +480,7 @@ class MzDbFeatureDetector(
         
         peakelPatternsBuffer ++= bestPeakelPatterns
       }
-    }
+    } // end synchronized block
     
     // --- Clusterize peakel patterns using SetClusterer fork ---
     

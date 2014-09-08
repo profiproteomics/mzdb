@@ -18,7 +18,9 @@ case class Spectrum(precursorMz: Double, precursorCharge: Int, elutionTime: Floa
 /**
  *  May provide additionnal configuration ?
  */
-class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each 
+class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
+  
+  val minNbPeaksInSpectrum = 3
 
   def demultiplexMSnData(): Array[Spectrum] = {
     /* DIA Maps
@@ -29,11 +31,14 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
    * // 2 - detectPeakels ( MzDbFeatureDetector -> MS Level 2)
    * // 3 - _groupMSnCorrelatedPeakels( ms1Features, ms2Peakels )
    */
+    println("Unsupervised ms1 feature detection")
     val ftDetectorConf = FeatureDetectorConfig(msLevel = 1, mzTolPPM = 15)
     val ftDetectorMs1 = new MzDbFeatureDetector(mzDbReader, ftDetectorConf)
+    
     // ensure data are sorted by mz 
-    val ms1Fts = ftDetectorMs1.detectFeatures().sortBy(_.getMz)
-
+    val ms1Fts = ftDetectorMs1.detectFeatures().filter( ft => (ft.charge == 2 || ft.charge == 3) ).sortBy(_.getMz)
+    println(s"# ${ms1Fts.length} detected ms1 features")
+    
     // ms2 stuffs
     //Setting a new config to our featureDetector
     val ftDetectorConfMs2 = FeatureDetectorConfig(msLevel = 2, mzTolPPM = 20)
@@ -50,6 +55,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
     for (i <- 0 until isolationWindowRanges.length) {
       val pair = isolationWindowRanges(i)
       val (minParentMz, maxParentMz) = (pair.getMinMz, pair.getMaxMz)
+      println(s"Unsupervised ms2 feature detection: range(${minParentMz}, ${maxParentMz})")
       
       val ftDetectorMs2 = new MzDbFeatureDetector(mzDbReader, ftDetectorConfMs2)
       val peakels = ftDetectorMs2.detectPeakels(minParentMz, maxParentMz)
@@ -98,23 +104,25 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
 
         logger.debug(s"min time is ${times.min} and max time is ${times.max}")
         
-        val( ms1FtsInGroup, peakelsInGroup ) = (new ArrayBuffer[Feature],new ArrayBuffer[Peakel])
+        val( ms1FtsInGroup, msnPeakels ) = (new ArrayBuffer[Feature],new ArrayBuffer[Peakel])
         
         // Partitions entities regarding their type
         peakelGroup.map { peakelOrFt =>
           peakelOrFt match {
             case f: Feature => ms1FtsInGroup += f
-            case p: Peakel  => peakelsInGroup += p
+            case p: Peakel  => msnPeakels += p
           }
         }
         
-        for( ft <- ms1FtsInGroup ) {
-          spectra += Spectrum(
-            precursorMz = ft.mz,
-            precursorCharge = ft.charge,
-            elutionTime = meanTime.toFloat,
-            peaks = peakelsInGroup.toArray.map { peakel => peakel.getApex() }
-          )
+        if( msnPeakels.length >= minNbPeaksInSpectrum ) {
+          for( ft <- ms1FtsInGroup ) {
+            spectra += Spectrum(
+              precursorMz = ft.mz,
+              precursorCharge = ft.charge,
+              elutionTime = meanTime.toFloat,
+              peaks = msnPeakels.toArray.map(_.getApex).sortBy(_.getMz)
+            )
+          }
         }
         
       }
@@ -142,17 +150,26 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
 
     val ftsByIWIdx = new HashMap[Int, ArrayBuffer[Feature]]()
     val firstIW = isolationWindowRanges(0)
+    val rangesCount = isolationWindowRanges.length
+    
     var currIdx = 0
     var currMaxParentMz = firstIW.getMaxMz
     for (ft <- ms1Fts) {
       val mz = ft.getMz
+      
       if (mz > currMaxParentMz) {
-        currIdx += 1
+        
+        // Do not increase the index if feature m/z exceeds last isolation window m/z
+        if( currIdx + 1 < rangesCount) {
+          currIdx += 1
+        }
+        
         currMaxParentMz = isolationWindowRanges(currIdx).getMaxMz
       }
+      
       ftsByIWIdx.getOrElseUpdate(currIdx, new ArrayBuffer[Feature]) += ft
-
     }
+    
     ftsByIWIdx
   }
 }
