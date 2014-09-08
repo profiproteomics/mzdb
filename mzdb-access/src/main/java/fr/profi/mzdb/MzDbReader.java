@@ -287,10 +287,10 @@ public class MzDbReader {
 	    final String sqlString = "SELECT param_tree FROM run";
 	    final String runParamTree = new SQLiteQuery(connection, sqlString).extractSingleString();
 	    final ParamTree runTree = ParamTreeParser.parseParamTree(runParamTree);
-	    final CVParam cvParam = runTree.getCVParam("acquisition parameter");
-	    final String value = cvParam.getValue();
-	    
+
 	    try {
+		    final CVParam cvParam = runTree.getCVParam("acquisition parameter");
+		    final String value = cvParam.getValue();
 	    	this.acquisitionMode = AcquisitionMode.valueOf(value);
 	    } catch (Exception e) {
 	    	this.acquisitionMode = AcquisitionMode.UNKNOWN;
