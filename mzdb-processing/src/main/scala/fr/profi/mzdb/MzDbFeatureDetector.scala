@@ -510,7 +510,7 @@ class MzDbFeatureDetector(
         Feature.generateNewId(),
         peakelPattern.getMz,
         peakelPattern.charge,
-        peakelPattern.peakels
+        Feature.alignPeakels(peakelPattern.peakels)
       )
       
       /*val peakelIndices = cluster.samesetsValues
