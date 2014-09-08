@@ -430,15 +430,15 @@ public class MzDbReader {
 	 */
 	public IsolationWindow[] getDIAPrecurorRanges() throws SQLiteException {
 		if (this._swathIsolationWindow == null) {
-			final String sqlQuery = "SELECT DISTINCT parent_min_mz, "
-					+ "parent_max_mz from bounding_box_msn_rtree ORDER BY parent_min_mz";
+			final String sqlQuery = "SELECT DISTINCT min_parent_mz, "
+					+ "max_parent_mmz from bounding_box_msn_rtree ORDER BY min_parent_mz";
 			final SQLiteRecordIterator recordIt = new SQLiteQuery(connection, sqlQuery).getRecords();
 
 			ArrayList<IsolationWindow> isolationWindowList = new ArrayList<IsolationWindow>();
 			while (recordIt.hasNext()) {
 				final SQLiteRecord record = recordIt.next();
-				final Double minMz = record.columnDouble("parent_min_mz");
-				final Double maxMz = record.columnDouble("parent_max_mz");
+				final Double minMz = record.columnDouble("min_parent_mz");
+				final Double maxMz = record.columnDouble("max_parent_mz");
 				isolationWindowList.add(new IsolationWindow(minMz, maxMz));
 			}
 			_swathIsolationWindow = isolationWindowList.toArray(new IsolationWindow[isolationWindowList
@@ -1114,7 +1114,7 @@ public class MzDbReader {
 			throws SQLiteException {
 
 		// lazy loading
-		final AcquisitionMode acMode = this.getAcquisitionMode();
+		/*final AcquisitionMode acMode = this.getAcquisitionMode();
 
 		if (acMode == AcquisitionMode.SWATH) {
 			// lazy loading
@@ -1131,7 +1131,7 @@ public class MzDbReader {
 					}
 				}
 			}
-		}
+		}*/
 
 		final SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
 		while (fakeStmt.step()) {

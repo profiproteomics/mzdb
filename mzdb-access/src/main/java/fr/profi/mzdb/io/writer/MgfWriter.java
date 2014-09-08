@@ -38,45 +38,9 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
  */
 public class MgfWriter {
 
-    private static String LINE_SPERATOR = System.getProperty("line.separator");
+    public static String LINE_SPERATOR = System.getProperty("line.separator");
 
     private static Integer precNotFound = 0;
-
-    /** */
-    private enum MgfField {
-	BEGIN_IONS("BEGIN IONS"), END_IONS("END IONS"), TITLE("TITLE"), PEPMASS("PEPMASS"), CHARGE("CHARGE"), RTINSECONDS(
-		"RTINSECONDS");
-
-	//
-	// NEWLINE("\n"), EQUAL("="), PLUS("+");
-
-	private final String fieldString;
-
-	MgfField(String f) {
-	    this.fieldString = f;
-	}
-
-	public String toString() {
-	    return this.fieldString;
-	}
-    };
-
-    /** */
-    public enum PrecursorMzComputation {
-	DEFAULT("default precursor mz"), REFINED_PWIZ("pwiz refined precursor mz"), REFINED_MZDB(
-		"mzdb refined precursor mz");
-
-	private final String paramName;
-
-	PrecursorMzComputation(String f) {
-	    this.paramName = f;
-	}
-
-	public String getUserParamName() {
-	    return this.paramName;
-	}
-
-    };
 
     final Logger logger = LoggerFactory.getLogger(MgfWriter.class);
 
@@ -331,103 +295,6 @@ public class MgfWriter {
 	spectrumStringBuilder.append(MgfField.END_IONS);
 
 	return spectrumStringBuilder.toString();
-    }
-
-    /** Class representing a MGF header */
-    public class MgfHeader {
-	MgfHeaderEntry[] entries;
-
-	public MgfHeader(MgfHeaderEntry[] entries) {
-	    super();
-	    this.entries = entries;
-	}
-
-	/**
-	 * 
-	 * @param title
-	 * @param pepMass
-	 * @param charge
-	 * @return a new MgfHeader
-	 */
-	public MgfHeader(String title, double precMz, int charge) {
-	    this(new MgfHeaderEntry[] { new MgfHeaderEntry(MgfField.TITLE, title),
-		    new MgfHeaderEntry(MgfField.PEPMASS, String.format("%.4f", precMz)),
-		    // TODO: use the trailer corresponding to the acquisition polarity (see mzDB meta-data)
-		    new MgfHeaderEntry(MgfField.CHARGE, charge, "+") });
-	}
-
-	/**
-	 * 
-	 * @param title
-	 * @param pepMass
-	 * @param charge
-	 * @param rt
-	 * @return a new MgfHeader
-	 */
-	public MgfHeader(String title, double precMz, int charge, float rt) {
-
-	    this(new MgfHeaderEntry[] { new MgfHeaderEntry(MgfField.TITLE, title),
-		    new MgfHeaderEntry(MgfField.PEPMASS, String.format("%.4f", precMz)),
-		    // TODO: use the trailer corresponding to the acquisition polarity (see mzDB meta-data)
-		    new MgfHeaderEntry(MgfField.CHARGE, charge, "+"),
-		    new MgfHeaderEntry(MgfField.RTINSECONDS, String.format("%.2f", rt)) });
-	}
-
-	public StringBuilder appendToStringBuilder(StringBuilder sb) {
-
-	    sb.append(MgfField.BEGIN_IONS).append(LINE_SPERATOR);
-
-	    for (MgfHeaderEntry entry : entries) {
-		entry.appendToStringBuilder(sb).append(LINE_SPERATOR);
-	    }
-
-	    return sb;
-	}
-
-	@Override
-	public String toString() {
-	    StringBuilder sb = new StringBuilder();
-	    return this.appendToStringBuilder(sb).toString();
-	}
-
-    }
-
-    /** Class representing a row in the MGF header */
-    public class MgfHeaderEntry {
-
-	final MgfField field;
-	final Object value;
-	final String trailer;
-
-	public MgfHeaderEntry(MgfField field, Object value, String trailer) {
-	    super();
-	    this.field = field;
-	    this.value = value;
-	    this.trailer = trailer;
-	}
-
-	public MgfHeaderEntry(MgfField field, Object value) {
-	    super();
-	    this.field = field;
-	    this.value = value;
-	    this.trailer = null;
-	}
-
-	public StringBuilder appendToStringBuilder(StringBuilder sb) {
-	    sb.append(field).append("=").append(value);
-
-	    if (this.trailer != null) {
-		sb.append(trailer);
-	    }
-
-	    return sb;
-	}
-
-	@Override
-	public String toString() {
-	    StringBuilder sb = new StringBuilder();
-	    return this.appendToStringBuilder(sb).toString();
-	}
     }
 
 }
