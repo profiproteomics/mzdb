@@ -37,11 +37,22 @@ class UnsupervisedPeakelDetector(
   }*/
   
   def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak], usedPeakSet: HashSet[Peak] ): Array[Peakel] = {
+    // Return if the number of peaks is too low
+    if( intensityDescPeaks.length < 10 ) return Array()
+    
+    // Determine an intensity threshold based on quartiles
+    val nbPeaks = intensityDescPeaks.length
+    val q3 = math.log10( intensityDescPeaks( (nbPeaks * 0.25).toInt ).getIntensity )
+    val q1 = math.log10( intensityDescPeaks( (nbPeaks * 0.75).toInt ).getIntensity )
+    val iqr = q3 - q1
+    val intensityThreshold = math.pow(10, q1 - (1.5 * iqr))
+    logger.debug("detect peakels using intensity threshold ="+ intensityThreshold)
+    
     val peakelBuffer = new ArrayBuffer[Peakel]()
     
     // Iterate over all peaks sorted by descending order
     for( peak <- intensityDescPeaks ) {
-      if( usedPeakSet(peak) == false ) {
+      if( peak.getIntensity() > intensityThreshold && usedPeakSet(peak) == false ) {
         
         // Retrieve corresponding scan header
         val scanHeader = this.scanHeaderById(peak.getLcContext.getScanId)
