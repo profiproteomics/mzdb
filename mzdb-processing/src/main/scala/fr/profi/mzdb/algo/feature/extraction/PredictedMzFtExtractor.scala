@@ -64,7 +64,12 @@ class PredictedMzFtExtractor(
     val definedIps = isotopicPatterns.filter(ip => ip != null && ip.isDefined).map(_.get)
 
     // use of the constructor that build peakels
-    val f = new Feature(moz, charge, definedIps)
+    val f = new Feature(
+      mz = moz,
+      charge = charge,
+      isotopicPatterns = definedIps,
+      isPredicted = true
+    )
 
     this.overlappingFeaturesExtractor.extractOverlappingFeatures(f, theoIP, pklTree)
 

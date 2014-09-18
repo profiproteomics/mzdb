@@ -135,15 +135,16 @@ case class Feature(
   @BeanProperty var mz: Double,
   @BeanProperty charge: Int,
   @BeanProperty peakels: Array[Peakel],
+  @BeanProperty isPredicted: Boolean = false,
   @BeanProperty var ms2ScanIds: Array[Int] = Array.empty[Int]
 ) extends ILcContext {
 
-  def this(id: Int, mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike]) = {
-    this(id, mz, charge, Feature.buildPeakels(isotopicPatterns))
+  def this(id: Int, mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike], isPredicted: Boolean ) = {
+    this(id, mz, charge, Feature.buildPeakels(isotopicPatterns), isPredicted)
   }
 
-  def this(mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike]) = {
-    this(Feature.generateNewId(), mz, charge, isotopicPatterns)
+  def this(mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike], isPredicted: Boolean ) = {
+    this(Feature.generateNewId(), mz, charge, isotopicPatterns, isPredicted)
   }
 
   // Require that all peakels have the same length
@@ -313,7 +314,14 @@ case class Feature(
     if (peakels.isEmpty || peakels.forall(_ == null) == true)
       return null
 
-    new Feature(this.id, this.mz, this.charge, peakels.toArray)
+    new Feature(
+      this.id,
+      this.mz,
+      this.charge,
+      peakels.toArray,
+      isPredicted = this.isPredicted,
+      ms2ScanIds = this.ms2ScanIds
+    )
   }
   
   // ILcContext java interface implementation 

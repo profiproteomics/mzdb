@@ -31,7 +31,6 @@ trait IsotopicPatternLike {
   }
 }
 
-
 case class OverlappingIsotopicPattern(
   @BeanProperty val mz: Double,
   @BeanProperty var intensity: Float,
@@ -44,7 +43,7 @@ case class OverlappingIsotopicPattern(
  * @author David Bouyssie
  *
  */
-case class IsotopicPattern (
+case class IsotopicPattern(
   @BeanProperty mz: Double,
   @BeanProperty var intensity: Float,
   @BeanProperty charge: Int,

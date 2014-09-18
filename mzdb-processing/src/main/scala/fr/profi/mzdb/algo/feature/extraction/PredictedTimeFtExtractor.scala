@@ -278,7 +278,7 @@ class PredictedTimeFtExtractor(
     val peakels = Feature.buildPeakels(ips)
     if (peakels.isEmpty) return Array.empty[Feature]
 
-    val tmpFt = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
+    val tmpFt = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels, isPredicted = true)
 
     // Determine maxrelative intensity peakel index
     val peakelIndex = if (maxPeakelIndex < tmpFt.peakelsCount) maxPeakelIndex else 0

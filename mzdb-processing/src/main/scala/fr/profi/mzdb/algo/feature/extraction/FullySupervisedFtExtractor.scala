@@ -46,7 +46,7 @@ class FullySupervisedFtExtractor(
     
     
     // Append extracted feature to the existing list
-    val ft = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, ips.toArray )
+    val ft = new Feature( putativeFt.id, putativeFt.mz, putativeFt.charge, ips.toArray, isPredicted = false )
     
     //try to extract overlappingFeatures
     this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, theoIP, pklTree)

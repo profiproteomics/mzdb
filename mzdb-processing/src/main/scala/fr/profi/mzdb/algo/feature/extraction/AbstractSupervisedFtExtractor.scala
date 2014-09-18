@@ -60,7 +60,13 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     if (peakels.isEmpty)
       return Option.empty[Feature]
 
-    var tmpFt = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
+    var tmpFt = new Feature(
+      putativeFt.id,
+      putativeFt.mz,
+      putativeFt.charge,
+      peakels,
+      isPredicted = putativeFt.isPredicted
+    )
     
     // Find maxpeakelIndex
     val maxPeakelIndex = if (maxTheoreticalPeakelIndex < tmpFt.peakelsCount) maxTheoreticalPeakelIndex else 0
