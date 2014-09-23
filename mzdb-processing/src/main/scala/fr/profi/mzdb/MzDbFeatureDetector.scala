@@ -586,8 +586,8 @@ class MzDbFeatureDetector(
     
       // Keep only MS2 scans having a precursor m/z close to the feature one
       ft.ms2ScanIds = putativeMs2Scans
-        .withFilter( sh => sh.getPrecursorMz == ft.charge )
-        .withFilter( sh => math.abs(sh.getPrecursorMz - ft.mz) <= mzTolDa )        
+        .withFilter( sh => sh.getPrecursorCharge == ft.charge )
+        .withFilter( sh => math.abs(sh.getPrecursorMz - ft.mz) <= mzTolDa )
         .map(_.getId)
     }
     
