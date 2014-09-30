@@ -829,10 +829,9 @@ public class MzDbReader {
 	 * @return scanheader the closest to the time input parameter
 	 * @throws Exception
 	 */
-	/*
-	 * public ScanHeader getScanHeaderForTime(float time, int msLevel) throws Exception { return
-	 * this._scanHeaderReader.getScanHeaderForTime(time, msLevel); }
-	 */
+	public ScanHeader getScanHeaderForTime(float time, int msLevel) throws Exception {
+		return this._scanHeaderReader.getScanHeaderForTime(time, msLevel);
+	}
 
 	/**
 	 * Gets the scan id by time.

@@ -21,6 +21,9 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
  * 
  */
 public class ScanHeaderReader extends AbstractMzDbReaderHelper {
+	
+	/** The time index width. */
+	protected final static int TIME_INDEX_WIDTH = 15;
 
 	/**
 	 * @param mzDbReader
@@ -160,7 +163,7 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	 */
 	public Map<Integer, Float> getScanTimeById() throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.scanHeaderById != null) {
+		if (this.entityCache != null && this.entityCache.scanTimeById != null) {
 			return this.entityCache.scanTimeById;
 		} else {
 			int scansCount = this.mzDbReader.getScansCount();
@@ -181,7 +184,93 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			return scanTimeById;
 		}
 	}
+	
+	/**
+	 * Gets the scan header for time.
+	 * 
+	 * @param time
+	 *            the time
+	 * @param msLevel
+	 *            the ms level
+	 * @return ScanHeader the closest to the time input parameter
+	 * @throws Exception
+	 */
+	public ScanHeader getScanHeaderForTime(float time, int msLevel) throws Exception {
 
+		if (this.entityCache != null && this.entityCache.scanIdsByTimeIndex != null) {
+			int timeIndex = (int) (time / TIME_INDEX_WIDTH);
+
+			ScanHeader nearestScanHeader = null;
+			Map<Integer, ArrayList<Integer>> scanIdsByTimeIndex = this.getScanIdsByTimeIndex();
+
+			for (int index = timeIndex - 1; index <= timeIndex + 1; index++) {
+
+				if (scanIdsByTimeIndex.containsKey(index) == false) {
+					continue;
+				}
+
+				ArrayList<Integer> tmpScanIds = scanIdsByTimeIndex.get(index);
+				for (Integer tmpScanId : tmpScanIds) {
+
+					ScanHeader scanH = getScanHeaderById().get(tmpScanId);
+					if (scanH == null) {
+						throw new Exception("can' t retrieve scan with id =" + tmpScanId);
+					}
+
+					if (scanH.getMsLevel() != msLevel)
+						continue;
+
+					if ( nearestScanHeader == null || 
+						 Math.abs(scanH.getTime() - time) < Math.abs(nearestScanHeader.getTime() - time) ) {
+						nearestScanHeader = scanH;
+					}
+				}
+			}
+
+			return nearestScanHeader;
+		} else {
+			String queryStr = "SELECT id FROM spectrum WHERE ms_level = ? ORDER BY abs(spectrum.time - ?) ASC limit 1";
+			int scanId = new SQLiteQuery(connection, queryStr)
+				.bind(1,msLevel)
+				.bind(2,time)
+				.extractSingleInt();
+			
+			return this.getScanHeader(scanId);
+		}
+
+	}
+  
+	/**
+	 * Gets the scan ids by time index.
+	 * 
+	 * @return hashmap of key time index value array of scanIds
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
+	protected Map<Integer, ArrayList<Integer>> getScanIdsByTimeIndex() throws SQLiteException {
+
+		if (this.entityCache != null && this.entityCache.scanIdsByTimeIndex != null) {
+			return this.entityCache.scanIdsByTimeIndex;
+		} else {
+			HashMap<Integer, ArrayList<Integer>> scanIdsByTimeIndex = new HashMap<Integer, ArrayList<Integer>>();
+			ScanHeader[] scanHeaders = this.getScanHeaders();
+
+			for (ScanHeader scanH : scanHeaders) {
+				int timeIndex = (int) (scanH.getTime() / TIME_INDEX_WIDTH);
+
+				if (scanIdsByTimeIndex.get(timeIndex) == null)
+					scanIdsByTimeIndex.put(timeIndex, new ArrayList<Integer>());
+
+				scanIdsByTimeIndex.get(timeIndex).add(scanH.getId());
+			}
+			
+			if (this.entityCache != null)
+				this.entityCache.scanIdsByTimeIndex = scanIdsByTimeIndex;
+			
+			return scanIdsByTimeIndex;
+		}
+	}
+	
 	/**
 	 * Gets the scan ids for time range.
 	 * 
