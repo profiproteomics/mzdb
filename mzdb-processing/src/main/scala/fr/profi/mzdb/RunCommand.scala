@@ -422,7 +422,7 @@ object RunCommand extends App with Logging {
       }.toArray
     }
 
-    val mzDb = new MzDbReader( new java.io.File(mzdbFilePath), true, false)
+    val mzDb = new MzDbReader( new java.io.File(mzdbFilePath), true)
 
     logger.info("Hello Predicted Time Extractor")
 
