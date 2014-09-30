@@ -45,15 +45,15 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
 
     // get dia ranges
     //convert to scala object, TODO: do that properly
-    val isolationWindowRanges = mzDbReader.getDIAPrecurorRanges()
+    val isolationWindows = mzDbReader.getDIAIsolationWindows()
 
     // group ms1Features by isolation window range
-    val ms1FtsByIWIdx = this._groupFtsByIsolationWindowIdx(isolationWindowRanges, ms1Fts)
+    val ms1FtsByIWIdx = this._groupFtsByIsolationWindowIdx(isolationWindows, ms1Fts)
 
     //java list has not foreach interface ! conversion ?
     val spectra = new ArrayBuffer[Spectrum]()
-    for (i <- 0 until isolationWindowRanges.length) {
-      val pair = isolationWindowRanges(i)
+    for (i <- 0 until isolationWindows.length) {
+      val pair = isolationWindows(i)
       val (minParentMz, maxParentMz) = (pair.getMinMz, pair.getMaxMz)
       println(s"Unsupervised ms2 feature detection: range(${minParentMz}, ${maxParentMz})")
       
