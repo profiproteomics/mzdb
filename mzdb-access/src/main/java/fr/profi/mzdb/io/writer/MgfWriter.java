@@ -19,6 +19,7 @@ import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.IsolationWindow;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.param.CVParam;
+import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.table.SpectrumTable;
 import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
@@ -154,8 +155,12 @@ public class MgfWriter {
 	    throws SQLiteException {
 	// do a XIC over isolation window
 	final IsolationWindow iw = precursor.getIsolationWindow();
-	final CVParam[] cvParams = iw.getCVParams(new String[] { "isolation window lower offset",
-		"isolation window upper offset" });
+	final CVParam[] cvParams = iw.getCVParams(
+		new CVEntry[] { 
+			CVEntry.ISOLATION_WINDOW_LOWER_OFFSET,
+			CVEntry.ISOLATION_WINDOW_LOWER_OFFSET
+		}
+	);
 	final float lowerMzWindow = Float.parseFloat(cvParams[0].getValue());
 	final float upperMzWindow = Float.parseFloat(cvParams[1].getValue());
 	final double minmz = targetMz - lowerMzWindow;

@@ -20,78 +20,71 @@ import fr.profi.mzdb.db.model.params.ScanList;
  */
 public class ParamTreeParser {
 
-    /**
-     * Parses the param tree.
-     * 
-     * @param paramTreeAsStr
-     *            the param tree as str
-     * @return the param tree
-     */
-    synchronized public static ParamTree parseParamTree(String paramTreeAsStr) {
+	/**
+	 * Parses the param tree.
+	 * 
+	 * @param paramTreeAsStr The param tree as a String
+	 * @return the param tree
+	 */
+	synchronized public static ParamTree parseParamTree(String paramTreeAsStr) {
 
-	ParamTree paramTree = null;
-	try {
-	    // JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
-	    // Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-	    paramTree = (ParamTree) MzDbReader.paramTreeUnmarshaller.unmarshal(new StringReader(
-		    paramTreeAsStr));
-	} catch (JAXBException e) {
-	    e.printStackTrace();
-	}
-	// ParamTreeParser.class.notify();
-	return paramTree;
-    }
-
-    synchronized public static ScanList parseScanList(String scanListAsStr) {
-
-	ScanList scanList = null;
-	try {
-	    scanList = (ScanList) MzDbReader.scanListUnmarshaller.unmarshal(new StringReader(scanListAsStr));
-	} catch (JAXBException e) {
-	    e.printStackTrace();
-	}
-	return scanList;
-    }
-
-    synchronized public static Precursor parsePrecursor(String precursorAsStr) {
-	Precursor prec = null;
-	try {
-	    prec = (Precursor) MzDbReader.precursorUnmarshaller.unmarshal(new StringReader(precursorAsStr));
-	} catch (JAXBException e) {
-	    e.printStackTrace();
+		ParamTree paramTree = null;
+		
+		try {
+			paramTree = (ParamTree) MzDbReader.paramTreeUnmarshaller.unmarshal(new StringReader(paramTreeAsStr));
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+		
+		return paramTree;
 	}
 
-	return prec;
-    }
+	synchronized public static ScanList parseScanList(String scanListAsStr) {
 
-    /*
-     * public ParamTree parseParamTree_(String paramTreeAsStr) {
-     * 
-     * ParamTree paramTree = null; try { JAXBContext jaxbContext = JAXBContext.newInstance(ParamTree.class);
-     * Unmarshaller unmarshaller = jaxbContext.createUnmarshaller(); paramTree = (ParamTree)
-     * unmarshaller.unmarshal(new StringReader(paramTreeAsStr)); } catch (JAXBException e) {
-     * e.printStackTrace(); } return paramTree; }
-     */
-
-    /**
-     * Parses the instrument config param tree.
-     * 
-     * @param paramTreeAsStr
-     *            the param tree as str
-     * @return the instrument config param tree
-     */
-    synchronized public static ComponentList parseComponentList(String paramTreeAsStr) {
-
-	ComponentList paramTree = null;
-	try {
-	    paramTree = (ComponentList) MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(
-		    paramTreeAsStr));
-	} catch (JAXBException e) {
-	    // TODO Auto-generated catch block
-	    e.printStackTrace();
+		ScanList scanList = null;
+		
+		try {
+			scanList = (ScanList) MzDbReader.scanListUnmarshaller.unmarshal(new StringReader(scanListAsStr));
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+		
+		return scanList;
 	}
-	ParamTreeParser.class.notify();
-	return paramTree;
-    }
+
+	synchronized public static Precursor parsePrecursor(String precursorAsStr) {
+		Precursor prec = null;
+		
+		try {
+			prec = (Precursor) MzDbReader.precursorUnmarshaller.unmarshal(new StringReader(precursorAsStr));
+		} catch (JAXBException e) {
+			e.printStackTrace();
+		}
+
+		return prec;
+	}
+
+	/**
+	 * Parses the instrument config param tree.
+	 * 
+	 * @param paramTreeAsStr
+	 *            the param tree as str
+	 * @return the instrument config param tree
+	 */
+	synchronized public static ComponentList parseComponentList(String paramTreeAsStr) {
+
+		ComponentList paramTree = null;
+		
+		try {
+			paramTree = (ComponentList) MzDbReader.instrumentConfigUnmarshaller.unmarshal(new InputSource(paramTreeAsStr));
+		} catch (JAXBException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		ParamTreeParser.class.notify();
+		
+		return paramTree;
+	}
 
 }
