@@ -15,6 +15,7 @@ import fr.profi.mzdb.utils.misc.SetClusterer
 import fr.profi.util.stat._
 import scala.beans.BeanProperty
 import fr.profi.mzdb.io.reader.iterator.RunSliceIterator
+import fr.proline.api.progress._
 
 case class FeatureDetectorConfig(
   msLevel: Int = 1,
@@ -33,6 +34,64 @@ case class PeakelPattern(
   
   lazy val abundance = peakels.foldLeft(0f)( (s,p) => s + p.area )
   def getMz = peakels.head.mz
+}
+
+object MzDbFeatureDetector {
+  
+  trait MzDbPeakelDetectorSequence extends IProgressPlanSequence
+  
+  final case object RUN_SLICE_PEAKEL_DETECTION_STEP1 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectPeakels -> run slice loading"
+  }
+  final case object RUN_SLICE_PEAKEL_DETECTION_STEP2 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectPeakels -> PeakListTree update"
+  }
+  final case object RUN_SLICE_PEAKEL_DETECTION_STEP3 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectPeakels -> peaks sorting"
+  }
+  final case object RUN_SLICE_PEAKEL_DETECTION_STEP4 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectPeakels -> peakel detection"
+  }
+  final case object RUN_SLICE_PEAKEL_DETECTION_STEP5 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectPeakels -> update used peaks"
+  }
+  
+  def newRunSlicePeakelDetectionProgressPlan() = {
+    ProgressPlan[MzDbFeatureDetectorSequence](
+      name = "Unsupervised peakel detection progression in run slice",
+      steps = Seq(
+        ProgressStep( RUN_SLICE_PEAKEL_DETECTION_STEP1 ),
+        ProgressStep( RUN_SLICE_PEAKEL_DETECTION_STEP2 ),
+        ProgressStep( RUN_SLICE_PEAKEL_DETECTION_STEP3 ),
+        ProgressStep( RUN_SLICE_PEAKEL_DETECTION_STEP4 ),
+        ProgressStep( RUN_SLICE_PEAKEL_DETECTION_STEP5 )
+      )
+    )
+  }
+  
+  
+  trait MzDbFeatureDetectorSequence extends IProgressPlanSequence
+  
+  final case object FEATURE_DETECTION_STEP1 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectFeatures -> peakel detection in mzDB file"
+  }
+  final case object FEATURE_DETECTION_STEP2 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectFeatures -> peakels correlation"
+  }
+  final case object FEATURE_DETECTION_STEP3 extends IProgressStepIdentity {
+    val stepDescription = "MzDbFeatureDetector.detectFeatures -> peakel patterns computation "
+  }
+  
+  def newFeatureDetectionProgressPlan() = {
+    ProgressPlan[MzDbFeatureDetectorSequence](
+      name = "Unsupervised feature detection progression in mzDB file",
+      steps = Seq(
+        ProgressStep( FEATURE_DETECTION_STEP1 ),
+        ProgressStep( FEATURE_DETECTION_STEP2 ),
+        ProgressStep( FEATURE_DETECTION_STEP3 )
+      )
+    )
+  }
 }
 
 /**
@@ -58,46 +117,11 @@ class MzDbFeatureDetector(
   implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
   // END OF STOLEN FROM MzDbFeatureExtractor
   
-  /** Group peakels by time using EntityHistogramComputer
-   *  A peakel could belong to several bins of the histogram
-   *  TODO: check if it is problem for swath detection
-   */
-  def groupCorrelatedPeakels(peakels: Array[Peakel]): Array[(Float,Array[Peakel])] = {
-    
-    logger.info("correlating peakels in intensity/time dimensions...")
-    
-    // Clusterize peakels having an apex separated by a given time value (10 secs)    
-    val histoComputer = new EntityHistogramComputer( peakels, { peakel: Peakel =>
-      peakel.apexScanContext.getElutionTime
-    })
-    
-    val peakelTimes = peakels.map( _.weightedAverageTime )
-    val timeRange = peakelTimes.max - peakelTimes.min
-    val peakelBins = histoComputer.calcHistogram( nbins = (timeRange / 3f).toInt )
-    
-    // TODO: keep the information about the sliding to avoid redundant results
-    // Starting points should always come from the second bin
-    val peakelsGroupedByTime = new ArrayBuffer[(Float,Array[Peakel])]()
-    peakelBins.sliding(3).foreach { peakelBinGroup =>
-      
-      val peakelGroup = peakelBinGroup.flatMap( _._2 )
-      if( peakelGroup.isEmpty == false ) {
-        val meanTime = peakelBinGroup.map( _._1.center ).sum / peakelBinGroup.length
-        val times = peakelGroup.map(_.weightedAverageTime)
-        logger.debug( s"min time is ${times.min} and max time is ${times.max}")
-        peakelsGroupedByTime += meanTime.toFloat -> peakelGroup
-      }
-    }
-    
-    peakelsGroupedByTime.toArray
-  }
-  
   /**
    * Detect peakels using the unsupervised peakel detector
    */
   def detectPeakels(minParentMz: Double = 0d, maxParentMz: Double = 0d): Array[Peakel] = {
     
-    // Retrieve scans mapped by their initial? id
     val msLevel = ftDetectorConfig.msLevel
     
     val peakelDetector = new UnsupervisedPeakelDetector(
@@ -124,20 +148,31 @@ class MzDbFeatureDetector(
     // Define some vars
     var( prevRsNumber, nextRsNumber ) = (0,0)
     var rsOpt = if( rsIter.hasNext) Some(rsIter.next) else None
-    val usedPeakSet = new HashSet[Peak]()
+    var usedPeakMap = new HashMap[Peak,Boolean]() // true if used in last detection false if previous detection
     val peakelsBuffer = new ArrayBuffer[Peakel]
     
     // Iterate over run slice headers
     while( (rsIter.hasNext || rsOpt.isDefined ) ) { // && pklByScanIdAndRsNumber.size < 3
+      
+      // Set up the progress computer
+      val progressPlan = MzDbFeatureDetector.newRunSlicePeakelDetectionProgressPlan()
+      val progressComputer = new ProgressComputer( progressPlan )      
+      progressComputer.beginStep( MzDbFeatureDetector.RUN_SLICE_PEAKEL_DETECTION_STEP1 )
+      
       val rs = rsOpt.get
       val rsh = rs.getHeader
       val rsd = rs.getData
+      
+      // Update the progress computer
+      progressComputer.setCurrentStepAsCompleted()
+      progressComputer.beginStep( MzDbFeatureDetector.RUN_SLICE_PEAKEL_DETECTION_STEP2 )
+      
       val curPeaklistByScanId = rsd.getPeakListByScanId
       this.logger.debug("unsupervised processing of run slice with id =" + rsh.getId)
 
       // Retrieve run slices and their corresponding id
       val rsNumber = rsh.getNumber
-      val nextRsNumber = rsNumber + 1     
+      val nextRsNumber = rsNumber + 1
       
       // Build the list of obsolete run slices
       val rsNumbersToRemove = for(
@@ -175,6 +210,10 @@ class MzDbFeatureDetector(
       val pklGroupByScanId = peakListsByScanId.map { case (scanId, pkl) => scanId -> new PeakListGroup( pkl ) } toMap
       val pklTree = new PeakListTree( pklGroupByScanId, scanHeaderById )
       
+      // Update the progress computer
+      progressComputer.setCurrentStepAsCompleted()
+      progressComputer.beginStep( MzDbFeatureDetector.RUN_SLICE_PEAKEL_DETECTION_STEP3 )
+      
       // Retrieve all peaks incurPeaklistByScanId
       var curRsPeaks = curPeaklistByScanId.values.flatMap( _.getAllPeaks() ).toArray
       
@@ -191,24 +230,39 @@ class MzDbFeatureDetector(
         }
       })*/
       
+      // Update the progress computer
+      progressComputer.setCurrentStepAsCompleted()
+      progressComputer.beginStep( MzDbFeatureDetector.RUN_SLICE_PEAKEL_DETECTION_STEP4 )
+      
       this.logger.debug( "min peak intensity = "+ curRsPeaks.last.getIntensity )
       this.logger.debug( "max peak intensity = "+ curRsPeaks.head.getIntensity )
       
       // Detect peakels in pklTree by using curRsPeaks as starting points
-      val peakels = peakelDetector.detectPeakels(pklTree, curRsPeaks, usedPeakSet)
+      val peakels = peakelDetector.detectPeakels(pklTree, curRsPeaks, usedPeakMap)
       this.logger.debug( s"found ${peakels.length} peakels in run slice #"+rsNumber)
       
       // Add peakels to the global buffer
       peakelsBuffer ++= peakels
       
+      // Update the progress computer
+      progressComputer.setCurrentStepAsCompleted()
+      progressComputer.beginStep( MzDbFeatureDetector.RUN_SLICE_PEAKEL_DETECTION_STEP5 )
+      
       // Remove used peaks from previous run slice
       if( prevRsNumber > 0 ) {
-        usedPeakSet.synchronized {
-          val prevPeaklistByScanId = pklByScanIdAndRsNumber(prevRsNumber)
-          val prevRsPeaks = curPeaklistByScanId.values.flatMap( _.getAllPeaks() ).toArray
-          usedPeakSet --= prevRsPeaks
+        val newUsedPeakMap = new HashMap[Peak,Boolean]()
+        
+        for( (usedPeak,inLastDetection) <- usedPeakMap ) {
+          if( inLastDetection ) {
+            newUsedPeakMap += usedPeak -> false
+          }
         }
+        
+        usedPeakMap = newUsedPeakMap
       }
+      
+      // Update the progress computer
+      progressComputer.setCurrentStepAsCompleted()
   
       // Update some vars
       prevRsNumber = rsNumber
@@ -239,6 +293,7 @@ class MzDbFeatureDetector(
     
     this.logger.debug(s"Has filtered # ${filteredPeakels.length} peakels")
     
+    /*
     // --- Compute some peakels statistics ---
     if (msLevel < 2) {
       val scanHeaders = mzDbReader.getScanHeaders()
@@ -264,36 +319,6 @@ class MzDbFeatureDetector(
           .withFilter( sh => math.abs(sh.getPrecursorMz() - peakel.mz) <= mzTolDa )
           .map(_.getId)
         
-        /*
-        val ms2ScanIds = new ArrayBuffer[Int]
-         
-        // TODO: factorize this loop with the one from FeatureExtractor
-        for( peak <- peakel.definedPeaks ) {
-          
-          // Retrieve the cycles surrounding the next MS2 scans
-          val thisScanId = peak.getLcContext.getScanId
-          val thisCycleNum = scanHeaderById(thisScanId).getCycle
-          val nextCycleNum = thisCycleNum + 1
-    
-          // Do the job only if next cycle can be found
-          if( ms1ScanHeaderByCycleNum.contains(nextCycleNum) ) {
-            val nextCycleScanId = ms1ScanHeaderByCycleNum(nextCycleNum).getId
-            
-            // Iterate over MS2 scans
-            for( scanId <- thisScanId + 1 until nextCycleScanId ) {
-              val scanH = scanHeaderById(scanId)
-              
-              if( scanH.getMsLevel == 2 ) {
-                // Compute m/z difference between the current peak and MS2 scan precursor m/z
-                val mzDiffPPM = MsUtils.DaToPPM(peak.getMz, math.abs(scanH.getPrecursorMz - peak.getMz) )
-                if( mzDiffPPM <= mzTolPPM ) {
-                  ms2ScanIds += scanId
-                }
-              }
-            }
-          }
-        }*/
-        
         matchedMs2ScanIdSet ++= ms2ScanIds
       }
       
@@ -301,6 +326,7 @@ class MzDbFeatureDetector(
       this.logger.info("number of MS2 scans matching detected peakels ="+matchedMs2ScanIdSet.size)
       // TODO: have a look to the unmatched features
     } // end computing statistics
+    */
     
     // --- Combine peakels to obtain features ---
     val peakelsGroupedByTime = this.groupCorrelatedPeakels(filteredPeakels)    
@@ -321,7 +347,7 @@ class MzDbFeatureDetector(
         
         // FIXME: filter out peakels having the same m/z value
         
-        logger.debug(s"grouped ${peakelGroup.length} peakel(s) at average time ="+groupTime)
+        logger.trace(s"grouped ${peakelGroup.length} peakel(s) at average time ="+groupTime)
         
         // Compute an histogram of peakels by m/z BIN ???
         
@@ -456,7 +482,7 @@ class MzDbFeatureDetector(
           if peakelPatternBuffer.length > 1 // remove features with one unique peakel
         ) yield PeakelPattern(apexPeakel,peakelPatternBuffer.toArray,charge)
         
-        logger.debug( s"found ${newPeakelPatterns.size} new peakel patterns" )
+        logger.trace( s"found ${newPeakelPatterns.size} new peakel patterns" )
         
         // Clusterize peakel patterns using SetClusterer fork
         val peakelIndexSetByNewPeakelPattern = newPeakelPatterns.map { peakelPattern =>
@@ -465,15 +491,15 @@ class MzDbFeatureDetector(
         } toMap
     
         val newPeakelClusters = SetClusterer.clusterizeMappedSets(peakelIndexSetByNewPeakelPattern)
-        logger.debug( s"obtained ${newPeakelClusters.length} new pattern clusters after clustering" )
+        logger.trace( s"obtained ${newPeakelClusters.length} new pattern clusters after clustering" )
         
         // Remove subsets and map found clusters by peakel index
         val oversetPeakelPatternByPeakelIdx = new HashMap[Int,ArrayBuffer[PeakelPattern]]
         for( newPeakelCluster <- newPeakelClusters; if newPeakelCluster.isSubset == false ) {
           if( newPeakelCluster.samesetsKeys.length > 1 ) {
-            this.logger.debug( "L1 charges = "+newPeakelCluster.samesetsKeys.map(_.charge).mkString(";") )
-            this.logger.debug( "cluster length = " + newPeakelCluster.samesetsKeys.length)
-            this.logger.debug( "indices ="+newPeakelCluster.samesetsValues.mkString(";") )
+            this.logger.trace( "L1 charges = "+newPeakelCluster.samesetsKeys.map(_.charge).mkString(";") )
+            this.logger.trace( "cluster length = " + newPeakelCluster.samesetsKeys.length)
+            this.logger.trace( "indices ="+newPeakelCluster.samesetsValues.mkString(";") )
           }
           
           val peakelPattern = newPeakelCluster.samesetsKeys.head
@@ -592,6 +618,40 @@ class MzDbFeatureDetector(
     }
     
     detectedFeatures.toArray
+  }
+  
+  /** Group peakels by time using EntityHistogramComputer
+   *  A peakel could belong to several bins of the histogram
+   *  TODO: check if it is problem for swath detection
+   */
+  def groupCorrelatedPeakels(peakels: Array[Peakel]): Array[(Float,Array[Peakel])] = {
+    
+    logger.info("correlating peakels in intensity/time dimensions...")
+    
+    // Clusterize peakels having an apex separated by a given time value (10 secs)
+    val histoComputer = new EntityHistogramComputer( peakels, { peakel: Peakel =>
+      peakel.apexScanContext.getElutionTime
+    })
+    
+    val peakelTimes = peakels.map( _.weightedAverageTime )
+    val timeRange = peakelTimes.max - peakelTimes.min
+    val peakelBins = histoComputer.calcHistogram( nbins = (timeRange / 3f).toInt )
+    
+    // TODO: keep the information about the sliding to avoid redundant results
+    // Starting points should always come from the second bin
+    val peakelsGroupedByTime = new ArrayBuffer[(Float,Array[Peakel])]()
+    peakelBins.sliding(3).foreach { peakelBinGroup =>
+      
+      val peakelGroup = peakelBinGroup.flatMap( _._2 )
+      if( peakelGroup.isEmpty == false ) {
+        val meanTime = peakelBinGroup.map( _._1.center ).sum / peakelBinGroup.length
+        val times = peakelGroup.map(_.weightedAverageTime)
+        logger.debug( s"min time is ${times.min} and max time is ${times.max}")
+        peakelsGroupedByTime += meanTime.toFloat -> peakelGroup
+      }
+    }
+    
+    peakelsGroupedByTime.toArray
   }
   
   def quickSortPeaksByDescIntensity(peaks: Array[Peak]) {

@@ -40,8 +40,8 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
   
   protected def calcMzIndex( mz: Double ): Int = (mz/indexPrecision).toInt
   
-  def getMinMz = mzRange.minMz
-  def getMaxMz = mzRange.maxMz
+  def getMinMz() = mzRange.minMz
+  def getMaxMz() = mzRange.maxMz
   
   /**
    * Returns all peaks contained in the PeakList.
@@ -74,27 +74,28 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
    * @param searchedMaxMz the searched max mz
    * @return the peaks in range
    */
-  def getPeaksInRange( searchedMinMz: Double, searchedMaxMz: Double ): Option[Array[Peak]] = {
+  def getPeaksInRange( searchedMinMz: Double, searchedMaxMz: Double ): Option[ArrayBuffer[Peak]] = {
     
     // Check if the m/z to extract is in the peaklist m/z range
     if( searchedMinMz > this.getMaxMz || searchedMaxMz < this.getMinMz ) {
-      return Option.empty[Array[Peak]]
+      return Option.empty[ArrayBuffer[Peak]]
     }
 
-    val minMzIndex = this.calcMzIndex( searchedMinMz ) - 1
-    val maxMzIndex = this.calcMzIndex( searchedMaxMz ) + 1
+    // Compute index range
+    val minMzIndex = this.calcMzIndex( searchedMinMz )
+    val maxMzIndex = this.calcMzIndex( searchedMaxMz )
 
     // Initialize the minimum m/z difference with the provided m/z tolerance
-    val peaksInRange = new ArrayBuffer[Peak]
+    val peaksInRangeBuffer = new ArrayBuffer[Peak]
     
     for( idx <- minMzIndex to maxMzIndex ) {
       val peaks = indexedPeaks.get(idx) //peaks are sorted
       if(peaks != None ) {
-        this._getPeaksInRange( searchedMinMz, searchedMaxMz, peaks.get, peaksInRange )
+        this._getPeaksInRange( searchedMinMz, searchedMaxMz, peaks.get, peaksInRangeBuffer )
       }
     }
     
-    Some(peaksInRange.toArray)
+    Some(peaksInRangeBuffer)
   }
   
   /** Gets the peaks in range.
@@ -112,8 +113,9 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
     peaksInRange: ArrayBuffer[Peak]
   ) {
     for (p <- peaks) {
-      if( p.getMz() >= minMz ) {
-        if( p.getMz() <= maxMz ) peaksInRange += p
+      val mz = p.getMz() 
+      if( mz >= minMz ) {
+        if( mz <= maxMz ) peaksInRange += p
         else return ()
       }
     }  

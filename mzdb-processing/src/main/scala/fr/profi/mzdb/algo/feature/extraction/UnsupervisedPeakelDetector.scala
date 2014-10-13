@@ -1,14 +1,58 @@
 package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashSet
+import scala.collection.mutable.HashMap
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
 import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
+import fr.proline.api.progress._
 
+object UnsupervisedPeakelDetector {
+  
+  // Detect peakels method progress
+  trait UnsupervisedPeakelDetectionSequence extends IProgressPlanSequence
+  
+  final case object DETECTION_STEP1 extends IProgressStepIdentity {
+    val stepDescription = "UnsupervisedPeakelDetector.detectPeakels"
+  }
+  
+  def newDetectionProgressPlan() = {
+    ProgressPlan[UnsupervisedPeakelDetectionSequence](
+      name = "unsupervised peakel detector progression in peaklist tree",
+      steps = Seq(
+        ProgressStep( DETECTION_STEP1 )
+      )
+    )
+  }
+  
+  // Extract peakels method progress
+  trait UnsupervisedPeakelExtractionSequence extends IProgressPlanSequence
+  
+  final case object EXTRACTION_STEP1 extends IProgressStepIdentity {
+    val stepDescription = "UnsupervisedPeakelDetector.extractPeakel -> peaks extraction in peaklist tree"
+  }
+  final case object EXTRACTION_STEP2 extends IProgressStepIdentity {
+    val stepDescription = "UnsupervisedPeakelDetector.extractPeakel -> peakel detection"
+  }
+  final case object EXTRACTION_STEP3 extends IProgressStepIdentity {
+    val stepDescription = "UnsupervisedPeakelDetector.extractPeakel -> update used peaks"
+  }
+  
+  def newExtractionProgressPlan() = {
+    ProgressPlan[UnsupervisedPeakelExtractionSequence](
+      name = "unsupervised peakel extraction progression in peaklist tree",
+      steps = Seq(
+        ProgressStep( EXTRACTION_STEP1 ),
+        ProgressStep( EXTRACTION_STEP2 ),
+        ProgressStep( EXTRACTION_STEP3 )
+      )
+    )
+  }
+  
+}
 
 /**
  * @author David Bouyssie
@@ -24,7 +68,7 @@ class UnsupervisedPeakelDetector(
   val maxTimeWindow: Float = 1200f,
   val minPercentageOfMaxInt: Float = 0.005f
 ) extends Logging {
-    
+  
   /*val msLevel = 2
   
   val ms1ScanIdByCycleNum = scanHeaderById.values
@@ -36,12 +80,18 @@ class UnsupervisedPeakelDetector(
     
   }*/
   
-  def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak], usedPeakSet: HashSet[Peak] ): Array[Peakel] = {
+  def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak], usedPeakMap: HashMap[Peak,Boolean] ): Array[Peakel] = {
     // Return if the number of peaks is too low
     if( intensityDescPeaks.length < 10 ) return Array()
     
-    // Determine an intensity threshold based on quartiles
     val nbPeaks = intensityDescPeaks.length
+    
+    // Set up the progress computer
+    val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newDetectionProgressPlan() )
+    val curStep = progressComputer.beginStep(UnsupervisedPeakelDetector.DETECTION_STEP1)
+    curStep.setMaxCount(nbPeaks)
+    
+    // Determine an intensity threshold based on quartiles    
     val q3 = math.log10( intensityDescPeaks( (nbPeaks * 0.25).toInt ).getIntensity )
     val q1 = math.log10( intensityDescPeaks( (nbPeaks * 0.75).toInt ).getIntensity )
     val iqr = q3 - q1
@@ -52,13 +102,17 @@ class UnsupervisedPeakelDetector(
     
     // Iterate over all peaks sorted by descending order
     for( peak <- intensityDescPeaks ) {
-      if( peak.getIntensity() > intensityThreshold && usedPeakSet(peak) == false ) {
+      
+      // Increment the step count
+      curStep.incrementAndGetCount()
+      
+      if( peak.getIntensity() > intensityThreshold && usedPeakMap.contains(peak) == false ) {
         
         // Retrieve corresponding scan header
         val scanHeader = this.scanHeaderById(peak.getLcContext.getScanId)
         
         // Initiate a peakel extraction using this starting point
-        val peakelOpt = this.extractPeakel(pklTree, usedPeakSet, scanHeader, peak)
+        val peakelOpt = this.extractPeakel(pklTree, usedPeakMap, scanHeader, peak)
         
         // Check if we found one peakel
         if( peakelOpt.isDefined ) {
@@ -77,10 +131,14 @@ class UnsupervisedPeakelDetector(
   
   protected def extractPeakel(
     pklTree: PeakListTree,
-    usedPeakSet: HashSet[Peak],
+    usedPeakMap: HashMap[Peak,Boolean],
     apexScanHeader: ScanHeader,
     apexPeak: Peak
   ): Option[Peakel] = {
+    
+    // Set up the progress computer
+    //val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newExtractionProgressPlan() )
+    //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP1)
     
     // Retrieve the scan header map
     val pklTreeShMap = pklTree.scanHeaderMap
@@ -153,30 +211,26 @@ class UnsupervisedPeakelDetector(
             val pklGroup = pklGroupOpt.get
   
             // Try to retrieve the nearest peak
-            val peak = pklGroup.getNearestPeak( apexMz, mzTolDa)
+            val peak = pklGroup.getNearestPeak( apexMz, mzTolDa )
             
             // Check if a peak has been found
-            if( peak != null && usedPeakSet(peak) == false ) {
+            if( peak != null && usedPeakMap.contains(peak) == false ) {
               
               // Retrieve some values
               val intensity = peak.getIntensity
               
-              // Add the peak to the set of used peaks
-              /*this.synchronized {
-                usedPeakSet += peak
-              }*/
-              
-              // Add the peak to the peaks buffer
-              if( isRightDirection ) peaksBuffer += peak // append peak
-              else { peaksBuffer.+=:( peak ) } // prepend peak
-                
               // If the peak intensity is higher than apex one
               if( intensity > apexIntensity ) {
                 break
               }
-              
               // Check if intensity equals zero
-              if( intensity == 0 ) consecutiveGapCount += 1
+              else if( intensity == 0 ) consecutiveGapCount += 1
+              // Add the peak to the peaks buffer
+              // Note: before code
+              //if( isRightDirection ) peaksBuffer += peak // append peak
+              //else { peaksBuffer.+=:( peak ) } // prepend peak
+              // New one => perform sort at the end => optimization
+              else peaksBuffer += peak
               
             // Else if peak is not defined
             } else {
@@ -195,18 +249,26 @@ class UnsupervisedPeakelDetector(
       
       numOfAnalyzedDirections += 1
     }
+    
+    //progressComputer.setCurrentStepAsCompleted()
+    //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP2)
+    
     // TODO: define a minimum number of peaks for a peakel in the config
     val peakelOpt = if( peaksBuffer.length < 5 ) {
       None
     }
     else {
+      
+      // Sort peaks by ascending scan id
+      val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
+      
       // Find all peakels in the extracted range of IPs
-      val peakelsIndices = HistogramBasedPeakelFinder.findPeakelsIndices( peaksBuffer )
+      val peakelsIndices = HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
       
       // Retrieve the peakel corresponding to the feature apex
       val matchingPeakelIdxOpt = peakelsIndices.find { idx =>
-        apexTime >= peaksBuffer(idx._1).getLcContext.getElutionTime && 
-        apexTime <= peaksBuffer(idx._2).getLcContext.getElutionTime
+        apexTime >= extractedPeaks(idx._1).getLcContext.getElutionTime && 
+        apexTime <= extractedPeaks(idx._2).getLcContext.getElutionTime
       }
       
       if( matchingPeakelIdxOpt.isEmpty ) {
@@ -217,7 +279,7 @@ class UnsupervisedPeakelDetector(
       } else {
         
         val matchingPeakelIdx = matchingPeakelIdxOpt.get
-        val peakelPeaks = peaksBuffer.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 )
+        val peakelPeaks = extractedPeaks.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 )
         
         val peakel = Peakel(index = 0, peaks = peakelPeaks.toArray )
         
@@ -225,8 +287,11 @@ class UnsupervisedPeakelDetector(
       }
     }
     
+    //progressComputer.setCurrentStepAsCompleted()
+    //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP3)
+    
     // Update usedPeakSet using a synchronized block
-    usedPeakSet.synchronized {
+    usedPeakMap.synchronized {
       
       // Remove all extracted peaks from usedPeakSet
       //peaksBuffer.foreach { p => usedPeakSet -= p }
@@ -236,12 +301,15 @@ class UnsupervisedPeakelDetector(
         // Marco: it may lead to missing peakel => we should not remove the apexPeak if no detected peakel
         //usedPeakSet += apexPeak
       } else {
-        // Re-add peakel peaks to usedPeakSet
-        usedPeakSet ++= peakelOpt.get.definedPeaks
+        // Re-add peakel peaks to usedPeakMap
+        for( peak <- peakelOpt.get.definedPeaks)
+          usedPeakMap += peak -> true
       }
       
     }
-      
+    
+    //progressComputer.setCurrentStepAsCompleted()
+    
     peakelOpt
   }
 
