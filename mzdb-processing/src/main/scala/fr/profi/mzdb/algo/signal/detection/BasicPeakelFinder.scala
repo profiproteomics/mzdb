@@ -2,6 +2,7 @@ package fr.profi.mzdb.algo.signal.detection
 
 import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.model.Peak
+import fr.profi.mzdb.model.Peakel
 
 /**
  * @author David Bouyssie
@@ -12,7 +13,11 @@ object BasicPeakelFinder extends IPeakelFinder {
   var nbConsecutiveSlope = 2
   
   def findPeakelsIndices(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
-    findPeakelsIndices( peaks.map( _.getIntensity.toDouble ).toArray,  nbConsecutiveSlope)
+    findPeakelsIndices( peaks.map( _.getIntensity.toDouble ).toArray, nbConsecutiveSlope)
+  }
+  
+  def findPeakelsIndices(peakel: Peakel): Array[Tuple2[Int,Int]] = {
+    findPeakelsIndices( peakel.intensityValues.map(_.toDouble), nbConsecutiveSlope)
   }
   
   def findPeakelsIndices(values: Array[Double], consNbTimesThresh: Int ): Array[Tuple2[Int,Int]] = {

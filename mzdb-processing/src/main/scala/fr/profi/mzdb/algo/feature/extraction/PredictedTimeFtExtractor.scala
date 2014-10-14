@@ -174,11 +174,12 @@ class PredictedTimeFtExtractor(
 
         var ft: Feature = null
         if (selectedIPsIdx.isEmpty == false) {
-          val peakels = Feature.buildPeakels(selectedIPsIdx.map(ips(_)).filter(_ != null))
+          val peakels = Feature.buildIndexedPeakels(selectedIPsIdx.map(ips(_)).filter(_ != null))
 
           if (peakels.isEmpty == false && peakels(0) != null) {
             val f = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
-            if (f.peakelsCount > 0 && f.peakels(0).peaks.length > 5)
+            // TODO: parameterize the min number of peakels count and LC contexts
+            if (f.getPeakelsCount > 0 && f.getFirstPeakel().lcContexts.length > 5)
               ft = f
           }
         }
@@ -189,7 +190,7 @@ class PredictedTimeFtExtractor(
     
 
     //--- filter features
-    val bestFt = this._getBestMatchingFeature(putativeFt, features.filter(_.peakelsCount > 1), pklTree)    
+    val bestFt = this._getBestMatchingFeature(putativeFt, features.filter(_.getPeakelsCount > 1), pklTree)    
     //progressPlan( STEP5 ).incrementAndGetCount(1)
     
     bestFt
@@ -215,7 +216,7 @@ class PredictedTimeFtExtractor(
       features
       .map { ft =>
         val theoAbundances = IsotopePatternInterpolator.getTheoreticalPattern(ft.mz, ft.charge).abundances
-        val peakelApexIntensities = ft.peakels.map(_.getApex().getIntensity)
+        val peakelApexIntensities = ft.indexedPeakels.map(_._1.getApexIntensity)
         val rmsd = IsotopePatternInterpolator.calcAbundancesRmsd(theoAbundances, peakelApexIntensities)
         (ft,rmsd)
       }
@@ -275,35 +276,39 @@ class PredictedTimeFtExtractor(
     if (ips.isEmpty) return Array.empty[Feature]
 
     // Build a tmpFt 
-    val peakels = Feature.buildPeakels(ips)
+    val peakels = Feature.buildIndexedPeakels(ips)
     if (peakels.isEmpty) return Array.empty[Feature]
 
     val tmpFt = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels, isPredicted = true)
 
     // Determine maxrelative intensity peakel index
-    val peakelIndex = if (maxPeakelIndex < tmpFt.peakelsCount) maxPeakelIndex else 0
-    val maxIntensityPeakel = tmpFt.peakels(peakelIndex)
+    val peakelIndex = if (maxPeakelIndex < tmpFt.getPeakelsCount) maxPeakelIndex else 0
+    val maxIntensityPeakel = tmpFt.getPeakel(peakelIndex)
 
     // Ensure peakel duration  is at least 5 scans
-    if (maxIntensityPeakel.isGoodForPeakDetection(this.xtractConfig.minConsecutiveScans) == false)
+    if (maxIntensityPeakel.hasEnoughPeaks(this.xtractConfig.minConsecutiveScans) == false)
       return Array.empty[Feature]
 
     // Launch peak detection
-    val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
+    //val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
 
     val peakelIndices = findPeakelsIndices(
-      definedPeaks,
+      maxIntensityPeakel,
       peakelDetectionConfig.detectionAlgorithm,
       peakelDetectionConfig.minSNR
     )
 
     val detectedFts = new ArrayBuffer[Feature](peakelIndices.length)
+    val lcContexts = maxIntensityPeakel.getLcContexts()
+      
+    for ( (minIdx, maxIdx) <- peakelIndices ) {
+      //val ipsIndexes = (peaks.indexOf(definedPeaks(minIdx)), peaks.indexOf(definedPeaks(maxIdx)))
+      val ftOpt = tmpFt.restrictToLcContextRange(
+        lcContexts(minIdx),
+        lcContexts(maxIdx)
+      )
 
-    for ((minIdx, maxIdx) <- peakelIndices) {
-      val ipsIndexes = (peaks.indexOf(definedPeaks(minIdx)), peaks.indexOf(definedPeaks(maxIdx)))
-      val ft = tmpFt.restrictToPeakelIdxRange(ipsIndexes)
-
-      if (ft != null) detectedFts += ft
+      if (ftOpt.isDefined) detectedFts += ftOpt.get
     }
 
     detectedFts.toArray
@@ -321,25 +326,27 @@ class PredictedTimeFtExtractor(
       return Array.empty[(Int, Int)]
 
     // build a tmpFt 
-    val peakels = Feature.buildPeakels(ips)
+    val peakels = Feature.buildIndexedPeakels(ips)
     if (peakels.isEmpty)
       return Array.empty[(Int, Int)]
     val tmpFt = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
 
     // determine maxrelative intensity peakel index
-    val peakelIndex = if (maxPeakelIndex < tmpFt.peakelsCount) maxPeakelIndex else 0
-    val maxIntensityPeakel = tmpFt.peakels(peakelIndex)
+    val peakelIndex = if (maxPeakelIndex < tmpFt.getPeakelsCount) maxPeakelIndex else 0
+    val maxIntensityPeakel = tmpFt.getPeakel(peakelIndex)
 
     // ensure peakel duration  is at least 5 scans
-    if (maxIntensityPeakel.isGoodForPeakDetection(xtractConfig.minConsecutiveScans) == false)
+    if (maxIntensityPeakel.hasEnoughPeaks(xtractConfig.minConsecutiveScans) == false)
       return Array.empty[(Int, Int)]
     
-    //Debug stuff
-    //SQLiteXicStorer.insertXic(maxIntensityPeakel)
+    //val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
     
-    val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
-    // launch peak detection
-    val peakelIndexes = findPeakelsIndices(definedPeaks, peakelDetectionConfig.detectionAlgorithm, peakelDetectionConfig.minSNR)
+    // Launch peakel detection
+    val peakelIndexes = findPeakelsIndices(
+      maxIntensityPeakel,
+      peakelDetectionConfig.detectionAlgorithm,
+      peakelDetectionConfig.minSNR
+    )
     
     peakelIndexes
   }
@@ -349,14 +356,14 @@ class PredictedTimeFtExtractor(
   /**
    *
    */
-  def _forcePeakelExtraction(minMaxScanIds: Pair[Int, Int], peaks: Array[Peak]): Peakel = {
+  /*def _forcePeakelExtraction(minMaxScanIds: Pair[Int, Int], peaks: Array[Peak]): Peakel = {
     //can be more accurate if we knew the putativeFt duration ?
 
     new Peakel(0, peaks.filter { p =>
       val scanId = p.getLcContext().getScanId()
       minMaxScanIds._1 <= scanId && minMaxScanIds._2 >= scanId
     })
-  }
+  }*/
   
 }
 

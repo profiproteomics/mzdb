@@ -143,17 +143,19 @@ class WaveletDetectorDuMethod (peaks: Seq[Peak]) extends AbstractWaveletPeakelFi
       val intensityMax = intensities.max 
       val xmax =  xvalues(intensities.indexOf(intensityMax)) 
       
-      new CwtPeakel(index = intensities.indexOf(intensityMax),
-                    peaks = slicedPeaks toArray, 
-                    apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
-                    minIdx = minIdx, 
-                    startLcContext = peaks(minIdx).getLcContext,  
-                    maxIdx = maxIdx, 
-                    endLcContext = peaks(maxIdx).getLcContext,
-                    xMax = xmax toFloat,
-                    intensityMax = intensityMax toFloat,
-                    centroid = centroid toFloat,
-                    snr = ridge.SNR)                
+      new CwtPeakel(
+        peaks = slicedPeaks toArray, 
+        apexIndex = intensities.indexOf(intensityMax),
+        apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
+        minIdx = minIdx, 
+        startLcContext = peaks(minIdx).getLcContext,  
+        maxIdx = maxIdx, 
+        endLcContext = peaks(maxIdx).getLcContext,
+        xMax = xmax toFloat,
+        intensityMax = intensityMax toFloat,
+        centroid = centroid toFloat,
+        snr = ridge.SNR
+      )
     }
     // remove a detected peakel which is contained in another peakel and merge overlapping peakels
     val filteredPeakels = this._filterOverlappingPeakels(peakels);

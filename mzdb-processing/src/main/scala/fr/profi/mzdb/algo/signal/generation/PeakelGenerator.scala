@@ -22,10 +22,7 @@ object PeakelGenerator {
       peaks +=  new Peak( mz, y.toFloat, peakHwhm, peakHwhm, new ElutionTimeContext(x) ) 
     }
     
-    new Peakel( 0, peaks.toArray )
-    
+    new Peakel( peaks.toArray )
   }
-  
-
   
 }

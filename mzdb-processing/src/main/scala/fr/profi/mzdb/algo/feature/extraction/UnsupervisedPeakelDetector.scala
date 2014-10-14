@@ -120,7 +120,7 @@ class UnsupervisedPeakelDetector(
           val apexIdx = peakel.apexIndex
           
           // Append peakel only if its apex is not at the extrema
-          if( apexIdx > 0 && apexIdx < peakel.peaks.length - 1 )
+          if( apexIdx > 0 && apexIdx < peakel.lcContexts.length - 1 )
             peakelBuffer += peakelOpt.get
         }
       }
@@ -254,8 +254,8 @@ class UnsupervisedPeakelDetector(
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP2)
     
     // TODO: define a minimum number of peaks for a peakel in the config
-    val peakelOpt = if( peaksBuffer.length < 5 ) {
-      None
+    val peakelAndPeaksOpt = if( peaksBuffer.length < 5 ) {
+      Option.empty[(Peakel,Array[Peak])]
     }
     else {
       
@@ -279,11 +279,11 @@ class UnsupervisedPeakelDetector(
       } else {
         
         val matchingPeakelIdx = matchingPeakelIdxOpt.get
-        val peakelPeaks = extractedPeaks.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 )
+        val peakelPeaks = extractedPeaks.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 ).toArray
         
-        val peakel = Peakel(index = 0, peaks = peakelPeaks.toArray )
+        val peakel = new Peakel( peakelPeaks )
         
-        Some( peakel )
+        Some( peakel, peakelPeaks )
       }
     }
     
@@ -296,13 +296,14 @@ class UnsupervisedPeakelDetector(
       // Remove all extracted peaks from usedPeakSet
       //peaksBuffer.foreach { p => usedPeakSet -= p }
       
-      if( peakelOpt.isEmpty ) {
+      if( peakelAndPeaksOpt.isEmpty ) {
         // Re-add input apexPeak to usedPeakSet
         // Marco: it may lead to missing peakel => we should not remove the apexPeak if no detected peakel
         //usedPeakSet += apexPeak
       } else {
         // Re-add peakel peaks to usedPeakMap
-        for( peak <- peakelOpt.get.definedPeaks)
+        val extractedPeaks = peakelAndPeaksOpt.get._2
+        for( peak <- extractedPeaks)
           usedPeakMap += peak -> true
       }
       
@@ -310,7 +311,7 @@ class UnsupervisedPeakelDetector(
     
     //progressComputer.setCurrentStepAsCompleted()
     
-    peakelOpt
+    peakelAndPeaksOpt.map(_._1)
   }
 
 }

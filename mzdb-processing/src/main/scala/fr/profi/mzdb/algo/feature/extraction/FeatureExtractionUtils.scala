@@ -16,7 +16,7 @@ object FeatureExtractionUtils {
   /** Detects peakels */ 
   // TODO: keep me ???
   def findPeakelsIndices(
-    peaks: Array[Peak],
+    peakel: Peakel,
     detectionAlgorithm: DetectionAlgorithm.Value, 
     minSNR: Float = 1.0f
   ): Array[Pair[Int, Int]] = {
@@ -24,9 +24,10 @@ object FeatureExtractionUtils {
     var peakelIndices: Array[(Int, Int)] = null 
     
     if ( detectionAlgorithm == DetectionAlgorithm.BASIC ) {
-      peakelIndices = BasicPeakelFinder.findPeakelsIndices(peaks.map(_.getIntensity toDouble), 2) 
+      peakelIndices = BasicPeakelFinder.findPeakelsIndices(peakel) 
     } else {
-      val wpf = new WaveletPeakelFinderNeumann(peaks)
+      // TODO: implement the peakel based signature method
+      val wpf = new WaveletPeakelFinderNeumann(peakel.toPeaks)
       wpf.ridgeFilteringParams.minSNR = minSNR
       peakelIndices = wpf.findPeakelsIndexes(asScanId = false) 
     }

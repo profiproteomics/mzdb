@@ -75,19 +75,19 @@ object MzTSVFeatureWriter {
         
         val olpFtJSONObject = new HashMap[String,Any]()
         olpFtJSONObject.put("id", bestOlpFt.id )
-        olpFtJSONObject.put("apex_scan", bestOlpFt.apexScanHeader.getInitialId )
-        olpFtJSONObject.put("first_scan", bestOlpFt.scanHeaders.head.getInitialId )
-        olpFtJSONObject.put("last_scan", bestOlpFt.scanHeaders.last.getInitialId )
+        olpFtJSONObject.put("apex_scan", bestOlpFt.getApexScanHeader.getInitialId )
+        olpFtJSONObject.put("first_scan", bestOlpFt.getScanHeaders.head.getInitialId )
+        olpFtJSONObject.put("last_scan", bestOlpFt.getScanHeaders.last.getInitialId )
         olpFtJSONObject.put("elution_time",bestOlpFt.elutionTime)
         olpFtJSONObject.put("charge",bestOlpFt.charge)
         olpFtJSONObject.put("moz", "%.8f".formatLocal(locale, bestOlpFt.mz) )
-        olpFtJSONObject.put("intensity_sum","%.1f".formatLocal(locale,bestOlpFt.intensitySum) )
+        olpFtJSONObject.put("intensity_sum","%.1f".formatLocal(locale,bestOlpFt.getIntensitySum) )
         olpFtJSONObject.put("area","%.1f".formatLocal(locale,bestOlpFt.area) )
         olpFtJSONObject.put("quality_score", "%.8f".formatLocal(locale,bestOlpFt.getMeanPeakelCorrelation) )
-        olpFtJSONObject.put("ms1_count",bestOlpFt.ms1Count)
+        olpFtJSONObject.put("ms1_count",bestOlpFt.getMs1Count)
         olpFtJSONObject.put("ms2_count",bestOlpFt.getMs2Count)
-        olpFtJSONObject.put("apex_ip",bestOlpFt.getIsotopicPatternAtApex() )
-        olpFtJSONObject.put("isotopic_patterns", bestOlpFt.getIsotopicPatterns() )
+        //olpFtJSONObject.put("apex_ip",bestOlpFt.getIsotopicPatternAtApex() )
+        //olpFtJSONObject.put("isotopic_patterns", bestOlpFt.getIsotopicPatterns() )
         
         //bestOlpFtJSONString = generate(olpFtJSONObject)
       }
@@ -99,31 +99,32 @@ object MzTSVFeatureWriter {
       if( peakelCorrel.isNaN == false ) { qualityScoreStr = "%.8f".formatLocal(locale,peakelCorrel) }
       
       var peakelsRatiosStr = ""
-      if( ft.peakelsCount > 1 && ft.peakelsAreaRatios != None ) {
+      if( ft.getPeakelsCount > 1 && ft.peakelsAreaRatios != None ) {
         val peakelsRatios = ft.peakelsAreaRatios.get.map { "%.2f".formatLocal(locale,_) }        
         //peakelsRatiosStr = generate(peakelsRatios)
       }
       
-      val ftValues = List( ft.id,
-                           ft.apexScanHeader.getInitialId,
-                           ft.scanHeaders.head.getInitialId,
-                           ft.scanHeaders.last.getInitialId,
-                           ft.elutionTime,
-                           ft.charge,
-                           "%.8f".formatLocal(locale,ft.mz),
-                           "%.1f".formatLocal(locale,ft.intensitySum),
-                           "%.1f".formatLocal(locale,ft.area),
-                           qualityScoreStr,
-                           peakelsRatiosStr,
-                           ft.peakelsCount,
-                           ft.ms1Count,
-                           ft.getMs2Count,
-                           //generate( ft.getIsotopicPatternAtApex ),
-                           "",//ipString,
-                           "%.2f".formatLocal(locale,ft.getOverlapRelativeFactor),
-                           overlapCorrelationStr,
-                           bestOlpFtJSONString
-                           )
+      val ftValues = List(
+        ft.id,
+        ft.getApexScanHeader.getInitialId,
+        ft.getScanHeaders.head.getInitialId,
+        ft.getScanHeaders.last.getInitialId,
+        ft.elutionTime,
+        ft.charge,
+        "%.8f".formatLocal(locale,ft.mz),
+        "%.1f".formatLocal(locale,ft.getIntensitySum),
+        "%.1f".formatLocal(locale,ft.area),
+        qualityScoreStr,
+        peakelsRatiosStr,
+        ft.getPeakelsCount,
+        ft.getMs1Count,
+        ft.getMs2Count,
+        //generate( ft.getIsotopicPatternAtApex ),
+        "",//ipString,
+        "%.2f".formatLocal(locale,ft.getOverlapRelativeFactor),
+        overlapCorrelationStr,
+        bestOlpFtJSONString
+      )
       
       val ftString = ftValues.mkString("\t")
       

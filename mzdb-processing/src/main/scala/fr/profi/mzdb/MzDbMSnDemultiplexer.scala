@@ -81,13 +81,16 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
     
     val allLcEntities = ms1Fts ++ msnPeakels
     
+    val peakelTimeByLcEntity = allLcEntities.map { lcEntity => lcEntity -> _extractWeightedAverageTime(lcEntity) } toMap
+    
     // Clusterize peakels having an apex separated by a given time value (10 secs)    
     val histoComputer = new EntityHistogramComputer[Product with Serializable with ILcContext]( allLcEntities, { entity  =>
-      entity.getElutionTime //peakel.apexScanContext.getElutionTime
+      //peakel.apexScanContext.getElutionTime
+      //entity.getElutionTime
+      peakelTimeByLcEntity(entity)
     })
     
-    val peakelTimes = allLcEntities.map { _extractWeightedAverageTime(_) }
-    
+    val peakelTimes = peakelTimeByLcEntity.values
     val timeRange = peakelTimes.max - peakelTimes.min
     val peakelBins = histoComputer.calcHistogram(nbins = (timeRange / 3f).toInt)
 
@@ -100,7 +103,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
       val peakelGroup = peakelBinGroup.flatMap(_._2)
       if (peakelGroup.isEmpty == false) {
         val meanTime = peakelBinGroup.map(_._1.center).sum / peakelBinGroup.length
-        val times = peakelGroup.map { _extractWeightedAverageTime(_) }
+        val times = peakelGroup.map { peakelTimeByLcEntity(_) }
 
         logger.debug(s"min time is ${times.min} and max time is ${times.max}")
         
@@ -120,7 +123,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
               precursorMz = ft.mz,
               precursorCharge = ft.charge,
               elutionTime = meanTime.toFloat,
-              peaks = msnPeakels.toArray.map(_.getApex).sortBy(_.getMz)
+              peaks = msnPeakels.toArray.map(_.getCursorAtApex().toPeak).sortBy(_.getMz)
             )
           }
         }
@@ -133,7 +136,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
   
   private def _extractWeightedAverageTime( peakelOrFeature: ILcContext ): Float = {
     peakelOrFeature match {
-      case p: Peakel  => p.weightedAverageTime
+      case p: Peakel  => p.calcWeightedAverageTime
       case f: Feature => f.weightedAverageTime
     }
   }

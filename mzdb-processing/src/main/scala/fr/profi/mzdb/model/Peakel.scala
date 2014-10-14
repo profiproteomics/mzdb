@@ -4,7 +4,7 @@ import beans.BeanProperty
 import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
 import fr.profi.util.math.linearInterpolation
 
-object Peakel {
+/*object Peakel {
   
   def calcPeaksIndexRange( peaks: Array[Peak] ): Pair[Int,Int] = {
     
@@ -46,7 +46,7 @@ object Peakel {
  * @param index the index
  * @param peaks the peaks
  */
-case class Peakel(
+case class Peakel1(
   @BeanProperty index: Int,
   //@BeanProperty var mz: Double,
   @BeanProperty peaks: Array[Peak]
@@ -186,7 +186,7 @@ case class Peakel(
   
   def getIntensities(): Array[Float] = getDefinedPeaks.map { _.intensity }
   
-  def calcPeakelsIntersection( otherPeakel: Peakel ): Pair[Array[Peak],Array[Peak]] = {
+  def calcPeakelsIntersection( otherPeakel: Peakel1 ): Pair[Array[Peak],Array[Peak]] = {
     val thisPeakBytTime = this.peakByElutionTime
     val otherPeakByTime = otherPeakel.peakByElutionTime
     val intersectingTimes = (thisPeakBytTime.keys ++ otherPeakByTime.keys)
@@ -195,11 +195,6 @@ case class Peakel(
       .map(_._1)
       .toArray.sorted
     Pair( intersectingTimes.map( thisPeakBytTime(_) ), intersectingTimes.map( otherPeakByTime(_) ) )    
-  }
-  
-  // TODO: remove from this class
-  def computeCorrelationWith( otherPeakel: Peakel ): Double = {    
-    FeatureScorer.calcPeakelCorrelation(this, otherPeakel)    
   }
   
   /** Just check elution peak in terms of duration in nb scans */
@@ -221,4 +216,268 @@ case class Peakel(
   def getScanId() : Int = { getApexScanContext().getScanId() }
   def getElutionTime(): Float = { getApexScanContext().getElutionTime() }
   
+}*/
+
+/** The Class Peakel.
+ * @author David Bouyssie
+ *
+ */
+case class Peakel(
+  @BeanProperty lcContexts: Array[ILcContext],
+  @BeanProperty mzValues: Array[Double],
+  @BeanProperty intensityValues: Array[Float],
+  @BeanProperty leftHwhmValues: Array[Float] = null,
+  @BeanProperty rightHwhmValues: Array[Float] = null
+) extends ILcContext {
+  
+  def this( peaks: Array[Peak] ) {
+    this(
+      if( peaks == null ) throw new IllegalArgumentException("peaks is null") else peaks.map(_.lcContext),
+      peaks.map(_.mz),
+      peaks.map(_.intensity),
+      if( peaks.count(_.leftHwhm > 0) == 0 ) null else peaks.map(_.leftHwhm),
+      if( peaks.count(_.rightHwhm > 0) == 0 ) null else peaks.map(_.rightHwhm)
+    )
+  }
+  
+  // Make some requirements
+  require( lcContexts != null && lcContexts.length > 0, "some LC contexts must be provided" )
+  require( mzValues != null && mzValues.length > 0, "some peaks must be provided" )
+  require( lcContexts.length == mzValues.length, "lcContexts and mzList must have the same size" )
+  require( mzValues.length == intensityValues.length, "mzList and intensityList must have the same size" )
+  
+  // Define other Peakel attributes
+  @BeanProperty val apexIndex = intensityValues.zipWithIndex.maxBy(_._1)._2
+  @BeanProperty var intensity = 0f
+  @BeanProperty var area = 0f
+  @BeanProperty var fwhm = 0f
+  //@BeanProperty var localMaxima: Array[Int] = null  
+  
+  // Update feature intensity, area and fwhm
+  this._integratePeakel()
+  
+  def getApexLcContext() = lcContexts(apexIndex)
+  def getFirstLcContext() = lcContexts.head
+  def getLastLcContext() = lcContexts.last
+  
+  def getApexElutionTime() = lcContexts(apexIndex).getElutionTime
+  def getApexMz() = mzValues(apexIndex)
+  def getApexIntensity() = intensityValues(apexIndex)
+  def getMz() = mzValues(apexIndex) // TODO: lazy val ???
+  def getElutionTimes() = lcContexts.map(_.getElutionTime)
+  def getLcContextIntensityPairs() = lcContexts.zip(intensityValues)
+  
+  def getCursorAtApex(): PeakelCursor = PeakelCursor(this, apexIndex)
+  def getNewCursor(): PeakelCursor = PeakelCursor(this, 0)
+  
+  protected def getPeakTime(pIdx: Int): Float = lcContexts(pIdx).getElutionTime()
+  /*protected def getIntensityElutionTimePair(pIdx: Int): Pair[Float,Float] = {
+    ( intensityValues(pIdx), lcContexts(pIdx).getElutionTime )
+  }*/
+  
+  protected def _integratePeakel() {
+    
+    val apexIntensity = getApexIntensity()
+    val halfApexIntensity = apexIntensity / 2
+    val lastTime = lcContexts.last.getElutionTime()
+    
+    //val intensitiesAboveHM = intensityList.zipWithIndex.filter(_._1 >= halfApexIntensity )
+    //print(apex.getLcContext().getElutionTime()+"\t")
+    
+    // --- Interpolate the time of peaks at the half maximum peakel intensity ---
+    val intensityElutionTimePairs = intensityValues.zip(getElutionTimes)
+    val leftTimeAtHalfApex = _interpolateFirstElutionTimeAtHalfMaximum(intensityElutionTimePairs, halfApexIntensity)
+    val rightTimeAtHalfApex = _interpolateFirstElutionTimeAtHalfMaximum(intensityElutionTimePairs.reverse, halfApexIntensity)
+    //print( mz + "\t"+ leftTimeAtHalfApex + "\t" + rightTimeAtHalfApex + "\t" + defPeaksAboveHM.length)
+    
+    // Search for the apex and integrate IPs
+    var computedSum = 0f
+    var computedArea = 0f
+    //var computedAAHM = 0f
+    var prevPeakTime = 0f
+    var prevPeakIntensity = 0f
+    //var prevPeakIntensityAboveHM = halfApexIntensity
+    //var prevPeakTimeAboveHM = leftTimeAtHalfApex
+    
+    val peakelCursor = new PeakelCursor( this )
+    
+    while( peakelCursor.next() ) {
+      
+      // Compute intensity sum
+      val intensity = peakelCursor.getIntensity()
+      val curPeakTime = peakelCursor.getElutionTime()
+
+      computedSum += intensity
+      
+      // Compute intensity area
+      if( peakelCursor.peakIndex > 0 ) {
+        val deltaTime = curPeakTime - prevPeakTime
+        computedArea += (intensity + prevPeakIntensity ) * deltaTime / 2
+      }
+      
+      // Compute intensity uahm
+      /*if (curPeakTime >= leftTimeAtHalfApex && prevPeakTimeAboveHM < lastTime ) {
+        
+        if( curPeakTime <= rightTimeAtHalfApex)  {
+          val deltaTime = curPeakTime - prevPeakTimeAboveHM
+          computedAAHM += (peak.intensity + prevPeakIntensityAboveHM - apexIntensity) * deltaTime / 2
+          prevPeakTimeAboveHM = curPeakTime
+          prevPeakIntensityAboveHM = peak.intensity
+        } else {
+          val deltaTime = curPeakTime - prevPeakTimeAboveHM
+          computedAAHM += (prevPeakIntensityAboveHM - halfApexIntensity) * deltaTime / 2
+          prevPeakIntensityAboveHM = halfApexIntensity
+          prevPeakTimeAboveHM = lastTime
+        }
+      }*/
+      
+      prevPeakTime = curPeakTime
+      prevPeakIntensity = intensity
+    }
+    
+    //println("\t" + computedArea + "\t" +computedAAHM )
+    
+    if( computedArea == 0 ) {
+      computedArea = computedSum
+      //computedAAHM = computedSum
+    }
+    
+    this.intensity = computedSum
+    this.area = computedArea
+    this.fwhm = rightTimeAtHalfApex - leftTimeAtHalfApex
+  }
+  
+  private def _interpolateFirstElutionTimeAtHalfMaximum( intensityTimePairs: Array[(Float, Float)], halfApexIntensity: Float): Float = {
+    
+    val firstPeakIndex2 = intensityTimePairs.indexWhere(_._1 >= halfApexIntensity)
+    val firstPeakIndex1 = if (firstPeakIndex2 > 0) firstPeakIndex2 - 1 else 0
+    
+    // If we don't have two distinct peaks, return time value of the first peakel peak
+    val firstPeakTime = if (firstPeakIndex2 <= firstPeakIndex1) getPeakTime(0)
+    else {
+      
+      // Linear interpolation
+      val interpolatedTime = linearInterpolation(
+        halfApexIntensity,
+        Seq( intensityTimePairs(firstPeakIndex1), intensityTimePairs(firstPeakIndex2) ),
+        fixOutOfRange = false
+      )
+      
+      interpolatedTime
+    }
+    
+    firstPeakTime
+  }
+  
+  def calcDuration(): Float = getLastLcContext.getElutionTime - getFirstLcContext.getElutionTime
+  
+  def calcFwhms(): Array[Float] = {
+    val( lh, rh ) = ( this.leftHwhmValues, this.rightHwhmValues )
+    if( lh == null || rh == null ) return null
+
+    this.lcContexts.indices.toArray.map(i => lh(i) + rh(i) )
+  }
+  
+  def calcWeightedAverageTime(): Float = {
+    var intensitySum = 0f
+    
+    val weightedTimeSum = intensityValues.zipWithIndex.foldLeft(0f) { (timeSum,intensityWithIdx) =>
+      val(intensity,index) = intensityWithIdx
+      intensitySum += intensity
+      timeSum + (lcContexts(index).getElutionTime * intensity)
+    }
+    
+    weightedTimeSum / intensitySum
+  }
+  
+  /*def calcPeakelsIntersection( otherPeakel: Peakel ): Pair[Array[Peak],Array[Peak]] = {
+    val thisPeakByTime = this.peakByElutionTime
+    val otherPeakByTime = otherPeakel.peakByElutionTime
+    val intersectingTimes = (thisPeakByTime.keys ++ otherPeakByTime.keys)
+      .groupBy(e=>e)
+      .withFilter(_._2.size == 2)
+      .map(_._1)
+      .toArray.sorted
+    
+    Pair( intersectingTimes.map( thisPeakBytTime(_) ), intersectingTimes.map( otherPeakByTime(_) ) )    
+  }*/
+  
+  /** Just check elution peak in terms of duration in nb scans */
+  def hasEnoughPeaks(minPeaksCount:Int): Boolean = {
+    
+    if (lcContexts.length < minPeaksCount)
+      return false
+    
+    true
+  }
+  
+  // ILcContext java interface implementation 
+  def getScanId() : Int = { getApexLcContext().getScanId() }
+  def getElutionTime(): Float = { getApexLcContext().getElutionTime() }
+  
+  /** Restrict to is inclusive here **/
+  def restrictToLcContextRange( minLcContext: ILcContext, maxLcContext: ILcContext ): Option[Peakel] = {
+    val matchingLcContexts = lcContexts.zipWithIndex.filter { case (lcCtx,idx) =>
+      val scanId = lcCtx.getScanId
+      scanId >= minLcContext.getScanId && scanId <= maxLcContext.getScanId
+    }
+    if( matchingLcContexts.length < 2 ) return None
+    
+    val firstIdx = matchingLcContexts.head._2
+    val lastBoundary = matchingLcContexts.last._2 + 1
+    
+    val peakel = Peakel(
+      lcContexts = lcContexts.slice(firstIdx, lastBoundary),
+      mzValues = mzValues.slice(firstIdx, lastBoundary),
+      intensityValues = intensityValues.slice(firstIdx, lastBoundary),
+      leftHwhmValues = if( leftHwhmValues == null ) null else leftHwhmValues.slice(firstIdx, lastBoundary),
+      rightHwhmValues = if( rightHwhmValues == null ) null else rightHwhmValues.slice(firstIdx, lastBoundary)
+    )
+    
+    Some( peakel )
+  }
+  
+  def toPeaks(): Array[Peak] = {
+    val cursor = new PeakelCursor(this)
+    
+    val peaks = new Array[Peak](this.lcContexts.length)
+    while( cursor.next() ) {
+      peaks(cursor.peakIndex) = cursor.toPeak()
+    }
+    
+    peaks
+  }
+  
+}
+
+case class PeakelCursor(
+  peakel: Peakel,
+  var peakIndex: Int = - 1
+) {
+  
+  def next(): Boolean = {
+    if( peakIndex == peakel.lcContexts.length - 1 ) false
+    else {
+      peakIndex += 1
+      true
+    }
+  }
+  def previous(): Boolean = {
+    if( peakIndex <= 0 ) false
+    else {
+      peakIndex -= 1
+      true
+    }
+  }
+  
+  def getLcContext(): ILcContext = peakel.lcContexts(peakIndex)
+  def getElutionTime(): Float = this.getLcContext().getElutionTime()
+  def getMz(): Double = peakel.mzValues(peakIndex)
+  def getIntensity(): Float = peakel.intensityValues(peakIndex)
+  def getLeftHwhm(): Option[Float] = Option( peakel.leftHwhmValues ).map( _(peakIndex) )
+  def getRightHwhm(): Option[Float] = Option( peakel.rightHwhmValues ).map( _(peakIndex) )
+  
+  def toPeak(): Peak = {
+    new Peak( getMz, getIntensity, getLeftHwhm.getOrElse(0f), getRightHwhm.getOrElse(0f), getLcContext )
+  }
 }

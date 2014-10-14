@@ -17,9 +17,6 @@ import fr.proline.api.progress._
 import scala.collection.mutable.HashSet
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 
-
-case class StepTimer(index: Int, stepIdentity: IProgressStepIdentity, executionTime: Double)
-
 /**
  *
  * @author David Bouyssie
@@ -98,10 +95,10 @@ class MzDbFeatureExtractor(
   implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
   
   
-  val mzFtStepTimers = new ArrayBuffer[StepTimer]
-  val t0 = System.currentTimeMillis().toDouble
-  var lastStep1 = t0
-  var i = 0
+//  val mzFtStepTimers = new ArrayBuffer[StepTimer]
+//  val t0 = System.currentTimeMillis().toDouble
+//  var lastStep1 = t0
+//  var i = 0
 //  this.progressComputer.registerOnProgressUpdatedAction( (stepIdentity, progress) => {
 //    val timeAfterStep = System.currentTimeMillis().toDouble
 //    val deltaTimeBetweenSteps = timeAfterStep - lastStep1
@@ -347,47 +344,51 @@ class MzDbFeatureExtractor(
       
 //    }
     
-    val featuresByApex = extractedFeatures.groupBy(_.peakels(0).getApex())//new HashMap[String, ArrayBuffer[Feature]]
+    val featuresByApex = extractedFeatures.groupBy { ft =>
+      val firstPeakel = ft.getFirstPeakel
+      val apexIdx = firstPeakel.apexIndex
+      ( firstPeakel.lcContexts(apexIdx), firstPeakel.mzValues(apexIdx) )
+    }//new HashMap[String, ArrayBuffer[Feature]]
 //    extractedFeatures.foreach{ f =>
 //      featuresByApex.getOrElseUpdate(f.peakels(0).getApex().toString(), new ArrayBuffer[Feature]()) += f
 //    }
     
-    this.logger.debug("nb features after identity filtering:" + featuresByApex.size);
+    this.logger.debug("nb features after duplicated apexes filtering:" + featuresByApex.size)
 
     val filteredFeatures = new ArrayBuffer[Feature](featuresByApex.size)
 
     for (fts <- featuresByApex.values) {
       // Sort duplicatedFts by descending elution duration
-      val sortedFts = fts.sortBy(-_.peakels(0).duration)
-      filteredFeatures += sortedFts(0)
+      val sortedFts = fts.sortBy( - _.getFirstPeakel.calcDuration )
+      filteredFeatures += sortedFts.head
     }
-    
+
     //progressPlan(MZFT_STEP6).incrementAndGetCount(1)
 
-    
-    
-//    //print some statistics on time
-//    val meanTimeByStep = stepTimers.groupBy(_.stepIdentity).map{case (step, timers) => 
-//        step -> timers.map(_.executionTime).sum
-//      }
-//    val tot = meanTimeByStep.values.sum
-//    
-//    meanTimeByStep.foreach{ case (step, time) =>
-//      println(s"${step.stepName}: ${time/tot * 100} % of time")
-//    }
-//    
-//    println
-    
-     val meanTimeByStepFt = mzFtStepTimers.groupBy(_.stepIdentity).map{case (step, timers) => 
+    //    //print some statistics on time
+    //    val meanTimeByStep = stepTimers.groupBy(_.stepIdentity).map{case (step, timers) => 
+    //        step -> timers.map(_.executionTime).sum
+    //      }
+    //    val tot = meanTimeByStep.values.sum
+    //    
+    //    meanTimeByStep.foreach{ case (step, time) =>
+    //      println(s"${step.stepName}: ${time/tot * 100} % of time")
+    //    }
+    //    
+    //    println
+
+    /*
+    val meanTimeByStepFt = mzFtStepTimers.groupBy(_.stepIdentity).map {
+      case (step, timers) =>
         step.stepName -> timers.map(_.executionTime).sum
-      }
-    val tot2 = meanTimeByStepFt.values.sum
-    
-    meanTimeByStepFt.keys.toList.sorted.foreach{ stepName =>
-      val time = meanTimeByStepFt(stepName)
-      println(s"${stepName}: ${time/tot2 * 100} % of time")
     }
-    
+    val tot2 = meanTimeByStepFt.values.sum
+
+    meanTimeByStepFt.keys.toList.sorted.foreach { stepName =>
+      val time = meanTimeByStepFt(stepName)
+      println(s"${stepName}: ${time / tot2 * 100} % of time")
+    }
+    */
     
 //    val PercentageCycleByStep = new HashMap[IProgressStepIdentity, Double]()
 //    for (i <- 0 until stepTimers.size by 4) {
@@ -396,7 +397,6 @@ class MzDbFeatureExtractor(
     
 
     filteredFeatures
-
   }
 
   private def _getRSD(rsdProvider: RunSliceDataProvider, rsNum: Int): RunSliceData = {

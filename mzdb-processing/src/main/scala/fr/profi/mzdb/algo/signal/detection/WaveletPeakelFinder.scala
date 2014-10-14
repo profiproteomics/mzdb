@@ -394,22 +394,23 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
       val maxIdx = math.max(p1.maxIdx, p2.maxIdx)
       val apexIndex = if (p1.intensityMax > p2.intensityMax) p1.apexIndex else p2.apexIndex
       val peakApex = this.peaks(apexIndex)
-      new CwtPeakel(index = apexIndex, //index on the original ydata
-                    peaks = peaks.toArray,
-                    apexLcContext = peakApex.getLcContext(),
-                    minIdx = minIdx,
-                    startLcContext = peaks.head.getLcContext(),
-                    maxIdx = maxIdx,
-                    endLcContext = peaks.last.getLcContext(),
-                    xMax = peakApex.getLcContext().getElutionTime,
-                    intensityMax = peakApex.getIntensity(), //
-                    centroid = peakApex.getMz().toFloat,  
-                    snr = Array(p1, p2).map(_.snr).sum / 2 )
+      
+      new CwtPeakel(
+        peaks = peaks.toArray,
+        apexIndex = apexIndex, //index on the original ydata
+        apexLcContext = peakApex.getLcContext(),
+        minIdx = minIdx,
+        startLcContext = peaks.head.getLcContext(),
+        maxIdx = maxIdx,
+        endLcContext = peaks.last.getLcContext(),
+        xMax = peakApex.getLcContext().getElutionTime,
+        intensityMax = peakApex.getIntensity(), //
+        centroid = peakApex.getMz().toFloat,  
+        snr = Array(p1, p2).map(_.snr).sum / 2
+      )
     }
     
-  
-    
-    var sortedPeakelsByMinTime = peakels.sortBy(_.firstScanContext.getElutionTime).toBuffer
+    var sortedPeakelsByMinTime = peakels.sortBy(_.getFirstLcContext().getElutionTime).toBuffer
     var i = 0
     var N = sortedPeakelsByMinTime.length
     breakable {
@@ -425,7 +426,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
           for (i <- 0 to 1) sortedPeakelsByMinTime.remove(0)
           sortedPeakelsByMinTime.prepend(merged)
           N -= 1
-          sortedPeakelsByMinTime = sortedPeakelsByMinTime.sortBy(_.firstScanContext.getElutionTime)
+          sortedPeakelsByMinTime = sortedPeakelsByMinTime.sortBy(_.getFirstLcContext().getElutionTime)
           i = 0
         }
         i += 1

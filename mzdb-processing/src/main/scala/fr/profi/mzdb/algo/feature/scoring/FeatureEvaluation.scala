@@ -393,12 +393,14 @@ object FeatureEvaluator  {
     val isotopesCount = f.getPeakelsCount
     val isotopesPattern = FeatureScorer.calcRmsdIsotopicPattern(f)
     val peakelsWidth = FeatureScorer.calcStdDevPeakelsWidth(f)
-    val peakelsCorrelation = FeatureScorer.calcMeanPeakelCorrelation(f.getPeakels).toFloat
-    val peakelsApexDeviation = FeatureScorer.calcMeanPeakelsApexDeviation(f.getPeakels)
+    
+    val peakels = f.getPeakels()
+    val peakelsCorrelation = FeatureScorer.calcMeanPeakelCorrelation(peakels).toFloat
+    val peakelsApexDeviation = FeatureScorer.calcMeanPeakelsApexDeviation(peakels)
     //println("peakelsCorrelation :" + peakelsCorrelation)
 
     FeatureQualityVector (
-      f.ms1Count,
+      f.getMs1Count,
       mzPrecision = FeatureScorer.calcStdDevPeakelsMzPrecision(f),
       shape,
       //signalFluctuation,
@@ -411,15 +413,14 @@ object FeatureEvaluator  {
       //peakelsAmplitude = FeatureScorer.calcPeakelsAmplitude(f),
       peakelsApexDeviation,
       f.getOverlapPMCC,
-      FeatureScorer.calcOverlappingFactor(f, 5).toFloat)
+      FeatureScorer.calcOverlappingFactor(f, 5).toFloat
+    )
   }
   
   def evaluateQualityVector(f: Feature, qualityVector: FeatureQualityVector, thresholds: QualityVectorThresholds ): FeatureEvaluation = {               											  
     val assessment = FeatureQualityEvaluator.evaluate(qualityVector, thresholds)
     FeatureEvaluation(f, qualityVector, assessment, qualityVector.overlappingFactor == 0)
   }
-  
- 
  
 }
 

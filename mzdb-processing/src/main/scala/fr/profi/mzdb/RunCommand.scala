@@ -262,7 +262,7 @@ object RunCommand extends App with Logging {
         case (mz, peaks, (rtmin, rtmax)) =>
           var peakelIndexes: Array[(Int, Int)] = null
           if (algo == "basic") {
-            peakelIndexes = BasicPeakelFinder.findPeakelsIndices(peaks); 
+            peakelIndexes = BasicPeakelFinder.findPeakelsIndices(peaks);
           } else if (algo == "wavelet") {
             val wpf = new WaveletDetectorDuMethod(peaks)
             wpf.ridgeFilteringParams.minSNR = 0.0f
@@ -325,14 +325,14 @@ object RunCommand extends App with Logging {
             val filteredPeaks = smoothedPeaks.filter(p => p.getIntensity() > threshold)
 
             // Build a peakel
-            val peakel = new Peakel(0, filteredPeaks) //.map(Some(_)))
+            val peakel = new Peakel(filteredPeaks) //.map(Some(_)))
             /*
           // Compute the duration
           val duration = peakTime(filteredPeaks.last) - peakTime(filteredPeaks.head)
           
           apex.getMz(), peakTime(apex), duration, sumPeaks(filteredPeaks),
           */
-            mz -> Some(DetectedPeak(peakel.mz, apex, peakel.duration, peakel.area, peakel.fwhm))
+            mz -> Some(DetectedPeak(peakel.getMz, apex, peakel.calcDuration, peakel.area, peakel.fwhm))
           } else mz -> None
 
           intSum
@@ -422,7 +422,7 @@ object RunCommand extends App with Logging {
       }.toArray
     }
 
-    val mzDb = new MzDbReader( new java.io.File(mzdbFilePath), true)
+    val mzDb = new MzDbReader(new java.io.File(mzdbFilePath), true)
 
     logger.info("Hello Predicted Time Extractor")
 
@@ -431,7 +431,7 @@ object RunCommand extends App with Logging {
 
     val rsIter = mzDb.getRunSliceIterator(1)
     logger.info("got RS iterator")
-    
+
     val rsdProv = new RunSliceDataProvider(rsIter)
     val mzTolPPM = 10
 
@@ -445,7 +445,7 @@ object RunCommand extends App with Logging {
     logger.info("Ended")
 
   }
-  
+
   protected def smoothIntensities(intensities: Array[Float]): Array[Float] = {
     val times = 3
     import mr.go.sgfilter.SGFilter
@@ -462,7 +462,7 @@ object RunCommand extends App with Logging {
 
     smoothedIntensities
   }
-  
+
   /**
    *
    */

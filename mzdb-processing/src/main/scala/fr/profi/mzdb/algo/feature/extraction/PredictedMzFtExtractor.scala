@@ -40,15 +40,15 @@ class PredictedMzFtExtractor(
 
     //build cwt, if no good ...
     val peakelFinder = new WaveletPeakelFinderNeumann(xic) //gaussainfirstder (Coombes) by default
-    val peakels = peakelFinder.findCwtPeakels()
+    val cwtPeakels = peakelFinder.findCwtPeakels()
 
     //return Option[Feature] if cwt did not found any peaks
-    if (peakels.isEmpty)
+    if (cwtPeakels.isEmpty)
       return Option.empty[Feature]
 
     //take the highest peakel since we have to return only one feature ?
     //by elutionTime ?
-    val highestPeakel = peakels.sortBy(x => math.abs(xic(x.index).getLcContext().getElutionTime() - putativeFt.getElutionTime)).head
+    val highestPeakel = cwtPeakels.sortBy(x => math.abs(xic(x.apexIndex).getLcContext().getElutionTime() - putativeFt.getElutionTime)).head
 
     val isotopicPatterns = new Array[Option[IsotopicPattern]](highestPeakel.maxIdx - highestPeakel.minIdx + 1)
 
@@ -63,7 +63,7 @@ class PredictedMzFtExtractor(
     // FIXME: check why ip is null => it should not be
     val definedIps = isotopicPatterns.filter(ip => ip != null && ip.isDefined).map(_.get)
 
-    // use of the constructor that build peakels
+    // TODO: use of the constructor that take peakels
     val f = new Feature(
       mz = moz,
       charge = charge,

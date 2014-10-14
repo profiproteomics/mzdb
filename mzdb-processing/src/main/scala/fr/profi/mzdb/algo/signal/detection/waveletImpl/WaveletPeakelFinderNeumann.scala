@@ -198,8 +198,9 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
         val intensityMax = intensities.max
         val xmax = xvalues(intensities.indexOf(intensityMax))
 
-        peakels += new CwtPeakel(index = intensities.indexOf(intensityMax),
+        peakels += new CwtPeakel(
           peaks = slicedPeaks toArray,
+          apexIndex = intensities.indexOf(intensityMax),
           apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
           minIdx = minIdx,
           startLcContext = peaks(minIdx).getLcContext,
@@ -208,7 +209,8 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
           xMax = xmax toFloat,
           intensityMax = intensityMax toFloat,
           centroid = centroid toFloat,
-          snr = ridge.SNR)
+          snr = ridge.SNR
+        )
       }
 
     }

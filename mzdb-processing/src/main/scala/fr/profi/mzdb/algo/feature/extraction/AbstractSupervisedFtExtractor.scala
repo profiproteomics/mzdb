@@ -55,64 +55,75 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     //this.normalizeIPs( ips )
 
     // Build a peakels, automatically remove empty peakels
-    val peakels = Feature.buildPeakels(ips)
+    val indexedPeakels = Feature.buildIndexedPeakels(ips)
 
-    if (peakels.isEmpty)
+    if (indexedPeakels.isEmpty)
       return Option.empty[Feature]
 
-    var tmpFt = new Feature(
+    val tmpFt = new Feature(
       putativeFt.id,
       putativeFt.mz,
       putativeFt.charge,
-      peakels,
+      indexedPeakels,
       isPredicted = putativeFt.isPredicted
     )
     
     // Find maxpeakelIndex
-    val maxPeakelIndex = if (maxTheoreticalPeakelIndex < tmpFt.peakelsCount) maxTheoreticalPeakelIndex else 0
+    val maxPeakelIndex = if (maxTheoreticalPeakelIndex < tmpFt.getPeakelsCount) maxTheoreticalPeakelIndex else 0
 
     // Get the defined peaks
-    val maxPeakel = tmpFt.peakels(maxPeakelIndex)
+    val maxPeakel = tmpFt.getPeakel(maxPeakelIndex)
 
     // Check definedPeaks length > 3 and peaks length >= 5
-    if ( maxPeakel.isGoodForPeakDetection(minConsecutiveScans) == false )
+    if ( maxPeakel.hasEnoughPeaks(minConsecutiveScans) == false )
       return Option.empty[Feature]
 
     //-------- REFINE PEAKEL OPTIONAL STEP --------
     if ( ftXtractAlgoConfig.refineDetection ) {
 
-      val (peaks, definedPeaks) = (maxPeakel.peaks, maxPeakel.definedPeaks)
+      //val (peaks, definedPeaks) = (maxPeakel.peaks, maxPeakel.definedPeaks)
 
       // Detect peaks
-      val peakelIndexes = findPeakelsIndices(definedPeaks, ftXtractAlgoConfig.detectionAlgorithm, ftXtractAlgoConfig.minSNR)
-
+      val peakelsIndices = findPeakelsIndices(maxPeakel, ftXtractAlgoConfig.detectionAlgorithm, ftXtractAlgoConfig.minSNR)
+      val elutionTimes = maxPeakel.lcContexts.map(_.getElutionTime)
+      
       // Treat matching Idx
-      var matchingPeakIdx: (Int, Int) = null
+      var matchingPeakelIdxPair: (Int, Int) = null
 
       // Note if we are not good at peak extraction, no matching peak will be found, ms2 event outside of xic
-      val filteredIndexes = peakelIndexes.filter(idx => ftTime >= definedPeaks(idx._1).getLcContext.getElutionTime &&
-        ftTime <= definedPeaks(idx._2).getLcContext.getElutionTime)
+      val filteredIndices = peakelsIndices.filter { idx => 
+        ftTime >= elutionTimes(idx._1) &&
+        ftTime <= elutionTimes(idx._2)
+      }
 
-      if (!filteredIndexes.isEmpty) {
+      if (!filteredIndices.isEmpty) {
+        val maxPeakelIndices = maxPeakel.lcContexts.indices
+        
         // Find the closest peakel in time domain of the ms2 event ?
-        matchingPeakIdx = filteredIndexes.minBy { idx =>
-          val apex = definedPeaks.slice(idx._1, math.min(idx._2, definedPeaks.length - 1)).maxBy(_.getIntensity)
-          math.abs(ftTime - apex.getLcContext.getElutionTime)
+        matchingPeakelIdxPair = filteredIndices.minBy { idxPair =>
+          
+          // Search for the apex index
+          val filteredMaxPeakelIndices = maxPeakelIndices.slice(idxPair._1, math.min(idxPair._2, peakelsIndices.length - 1) + 1)
+          val apexIdx = filteredMaxPeakelIndices.maxBy( maxPeakel.intensityValues(_) )
+          
+          // Compute the absolute time diff between feature and peakel apex
+          math.abs(ftTime - maxPeakel.lcContexts(apexIdx).getElutionTime)
         }
       }
 
       // If not matching peaks
-      if (matchingPeakIdx == null)
+      if (matchingPeakelIdxPair == null)
         return Option.empty[Feature]
 
-      val ipsIndexes = (peaks.indexOf(definedPeaks(matchingPeakIdx._1)), peaks.indexOf(definedPeaks(matchingPeakIdx._2)))
+      // TODO: check what was the puurpose of this
+      //val ipsIndexes = (peaks.indexOf(definedPeaks(matchingPeakIdx._1)), peaks.indexOf(definedPeaks(matchingPeakIdx._2)))
 
-      val ft = tmpFt.restrictToPeakelIdxRange(ipsIndexes)
-
-      if (ft == null)
-        return Option.empty[Feature]
-
-      Some(ft)
+      val lcContexts = maxPeakel.getLcContexts()
+      
+      tmpFt.restrictToLcContextRange(
+        lcContexts(matchingPeakelIdxPair._1),
+        lcContexts(matchingPeakelIdxPair._2)
+      )
 
     } else { Some(tmpFt)  }
   } //end extractFeature

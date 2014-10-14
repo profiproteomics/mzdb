@@ -42,7 +42,7 @@ class Ms2DrivenFtExtractor(
     }
     
     val ft = ftAsopt.get
-    if (ft.peakelsCount <= 1)
+    if (ft.getPeakelsCount <= 1)
       return Option.empty[Feature]
     
 //    val overlapStatus = this.overlappingFeaturesExtractor.extractOverlappingFeatures(ft, putativeFt.theoreticalIP, pklTree)

@@ -38,13 +38,9 @@ object SQLiteXicStorer extends AutoCloseable {
   
   connection.exec("BEGIN TRANSACTION")
 
-  
-  def insertXic(xic: Peakel) = {
-    val t = xic.definedPeaks.map(x=> x.getLcContext().getElutionTime())
-    val i = xic.definedPeaks.map(x=> x.getIntensity())
-    val x = createFeatureChart(t, i)
-    connection.exec(s"INSERT INTO xics VALUES (?, ${xic.mz}, ${xic.apexScanContext.getElutionTime}, ${t.length}, ${x})") //, true)
-
+  def insertXic(peakel: Peakel) = {
+    val x = createFeatureChart(peakel.getElutionTimes(), peakel.intensityValues)
+    connection.exec(s"INSERT INTO xics VALUES (?, ${peakel.getMz}, ${peakel.getElutionTime}, ${peakel.lcContexts.length}, ${x})") //, true)
   }
   
   def close() = { 
@@ -134,7 +130,7 @@ object SQLiteFeatureStorer {
     features.sortBy(_.id).foreach { ft => 
       val charts = new Array[Array[Byte]](6)
       for (i <- 0 until 6) {
-        if (i < ft.peakelsCount) {
+        if (i < ft.getPeakelsCount) {
           charts(i) = createFeatureChart(ft.getXIC(i))
         } else {
           charts(i) = createFeatureChart(Array[Float](), Array[Float]())
@@ -147,9 +143,9 @@ object SQLiteFeatureStorer {
       j+=1; stmt.bind(j, ft.mz )
       j+=1; stmt.bind(j, ft.elutionTime )
       j+=1; stmt.bind(j, ft.area )
-      j+=1; stmt.bind(j, ft.peakels(0).getApex().getIntensity() + ft.peakels(1).getApex().getIntensity())
-      j+=1; stmt.bind(j, ft.ms1Count )
-      j+=1; stmt.bind(j, ft.peakelsCount )
+      j+=1; stmt.bind(j, ft.getPeakel(0).getApexIntensity + ft.getPeakel(1).getApexIntensity)
+      j+=1; stmt.bind(j, ft.getMs1Count )
+      j+=1; stmt.bind(j, ft.getPeakelsCount )
       j+=1; stmt.bind(j, charts(0))
       j+=1; stmt.bind(j, charts(1))
       j+=1; stmt.bind(j, charts(2))

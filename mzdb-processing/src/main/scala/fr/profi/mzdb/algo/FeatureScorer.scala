@@ -11,7 +11,7 @@ import fr.profi.mzdb.model.AveragineComputer
 //import fr.profi.mzdb.model.MercuryLauncher
 import util.control.Breaks._
 
-
+// TODO: remove this file
 object FeatureScorer {
   
   // TODO: ms1_count
@@ -22,7 +22,7 @@ object FeatureScorer {
   /*****************************************************************
    *  Estimation of the correlation factor
    ****************************************************************/
-  def calcMeanPeakelCorrelation( peakels: Seq[Peakel] ): Double = {
+  /*def calcMeanPeakelCorrelation( peakels: Seq[Peakel] ): Double = {
     
     val peakelsCount = peakels.length 
     if( peakelsCount < 2 ) return 0.0
@@ -33,8 +33,9 @@ object FeatureScorer {
     }
     
     peakelCorrSum / (peakelsCount-1)
-  }
+  }*/
   
+  /*
   def calcPeakelCorrelation( firstPeakel: Peakel, secondPeakel: Peakel ): Double = {
     
     val secondPeakelPeakByTime = secondPeakel.getPeakByElutionTime
@@ -59,21 +60,21 @@ object FeatureScorer {
     }
 
     return VectorSimilarity.pearsonCorrelation( firstPeakelIntensities.toArray, secondPeakelIntensities.toArray );
-  }
+  }*/
   
   
   /*****************************************************************
    *  Estimation of the overlapping factor
    ****************************************************************/
-  def calcMeanOverlappingFactor( peakels: Seq[Peakel] ) : Double = {
+  /*def calcMeanOverlappingFactor( peakels: Seq[Peakel] ) : Double = {
     if (peakels.isEmpty)
       return 0d
     var m = 0d
     peakels.foreach(p => m += calcOverlappingFactor(p))
     m / peakels.length
-  }
+  }*/
   
-  def calcOverlappingFactor ( peakel : Peakel, baseline : Float = 0): Double = {
+  /*def calcOverlappingFactor ( peakel : Peakel, baseline : Float = 0): Double = {
     var of = 0d
     val (mz, intens) = (peakel.getApex.getMz(), peakel.getApex.getIntensity())
     //the intersection point must at the end of the first peakel and at the beginning of the second peakel
@@ -93,7 +94,7 @@ object FeatureScorer {
       of += intens / firstIntens
     }
     of
-  }
+  }*/
   
   /*****************************************************************
    *  Estimation of the quality of the Isotopic Pattern

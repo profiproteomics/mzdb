@@ -117,12 +117,16 @@ class FeatureExtractor(
       val ms2ScanIds = new ArrayBuffer[Int]
       
       // Retrieve the first peakel
-      val firstPeakel = foundFt.peakels(0)
+      val firstPeakel = foundFt.getFirstPeakel()
 
       // Iterate over each peak of this peakel
-      for( peak <- firstPeakel.definedPeaks ) {
+      val peakCursor = firstPeakel.getNewCursor()
+      while( peakCursor.next() ) {        
+        val lcContext = peakCursor.getLcContext()
+        val peakMz = peakCursor.getMz
+        
         // Retrieve the cycles surrounding the next MS2 scans
-        val thisScanId = peak.getLcContext.getScanId
+        val thisScanId = lcContext.getScanId
         val thisCycleNum = scanHeaderById(thisScanId).getCycle
         val nextCycleNum = thisCycleNum + 1
 
@@ -137,7 +141,7 @@ class FeatureExtractor(
             // TODO: log charge conflicts
             if( scanH.getMsLevel == 2 && scanH.getPrecursorCharge() == foundFt.charge ) {
               // Compute m/z difference between the current peak and MS2 scan precursor m/z
-              val mzDiffPPM = MsUtils.DaToPPM(peak.getMz, (scanH.getPrecursorMz - peak.getMz).abs )
+              val mzDiffPPM = MsUtils.DaToPPM(peakMz, (scanH.getPrecursorMz - peakMz).abs )
               if( mzDiffPPM < mzTolPPM ) {
                 ms2ScanIds += scanId
               }
@@ -152,16 +156,18 @@ class FeatureExtractor(
     }
 
     def _getIntensitySumOfSurroundingPeak(ms2scanID: Long, f: Feature): Float = {
-      val definedPeaks = f.peakels(0).definedPeaks
-      val (p1, p2) = (
-        definedPeaks.find(_.getLcContext().getScanId() < ms2scanID),
-        definedPeaks.find(_.getLcContext().getScanId() > ms2scanID)
-      )
+      var( intensityBeforeMs2, intensityAfterMs2 ) = (0f,0f)
+      val peakCursor = f.getFirstPeakel().getNewCursor()
       
-      Array(p1, p2)
-        .withFilter(_.isDefined)
-        .map(_.get)
-        .foldLeft(0f) { (s, peak) => s + peak.getIntensity }
+      while( peakCursor.next() ) {
+        val intensity = peakCursor.getIntensity
+        val scanId = peakCursor.getLcContext.getScanId
+
+        if( scanId < ms2scanID ) intensityBeforeMs2 = intensity
+        else if( scanId > ms2scanID ) intensityAfterMs2 = intensity
+      }
+      
+      intensityBeforeMs2 + intensityAfterMs2
     }
     
     // TODO: filter out ms2 events linked to multiple features

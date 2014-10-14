@@ -6,6 +6,8 @@ import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.mzdb.model._
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.ms.model.TheoreticalIsotopePattern
+import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
+import java.util.concurrent.atomic.AtomicLong
 
 case class OverlappingStatus(
     
@@ -24,9 +26,8 @@ case class OverlappingStatus(
 
 
 object OverlappingFeaturesExtractor {
-  var nonMonoCount = 0
+  var nonMonoCount = new AtomicLong
 }
-
 
 /**
  * Straightforward implementation
@@ -73,7 +74,7 @@ class OverlappingFeaturesExtractor(
   ): OverlappingStatus = {
     
     require(
-      ft.peakels.isEmpty == false,
+      ft.indexedPeakels.isEmpty == false,
       "can not extract overlapping features of an empty feature. Returning Error"
     )
 
@@ -96,11 +97,12 @@ class OverlappingFeaturesExtractor(
     require(maxIpShift > 0, "maximum IP shift must be strictly positive")
     
     // retrive first peakel
-    val firstFtPeakel = ft.peakels.head
+    val firstFtPeakel = ft.getFirstPeakel()
+    val firstFtMz = firstFtPeakel.getMz
     //getting the maxScanId, the idea is to use extractIsotopicPattern and use only first peakel
-    val maxScanId = firstFtPeakel.getApexScanContext().getScanId()
+    val maxScanId = firstFtPeakel.getApexLcContext().getScanId()
 
-    //if we do not have a defined scanId, we stop                                          
+    //if we do not have a defined scanId, we stop                                
     require(maxScanId != 0)
 
     //val threshMzMin = ft.mz  - ( (ft.mz * this.mzTolPPM ) / 1e6 )
@@ -120,7 +122,7 @@ class OverlappingFeaturesExtractor(
           
           //this.logger.debug(s"z: ${z}, ipShift: ${ipShift}");
           //try to restrict nb features to check
-          val mzToExtract = firstFtPeakel.mz + ((ipShift + ipShift * 0.0027).toDouble / z)
+          val mzToExtract = firstFtMz + ((ipShift + ipShift * 0.0027).toDouble / z)
 
           //if (mzToExtract > threshMzMax)
           //  break
@@ -195,7 +197,7 @@ class OverlappingFeaturesExtractor(
       // Sort overlapping features by ascending area of peakel preceding the overlapping peakel
       // TODO: find an other way to select the best one
       val sortedOvlFts = bestOvlFts.sortBy { ovlFt =>
-        ovlFt.feature.peakels( math.max(ovlFt.overlappingPeakelIndex - 1,0) ).area
+        ovlFt.feature.getPeakel( math.max(ovlFt.overlappingPeakelIndex - 1,0) ).area
       }
       
       ft.bestOverlappingFeature = sortedOvlFts.last
@@ -207,8 +209,8 @@ class OverlappingFeaturesExtractor(
   private def _selectBestOverlappingFeatures(ft: Feature, ovlFts: Array[Feature]): Array[OverlappingFeature] = {
 
     val bestOvlFeatures = new ArrayBuffer[OverlappingFeature]
-    val monoFtPeakel = ft.peakels.head
-    val currFtMonoMz = monoFtPeakel.mz
+    val monoFtPeakel = ft.getFirstPeakel()
+    val currFtMonoMz = monoFtPeakel.getMz
     val minCorr = this.overlapXtractConfig.minPeakelCorrToMono
     val minApexDistance = this.overlapXtractConfig.minApexDistance
     val minAveragineRatio = this.overlapXtractConfig.minAveragineRatio
@@ -227,8 +229,8 @@ class OverlappingFeaturesExtractor(
 //         s"${ft.mz} and charge: ${ft.charge}. \nConsidering the closest in mz range..."
 //        )
         
-        val previousOvlFtPeakel = ovlFt.peakels.minBy(p => math.abs(p.mz + (1.0027 / ovlFt.getCharge) - currFtMonoMz))//insideTolPeakels.minBy(p => math.abs(currFtMonoMz - p.mz))
-        val previousOvlFtPeakelIndex = previousOvlFtPeakel.index
+        val prevOvlFtPeakelWithIdx = ovlFt.indexedPeakels.minBy( pWithIdx => math.abs(pWithIdx._1.getMz + (1.0027 / ovlFt.getCharge) - currFtMonoMz))//insideTolPeakels.minBy(p => math.abs(currFtMonoMz - p.mz))
+        val( prevOvlFtPeakel, prevOvlFtPeakelIdx ) = prevOvlFtPeakelWithIdx
 
         //assume they are the same XIC now
         //val previousOvlFtIndex = math.min(math.max(previousOvlFtPeakelIndex - 1, 0), ovlFt.peakelsCount - 1)
@@ -241,11 +243,11 @@ class OverlappingFeaturesExtractor(
 //          val previousOvlFtPeakel = ovlFt.peakels(previousOvlFtIndex)
 
         val apexDistanceInCycle = math.abs(
-          this.scanHeaderById(previousOvlFtPeakel.getApexScanContext.getScanId).getCycle -
-          this.scanHeaderById(monoFtPeakel.getApexScanContext.getScanId).getCycle
+          this.scanHeaderById(prevOvlFtPeakel.getApexLcContext.getScanId).getCycle -
+          this.scanHeaderById(monoFtPeakel.getApexLcContext.getScanId).getCycle
         )
 
-        val correlation = previousOvlFtPeakel.computeCorrelationWith(monoFtPeakel) toFloat
+        val correlation = FeatureScorer.calcPeakelCorrelation(prevOvlFtPeakel, monoFtPeakel).toFloat
         //experimental intensity quotient vs averagine
         val theoIP = IsotopePatternInterpolator.getTheoreticalPattern(ovlFt.mz, ovlFt.charge)
         val abundances = theoIP.abundances
@@ -256,7 +258,7 @@ class OverlappingFeaturesExtractor(
         
         // Compute averagine quotient between the the 'new' monoisotope and currentMonoisotope
         val theoriticalQuotient = abundances(monoisotopicIndex) / abundances(monoisotopicIndex + 1)
-        val observedQuotient = previousOvlFtPeakel.area / monoFtPeakel.area
+        val observedQuotient = prevOvlFtPeakel.area / monoFtPeakel.area
         val quotient = if (observedQuotient > theoriticalQuotient) observedQuotient / theoriticalQuotient else theoriticalQuotient / observedQuotient
 
         //sign of death for the feature
@@ -265,12 +267,12 @@ class OverlappingFeaturesExtractor(
             quotient < minAveragineRatio && quotient > 0.75) {
           
           //logger.info("Wrong feature in a cross-assignment (wrong monoisotopic selection). Ignore it...")
-          ft.hasMonoPeakel = false
+          ft.hasMonoPeakel = false          
           this.logger.trace(s" apexDist ${apexDistanceInCycle}, correlation: ${correlation}, average ratio: ${quotient}")
-          OverlappingFeaturesExtractor.nonMonoCount += 1
+          OverlappingFeaturesExtractor.nonMonoCount.incrementAndGet()
           //println(s"nonMonoCount : ${OverlappingFeaturesExtractor.nonMonoCount}")
           // 0 means mono-isotopic in overlapped feature
-          bestOvlFeatures += OverlappingFeature(ovlFt, 0, previousOvlFtPeakelIndex, apexDistanceInCycle, correlation, quotient) //ovlFt
+          bestOvlFeatures += OverlappingFeature(ovlFt, 0, prevOvlFtPeakelIdx, apexDistanceInCycle, correlation, quotient) //ovlFt
         }
 //        }
 //        }

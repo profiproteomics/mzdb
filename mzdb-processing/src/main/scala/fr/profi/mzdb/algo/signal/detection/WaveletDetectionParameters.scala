@@ -6,29 +6,39 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.utils.math.wavelet.MotherWavelet
 
 /** result of the algorithm */
-class CwtPeakel( override val index:Int,
-                 override val peaks: Array[Peak],
-                 val apexLcContext: ILcContext,
-                 
-                 val minIdx: Int,
-                 val startLcContext: ILcContext,
-                 
-                 val maxIdx: Int,
-                 val endLcContext: ILcContext,
-                 
-                 val xMax: Float,
-                 
-                 val intensityMax: Float, //
-                 
-                 val centroid: Float,  
-                 
-                 val snr: Float,
-                 
-                 val coeffsAtMaxScale: Array[Pair[Peak, Double]]= null
-               ) extends Peakel( index:Int, peaks:Array[Peak]) {
+case class CwtPeakel(
+  /*override val lcContexts: Array[ILcContext],
+  override val mzValues: Array[Double],
+  override val intensityValues: Array[Float],
+  override val leftHwhmValues: Array[Float] = null,
+  override val rightHwhmValues: Array[Float] = null,*/
+  val peaks: Array[Peak],
+  
+  val apexIndex: Int,
+  val apexLcContext: ILcContext,
+ 
+  val minIdx: Int,
+  val startLcContext: ILcContext,
+ 
+  val maxIdx: Int,
+  val endLcContext: ILcContext,
+ 
+  val xMax: Float,
+ 
+  val intensityMax: Float, //
+   
+  val centroid: Float,  
+   
+  val snr: Float,
+   
+  val coeffsAtMaxScale: Array[Pair[Peak, Double]] = null
+) {//extends Peakel( lcContexts, mzValues, intensityValues, leftHwhmValues, rightHwhmValues ) {
+  
+  def getFirstLcContext() = peaks.head.getLcContext()
+  def getLastLcContext() = peaks.last.getLcContext()
   
   override def toString(): String = {
-    "apex:" + index + ", minIdx:" + minIdx + ", maxIdx:" + maxIdx + ", xmax:" + 
+    "minIdx:" + minIdx + ", maxIdx:" + maxIdx + ", xmax:" + 
     xMax + ", intensityMax:" + intensityMax + ", centroid:" + centroid + ", snr:" + snr + 
     ", minTime:" + startLcContext.getElutionTime() + ", maxtime:" + endLcContext.getElutionTime() 
   }
@@ -52,17 +62,24 @@ import Method._
 
 
 /** */
-case class CwtParameters (var smooth: SmoothingMethod = None, 
-                          var scales: Array[Float], 
-                          var wavelet: MotherWavelet)
+case class CwtParameters (
+  var smooth: SmoothingMethod = None, 
+  var scales: Array[Float], 
+  var wavelet: MotherWavelet
+)
 
 /** */
-case class RidgeFilteringParameters( var minRidgeLength: Int , //this hard to defined 
-                                     var minSNR: Float,        //no SNR provided by default
-                                     var minPeakWidth: Float,  // en seconds
-                                     var maxPeakWidth: Float,
-                                     var sizeNoise: Int,       //the same this hard to defined
-                                     var skipBoundaries: Int)
+case class RidgeFilteringParameters( 
+  var minRidgeLength: Int , //this hard to defined 
+  var minSNR: Float,        //no SNR provided by default
+  var minPeakWidth: Float,  // en seconds
+  var maxPeakWidth: Float,
+  var sizeNoise: Int,       //the same this hard to defined
+  var skipBoundaries: Int
+)
 
 /** */
-case class MaximaFinder(var winLength: Int = 5, var ridgeMethod: String = "maxima")
+case class MaximaFinder(
+  var winLength: Int = 5,
+  var ridgeMethod: String = "maxima"
+)
