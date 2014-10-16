@@ -1,10 +1,12 @@
 package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
+
 import com.typesafe.scalalogging.slf4j.Logging
+
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
@@ -80,9 +82,11 @@ class UnsupervisedPeakelDetector(
     
   }*/
   
-  def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak], usedPeakMap: HashMap[Peak,Boolean] ): Array[Peakel] = {
+  def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak] ): Array[Peakel] = {
     // Return if the number of peaks is too low
     if( intensityDescPeaks.length < 10 ) return Array()
+    
+    val usedPeakSet = new HashSet[Peak]()
     
     val nbPeaks = intensityDescPeaks.length
     
@@ -103,37 +107,41 @@ class UnsupervisedPeakelDetector(
     val peakelBuffer = new ArrayBuffer[Peakel]()
     
     // Iterate over all peaks sorted by descending order
-    for( peak <- intensityDescPeaks ) {
-      
-      // Increment the step count
-      curStep.incrementAndGetCount()
-      
-      if( peak.getIntensity() > intensityThreshold && usedPeakMap.contains(peak) == false ) {
+    breakable {
+      for( peak <- intensityDescPeaks ) {
         
-        // Retrieve corresponding scan header
-        val scanHeader = this.scanHeaderById(peak.getLcContext.getScanId)
+        // Increment the step count
+        curStep.incrementAndGetCount()
         
-        // Initiate a peakel extraction using this starting point
-        val peakelOpt = this.extractPeakel(pklTree, usedPeakMap, scanHeader, peak)
-        
-        // Check if we found one peakel
-        if( peakelOpt.isDefined ) {
-          val peakel = peakelOpt.get
-          val apexIdx = peakel.apexIndex
+        if( peak.getIntensity() < intensityThreshold ) {
+          break
+        } else if( usedPeakSet.contains(peak) == false ) {
           
-          // Append peakel only if its apex is not at the extrema
-          if( apexIdx > 0 && apexIdx < peakel.lcContexts.length - 1 )
-            peakelBuffer += peakelOpt.get
+          // Retrieve corresponding scan header
+          val scanHeader = this.scanHeaderById(peak.getLcContext.getScanId)
+          
+          // Initiate a peakel extraction using this starting point
+          val peakelOpt = this.extractPeakel(pklTree, usedPeakSet, scanHeader, peak)
+          
+          // Check if we found one peakel
+          if( peakelOpt.isDefined ) {
+            val peakel = peakelOpt.get
+            val apexIdx = peakel.apexIndex
+            
+            // Append peakel only if its apex is not at the extrema
+            if( apexIdx > 0 && apexIdx < peakel.lcContexts.length - 1 )
+              peakelBuffer += peakelOpt.get
+          }
         }
       }
-    }
+    } // END OF BREAKABLE
     
     peakelBuffer.toArray
   }
   
   protected def extractPeakel(
     pklTree: PeakListTree,
-    usedPeakMap: HashMap[Peak,Boolean],
+    usedPeakSet: HashSet[Peak],
     apexScanHeader: ScanHeader,
     apexPeak: Peak
   ): Option[Peakel] = {
@@ -216,7 +224,7 @@ class UnsupervisedPeakelDetector(
             val peak = pklGroup.getNearestPeak( apexMz, mzTolDa )
             
             // Check if a peak has been found
-            if( peak != null && usedPeakMap.contains(peak) == false ) {
+            if( peak != null && usedPeakSet.contains(peak) == false ) {
               
               // Retrieve some values
               val intensity = peak.getIntensity
@@ -292,23 +300,36 @@ class UnsupervisedPeakelDetector(
     //progressComputer.setCurrentStepAsCompleted()
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP3)
     
-    // Update usedPeakSet using a synchronized block
-    usedPeakMap.synchronized {
+    // Update usedPeakSet
+    // Remove all extracted peaks from usedPeakSet
+    //peaksBuffer.foreach { p => usedPeakSet -= p }
+    
+    if( peakelAndPeaksOpt.isEmpty ) {
+      // Re-add input apexPeak to usedPeakSet
+      // Marco: it may lead to missing peakel => we should not remove the apexPeak if no detected peakel
+      //usedPeakSet += apexPeak
+    } else {
+      // Re-add peakel peaks to usedPeakMap
+      val( peakel, extractedPeaks ) = peakelAndPeaksOpt.get
+      for( peak <- extractedPeaks)
+        usedPeakSet += peak
       
-      // Remove all extracted peaks from usedPeakSet
-      //peaksBuffer.foreach { p => usedPeakSet -= p }
-      
-      if( peakelAndPeaksOpt.isEmpty ) {
-        // Re-add input apexPeak to usedPeakSet
-        // Marco: it may lead to missing peakel => we should not remove the apexPeak if no detected peakel
-        //usedPeakSet += apexPeak
-      } else {
-        // Re-add peakel peaks to usedPeakMap
-        val extractedPeaks = peakelAndPeaksOpt.get._2
-        for( peak <- extractedPeaks)
-          usedPeakMap += peak -> true
+      // Check that apex is not the first or last peak
+      if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.lcContexts.length - 1) ) {
+        return None
       }
       
+      // Check peakel amplitude is big enough
+      val peaksSortedByItensity = extractedPeaks.sortBy(_.getIntensity)
+        
+      // TODO: define a minimum amplitude for a peakel in the config
+      val( minIntensity, maxIntensity ) = (peaksSortedByItensity.head.getIntensity, peaksSortedByItensity.last.getIntensity)
+      val intensityAmplitude = if( minIntensity == 0 ) 1f else maxIntensity / minIntensity
+      val minAmplitude = 1.5f
+      
+      if( intensityAmplitude < minAmplitude ) {
+        return None
+      }
     }
     
     //progressComputer.setCurrentStepAsCompleted()

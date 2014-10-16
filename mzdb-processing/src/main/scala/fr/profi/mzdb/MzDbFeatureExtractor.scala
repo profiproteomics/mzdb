@@ -357,9 +357,9 @@ class MzDbFeatureExtractor(
 
     val filteredFeatures = new ArrayBuffer[Feature](featuresByApex.size)
 
-    for (fts <- featuresByApex.values) {
+    for (duplicatedFts <- featuresByApex.values) {
       // Sort duplicatedFts by descending elution duration
-      val sortedFts = fts.sortBy( - _.getFirstPeakel.calcDuration )
+      val sortedFts = duplicatedFts.sortBy( - _.getFirstPeakel.calcDuration )
       filteredFeatures += sortedFts.head
     }
 

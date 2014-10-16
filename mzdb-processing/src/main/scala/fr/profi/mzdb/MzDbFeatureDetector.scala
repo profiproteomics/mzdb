@@ -8,6 +8,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Queue
+import scala.collection.mutable.SynchronizedBuffer
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.control.Breaks._
@@ -83,17 +84,19 @@ class PeakelDetectorConsumer(
         // Note: in previous implementation we included peaks of the previous run slice
         // TODO: check if not doing that has an effect on the quality of detection
         // TODO: otherwise switch to an HashSet[Peak]
-        val usedPeakMap = new HashMap[Peak,Boolean]() // true if used in last detection false if previous detection
+        //val usedPeakMap = new HashMap[Peak,Boolean]() // true if used in last detection false if previous detection
         
         // Detect peakels in pklTree by using curRsPeaks as starting points
-        val peakels = peakelDetector.detectPeakels(pklTree, curRsPeaks, usedPeakMap)
+        val peakels = pklTree.synchronized {
+          peakelDetector.detectPeakels(pklTree, curRsPeaks)
+        }
+        
         this.logger.debug( s"found ${peakels.length} peakels in run slice n°"+rsNumber)
         
         // Add peakels to the global buffer
         peakelsBuffer.synchronized {
           peakelsBuffer ++= peakels
         }
-        
         
         // Update the progress computer
         //progressComputer.setCurrentStepAsCompleted()
@@ -294,7 +297,7 @@ class MzDbFeatureDetector(
     //implicit val execCtx = scala.concurrent.ExecutionContext.Implicits.global
     
     logger.info(s"Will perform detection using $nbConsumers cores" )
-    val detectorQueue = new PeakelDetectorQueue( nbConsumers )
+    val detectorQueue = new PeakelDetectorQueue( nbConsumers + 1 )
     
     // Create a buffer that contains the detected peakels
     // Note: the buffer must be synchronized when accessed by multiple threads
@@ -410,6 +413,22 @@ class MzDbFeatureDetector(
         logger.debug( "Shutting down thread pool used for peakel detection..." )
         
         threadPool.shutdown()
+        
+        /*
+         * It seems this code is not necessary (no duplicated peakel has been found)
+        // Remove duplicated peakels
+        val peakelsByApex = peakelsBuffer.groupBy { peakel =>
+          val apexIdx = peakel.apexIndex
+          ( peakel.lcContexts(apexIdx), peakel.mzValues(apexIdx) )
+        }
+        
+        val filteredPeakels = new ArrayBuffer[Peakel](peakelsByApex.size)
+        
+        for (duplicatedPeakels <- peakelsByApex.values) {
+          // Sort duplicatedFts by descending elution duration
+          val sortedPeakels = duplicatedPeakels.sortBy( - _.calcDuration )
+          filteredPeakels += sortedPeakels.head
+        }*/
         
         peakelsBuffer.toArray
       },
@@ -654,112 +673,110 @@ class MzDbFeatureDetector(
     val peakelsGroupedByTime = this.groupCorrelatedPeakels(filteredPeakels)    
     this.logger.debug(s"has correlated ${peakelsGroupedByTime.length} peakels groups" )
     
-    val peakelPatternsBuffer = new ArrayBuffer[PeakelPattern]()  
+    val syncPeakelPatternsBuffer = new ArrayBuffer[PeakelPattern] with SynchronizedBuffer[PeakelPattern]
     
-    peakelPatternsBuffer.synchronized {
-      for( (groupTime,peakelGroup) <- peakelsGroupedByTime.par ) {
+    for( (groupTime,peakelGroup) <- peakelsGroupedByTime.par ) {
+      
+      /*val peakelsToKeepMap = new HashMap[Peakel,Boolean]()
+      var previousMz = 0d
+      var previousPeakel: Peakel = null
+      
+      // Filter out peakels having the same m/z value (keep the most intense peakel)
+      // TODO: check if it is better to create multiple graph combinations
+      // Note that the graph expanding algo can take them into account
+      for( peakel <- peakelGroup.sortBy(_.getMz) ) {
         
-        /*val peakelsToKeepMap = new HashMap[Peakel,Boolean]()
-        var previousMz = 0d
-        var previousPeakel: Peakel = null
+        val peakelMz = peakel.getMz
+        val mzTolDa = MsUtils.ppmToDa(peakelMz, mzTolPPM)
         
-        // Filter out peakels having the same m/z value (keep the most intense peakel)
-        // TODO: check if it is better to create multiple graph combinations
-        // Note that the graph expanding algo can take them into account
-        for( peakel <- peakelGroup.sortBy(_.getMz) ) {
+        val keepCurrentPeakel = if( (peakelMz - previousMz) > mzTolDa) true
+        else {
+          logger.trace(s"found peakels with close m/z values: $previousMz and $peakelMz")
           
-          val peakelMz = peakel.getMz
-          val mzTolDa = MsUtils.ppmToDa(peakelMz, mzTolPPM)
-          
-          val keepCurrentPeakel = if( (peakelMz - previousMz) > mzTolDa) true
+          if( peakel.getIntensity <= previousPeakel.getIntensity ) false
           else {
-            logger.trace(s"found peakels with close m/z values: $previousMz and $peakelMz")
-            
-            if( peakel.getIntensity <= previousPeakel.getIntensity ) false
-            else {
-              peakelsToKeepMap += ( previousPeakel -> false)
-              true
-            }
-          }
-          
-          if( keepCurrentPeakel ) {
-            peakelsToKeepMap += ( peakel -> true)
-            previousMz = peakel.getMz
-            previousPeakel = peakel
-          } else {
-            peakelsToKeepMap += ( peakel -> false)
+            peakelsToKeepMap += ( previousPeakel -> false)
+            true
           }
         }
         
-        val uniqueMzPeakels = ( for( (peakel,keep) <- peakelsToKeepMap; if keep ) yield peakel ).toArray
-        logger.trace(s"${peakelGroup.length} peakels in group before m/z filtering")
-        logger.trace(s"${uniqueMzPeakels.length} peakels in group after m/z filtering")*/
-        
-        val usedPeakelSetByCharge = new HashMap[Int,HashSet[Peakel]]()
-        
-        // Sort peakels by desc area
-        //val sortedPeakels = uniqueMzPeakels.sortWith { (a,b) => a.area > b.area }
-        val sortedPeakels = peakelGroup.sortWith { (a,b) => a.area > b.area }
-        val peakelsCount = sortedPeakels.length
-        
-        // Iterate over peakels to build graph of peakels
-        for( apexPeakelIdx <- 0 until peakelsCount ) {
-          
-          val apexPeakel = sortedPeakels(apexPeakelIdx)
-          val apexPeakelMz = apexPeakel.getMz
-          val otherPeakels = sortedPeakels.slice(apexPeakelIdx + 1, peakelsCount)
-          
-          // Sort other peakels by ascending m/z value
-          val otherPeakelsSortedByMz = otherPeakels.sortBy(_.getMz)
-          
-          // Partition peakels with a m/z lower or higher than current apex        
-          val( leftPeakels, rightPeakels ) = otherPeakelsSortedByMz.partition(_.getMz < apexPeakelMz)
-          
-          // Create a new peakel graph for this apex peakel
-          val peakelGraph = PeakelGraph( apex = apexPeakel )
-          
-          // Expand peakel graph in the left direction
-          this._expandPeakelGraph(
-            peakelGraph = peakelGraph,
-            // Reverse the left array to iterate peakels in m/z descending order
-            mzSortedPeakels = leftPeakels.reverse,
-            areLeftPeakels = true,
-            usedPeakelSetByCharge = usedPeakelSetByCharge
-          )
-          
-          // Expand peakel graph in the right direction
-          this._expandPeakelGraph(
-            peakelGraph = peakelGraph,
-            mzSortedPeakels = rightPeakels,
-            areLeftPeakels = false,
-            usedPeakelSetByCharge = usedPeakelSetByCharge
-          )
-          
-          if( peakelGraph.hasNodes() ) {
-            //println( "leftPeakelNodes"+ peakelGraph.leftPeakelNodes.length )
-            //println( "rightPeakelNodes"+ peakelGraph.rightPeakelNodes.length )
-            //println( peakelGraph.getLongestPeakelPatterns.length )
-            val bestPeakelPatternOpt = peakelGraph.getBestPeakelPattern()
-            require( bestPeakelPatternOpt.isDefined, "best peakel pattern should be defined for a graph containing nodes")
-            
-            peakelPatternsBuffer += bestPeakelPatternOpt.get
-          }
+        if( keepCurrentPeakel ) {
+          peakelsToKeepMap += ( peakel -> true)
+          previousMz = peakel.getMz
+          previousPeakel = peakel
+        } else {
+          peakelsToKeepMap += ( peakel -> false)
         }
-        
-        //logger.debug("peakel graphs count=" + peakelGraphBuffer.length )
       }
+      
+      val uniqueMzPeakels = ( for( (peakel,keep) <- peakelsToKeepMap; if keep ) yield peakel ).toArray
+      logger.trace(s"${peakelGroup.length} peakels in group before m/z filtering")
+      logger.trace(s"${uniqueMzPeakels.length} peakels in group after m/z filtering")*/
+      
+      val usedPeakelSetByCharge = new HashMap[Int,HashSet[Peakel]]()
+      
+      // Sort peakels by desc area
+      //val sortedPeakels = uniqueMzPeakels.sortWith { (a,b) => a.area > b.area }
+      val sortedPeakels = peakelGroup.sortWith { (a,b) => a.area > b.area }
+      val peakelsCount = sortedPeakels.length
+      
+      // Iterate over peakels to build graph of peakels
+      for( apexPeakelIdx <- 0 until peakelsCount ) {
+        
+        val apexPeakel = sortedPeakels(apexPeakelIdx)
+        val apexPeakelMz = apexPeakel.getMz
+        val otherPeakels = sortedPeakels.slice(apexPeakelIdx + 1, peakelsCount)
+        
+        // Sort other peakels by ascending m/z value
+        val otherPeakelsSortedByMz = otherPeakels.sortBy(_.getMz)
+        
+        // Partition peakels with a m/z lower or higher than current apex        
+        val( leftPeakels, rightPeakels ) = otherPeakelsSortedByMz.partition(_.getMz < apexPeakelMz)
+        
+        // Create a new peakel graph for this apex peakel
+        val peakelGraph = PeakelGraph( apex = apexPeakel )
+        
+        // Expand peakel graph in the left direction
+        this._expandPeakelGraph(
+          peakelGraph = peakelGraph,
+          // Reverse the left array to iterate peakels in m/z descending order
+          mzSortedPeakels = leftPeakels.reverse,
+          areLeftPeakels = true,
+          usedPeakelSetByCharge = usedPeakelSetByCharge
+        )
+        
+        // Expand peakel graph in the right direction
+        this._expandPeakelGraph(
+          peakelGraph = peakelGraph,
+          mzSortedPeakels = rightPeakels,
+          areLeftPeakels = false,
+          usedPeakelSetByCharge = usedPeakelSetByCharge
+        )
+        
+        if( peakelGraph.hasNodes() ) {
+          //println( "leftPeakelNodes"+ peakelGraph.leftPeakelNodes.length )
+          //println( "rightPeakelNodes"+ peakelGraph.rightPeakelNodes.length )
+          //println( peakelGraph.getLongestPeakelPatterns.length )
+          val bestPeakelPatternOpt = peakelGraph.getBestPeakelPattern()
+          require( bestPeakelPatternOpt.isDefined, "best peakel pattern should be defined for a graph containing nodes")
+          
+          syncPeakelPatternsBuffer += bestPeakelPatternOpt.get
+        }
+      }
+      
+      //logger.debug("peakel graphs count=" + peakelGraphBuffer.length )
     }
     
     // --- Clusterize peakel patterns using SetClusterer fork ---
     
-    logger.info( s"obtained ${peakelPatternsBuffer.length} peakel patterns before clustering" )
+    logger.info( s"obtained ${syncPeakelPatternsBuffer.length} peakel patterns before clustering" )
     
     // Map peakel index by each peakel
     val peakelIdxByPeakel = filteredPeakels.zipWithIndex.toMap
     
     // Map peakel indices by each found peakel pattern
     // Note that parallel processing seems to lead to the insertion of null values in peakelPatternsBuffer
-    val peakelIndexSetByPeakelPattern = peakelPatternsBuffer.withFilter(_ != null ).map { peakelPattern =>
+    val peakelIndexSetByPeakelPattern = syncPeakelPatternsBuffer.withFilter(_ != null ).map { peakelPattern =>
       val peakels = peakelPattern.peakels
       val peakelIndexSet = peakels.map( peakelIdxByPeakel(_) ).toSet
       peakelPattern -> peakelIndexSet
