@@ -287,20 +287,21 @@ class MzDbFeatureDetector(
     
     // Create a queue to parallelize the feature detection process
     val nbProcessors = Runtime.getRuntime().availableProcessors()
-    val threadPool = Executors.newFixedThreadPool(nbProcessors)
+    val nbConsumers = math.max( 1, (nbProcessors / 2).toInt )
+    val threadPool = Executors.newFixedThreadPool( nbConsumers )
     implicit val futureExecCtx = ExecutionContext.fromExecutor(threadPool)
     //implicit val execCtx = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(30))
     //implicit val execCtx = scala.concurrent.ExecutionContext.Implicits.global
     
-    logger.info("Will perform detection using available number of cores: " + nbProcessors)
-    val detectorQueue = new PeakelDetectorQueue( nbProcessors * 2 )
+    logger.info(s"Will perform detection using $nbConsumers cores" )
+    val detectorQueue = new PeakelDetectorQueue( nbConsumers )
     
     // Create a buffer that contains the detected peakels
     // Note: the buffer must be synchronized when accessed by multiple threads
     val peakelsBuffer = new ArrayBuffer[Peakel]
     
-    // Create as many consumers as nbProcessors
-    val consumers = for( consumerNumber <- 1 to nbProcessors ) yield {
+    // Create as many consumers as nbConsumers
+    val consumers = for( consumerNumber <- 1 to nbConsumers ) yield {
       new PeakelDetectorConsumer(
         consumerNumber = consumerNumber,
         peakelDetector = peakelDetector,
