@@ -301,7 +301,8 @@ case class Peakel(
     
     val peakelCursor = new PeakelCursor( this )
     
-    while( peakelCursor.next() ) {
+    while( peakelCursor.hasNext() ) {
+      peakelCursor.incrementIndex()
       
       // Compute intensity sum
       val intensity = peakelCursor.getIntensity()
@@ -441,7 +442,8 @@ case class Peakel(
     val cursor = new PeakelCursor(this)
     
     val peaks = new Array[Peak](this.lcContexts.length)
-    while( cursor.next() ) {
+    while( cursor.hasNext() ) {
+      cursor.incrementIndex()
       peaks(cursor.peakIndex) = cursor.toPeak()
     }
     
@@ -452,23 +454,15 @@ case class Peakel(
 
 case class PeakelCursor(
   peakel: Peakel,
-  var peakIndex: Int = - 1
+  var peakIndex: Int = 0
 ) {
+  require( peakIndex >= 0 && peakIndex < peakel.lcContexts.length, "peakeIndex is out of bounds")
   
-  def next(): Boolean = {
-    if( peakIndex == peakel.lcContexts.length - 1 ) false
-    else {
-      peakIndex += 1
-      true
-    }
-  }
-  def previous(): Boolean = {
-    if( peakIndex <= 0 ) false
-    else {
-      peakIndex -= 1
-      true
-    }
-  }
+  def hasNext(): Boolean = (peakIndex != peakel.lcContexts.length - 1)
+  def hasPrevious(): Boolean = peakIndex != 0
+  
+  def incrementIndex() = if( hasNext ) peakIndex += 1
+  def decrementIndex() = if( hasPrevious ) peakIndex -= 1
   
   def getLcContext(): ILcContext = peakel.lcContexts(peakIndex)
   def getElutionTime(): Float = this.getLcContext().getElutionTime()

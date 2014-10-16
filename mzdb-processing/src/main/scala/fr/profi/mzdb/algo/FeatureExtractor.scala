@@ -121,7 +121,9 @@ class FeatureExtractor(
 
       // Iterate over each peak of this peakel
       val peakCursor = firstPeakel.getNewCursor()
-      while( peakCursor.next() ) {        
+      while( peakCursor.hasNext() ) {
+        peakCursor.incrementIndex()
+        
         val lcContext = peakCursor.getLcContext()
         val peakMz = peakCursor.getMz
         
@@ -159,7 +161,9 @@ class FeatureExtractor(
       var( intensityBeforeMs2, intensityAfterMs2 ) = (0f,0f)
       val peakCursor = f.getFirstPeakel().getNewCursor()
       
-      while( peakCursor.next() ) {
+      while( peakCursor.hasNext() ) {
+        peakCursor.incrementIndex()
+        
         val intensity = peakCursor.getIntensity
         val scanId = peakCursor.getLcContext.getScanId
 
