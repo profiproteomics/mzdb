@@ -91,12 +91,14 @@ class UnsupervisedPeakelDetector(
     val curStep = progressComputer.beginStep(UnsupervisedPeakelDetector.DETECTION_STEP1)
     curStep.setMaxCount(nbPeaks)
     
-    // Determine an intensity threshold based on quartiles    
-    val q3 = math.log10( intensityDescPeaks( (nbPeaks * 0.25).toInt ).getIntensity )
-    val q1 = math.log10( intensityDescPeaks( (nbPeaks * 0.75).toInt ).getIntensity )
-    val iqr = q3 - q1
-    val intensityThreshold = math.pow(10, q1 - (1.5 * iqr))
-    logger.debug("detect peakels using intensity threshold ="+ intensityThreshold)
+    // Determine an intensity threshold based on quartiles
+    //val q3 = math.log10( intensityDescPeaks( (nbPeaks * 0.25).toInt ).getIntensity )
+    //val q2 = math.log10( intensityDescPeaks( (nbPeaks * 0.5).toInt ).getIntensity )
+    //val q1 = math.log10( intensityDescPeaks( (nbPeaks * 0.75).toInt ).getIntensity )
+    //val iqr = (q3 - q2) * 2
+    //val intensityThreshold = math.pow(10, q1 - (1 * iqr) )
+    val intensityThreshold = intensityDescPeaks( (nbPeaks * 0.9).toInt ).getIntensity
+    logger.debug(s"detecting peakels using intensity threshold ="+ intensityThreshold)
     
     val peakelBuffer = new ArrayBuffer[Peakel]()
     
