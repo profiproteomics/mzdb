@@ -8,7 +8,6 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.Queue
-import scala.collection.mutable.SynchronizedBuffer
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.control.Breaks._
@@ -301,7 +300,7 @@ class MzDbFeatureDetector(
     
     // Create a buffer that contains the detected peakels
     // Note: the buffer must be synchronized when accessed by multiple threads
-    val peakelsBuffer = new ArrayBuffer[Peakel]
+    val peakelsBuffer = new ArrayBuffer[Peakel]()
     
     // Create as many consumers as nbConsumers
     val consumers = for( consumerNumber <- 1 to nbConsumers ) yield {
@@ -673,7 +672,7 @@ class MzDbFeatureDetector(
     val peakelsGroupedByTime = this.groupCorrelatedPeakels(filteredPeakels)    
     this.logger.debug(s"has correlated ${peakelsGroupedByTime.length} peakels groups" )
     
-    val syncPeakelPatternsBuffer = new ArrayBuffer[PeakelPattern] with SynchronizedBuffer[PeakelPattern]
+    val peakelPatternsBuffer = new ArrayBuffer[PeakelPattern]()
     
     for( (groupTime,peakelGroup) <- peakelsGroupedByTime.par ) {
       
@@ -713,6 +712,7 @@ class MzDbFeatureDetector(
       logger.trace(s"${peakelGroup.length} peakels in group before m/z filtering")
       logger.trace(s"${uniqueMzPeakels.length} peakels in group after m/z filtering")*/
       
+      val tmpPeakelPatternsBuffer = new ArrayBuffer[PeakelPattern]()
       val usedPeakelSetByCharge = new HashMap[Int,HashSet[Peakel]]()
       
       // Sort peakels by desc area
@@ -760,8 +760,14 @@ class MzDbFeatureDetector(
           val bestPeakelPatternOpt = peakelGraph.getBestPeakelPattern()
           require( bestPeakelPatternOpt.isDefined, "best peakel pattern should be defined for a graph containing nodes")
           
-          syncPeakelPatternsBuffer += bestPeakelPatternOpt.get
+          // Append best peakel pattern into a TEMP buffer
+          tmpPeakelPatternsBuffer += bestPeakelPatternOpt.get
         }
+      }
+      
+      // Append tmpPeakelPatternsBuffer to peakelPatternsBuffer
+      peakelPatternsBuffer.synchronized {
+        peakelPatternsBuffer ++= tmpPeakelPatternsBuffer
       }
       
       //logger.debug("peakel graphs count=" + peakelGraphBuffer.length )
@@ -769,14 +775,14 @@ class MzDbFeatureDetector(
     
     // --- Clusterize peakel patterns using SetClusterer fork ---
     
-    logger.info( s"obtained ${syncPeakelPatternsBuffer.length} peakel patterns before clustering" )
+    logger.info( s"obtained ${peakelPatternsBuffer.length} peakel patterns before clustering" )
     
     // Map peakel index by each peakel
     val peakelIdxByPeakel = filteredPeakels.zipWithIndex.toMap
     
     // Map peakel indices by each found peakel pattern
     // Note that parallel processing seems to lead to the insertion of null values in peakelPatternsBuffer
-    val peakelIndexSetByPeakelPattern = syncPeakelPatternsBuffer.withFilter(_ != null ).map { peakelPattern =>
+    val peakelIndexSetByPeakelPattern = peakelPatternsBuffer.withFilter(_ != null ).map { peakelPattern =>
       val peakels = peakelPattern.peakels
       val peakelIndexSet = peakels.map( peakelIdxByPeakel(_) ).toSet
       peakelPattern -> peakelIndexSet
