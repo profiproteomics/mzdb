@@ -47,7 +47,7 @@ class PeakelDetectorConsumer(
       // This example could help: http://stackoverflow.com/questions/16009837/how-to-cancel-future-in-scala
       if( queueEntry == null ) {
         hasFinished = true            
-        logger.debug("exiting feature detector consumer n°"+ consumerNumber)
+        logger.debug("exiting feature detector consumer "+ consumerNumber)
       } else {
         
         val rsNumber = queueEntry.rsNumber
@@ -57,10 +57,10 @@ class PeakelDetectorConsumer(
         // Retrieve all peaks in curPeaklistByScanId
         var curRsPeaks = curPeaklistByScanId.values.flatMap( _.getAllPeaks() ).toArray
         
-        this.logger.debug("unsupervised processing of run slice n°"+rsNumber)
+        this.logger.debug("unsupervised processing of run slice "+rsNumber)
         
         // Sort the peaks
-        this.logger.debug(s"sorting #${ curRsPeaks.length} peaks by descending intensity in run slice n°" + rsNumber)
+        this.logger.debug(s"sorting #${ curRsPeaks.length} peaks by descending intensity in run slice " + rsNumber)
         
         //quickSortPeaksByDescIntensity(curRsPeaks)
         curRsPeaks = curRsPeaks.sortWith( (a,b) => a.getIntensity > b.getIntensity )
@@ -76,8 +76,8 @@ class PeakelDetectorConsumer(
         //progressComputer.setCurrentStepAsCompleted()
         //progressComputer.beginStep( MzDbFeatureDetector.RUN_SLICE_PEAKEL_DETECTION_STEP4 )
         
-        this.logger.debug( s"min peak intensity in run slice n°$rsNumber = "+ curRsPeaks.last.getIntensity )
-        this.logger.debug( s"max peak intensity in run slice n°$rsNumber = "+ curRsPeaks.head.getIntensity )
+        this.logger.debug( s"min peak intensity in run slice $rsNumber = "+ curRsPeaks.last.getIntensity )
+        this.logger.debug( s"max peak intensity in run slice $rsNumber = "+ curRsPeaks.head.getIntensity )
         
         // Create a HashMap to memorize which peaks have been already used
         // Note: in previous implementation we included peaks of the previous run slice
@@ -90,7 +90,7 @@ class PeakelDetectorConsumer(
           peakelDetector.detectPeakels(pklTree, curRsPeaks)
         }
         
-        this.logger.debug( s"found ${peakels.length} peakels in run slice n°"+rsNumber)
+        this.logger.debug( s"found ${peakels.length} peakels in run slice "+rsNumber)
         
         // Add peakels to the global buffer
         peakelsBuffer.synchronized {
@@ -341,7 +341,7 @@ class MzDbFeatureDetector(
       // Retrieve run slices and their corresponding id
       val rsNumber = rsh.getNumber
       val nextRsNumber = rsNumber + 1      
-      this.logger.debug("loading run slice n°"+rsNumber)
+      this.logger.debug("loading run slice "+rsNumber)
       
       // Build the list of obsolete run slices
       val rsNumbersToRemove = for(
