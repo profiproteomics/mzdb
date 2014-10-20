@@ -141,7 +141,7 @@ object SQLiteFeatureStorer {
       j+=1; stmt.bind(j, ft.id )
       j+=1; stmt.bind(j, ft.charge )
       j+=1; stmt.bind(j, ft.mz )
-      j+=1; stmt.bind(j, ft.elutionTime )
+      j+=1; stmt.bind(j, ft.getElutionTime )
       j+=1; stmt.bind(j, ft.area )
       j+=1; stmt.bind(j, ft.getPeakel(0).getApexIntensity + ft.getPeakel(1).getApexIntensity)
       j+=1; stmt.bind(j, ft.getMs1Count )

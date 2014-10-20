@@ -190,7 +190,13 @@ class OverlappingFeaturesExtractor(
     //determining best overlappingFeature
 
     val bestOvlFts = this._selectBestOverlappingFeatures(ft, ovlFeatures)
-    ft.overlappingFeatures = bestOvlFts
+    
+    val ftOverlapProperties = if( ft.overlapProperties != null ) ft.overlapProperties
+    else {
+      ft.overlapProperties = FeatureOverlapProperties()
+      ft.overlapProperties
+    }
+    ftOverlapProperties.overlappingFeatures = bestOvlFts
     
     if (!bestOvlFts.isEmpty) {
       
@@ -200,7 +206,7 @@ class OverlappingFeaturesExtractor(
         ovlFt.feature.getPeakel( math.max(ovlFt.overlappingPeakelIndex - 1,0) ).area
       }
       
-      ft.bestOverlappingFeature = sortedOvlFts.last
+      ftOverlapProperties.bestOverlappingFeature = sortedOvlFts.last
     }
 
     OverlappingStatus(overlapEvidence = true, !bestOvlFts.isEmpty, ovlFeatures, bestOvlFts)

@@ -412,7 +412,7 @@ object FeatureEvaluator  {
       //peakelsVelocity = FeatureScorer.calcDistanceOverArea(f),
       //peakelsAmplitude = FeatureScorer.calcPeakelsAmplitude(f),
       peakelsApexDeviation,
-      f.getOverlapPMCC,
+      Option(f.overlapProperties).map(_.getOverlapPMCC).getOrElse(0f),
       FeatureScorer.calcOverlappingFactor(f, 5).toFloat
     )
   }

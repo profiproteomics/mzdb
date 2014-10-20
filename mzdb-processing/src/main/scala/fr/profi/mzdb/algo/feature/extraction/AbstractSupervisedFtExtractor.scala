@@ -97,17 +97,22 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       }
 
       if (!filteredIndices.isEmpty) {
-        val maxPeakelIndices = maxPeakel.lcContexts.indices
+        val maxPeakelIndices = elutionTimes.indices
         
-        // Find the closest peakel in time domain of the ms2 event ?
+        // TODO: Find the closest peakel in time domain of the MS2 event ?
         matchingPeakelIdxPair = filteredIndices.minBy { idxPair =>
           
           // Search for the apex index
           val filteredMaxPeakelIndices = maxPeakelIndices.slice(idxPair._1, math.min(idxPair._2, peakelsIndices.length - 1) + 1)
-          val apexIdx = filteredMaxPeakelIndices.maxBy( maxPeakel.intensityValues(_) )
-          
-          // Compute the absolute time diff between feature and peakel apex
-          math.abs(ftTime - maxPeakel.lcContexts(apexIdx).getElutionTime)
+          if( filteredMaxPeakelIndices.isEmpty ) {
+            logger.error(s"can't retrieve apex using peakel indices: ${idxPair}")
+            Float.MaxValue
+          } else {
+            val apexIdx = filteredMaxPeakelIndices.maxBy( maxPeakel.intensityValues(_) )
+            
+            // Compute the absolute time diff between feature and peakel apex
+            math.abs(ftTime - maxPeakel.lcContexts(apexIdx).getElutionTime)
+          }
         }
       }
 

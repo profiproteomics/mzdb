@@ -152,7 +152,7 @@ case class Peakel1(
       prevPeakIntensity = peak.intensity
     }
     
-    //println("\t" + computedArea + "\t" +computedAAHM )
+    //("\t" + computedArea + "\t" +computedAAHM )
     
     if( computedArea == 0 ) {
       computedArea = computedSum
@@ -223,12 +223,15 @@ case class Peakel1(
  *
  */
 case class Peakel(
+  // TODO: change lcContexts in scanIds and elutionTimes arrays ?
   @BeanProperty lcContexts: Array[ILcContext],
   @BeanProperty mzValues: Array[Double],
   @BeanProperty intensityValues: Array[Float],
   @BeanProperty leftHwhmValues: Array[Float] = null,
   @BeanProperty rightHwhmValues: Array[Float] = null
 ) extends ILcContext {
+  
+  require( lcContexts.length == mzValues.length, "lcContexts and mzValues must have the same length" )
   
   def this( peaks: Array[Peak] ) {
     this(
@@ -268,14 +271,14 @@ case class Peakel(
   def getLcContextIntensityPairs() = lcContexts.zip(intensityValues)
   
   def getCursorAtApex(): PeakelCursor = PeakelCursor(this, apexIndex)
-  def getNewCursor(): PeakelCursor = PeakelCursor(this, 0)
+  def getNewCursor(): PeakelCursor = PeakelCursor(this)
   
   protected def getPeakTime(pIdx: Int): Float = lcContexts(pIdx).getElutionTime()
   /*protected def getIntensityElutionTimePair(pIdx: Int): Pair[Float,Float] = {
     ( intensityValues(pIdx), lcContexts(pIdx).getElutionTime )
   }*/
   
-  protected def _integratePeakel() {
+  protected def _integratePeakel() = this.synchronized {
     
     val apexIntensity = getApexIntensity()
     val halfApexIntensity = apexIntensity / 2
@@ -301,8 +304,7 @@ case class Peakel(
     
     val peakelCursor = new PeakelCursor( this )
     
-    while( peakelCursor.hasNext() ) {
-      peakelCursor.incrementIndex()
+    while( peakelCursor.next() ) {
       
       // Compute intensity sum
       val intensity = peakelCursor.getIntensity()
@@ -315,7 +317,6 @@ case class Peakel(
         val deltaTime = curPeakTime - prevPeakTime
         computedArea += (intensity + prevPeakIntensity ) * deltaTime / 2
       }
-      
       // Compute intensity uahm
       /*if (curPeakTime >= leftTimeAtHalfApex && prevPeakTimeAboveHM < lastTime ) {
         
@@ -331,7 +332,6 @@ case class Peakel(
           prevPeakTimeAboveHM = lastTime
         }
       }*/
-      
       prevPeakTime = curPeakTime
       prevPeakIntensity = intensity
     }
@@ -442,8 +442,7 @@ case class Peakel(
     val cursor = new PeakelCursor(this)
     
     val peaks = new Array[Peak](this.lcContexts.length)
-    while( cursor.hasNext() ) {
-      cursor.incrementIndex()
+    while( cursor.next() ) {
       peaks(cursor.peakIndex) = cursor.toPeak()
     }
     
@@ -454,15 +453,26 @@ case class Peakel(
 
 case class PeakelCursor(
   peakel: Peakel,
-  var peakIndex: Int = 0
+  var peakIndex: Int = - 1
 ) {
-  require( peakIndex >= 0 && peakIndex < peakel.lcContexts.length, "peakeIndex is out of bounds")
+  require( peakIndex >= -1 && peakIndex <= peakel.lcContexts.length, "peakeIndex is out of bounds")
+    
+  //def isOutOfBounds(): Boolean = peakIndex <= -1 || peakIndex >= peakel.lcContexts.length
   
-  def hasNext(): Boolean = (peakIndex != peakel.lcContexts.length - 1)
-  def hasPrevious(): Boolean = peakIndex != 0
-  
-  def incrementIndex() = if( hasNext ) peakIndex += 1
-  def decrementIndex() = if( hasPrevious ) peakIndex -= 1
+  def next(): Boolean = {
+    if( peakIndex >= peakel.lcContexts.length - 1 ) false
+    else {
+      peakIndex += 1
+      true
+    }
+  }
+  def previous(): Boolean = {
+    if( peakIndex <= 0 ) false
+    else {
+      peakIndex -= 1
+      true
+    }
+  }
   
   def getLcContext(): ILcContext = peakel.lcContexts(peakIndex)
   def getElutionTime(): Float = this.getLcContext().getElutionTime()

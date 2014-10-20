@@ -79,7 +79,7 @@ object FeatureScorer {
   /**Estimation of the overlapping factor*/
   /**For the moment, an overlapping factor is computed based only the first peakel of the considered feature */
   def calcOverlappingFactor(f: Feature, mzTolInPpm: Double): Float = {
-    if (f.overlappingFeatures == null)
+    if (f.overlapProperties == null || f.overlapProperties.overlappingFeatures == null )
       return 0f
 
     var of = 0d
@@ -91,7 +91,7 @@ object FeatureScorer {
     //get the best overlapping peakel in overlapping feature set
     var (leftOverlappingPeaks, rightOverlappingPeaks) = (Option.empty[Peakel], Option.empty[Peakel])
 
-    f.overlappingFeatures.foreach { ovlFeature =>
+    f.overlapProperties.overlappingFeatures.foreach { ovlFeature =>
       ovlFeature.feature.indexedPeakels.foreach { case (p,idx) =>
         if ((p.getMz - mz) < mzTolInDa) {
           if (p.getApexLcContext.getScanId < refScanID) {

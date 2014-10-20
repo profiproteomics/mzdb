@@ -58,10 +58,10 @@ object MzTSVFeatureWriter {
       
       var overlapCorrelationStr = ""
       var bestOlpFtJSONString = ""
-      val bestOlpFt = ft.getBestOverlappingFeature().feature
+      val bestOlpFt = Option(ft.overlapProperties).map( _.getBestOverlappingFeature.feature ).orNull
       
       if( bestOlpFt!= null ) {
-        overlapCorrelationStr = "%.8f".formatLocal( locale, bestOlpFt.getOverlapPMCC() )
+        overlapCorrelationStr = "%.8f".formatLocal( locale, bestOlpFt.overlapProperties.getOverlapPMCC )
         
         /*Object[] bestOlpIpSrings = new Object[bestOlpFt.isotopicPatterns.length];
         
@@ -78,12 +78,12 @@ object MzTSVFeatureWriter {
         olpFtJSONObject.put("apex_scan", bestOlpFt.getApexScanHeader.getInitialId )
         olpFtJSONObject.put("first_scan", bestOlpFt.getScanHeaders.head.getInitialId )
         olpFtJSONObject.put("last_scan", bestOlpFt.getScanHeaders.last.getInitialId )
-        olpFtJSONObject.put("elution_time",bestOlpFt.elutionTime)
+        olpFtJSONObject.put("elution_time",bestOlpFt.getElutionTime)
         olpFtJSONObject.put("charge",bestOlpFt.charge)
         olpFtJSONObject.put("moz", "%.8f".formatLocal(locale, bestOlpFt.mz) )
         olpFtJSONObject.put("intensity_sum","%.1f".formatLocal(locale,bestOlpFt.getIntensitySum) )
         olpFtJSONObject.put("area","%.1f".formatLocal(locale,bestOlpFt.area) )
-        olpFtJSONObject.put("quality_score", "%.8f".formatLocal(locale,bestOlpFt.getMeanPeakelCorrelation) )
+        olpFtJSONObject.put("quality_score", "%.8f".formatLocal(locale,Option(bestOlpFt.qualityProperties).map(_.getMeanPeakelCorrelation).getOrElse(0f) ) )
         olpFtJSONObject.put("ms1_count",bestOlpFt.getMs1Count)
         olpFtJSONObject.put("ms2_count",bestOlpFt.getMs2Count)
         //olpFtJSONObject.put("apex_ip",bestOlpFt.getIsotopicPatternAtApex() )
@@ -93,15 +93,18 @@ object MzTSVFeatureWriter {
       }
       
       // Stringify feature
-      // TODO: replace getMeanPeakelCorrelation by quality score    
-      val peakelCorrel = ft.getMeanPeakelCorrelation()
+      // TODO: replace getMeanPeakelCorrelation by quality score
+      val peakelCorrel = Option(ft.qualityProperties).map(_.getMeanPeakelCorrelation).getOrElse(0f)
       var qualityScoreStr = ""
       if( peakelCorrel.isNaN == false ) { qualityScoreStr = "%.8f".formatLocal(locale,peakelCorrel) }
       
       var peakelsRatiosStr = ""
-      if( ft.getPeakelsCount > 1 && ft.peakelsAreaRatios != None ) {
-        val peakelsRatios = ft.peakelsAreaRatios.get.map { "%.2f".formatLocal(locale,_) }        
-        //peakelsRatiosStr = generate(peakelsRatios)
+      if( ft.getPeakelsCount > 1 ) {
+        val peakelsRatiosOpt = ft.calcPeakelsAreaRatios
+        if( peakelsRatiosOpt.isDefined ) {
+          val formattedPeakelsRatios = peakelsRatiosOpt.get.map { "%.2f".formatLocal(locale,_) }        
+          //peakelsRatiosStr = generate(formattedPeakelsRatios)
+        }
       }
       
       val ftValues = List(
@@ -109,7 +112,7 @@ object MzTSVFeatureWriter {
         ft.getApexScanHeader.getInitialId,
         ft.getScanHeaders.head.getInitialId,
         ft.getScanHeaders.last.getInitialId,
-        ft.elutionTime,
+        ft.getElutionTime,
         ft.charge,
         "%.8f".formatLocal(locale,ft.mz),
         "%.1f".formatLocal(locale,ft.getIntensitySum),
@@ -121,7 +124,7 @@ object MzTSVFeatureWriter {
         ft.getMs2Count,
         //generate( ft.getIsotopicPatternAtApex ),
         "",//ipString,
-        "%.2f".formatLocal(locale,ft.getOverlapRelativeFactor),
+        "%.2f".formatLocal(locale,Option(ft.overlapProperties).map(_.getOverlapRelativeFactor).getOrElse(0f) ),
         overlapCorrelationStr,
         bestOlpFtJSONString
       )

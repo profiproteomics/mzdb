@@ -168,34 +168,28 @@ case class Feature(
     }
   }
 
-  // Define some immutable attributes  
-  @BeanProperty val elutionTime = getBasePeakel.getApexLcContext.getElutionTime()
+  // Define some immutable attributes
 
   // Define some lazy attributes
-  @BeanProperty lazy val peakelsAreaRatios = Feature.calcPeakelsAreaRatios(this.indexedPeakels)
   @BeanProperty lazy val area = Feature.sumPeakelsArea(this.indexedPeakels, Feature.nbPeakelsToIntegrate)
   @BeanProperty lazy val weightedAverageTime = getBasePeakel.calcWeightedAverageTime
 
   // Define some mutable attributes
+  @BeanProperty var qualityProperties: FeatureQualityProperties = null
+  @BeanProperty var overlapProperties: FeatureOverlapProperties = null
   @BeanProperty var hasMonoPeakel = true
-  
-  // TODO: put all these params in a FeatureQuality case class
-  @BeanProperty var qualityScore = 0f
-  @BeanProperty var isGoodQuality = true  
-  @BeanProperty var meanPeakelCorrelation = 0f //(float) FeatureScorer.computeMeanPeakelCorrelation(peakels);
-  @BeanProperty var overlapPMCC = 0f
-  @BeanProperty var overlapRelativeFactor = 0f
-  @BeanProperty var overlappingFeatures: Array[OverlappingFeature] = null
-  @BeanProperty var bestOverlappingFeature: OverlappingFeature = null
   //debug purposes
   //@BeanProperty var parentXIC: Peakel = null
   //@BeanProperty var filteredXIC: Chromatogram = null // x-axis = time ; y-axis = IP intensities
   
-  def getApexIndex = getBasePeakel.apexIndex
+  def calcPeakelsAreaRatios() = Feature.calcPeakelsAreaRatios(this.indexedPeakels)
+  
+  def getApexIndex() = getBasePeakel.apexIndex
   def getApexScanHeader() = getBasePeakel.getApexLcContext.asInstanceOf[ScanHeader]
   def getBasePeakel() = getPeakel(_basePeakelIndex)
   def getBasePeakelIndex() = _basePeakelIndex
   def getFirstPeakel() = indexedPeakels.head._1
+  def getElutionTime() = getBasePeakel.getApexLcContext.getElutionTime()
   def getIntensitySum() = _ftIntensitySum
   def getMs1Count() = getBasePeakel.lcContexts.length
   def getMs2Count(): Int = if (ms2ScanIds != null) ms2ScanIds.length else 0
@@ -275,7 +269,7 @@ case class Feature(
   }
 
   override def toString(): String = {
-    "" + this.mz + "/" + this.elutionTime
+    "" + this.mz + "/" + this.getElutionTime
   }
   
   /**
@@ -316,3 +310,16 @@ case class Feature(
   }
   
 }
+
+case class FeatureQualityProperties(
+  @BeanProperty var qualityScore: Float = 0f,
+  @BeanProperty var isGoodQuality: Boolean = true,
+  @BeanProperty var meanPeakelCorrelation: Float = 0f //(float) FeatureScorer.computeMeanPeakelCorrelation(peakels);
+)
+
+case class FeatureOverlapProperties(
+  @BeanProperty var overlapPMCC: Float = 0f,
+  @BeanProperty var overlapRelativeFactor: Float = 0f,
+  @BeanProperty var overlappingFeatures: Array[OverlappingFeature] = null,
+  @BeanProperty var bestOverlappingFeature: OverlappingFeature = null
+)
