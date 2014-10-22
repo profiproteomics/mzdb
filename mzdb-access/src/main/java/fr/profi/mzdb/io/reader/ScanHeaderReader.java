@@ -100,8 +100,6 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			
 			new SQLiteQuery(connection, _scanHeaderQueryStr)
 				.extractRecords(this._scanHeaderExtractor, scanHeaders);
-			
-			System.out.println("end:"+ (System.nanoTime() - nano) );
 
 			if (this.entityCache != null)
 				this.entityCache.scanHeaders = scanHeaders;
