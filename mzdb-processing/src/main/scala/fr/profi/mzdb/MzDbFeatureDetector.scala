@@ -581,7 +581,7 @@ class MzDbFeatureDetector(
     } // end computing statistics
     */
 
-    val detectedFeatures = this._deisotopePeakelsV1(filteredPeakels)
+    val detectedFeatures = this._deisotopePeakelsV2(filteredPeakels)
     
     // Link MS2 scans to features
     for( ft <- detectedFeatures ) {
