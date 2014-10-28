@@ -1,7 +1,7 @@
 package fr.profi.mzdb.algo.signal.detection
 
+import fr.profi.mzdb.model.IPeakelData
 import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.model.Peakel
 
 /**
  * @author David Bouyssie
@@ -10,7 +10,7 @@ import fr.profi.mzdb.model.Peakel
 trait IPeakelFinder {
   
   def findPeakelsIndices(peaks: Seq[Peak]): Array[Tuple2[Int,Int]]
-  def findPeakelsIndices(peakel: Peakel): Array[Tuple2[Int,Int]]
+  def findPeakelsIndices(peakel: IPeakelData): Array[Tuple2[Int,Int]]
   
   protected def smoothValues(values: Array[Double], times: Int = 3 ): Array[Double] = {
     

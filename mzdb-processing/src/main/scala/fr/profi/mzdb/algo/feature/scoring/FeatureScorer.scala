@@ -2,11 +2,9 @@ package fr.profi.mzdb.algo.feature.scoring
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
-
 import org.apache.commons.math.optimization.OptimizationException
 import org.apache.commons.math.stat.StatUtils
 import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
-
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
@@ -15,6 +13,7 @@ import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.StatisticsConversion
 import fr.profi.mzdb.utils.math.VectorSimilarity
+import fr.profi.mzdb.model.ILcContext
 
 object FeatureScorer {
 
@@ -46,19 +45,19 @@ object FeatureScorer {
 
   /**correlation between to peakels*/
   def calcPeakelCorrelation(firstPeakel: Peakel, secondPeakel: Peakel): Double = {
-    val firstPeakelIntensityByLcContext = firstPeakel.getLcContextIntensityPairs().toMap
-    val secondPeakelIntensityByLcContext = secondPeakel.getLcContextIntensityPairs().toMap
+    val firstPeakelIntensityByTime = firstPeakel.getElutionTimeIntensityPairs.toMap
+    val secondPeakelIntensityByTime = secondPeakel.getElutionTimeIntensityPairs.toMap
 
     val firstPeakelIntensities = new ArrayBuffer[Double]()
     val secondPeakelIntensities = new ArrayBuffer[Double]()
 
     // Compute the peak intersection of the two peakels
-    for (lcContext <- firstPeakel.lcContexts) {
+    for ( elutionTime <- firstPeakel.elutionTimes ) {
 
-      val secondPeakelIntensityOpt = secondPeakelIntensityByLcContext.get(lcContext)
+      val secondPeakelIntensityOpt = secondPeakelIntensityByTime.get(elutionTime)
 
       if (secondPeakelIntensityOpt.isDefined) {
-        firstPeakelIntensities += firstPeakelIntensityByLcContext(lcContext).toDouble
+        firstPeakelIntensities += firstPeakelIntensityByTime(elutionTime).toDouble
         secondPeakelIntensities += secondPeakelIntensityOpt.get.toDouble
       }
 
@@ -87,17 +86,17 @@ object FeatureScorer {
     val mzTolInDa = mz * mzTolInPpm / 1e6
     val overlappingMap = new ArrayBuffer[Tuple3[Peakel, Option[Peakel], Option[Peakel]]]()
     val peakel = f.getFirstPeakel() //monoistopic peakel
-    val refScanID = peakel.getApexLcContext.getScanId
+    val refScanID = peakel.getApexScanId
     //get the best overlapping peakel in overlapping feature set
     var (leftOverlappingPeaks, rightOverlappingPeaks) = (Option.empty[Peakel], Option.empty[Peakel])
 
     f.overlapProperties.overlappingFeatures.foreach { ovlFeature =>
       ovlFeature.feature.indexedPeakels.foreach { case (p,idx) =>
         if ((p.getMz - mz) < mzTolInDa) {
-          if (p.getApexLcContext.getScanId < refScanID) {
+          if (p.getApexScanId < refScanID) {
             leftOverlappingPeaks = Some(p)
           }
-          if (p.getApexLcContext.getScanId > refScanID) {
+          if (p.getApexScanId > refScanID) {
             rightOverlappingPeaks = Some(p)
           }
         }
@@ -208,22 +207,22 @@ object FeatureScorer {
 
   /** using the basic peakel finder.*/
   // a perfect shape would be only one maximum index
-  def calcSignalFluctuationByBasicPeakelFinder(f: Feature): Float = {
+  def calcSignalFluctuationByBasicPeakelFinder(f: Feature, lcContextByScanId: Map[Int,ILcContext] ): Float = {
     var shape = 0f
 
     f.indexedPeakels.foreach { case (p,idx) => 
-      shape += BasicPeakelFinder.findPeakelsIndices(p.toPeaks).length
+      shape += BasicPeakelFinder.findPeakelsIndices(p.toPeaks(lcContextByScanId)).length
     }
 
     shape / f.getPeakelsCount
   }
 
   /**using the wavelet peakel finder*/
-  def calcSignalFluctuationByWaveletBasedPeakelFinder(f: Feature): Float = {
+  def calcSignalFluctuationByWaveletBasedPeakelFinder(f: Feature, lcContextByScanId: Map[Int,ILcContext]): Float = {
     var shape = 0f
 
     f.indexedPeakels.foreach { case (p,idx) => 
-      shape += new WaveletDetectorDuMethod(p.toPeaks).findCwtPeakels().length
+      shape += new WaveletDetectorDuMethod(p.toPeaks(lcContextByScanId)).findCwtPeakels().length
     }
 
     shape / f.getPeakelsCount
@@ -303,7 +302,7 @@ object FeatureScorer {
    */
 
   /**mean of the medians of each peakel width*/
-  def calcMeanOfMedianPeakelsWidth(f: Feature): Float = {
+  /*def calcMeanOfMedianPeakelsWidth(f: Feature): Float = {
     var peakelsWidth = 0f
     
     for ( (peakel,idx) <- f.indexedPeakels) {
@@ -326,13 +325,13 @@ object FeatureScorer {
     peakelsWidthMedian = peakelsWidthMedian.sorted
     
     peakelsWidthMedian((0.5f * peakelsWidthMedian.length) toInt)
-  }
+  }*/
 
   /**
    * standard deviation on peak width is calculated for each peakel
    * it is weighted by the intensity of the evaluated peakel
    */
-  def calcStdDevPeakelsWidth(f: Feature): Float = {
+  /*def calcStdDevPeakelsWidth(f: Feature): Float = {
     val peakelsWidth = new ArrayBuffer[Double]
     
     for ( (peakel,idx) <- f.indexedPeakels ) {
@@ -345,7 +344,7 @@ object FeatureScorer {
       (peakelsWidth.sum / (f.getMz * f.indexedPeakels.map(_._1.getArea).sum)) toFloat //divide by the sum of peakel areas
     else
       Float.NaN
-  }
+  }*/
 
   /**
    * ****************************************************************
@@ -401,13 +400,13 @@ object FeatureScorer {
   }
 
   private def getDistanceSum(peakel: Peakel): Float = {
-    val timeIntensityPairs = peakel.lcContexts.map(_.getElutionTime).zip(peakel.intensityValues)
+    //val timeIntensityPairs = peakel.getElutionTimeIntensityPairs
 
     var sum = 0f
-    peakel.lcContexts.indices.sliding(2).withFilter(_.size == 2).foreach { indexPair =>
+    peakel.scanIds.indices.sliding(2).withFilter(_.size == 2).foreach { indexPair =>
       val (idx1, idx2) = (indexPair(0), indexPair(1))
-      val t1 = peakel.lcContexts(idx1).getElutionTime()
-      val t2 = peakel.lcContexts(idx2).getElutionTime()
+      val t1 = peakel.elutionTimes(idx1)
+      val t2 = peakel.elutionTimes(idx2)
       val i1 = peakel.intensityValues(idx1)
       val i2 = peakel.intensityValues(idx2)
       sum += FeatureScorer.getDistanceBetweenTwoPoints(t1, i1, t2, i2)
@@ -419,7 +418,7 @@ object FeatureScorer {
   def calcDistanceOverArea(f: Feature): Float = {
     var m = 0f
     f.indexedPeakels.foreach { case (p,idx) => m += FeatureScorer.getDistanceSum(p) * p.area }
-    m / (math.pow(f.indexedPeakels.map(_._1.intensity).sum, 2).toFloat)
+    m / (math.pow(f.indexedPeakels.map(_._1.intensitySum).sum, 2).toFloat)
   }
 
   /**

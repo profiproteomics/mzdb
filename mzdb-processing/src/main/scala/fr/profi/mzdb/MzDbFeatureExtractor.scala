@@ -347,7 +347,7 @@ class MzDbFeatureExtractor(
     val featuresByApex = extractedFeatures.groupBy { ft =>
       val firstPeakel = ft.getFirstPeakel
       val apexIdx = firstPeakel.apexIndex
-      ( firstPeakel.lcContexts(apexIdx), firstPeakel.mzValues(apexIdx) )
+      ( firstPeakel.scanIds(apexIdx), firstPeakel.mzValues(apexIdx) )
     }//new HashMap[String, ArrayBuffer[Feature]]
 //    extractedFeatures.foreach{ f =>
 //      featuresByApex.getOrElseUpdate(f.peakels(0).getApex().toString(), new ArrayBuffer[Feature]()) += f

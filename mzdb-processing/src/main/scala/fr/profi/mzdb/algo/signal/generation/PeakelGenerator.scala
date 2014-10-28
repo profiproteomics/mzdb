@@ -1,10 +1,8 @@
 package fr.profi.mzdb.algo.signal.generation
 
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.model.Peakel
+import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.math.pdf.GaussianModel
-import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.model.ElutionTimeContext
 
 object PeakelGenerator {
 
@@ -22,7 +20,7 @@ object PeakelGenerator {
       peaks +=  new Peak( mz, y.toFloat, peakHwhm, peakHwhm, new ElutionTimeContext(x) ) 
     }
     
-    new Peakel( peaks.toArray )
+    new PeakelBuilder( peaks.toArray ).result()
   }
   
 }

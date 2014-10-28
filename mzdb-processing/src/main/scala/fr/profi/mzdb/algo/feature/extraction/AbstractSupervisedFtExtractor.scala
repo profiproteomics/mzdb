@@ -55,37 +55,35 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     //this.normalizeIPs( ips )
 
     // Build a peakels, automatically remove empty peakels
-    val indexedPeakels = Feature.buildIndexedPeakels(ips)
+    val indexedPeakelBuilders = Feature.ipsToIndexedPeakelBuilders(ips)
 
-    if (indexedPeakels.isEmpty)
+    if (indexedPeakelBuilders.isEmpty)
       return Option.empty[Feature]
-
-    val tmpFt = new Feature(
-      putativeFt.id,
-      putativeFt.mz,
-      putativeFt.charge,
-      indexedPeakels,
-      isPredicted = putativeFt.isPredicted
-    )
     
     // Find maxpeakelIndex
-    val maxPeakelIndex = if (maxTheoreticalPeakelIndex < tmpFt.getPeakelsCount) maxTheoreticalPeakelIndex else 0
+    val maxPeakelIndex = if (maxTheoreticalPeakelIndex < indexedPeakelBuilders.length) maxTheoreticalPeakelIndex else 0
 
     // Get the defined peaks
-    val maxPeakel = tmpFt.getPeakel(maxPeakelIndex)
+    val maxPeakelBuilder = indexedPeakelBuilders(maxPeakelIndex)._1
 
     // Check definedPeaks length > 3 and peaks length >= 5
-    if ( maxPeakel.hasEnoughPeaks(minConsecutiveScans) == false )
+    if ( maxPeakelBuilder.hasEnoughPeaks(minConsecutiveScans) == false )
       return Option.empty[Feature]
 
     //-------- REFINE PEAKEL OPTIONAL STEP --------
-    if ( ftXtractAlgoConfig.refineDetection ) {
+    val newIndexedPeakelBuilders = if ( ftXtractAlgoConfig.refineDetection == false ) indexedPeakelBuilders
+    else {
 
       //val (peaks, definedPeaks) = (maxPeakel.peaks, maxPeakel.definedPeaks)
 
       // Detect peaks
-      val peakelsIndices = findPeakelsIndices(maxPeakel, ftXtractAlgoConfig.detectionAlgorithm, ftXtractAlgoConfig.minSNR)
-      val elutionTimes = maxPeakel.lcContexts.map(_.getElutionTime)
+      val peakelsIndices = findPeakelsIndices(
+        maxPeakelBuilder,
+        ftXtractAlgoConfig.detectionAlgorithm,
+        ftXtractAlgoConfig.minSNR,
+        scanHeaderById
+      )
+      val elutionTimes = maxPeakelBuilder.elutionTimes
       
       // Treat matching Idx
       var matchingPeakelIdxPair: (Int, Int) = null
@@ -108,10 +106,10 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
             logger.error(s"can't retrieve apex using peakel indices: ${idxPair}")
             Float.MaxValue
           } else {
-            val apexIdx = filteredMaxPeakelIndices.maxBy( maxPeakel.intensityValues(_) )
+            val apexIdx = filteredMaxPeakelIndices.maxBy( maxPeakelBuilder.intensityValues(_) )
             
             // Compute the absolute time diff between feature and peakel apex
-            math.abs(ftTime - maxPeakel.lcContexts(apexIdx).getElutionTime)
+            math.abs(ftTime - maxPeakelBuilder.elutionTimes(apexIdx) )
           }
         }
       }
@@ -123,15 +121,56 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       // TODO: check what was the puurpose of this
       //val ipsIndexes = (peaks.indexOf(definedPeaks(matchingPeakIdx._1)), peaks.indexOf(definedPeaks(matchingPeakIdx._2)))
 
-      val lcContexts = maxPeakel.getLcContexts()
+      val scanIds = maxPeakelBuilder.getScanIds()
       
-      tmpFt.restrictToLcContextRange(
-        lcContexts(matchingPeakelIdxPair._1),
-        lcContexts(matchingPeakelIdxPair._2)
+      val(minScanId, maxScanId) = matchingPeakelIdxPair
+      
+      this.restrictPeakelBuildersToScanIdRange(indexedPeakelBuilders, minScanId, maxScanId)
+    }
+    
+    if( newIndexedPeakelBuilders.isEmpty )
+      return Option.empty[Feature]
+    
+    Some(
+      new Feature(
+        putativeFt.id,
+        putativeFt.mz,
+        putativeFt.charge,
+        newIndexedPeakelBuilders.map( ipb => ipb._1.result() -> ipb._2 ),
+        isPredicted = putativeFt.isPredicted
       )
-
-    } else { Some(tmpFt)  }
+    )
+    
   } //end extractFeature
+  
+  /**
+   * Creates a feature object from ips and averagine
+   * @param minLcContext minimum LC context used to restrict the length of peakels
+   * @param maxLcContext maximum LC context used to restrict the length of peakels
+   * @retrun a new Feature or null if there are no peaks in the provided index range
+   */
+  protected def restrictPeakelBuildersToScanIdRange(
+    indexedPeakelBuilders: Array[(PeakelBuilder, Int)],
+    minScanId: Int,
+    maxScanId: Int
+  ): Array[(fr.profi.mzdb.model.PeakelBuilder, Int)] = {
+    val restrictedIndexedPeakels = new ArrayBuffer[(PeakelBuilder,Int)]()
+    
+    breakable {
+      for ( (peakel,idx) <- indexedPeakelBuilders) {
+        
+        val slicedPeakelOpt = peakel.restrictToScanIdRange(minScanId, maxScanId)
+        
+        if ( slicedPeakelOpt.isDefined )
+          restrictedIndexedPeakels += slicedPeakelOpt.get -> idx
+        else
+          break
+      }
+    }
+
+    restrictedIndexedPeakels.toArray
+  }
+  
   
   /**
    * extract all the isotopicPatterns of the XIC

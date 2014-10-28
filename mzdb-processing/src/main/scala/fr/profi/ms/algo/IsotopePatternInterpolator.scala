@@ -43,10 +43,12 @@ object IsotopePatternInterpolator extends Logging {
   
   // A mass (not m/z) must be provided
   def getTheoreticalPattern(mz: Double, charge: Int): TheoreticalIsotopePattern = {
+    require( charge > 0, "charge must be greater than zero" )
+    
     val keys = lookupTable.keys.toBuffer
     //require(mass >= keys.head && mass <= keys.last, "provided m/z is out of lookup table bounds: " + mass)
     
-    // Convert m/z into mass    
+    // Convert m/z into mass
     var mass = mozToMass(mz,charge)
     if (mass > keys.last ) 
       mass= keys.last

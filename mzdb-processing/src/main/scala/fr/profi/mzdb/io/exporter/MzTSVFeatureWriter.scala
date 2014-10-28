@@ -75,9 +75,9 @@ object MzTSVFeatureWriter {
         
         val olpFtJSONObject = new HashMap[String,Any]()
         olpFtJSONObject.put("id", bestOlpFt.id )
-        olpFtJSONObject.put("apex_scan", bestOlpFt.getApexScanHeader.getInitialId )
-        olpFtJSONObject.put("first_scan", bestOlpFt.getScanHeaders.head.getInitialId )
-        olpFtJSONObject.put("last_scan", bestOlpFt.getScanHeaders.last.getInitialId )
+        olpFtJSONObject.put("apex_scan", bestOlpFt.getApexScanId )
+        olpFtJSONObject.put("first_scan", bestOlpFt.getScanIds.head )
+        olpFtJSONObject.put("last_scan", bestOlpFt.getScanIds.last )
         olpFtJSONObject.put("elution_time",bestOlpFt.getElutionTime)
         olpFtJSONObject.put("charge",bestOlpFt.charge)
         olpFtJSONObject.put("moz", "%.8f".formatLocal(locale, bestOlpFt.mz) )
@@ -109,9 +109,9 @@ object MzTSVFeatureWriter {
       
       val ftValues = List(
         ft.id,
-        ft.getApexScanHeader.getInitialId,
-        ft.getScanHeaders.head.getInitialId,
-        ft.getScanHeaders.last.getInitialId,
+        ft.getApexScanId,
+        ft.getScanIds.head,
+        ft.getScanIds.last,
         ft.getElutionTime,
         ft.charge,
         "%.8f".formatLocal(locale,ft.mz),

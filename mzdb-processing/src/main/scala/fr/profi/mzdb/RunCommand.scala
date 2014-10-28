@@ -1,18 +1,16 @@
 package fr.profi.mzdb
 
 import java.io.File
+import scala.io.Source
 import com.beust.jcommander.{ JCommander, MissingCommandException, Parameter, ParameterException, Parameters }
 import com.typesafe.scalalogging.slf4j.Logging
 import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
-import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.io.reader.RunSliceDataProvider
-import fr.profi.mzdb.model.Feature
-import scala.io.Source
 import fr.profi.mzdb.io.exporter.SQLiteFeatureStorer
-import java.io.File
+import fr.profi.mzdb.io.reader.RunSliceDataProvider
+import fr.profi.mzdb.model._
 
 /**
  * @author David Bouyssie
@@ -194,7 +192,7 @@ object RunCommand extends App with Logging {
     import fr.profi.mzdb.model.Peakel
     import fr.profi.mzdb.MzDbReader
 
-    case class DetectedPeak(mz: Double, apex: Peak, duration: Float, area: Float, fwhm: Float) {
+    case class DetectedPeak(mz: Double, apex: Peak, duration: Float, area: Float) {
       lazy val intensity: Float = apex.getIntensity()
       lazy val time: Float = apex.getLcContext().getElutionTime()
 
@@ -325,14 +323,14 @@ object RunCommand extends App with Logging {
             val filteredPeaks = smoothedPeaks.filter(p => p.getIntensity() > threshold)
 
             // Build a peakel
-            val peakel = new Peakel(filteredPeaks) //.map(Some(_)))
+            val peakel = new PeakelBuilder(filteredPeaks).result() //.map(Some(_)))
             /*
           // Compute the duration
           val duration = peakTime(filteredPeaks.last) - peakTime(filteredPeaks.head)
           
           apex.getMz(), peakTime(apex), duration, sumPeaks(filteredPeaks),
           */
-            mz -> Some(DetectedPeak(peakel.getMz, apex, peakel.calcDuration, peakel.area, peakel.fwhm))
+            mz -> Some(DetectedPeak(peakel.getMz, apex, peakel.calcDuration, peakel.area))
           } else mz -> None
 
           intSum
@@ -354,16 +352,15 @@ object RunCommand extends App with Logging {
           val mz = pep._1
           if (pep._2.isDefined) {
             val peak = pep._2.get
-            val (expMz, time, dur, area, aahm, int, msScanInt) = (
+            val (expMz, time, dur, area, int, msScanInt) = (
               peak.mz,
               peak.time / 60,
               peak.duration / 60,
               peak.area,
-              peak.fwhm,
               peak.intensity,
               peak.getApexFullScanIntensity(mzDb)
             )
-            xicsBuilder += List(mzdbFilePath, mz, expMz, time, dur, area, aahm, int, msScanInt).mkString("\t")
+            xicsBuilder += List(mzdbFilePath, mz, expMz, time, dur, area, int, msScanInt).mkString("\t")
 
             //writer.println(List(mzdbFilePath, mz,expMz,time,dur,area,int,msScanInt).mkString("\t"))
             logger.info("found peptide ion of intensity |" + int + "| and duration |" + dur + "| at |" + time + "|")

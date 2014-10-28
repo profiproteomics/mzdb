@@ -11,6 +11,8 @@ object MolecularConstants {
   final val WATER_MONO_MASS = 18.010565
   final val WATER_AVERAGE_MASS = 18.01525697318
   final val AVERAGE_AA_MASS = 111.1254f // TODO: marco => why difference with 111.10523866044295 by computation
+  // TODO: refine this value and put a source reference here (publication ?)
+  final val AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF = 1.0027
 }
 
 trait Ionizable extends IMolecularEntity {

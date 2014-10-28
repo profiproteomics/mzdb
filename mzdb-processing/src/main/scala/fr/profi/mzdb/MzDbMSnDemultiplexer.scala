@@ -20,6 +20,7 @@ case class Spectrum(precursorMz: Double, precursorCharge: Int, elutionTime: Floa
  */
 class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
   
+  val scanHeaderById = mzDbReader.getScanHeaderById.map { case (k,v) => k.toInt -> v } toMap
   val minNbPeaksInSpectrum = 3
 
   def demultiplexMSnData(): Array[Spectrum] = {
@@ -123,7 +124,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
               precursorMz = ft.mz,
               precursorCharge = ft.charge,
               elutionTime = meanTime.toFloat,
-              peaks = msnPeakels.toArray.map(_.getCursorAtApex().toPeak).sortBy(_.getMz)
+              peaks = msnPeakels.toArray.map(_.getCursorAtApex().toPeak(scanHeaderById) ).sortBy(_.getMz)
             )
           }
         }

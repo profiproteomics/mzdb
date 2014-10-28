@@ -129,7 +129,7 @@ class UnsupervisedPeakelDetector(
             val apexIdx = peakel.apexIndex
             
             // Append peakel only if its apex is not at the extrema
-            if( apexIdx > 0 && apexIdx < peakel.lcContexts.length - 1 )
+            if( apexIdx > 0 && apexIdx < peakel.scanIds.length - 1 )
               peakelBuffer += peakelOpt.get
           }
         }
@@ -291,7 +291,7 @@ class UnsupervisedPeakelDetector(
         val matchingPeakelIdx = matchingPeakelIdxOpt.get
         val peakelPeaks = extractedPeaks.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 ).toArray
         
-        val peakel = new Peakel( peakelPeaks )
+        val peakel = new PeakelBuilder( peakelPeaks ).result()
         
         Some( peakel, peakelPeaks )
       }
@@ -315,7 +315,7 @@ class UnsupervisedPeakelDetector(
         usedPeakSet += peak
       
       // Check that apex is not the first or last peak
-      if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.lcContexts.length - 1) ) {
+      if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.scanIds.length - 1) ) {
         return None
       }
       

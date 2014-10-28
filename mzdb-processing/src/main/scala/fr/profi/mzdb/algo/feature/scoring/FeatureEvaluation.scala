@@ -7,6 +7,7 @@ import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import scala.collection.parallel.mutable.ParArray
+import fr.profi.mzdb.model.ILcContext
 
 /**
  * Metric to evaluate a feature quality
@@ -366,20 +367,29 @@ case class FeatureScoringConfig(
 //Fitting all the peakels ? if we do it for all the peakels it could be long
 object FeatureEvaluator  {
   
-  def evaluateFeatures(features: Seq[Feature], ftScoringConfig: FeatureScoringConfig, thresholdComputer: IFeatureThresholdsComputer ): Seq[FeatureEvaluation] = {
+  def evaluateFeatures(
+    features: Seq[Feature],
+    ftScoringConfig: FeatureScoringConfig,
+    thresholdComputer: IFeatureThresholdsComputer,
+    lcContextByScanId: Map[Int,ILcContext]
+  ): Seq[FeatureEvaluation] = {
     //fill data 
-    val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig)) toArray
+    val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig, lcContextByScanId)) toArray
     val qualThresholds = thresholdComputer.getThresholds(fq) 
     /* just one toArray does not work ? FIXME: */
     fq.zip(features).par.map{ case (fq, f) => evaluateQualityVector(f, fq, qualThresholds) }.toArray.toSeq
   }
   
-  def computeQualityVector(f: Feature, ftScoringConfig: FeatureScoringConfig = FeatureScoringConfig()) : FeatureQualityVector = {
+  def computeQualityVector(
+    f: Feature,
+    ftScoringConfig: FeatureScoringConfig = FeatureScoringConfig(),
+    lcContextByScanId: Map[Int,ILcContext]
+  ) : FeatureQualityVector = {
     
     var (signalFluctuation, shape) = (0f, 0f)
     ftScoringConfig.methods("signalFluctuation") match {
-      case "BasicPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByBasicPeakelFinder(f)
-      case "WaveletBasedPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByWaveletBasedPeakelFinder(f)
+      case "BasicPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByBasicPeakelFinder(f,lcContextByScanId)
+      case "WaveletBasedPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByWaveletBasedPeakelFinder(f,lcContextByScanId)
       case _ => throw new Exception("Error when assigning a  shape to a feature")
     }
     
@@ -392,7 +402,7 @@ object FeatureEvaluator  {
    
     val isotopesCount = f.getPeakelsCount
     val isotopesPattern = FeatureScorer.calcRmsdIsotopicPattern(f)
-    val peakelsWidth = FeatureScorer.calcStdDevPeakelsWidth(f)
+    val peakelsWidth = 0f // FeatureScorer.calcStdDevPeakelsWidth(f)
     
     val peakels = f.getPeakels()
     val peakelsCorrelation = FeatureScorer.calcMeanPeakelCorrelation(peakels).toFloat

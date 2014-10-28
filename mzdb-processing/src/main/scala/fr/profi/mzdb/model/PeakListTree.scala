@@ -1,14 +1,15 @@
 package fr.profi.mzdb.model
 
-import collection.mutable.MapBuilder
-import collection.mutable.ArrayBuffer
-import util.control.Breaks._
-import fr.profi.mzdb.utils.ms.MsUtils
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks._
+
+import fr.profi.chemistry.model.MolecularConstants
 import fr.profi.ms.model.TheoreticalIsotopePattern
+import fr.profi.mzdb.utils.ms.MsUtils
 
 object PeakListTree {
   
-  val avgIsotopeMassDiff = 1.0027
+  val avgIsotopeMassDiff = MolecularConstants.AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF
   
   def groupPeaklists( peakListsByScanId: Map[Int, Seq[PeakList]] ): Map[Int,PeakListGroup] = {    
     Map() ++ peakListsByScanId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }

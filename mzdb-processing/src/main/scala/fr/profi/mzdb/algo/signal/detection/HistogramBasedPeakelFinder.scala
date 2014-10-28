@@ -1,8 +1,8 @@
 package fr.profi.mzdb.algo.signal.detection
 
 import scala.collection.mutable.ArrayBuffer
+import fr.profi.mzdb.model.IPeakelData
 import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.model.Peakel
 import fr.profi.util.stat._
 
 /**
@@ -15,8 +15,8 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     findPeakelsIndices( peaks.map( p => (p.getLcContext.getElutionTime , p.getIntensity.toDouble) ).toArray )
   }
   
-  def findPeakelsIndices(peakel: Peakel): Array[Tuple2[Int,Int]] = {
-    findPeakelsIndices( peakel.getLcContextIntensityPairs.map( p => (p._1.getElutionTime , p._2.toDouble) ).toArray )
+  def findPeakelsIndices(peakel: IPeakelData): Array[Tuple2[Int,Int]] = {
+    findPeakelsIndices( peakel.getElutionTimeIntensityPairs.toArray.map( p => (p._1 , p._2.toDouble) ).toArray )
   }
   
   protected def findPeakelsIndices(rtIntPairs: Array[(Float,Double)], consNbTimesThresh: Int = 2, binSize: Float = 5f ): Array[Tuple2[Int,Int]] = {

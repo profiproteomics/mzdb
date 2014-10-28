@@ -123,11 +123,11 @@ class FeatureExtractor(
       val peakCursor = firstPeakel.getNewCursor()
       while( peakCursor.next() ) {
         
-        val lcContext = peakCursor.getLcContext()
+        val thisScanId = peakCursor.getScanId()
         val peakMz = peakCursor.getMz
         
         // Retrieve the cycles surrounding the next MS2 scans
-        val thisScanId = lcContext.getScanId
+        val scanHeader = scanHeaderById(thisScanId)
         val thisCycleNum = scanHeaderById(thisScanId).getCycle
         val nextCycleNum = thisCycleNum + 1
 
@@ -163,7 +163,7 @@ class FeatureExtractor(
       while( peakCursor.next() ) {
         
         val intensity = peakCursor.getIntensity
-        val scanId = peakCursor.getLcContext.getScanId
+        val scanId = peakCursor.getScanId
 
         if( scanId < ms2scanID ) intensityBeforeMs2 = intensity
         else if( scanId > ms2scanID ) intensityAfterMs2 = intensity

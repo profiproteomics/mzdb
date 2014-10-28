@@ -39,8 +39,8 @@ object SQLiteXicStorer extends AutoCloseable {
   connection.exec("BEGIN TRANSACTION")
 
   def insertXic(peakel: Peakel) = {
-    val x = createFeatureChart(peakel.getElutionTimes(), peakel.intensityValues)
-    connection.exec(s"INSERT INTO xics VALUES (?, ${peakel.getMz}, ${peakel.getElutionTime}, ${peakel.lcContexts.length}, ${x})") //, true)
+    val x = createFeatureChart(peakel.elutionTimes, peakel.intensityValues)
+    connection.exec(s"INSERT INTO xics VALUES (?, ${peakel.getMz}, ${peakel.getApexElutionTime}, ${peakel.scanIds.length}, ${x})") //, true)
   }
   
   def close() = { 
