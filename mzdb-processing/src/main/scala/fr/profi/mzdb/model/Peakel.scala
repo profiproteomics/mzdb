@@ -403,9 +403,8 @@ class PeakelBuilder(
     )
   }
   
-  
-  
   private def _calcMeanAndSd( values: ArrayBuffer[Float] ): (Float,Float) = {
+    if( values == null ) return (0f,0f)
     
     val valuesAsDoubles = values.map(_.toDouble).toArray
     val mean = StatUtils.mean(valuesAsDoubles)
@@ -422,10 +421,10 @@ class PeakelBuilder(
   }
   
   /** Restrict to is inclusive here **/
-  def restrictToScanIdRange( minScanId: Int, maxScanId: Int ): Option[PeakelBuilder] = {
+  def restrictToScanIdRange( firstScanId: Int, lastScanId: Int ): Option[PeakelBuilder] = {
     
     val matchingScanIdsWithIdx = scanIds.zipWithIndex.filter { case (scanId,idx) =>
-      scanId >= minScanId && scanId <= maxScanId
+      scanId >= firstScanId && scanId <= lastScanId
     }
     if( matchingScanIdsWithIdx.length < 2 ) return None
     

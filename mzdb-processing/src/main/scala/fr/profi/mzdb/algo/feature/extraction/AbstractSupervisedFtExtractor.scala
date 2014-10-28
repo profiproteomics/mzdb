@@ -73,9 +73,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     //-------- REFINE PEAKEL OPTIONAL STEP --------
     val newIndexedPeakelBuilders = if ( ftXtractAlgoConfig.refineDetection == false ) indexedPeakelBuilders
     else {
-
-      //val (peaks, definedPeaks) = (maxPeakel.peaks, maxPeakel.definedPeaks)
-
+      
       // Detect peaks
       val peakelsIndices = findPeakelsIndices(
         maxPeakelBuilder,
@@ -118,14 +116,15 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       if (matchingPeakelIdxPair == null)
         return Option.empty[Feature]
 
-      // TODO: check what was the puurpose of this
+      // TODO: check what was the purpose of this
       //val ipsIndexes = (peaks.indexOf(definedPeaks(matchingPeakIdx._1)), peaks.indexOf(definedPeaks(matchingPeakIdx._2)))
 
-      val scanIds = maxPeakelBuilder.getScanIds()
+      val maxPeakelScanIds = maxPeakelBuilder.getScanIds()
       
-      val(minScanId, maxScanId) = matchingPeakelIdxPair
+      val(firstPeakelIdx, lastPeakelIdx) = matchingPeakelIdxPair
+      val(firstScanId, lastScanId) = (maxPeakelScanIds(firstPeakelIdx), maxPeakelScanIds(lastPeakelIdx) )
       
-      this.restrictPeakelBuildersToScanIdRange(indexedPeakelBuilders, minScanId, maxScanId)
+      this.restrictPeakelBuildersToScanIdRange(indexedPeakelBuilders, firstScanId, lastScanId)
     }
     
     if( newIndexedPeakelBuilders.isEmpty )
@@ -151,15 +150,15 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
    */
   protected def restrictPeakelBuildersToScanIdRange(
     indexedPeakelBuilders: Array[(PeakelBuilder, Int)],
-    minScanId: Int,
-    maxScanId: Int
+    firstScanId: Int,
+    lastScanId: Int
   ): Array[(fr.profi.mzdb.model.PeakelBuilder, Int)] = {
     val restrictedIndexedPeakels = new ArrayBuffer[(PeakelBuilder,Int)]()
     
     breakable {
-      for ( (peakel,idx) <- indexedPeakelBuilders) {
+      for ( (peakelBuilder,idx) <- indexedPeakelBuilders) {
         
-        val slicedPeakelOpt = peakel.restrictToScanIdRange(minScanId, maxScanId)
+        val slicedPeakelOpt = peakelBuilder.restrictToScanIdRange(firstScanId, lastScanId)
         
         if ( slicedPeakelOpt.isDefined )
           restrictedIndexedPeakels += slicedPeakelOpt.get -> idx
