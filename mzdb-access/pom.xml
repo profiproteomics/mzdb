@@ -53,12 +53,6 @@
       <type>so</type>
     </dependency>
 
-    <dependency>
-      <groupId>org.xerial.snappy</groupId>
-      <artifactId>snappy-java</artifactId>
-      <version>1.0.5-M3</version>
-    </dependency>
-
     <!-- Command Line Interface -->
     <dependency>
       <groupId>com.beust</groupId>
