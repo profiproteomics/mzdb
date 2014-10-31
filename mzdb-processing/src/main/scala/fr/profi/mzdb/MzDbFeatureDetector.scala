@@ -164,13 +164,11 @@ class PeakelDetectorQueue(maxSize: Int) extends Logging {
   
   def clear() = peakelDetectorQueue.clear()
   def hasEntries(): Boolean = ! peakelDetectorQueue.isEmpty
-  def stop() = synchronized {
-    
+  def stop() = synchronized {    
     // Dequeue all entries
-    while( this.hasEntries() ) {
+    /*while( this.hasEntries() ) {
       this.dequeue()
-    }
-    
+    }*/
     isStopped = true
   }
 
@@ -476,6 +474,7 @@ class MzDbFeatureDetector(
       // Update the progress computer
       //progressComputer.setCurrentStepAsCompleted()
       
+      logger.debug( "Detector queue has been stopped !" )
     }
     
     val result = try {
