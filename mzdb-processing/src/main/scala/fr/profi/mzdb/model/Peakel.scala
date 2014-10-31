@@ -384,9 +384,9 @@ class PeakelBuilder(
     val(intensity, area, fwhm) = this.integratePeakel()
     
     val(leftHwhmMean,leftHwhmSd) = _calcMeanAndSd(leftHwhms)
-    val leftHwhmCv = if( leftHwhmSd > 0 ) leftHwhmMean / leftHwhmSd else 0f
+    val leftHwhmCv = if( leftHwhmSd > 0 ) 100 * leftHwhmMean / leftHwhmSd else 0f
     val(rightHwhmMean,rightHwhmSd) = _calcMeanAndSd(rightHwhms)
-    val rightHwhmCv = if( rightHwhmSd > 0 ) rightHwhmMean / rightHwhmSd else 0f
+    val rightHwhmCv = if( rightHwhmSd > 0 ) 100 * rightHwhmMean / rightHwhmSd else 0f
     
     Peakel(
       id = id,
