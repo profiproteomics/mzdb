@@ -92,7 +92,7 @@ class UnsupervisedPeakelDetector(
     
     // Set up the progress computer
     val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newDetectionProgressPlan() )
-    val curStep = progressComputer.beginStep(UnsupervisedPeakelDetector.DETECTION_STEP1)
+    val curStep = progressComputer.resetStepStartingTime(UnsupervisedPeakelDetector.DETECTION_STEP1)
     curStep.setMaxCount(nbPeaks)
     
     // Determine an intensity threshold based on quartiles
