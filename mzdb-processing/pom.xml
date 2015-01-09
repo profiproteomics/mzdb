@@ -20,7 +20,7 @@
   </properties>
 
 	<scm>
-	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/trunk</connection>
+	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/branches/0.0.5_RP1</connection>
 	</scm>
 
   <dependencies>
