@@ -20,6 +20,10 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
+	<scm>
+	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/trunk</connection>
+	</scm>
+
   <dependencies>
 
     <!-- Scala -->
@@ -222,7 +226,24 @@
           </launchers>
         </configuration>
       </plugin>
-
+      	  <!--  Maven Release for branches and tags -->
+		<plugin>
+			<artifactId>maven-release-plugin</artifactId>
+			<version>2.5.1</version>
+			<configuration>
+				<providerImplementations>
+					<svn>javasvn</svn>
+				</providerImplementations>
+			</configuration>
+			<dependencies>
+				<dependency>
+					<groupId>com.google.code.maven-scm-provider-svnjava</groupId>
+					<artifactId>maven-scm-provider-svnjava</artifactId>
+					<version>2.1.1</version>
+					<scope>compile</scope>
+				</dependency>
+			</dependencies>
+		</plugin>
     </plugins>
   </build>
 
