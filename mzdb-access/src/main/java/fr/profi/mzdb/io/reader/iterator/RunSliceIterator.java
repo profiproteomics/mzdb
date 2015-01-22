@@ -1,5 +1,6 @@
 package fr.profi.mzdb.io.reader.iterator;
 
+import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,71 +17,71 @@ import fr.profi.mzdb.model.ScanSlice;
 
 public class RunSliceIterator extends AbstractScanSliceIterator implements Iterator<RunSlice> {
 
-    // private static String sqlQuery =
-    // "SELECT * FROM scan ORDER BY run_slice_id";
-    // private static string sqlQuery =
-    // "SELECT bounding_box.* FROM bounding_box, run_slice WHERE run_slice.ms_level = ? AND bounding_box.id IN (SELECT id from bounding_box_rtree WHERE ORDER BY run_slice.begin_mz"
-    private static String sqlQuery = "SELECT bounding_box.* FROM bounding_box, run_slice WHERE run_slice.ms_level = ? AND bounding_box.run_slice_id = run_slice.id  ORDER BY run_slice.begin_mz";
+	// private static String sqlQuery =
+	// "SELECT * FROM scan ORDER BY run_slice_id";
+	// private static string sqlQuery =
+	// "SELECT bounding_box.* FROM bounding_box, run_slice WHERE run_slice.ms_level = ? AND bounding_box.id IN (SELECT id from bounding_box_rtree WHERE ORDER BY run_slice.begin_mz"
+	private static String sqlQuery = "SELECT bounding_box.* FROM bounding_box, run_slice WHERE run_slice.ms_level = ? AND bounding_box.run_slice_id = run_slice.id  ORDER BY run_slice.begin_mz";
 
-    private static String sqlSwathQuery1 = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
-	    + "WHERE bounding_box_msn_rtree.id = bounding_box.id "
-	    + "AND bounding_box.run_slice_id = run_slice.id "
-	    + "AND run_slice.ms_level = 2 "
-	    + "AND bounding_box_msn_rtree.min_parent_mz >= ? "
-	    + "AND bounding_box_msn_rtree.max_parent_mz <= ? " + "ORDER BY run_slice.begin_mz";
+	private static String sqlSwathQuery1 = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
+			+ "WHERE bounding_box_msn_rtree.id = bounding_box.id "
+			+ "AND bounding_box.run_slice_id = run_slice.id "
+			+ "AND run_slice.ms_level = 2 "
+			+ "AND bounding_box_msn_rtree.min_parent_mz >= ? "
+			+ "AND bounding_box_msn_rtree.max_parent_mz <= ? " + "ORDER BY run_slice.begin_mz";
 
-    protected ScanSlice[] scanSliceBuffer = null;
-    protected boolean bbHasNext = true;
-    protected final HashMap<Integer, RunSliceHeader> runSliceHeaderById;
+	protected ScanSlice[] scanSliceBuffer = null;
+	protected boolean bbHasNext = true;
+	protected final HashMap<Integer, RunSliceHeader> runSliceHeaderById;
 
-    public RunSliceIterator(MzDbReader inst, int msLevel) throws SQLiteException {
-	super(inst, sqlQuery, msLevel);
-	this.runSliceHeaderById = this.mzDbReader.getRunSliceHeaderById(this.msLevel);
-    }
-
-    public RunSliceIterator(MzDbReader inst, int msLevel, double minParentMz, double maxParentMz)
-	    throws SQLiteException {
-	super(inst, sqlSwathQuery1, msLevel, minParentMz, maxParentMz);
-	this.runSliceHeaderById = this.mzDbReader.getRunSliceHeaderById(msLevel);
-    }
-
-    protected void initScanSliceBuffer() {
-
-	// ArrayList<ScanSlice> merged = new ArrayList<ScanSlice>();
-	// ScanSlice[] merged = null;
-
-	this.scanSliceBuffer = this.firstBB.asScanSlicesArray();
-	ArrayList<ScanSlice> sl = new ArrayList<ScanSlice>(Arrays.asList(this.scanSliceBuffer));
-
-	while (bbHasNext = boundingBoxIterator.hasNext()) {
-	    BoundingBox bb = boundingBoxIterator.next();
-
-	    if (bb.getRunSliceId() == this.firstBB.getRunSliceId()) {
-		sl.addAll(Arrays.asList(bb.asScanSlicesArray()));
-	    } else {
-		this.firstBB = bb;
-		break;
-	    }
+	public RunSliceIterator(MzDbReader inst, int msLevel) throws SQLiteException, StreamCorruptedException {
+		super(inst, sqlQuery, msLevel);
+		this.runSliceHeaderById = this.mzDbReader.getRunSliceHeaderById(this.msLevel);
 	}
 
-	this.scanSliceBuffer = sl.toArray(new ScanSlice[sl.size()]);
-
-	if (!bbHasNext) {
-	    this.firstBB = null;
+	public RunSliceIterator(MzDbReader inst, int msLevel, double minParentMz, double maxParentMz)
+			throws SQLiteException, StreamCorruptedException {
+		super(inst, sqlSwathQuery1, msLevel, minParentMz, maxParentMz);
+		this.runSliceHeaderById = this.mzDbReader.getRunSliceHeaderById(msLevel);
 	}
-    }
 
-    public RunSlice next() {
+	protected void initScanSliceBuffer() {
 
-	initScanSliceBuffer();
+		// ArrayList<ScanSlice> merged = new ArrayList<ScanSlice>();
+		// ScanSlice[] merged = null;
 
-	int runSliceId = this.scanSliceBuffer[0].getRunSliceId();
-	RunSliceData rsd = new RunSliceData(runSliceId, this.scanSliceBuffer);
-	// rsd.buildPeakListByScanId();
+		this.scanSliceBuffer = this.firstBB.toScanSlices();
+		ArrayList<ScanSlice> sl = new ArrayList<ScanSlice>(Arrays.asList(this.scanSliceBuffer));
 
-	RunSliceHeader rsh = this.runSliceHeaderById.get(runSliceId);
+		while (bbHasNext = boundingBoxIterator.hasNext()) {
+			BoundingBox bb = boundingBoxIterator.next();
 
-	return new RunSlice(rsh, rsd);
-    }
+			if (bb.getRunSliceId() == this.firstBB.getRunSliceId()) {
+				sl.addAll(Arrays.asList(bb.toScanSlices()));
+			} else {
+				this.firstBB = bb;
+				break;
+			}
+		}
+
+		this.scanSliceBuffer = sl.toArray(new ScanSlice[sl.size()]);
+
+		if (!bbHasNext) {
+			this.firstBB = null;
+		}
+	}
+
+	public RunSlice next() {
+
+		initScanSliceBuffer();
+
+		int runSliceId = this.scanSliceBuffer[0].getRunSliceId();
+		RunSliceData rsd = new RunSliceData(runSliceId, this.scanSliceBuffer);
+		// rsd.buildPeakListByScanId();
+
+		RunSliceHeader rsh = this.runSliceHeaderById.get(runSliceId);
+
+		return new RunSlice(rsh, rsd);
+	}
 
 }

@@ -2,19 +2,18 @@ package fr.profi.mzdb.io.writer;
 
 /** */
 public enum MgfField {
-    BEGIN_IONS("BEGIN IONS"), END_IONS("END IONS"), TITLE("TITLE"), PEPMASS("PEPMASS"), CHARGE("CHARGE"), RTINSECONDS(
-    	"RTINSECONDS");
+	BEGIN_IONS("BEGIN IONS"), END_IONS("END IONS"), TITLE("TITLE"), PEPMASS("PEPMASS"), CHARGE("CHARGE"), RTINSECONDS("RTINSECONDS");
 
-    //
-    // NEWLINE("\n"), EQUAL("="), PLUS("+");
+	//
+	// NEWLINE("\n"), EQUAL("="), PLUS("+");
 
-    private final String fieldString;
+	private final String fieldString;
 
-    MgfField(String f) {
-        this.fieldString = f;
-    }
+	MgfField(String f) {
+		this.fieldString = f;
+	}
 
-    public String toString() {
-        return this.fieldString;
-    }
+	public String toString() {
+		return this.fieldString;
+	}
 }

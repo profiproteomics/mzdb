@@ -1,5 +1,6 @@
 package fr.profi.mzdb.io.reader.iterator;
 
+import java.io.StreamCorruptedException;
 import java.util.Iterator;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -17,7 +18,7 @@ public class MsScanIterator extends AbstractScanSliceIterator implements Iterato
 	protected ScanSlice[] scanSliceBuffer = null;
 	protected boolean bbHasNext = true;
 
-	public MsScanIterator(MzDbReader inst, int msLevel) throws SQLiteException {
+	public MsScanIterator(MzDbReader inst, int msLevel) throws SQLiteException, StreamCorruptedException {
 		super(inst, sqlQuery, msLevel);
 
 		this.initScanSliceBuffer();
@@ -31,7 +32,7 @@ public class MsScanIterator extends AbstractScanSliceIterator implements Iterato
 		// return;
 		// }
 
-		this.scanSliceBuffer = this.firstBB.asScanSlicesArray();
+		this.scanSliceBuffer = this.firstBB.toScanSlices();
 
 		// for( ScanSlice sSlice: scanSliceBuffer) {
 		// ScanHeader header = mzdb.getScanHeader(sSlice.scanId);
@@ -44,7 +45,7 @@ public class MsScanIterator extends AbstractScanSliceIterator implements Iterato
 		while (bbHasNext = boundingBoxIterator.hasNext()) {// bbHasNext=
 
 			BoundingBox bb = boundingBoxIterator.next();
-			ScanSlice[] sSlices = (ScanSlice[]) bb.asScanSlicesArray();
+			ScanSlice[] sSlices = (ScanSlice[]) bb.toScanSlices();
 
 			if (sSlices == null)
 				continue;
