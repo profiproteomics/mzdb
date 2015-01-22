@@ -10,7 +10,7 @@ import fr.profi.util.stat._
  *
  */
 object HistogramBasedPeakelFinder extends IPeakelFinder {
-
+  
   def findPeakelsIndices(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
     findPeakelsIndices( peaks.map( p => (p.getLcContext.getElutionTime , p.getIntensity.toDouble) ).toArray )
   }
@@ -19,7 +19,12 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     findPeakelsIndices( peakel.getElutionTimeIntensityPairs.toArray.map( p => (p._1 , p._2.toDouble) ).toArray )
   }
   
-  protected def findPeakelsIndices(rtIntPairs: Array[(Float,Double)], consNbTimesThresh: Int = 2, binSize: Float = 5f ): Array[Tuple2[Int,Int]] = {
+  // Note 1: consNbTimesThresh must equal 1 here because of the smoothing procedure (otherwise small peaks may be not detected)
+  // Note 2: the binSize may be set to 2.5 seconds for an average cycle time of 0.5 s
+  protected def findPeakelsIndices(rtIntPairs: Array[(Float,Double)], consNbTimesThresh: Int = 1, binCount: Int = 5  ): Array[Tuple2[Int,Int]] = {
+    
+    val cycleTime = (rtIntPairs.last._1 - rtIntPairs.head._1) / rtIntPairs.length
+    val binSize = cycleTime * binCount
     
     val tmpPeakelIndices = new ArrayBuffer[Tuple2[Int,Int]]
     // Check we will have at least 3 peaks after the binning
@@ -37,8 +42,14 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     val binnedRtIntPairs = _binRtIntPairs(rtIntPairs,binSize)
     val binnedAbValues = binnedRtIntPairs.map( _._2 )
     
+    /*if( debugEnabled ) {
+      println( rtIntPairs.toList )
+      println( binnedRtIntPairs.toList )
+      println( this.smoothValues(binnedAbValues, times = 1 ).mkString("\t") )
+    }*/
+    
     // TODO: factorize this code with the one from BasicPeakelFinder
-    // or replace the BasciPeakel finder by this one
+    // or replace the BasicPeakelFinder by this one
     this.smoothValues(binnedAbValues, times = 1 ).sliding(2).foreach { buffer =>
       val prevValue = buffer(0)
       val curValue = buffer(1)

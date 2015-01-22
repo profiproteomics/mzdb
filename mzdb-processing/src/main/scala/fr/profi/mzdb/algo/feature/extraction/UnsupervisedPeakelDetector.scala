@@ -190,13 +190,6 @@ class UnsupervisedPeakelDetector(
           
           // Try to retrieve the scan id
           var curScanHOpt = pklTreeShMap.getScanHeader(curShIdx)
-          /*//if( this.ms1ScanIdByCycleNum.contains(curCycleNum) ) {
-          // Check for out of bound indices
-          if( curShIdx >= 0 && curShIdx < shCount ) {
-            // Retrieve the wanted scan header
-            //curScanHOpt = this.scanHeaderById.get(this.ms1ScanIdByCycleNum(curCycleNum))
-            curScanHOpt = Some( pklTreeScanHeaders(curShIdx) )
-          }*/
           
           if( curScanHOpt.isEmpty ) {//if wrong scanID
             timeOverRange = true
@@ -240,7 +233,10 @@ class UnsupervisedPeakelDetector(
               //if( isRightDirection ) peaksBuffer += peak // append peak
               //else { peaksBuffer.+=:( peak ) } // prepend peak
               // New one => perform sort at the end => optimization
-              else peaksBuffer += peak
+              else {
+                peaksBuffer += peak
+                consecutiveGapCount = 0
+              }
               
             // Else if peak is not defined
             } else {

@@ -304,9 +304,10 @@ class MzDbFeatureDetector(
   @BeanProperty var ftDetectorConfig: FeatureDetectorConfig = FeatureDetectorConfig()
 ) extends Logging {
   
-  val scanHeaders = mzDbReader.getScanHeaders()
-  val scanHeaderById = mzDbReader.getScanHeaders().map( sh => sh.getId.toInt -> sh ).toMap
-  val ms2ScanHeadersByCycle = scanHeaders.filter(_.getMsLevel() == 2).groupBy(_.getCycle.toInt)
+  val ms1ScanHeaderById = mzDbReader.getMs1ScanHeaders().map( sh => sh.getId.toInt -> sh ).toMap
+  val ms2ScanHeaders = mzDbReader.getMs2ScanHeaders()
+  //val ms2ScanHeaderById = ms2ScanHeaders.map( sh => sh.getId.toInt -> sh ).toMap
+  val ms2ScanHeadersByCycle = ms2ScanHeaders.groupBy(_.getCycle.toInt)
  
   // TODO: factorize this code
   // BEGIN OF STOLEN FROM MzDbFeatureExtractor
@@ -326,7 +327,7 @@ class MzDbFeatureDetector(
     val msLevel = ftDetectorConfig.msLevel
     
     val peakelDetector = new UnsupervisedPeakelDetector(
-      scanHeaderById,
+      ms1ScanHeaderById,
       Map.empty[Int,Float],
       ftDetectorConfig.mzTolPPM
     )
@@ -435,7 +436,7 @@ class MzDbFeatureDetector(
         
         // Use the map to instantiate a peakList tree which will be used for peak extraction
         val pklGroupByScanId = peakListsByScanId.map { case (scanId, pkl) => scanId -> new PeakListGroup( pkl ) } toMap
-        val pklTree = new PeakListTree( pklGroupByScanId, scanHeaderById )
+        val pklTree = new PeakListTree( pklGroupByScanId, ms1ScanHeaderById )
         
         // Update the progress computer
         //progressComputer.setCurrentStepAsCompleted()
@@ -589,7 +590,7 @@ class MzDbFeatureDetector(
       val putativeMs2Scans = new ArrayBuffer[ScanHeader]
       for(
         scanId <- ft.getScanIds;
-        sh = scanHeaderById(scanId);
+        sh = ms1ScanHeaderById(scanId);
         ms2ScanHeaders <- ms2ScanHeadersByCycle.get(sh.getCycle)
       ) {
         putativeMs2Scans ++= ms2ScanHeaders

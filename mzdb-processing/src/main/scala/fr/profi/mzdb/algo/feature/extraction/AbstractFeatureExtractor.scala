@@ -12,8 +12,8 @@ import fr.profi.mzdb.model._
 abstract class AbstractFeatureExtractor extends Logging {
   
   /** Required parameters */
-  val scanHeaderById: Map[Int, ScanHeader]
-  val nfByScanId: Map[Int, Float]
+  def scanHeaderById: Map[Int, ScanHeader]
+  def nfByScanId: Map[Int, Float]
   
   /** Computed values */
   protected val scanHeaders = scanHeaderById.values.toArray.sortBy(_.getId)
