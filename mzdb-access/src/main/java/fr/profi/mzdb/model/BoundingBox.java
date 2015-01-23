@@ -1,6 +1,7 @@
 package fr.profi.mzdb.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -154,19 +155,25 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	 */
 	public ScanSlice[] toScanSlices() {
 	  
-	  // FIXME: remove this workaround when raw2mzDB has been fixed
-	  // raw2mzDB is inserting multiple empty spectrum slices pointing to the same spectrum id
-	  // Workaround added the 22/01/2015 by DBO
-	  List<ScanSlice> nonEmptyScanSliceList = new ArrayList<ScanSlice>();
-	  
-	  for( ScanSlice scanSlice: _reader.readAllScanSlices( this._runSliceId ) ) {
-	    if( scanSlice.getData().getMzList().length > 0 ) {
-	      nonEmptyScanSliceList.add(scanSlice);
-	    }
-	  }
-	  
-    return nonEmptyScanSliceList.toArray(new ScanSlice[nonEmptyScanSliceList.size()]);
-		//return _reader.readAllScanSlices( this._runSliceId );
+		// FIXME: remove this workaround when raw2mzDB has been fixed
+		// raw2mzDB is inserting multiple empty spectrum slices pointing to the same spectrum id
+		// Workaround added the 22/01/2015 by DBO
+		HashSet<Integer> scanIdSet = new HashSet<Integer>();
+		
+		List<ScanSlice> scanSliceList = new ArrayList<ScanSlice>();
+		for (ScanSlice scanSlice : _reader.readAllScanSlices(this._runSliceId)) {
+
+			int scanId = scanSlice.getHeader().getId();
+
+			// if( scanSlice.getData().getMzList().length > 0 ) {
+			if (scanIdSet.contains(scanId) == false) {
+				scanSliceList.add(scanSlice);
+				scanIdSet.add(scanId);
+			}
+		}
+
+		return scanSliceList.toArray(new ScanSlice[scanSliceList.size()]);
+		// return _reader.readAllScanSlices( this._runSliceId );
 	}
 
 	/**
