@@ -1217,36 +1217,15 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 * @throws StreamCorruptedException 
 	 */
-	public Iterator<RunSlice> getRunSliceIterator(int msLevel, double minParentMz, double maxParentMz)
+	public Iterator<RunSlice> getRunSliceIterator(int msLevel, double minMz, double maxMz)
 			throws SQLiteException, StreamCorruptedException {
-
-		// lazy loading
-		
-//		final AcquisitionMode acMode = this.getAcquisitionMode();
-//
-//		if (acMode == AcquisitionMode.SWATH) { // lazy loading final IsolationWindow[] swathWindows =
-//			this.getDIAPrecurorRanges();
-//			for (final IsolationWindow p : swathWindows) {
-//				final double maxMz = p.getMaxMz();
-//				if (p.getMinMz() <= minParentMz && maxMz > minParentMz) {
-//					if (maxParentMz > maxMz) {
-//						this.logger.warn("You provided erronous parent mzs. "
-//								+ "maxParentMz is outside of the swath isolation window."); // setting new
-//																							// value to
-//																							// maxParentMz
-//						maxParentMz = maxMz;
-//						break;
-//					}
-//				}
-//			}
-//		}
 
 		final SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
 		while (fakeStmt.step()) {
 		}
 		fakeStmt.dispose();
 
-		return new RunSliceIterator(this, msLevel, minParentMz, maxParentMz);
+		return new RunSliceIterator(this, msLevel, minMz, maxMz);
 	}
 
 	/**

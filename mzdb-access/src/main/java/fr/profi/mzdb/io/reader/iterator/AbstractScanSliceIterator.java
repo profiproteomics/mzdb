@@ -14,7 +14,6 @@ public abstract class AbstractScanSliceIterator {
 	protected final MzDbReader mzDbReader;
 	protected final SQLiteStatement statement;
 	protected final BoundingBoxIterator boundingBoxIterator;
-	// protected boolean isStatementClosed = false;
 	protected BoundingBox firstBB;
 	protected int msLevel;
 
@@ -40,8 +39,8 @@ public abstract class AbstractScanSliceIterator {
 		MzDbReader mzDbReader,
 		String sqlQuery,
 		int msLevel,
-		double minParentMz,
-		double maxParentMz
+		double minMz,
+		double maxMz
 	) throws SQLiteException, StreamCorruptedException {
 
 		this.mzDbReader = mzDbReader;
@@ -51,8 +50,9 @@ public abstract class AbstractScanSliceIterator {
 		SQLiteStatement stmt = conn.prepare(sqlQuery, true);
 
 		// bind the two arguments
-		stmt.bind(1, minParentMz);
-		stmt.bind(2, maxParentMz);
+		stmt.bind(1, msLevel);
+		stmt.bind(2, minMz);
+		stmt.bind(3, maxMz);
 
 		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt, this.msLevel);
 
@@ -74,13 +74,7 @@ public abstract class AbstractScanSliceIterator {
 	}
 
 	public void closeStatement() {
-		// if ( ! boundingBoxIterator.statement.isDisposed()) {
 		statement.dispose();
-		/*
-		 * if (!isStatementClosed && boundingBoxIterator.isStatementClosed()) { if (statement != null)
-		 * statement.dispose(); isStatementClosed = true;
-		 */
-		// }
 	}
 
 	public boolean hasNext() {

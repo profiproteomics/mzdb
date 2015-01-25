@@ -17,16 +17,19 @@ import fr.profi.mzdb.model.ScanSlice;
 
 public class RunSliceIterator extends AbstractScanSliceIterator implements Iterator<RunSlice> {
 
-	// private static String sqlQuery =
-	// "SELECT * FROM scan ORDER BY run_slice_id";
-	// private static string sqlQuery =
-	// "SELECT bounding_box.* FROM bounding_box, run_slice WHERE run_slice.ms_level = ? AND bounding_box.id IN (SELECT id from bounding_box_rtree WHERE ORDER BY run_slice.begin_mz"
 	private static String sqlQuery = "SELECT bounding_box.* FROM bounding_box, run_slice WHERE run_slice.ms_level = ? AND bounding_box.run_slice_id = run_slice.id  ORDER BY run_slice.begin_mz";
 
+	private static String sqlBoundedQuery = "SELECT bounding_box.* FROM bounding_box, run_slice "
+			+ "WHERE run_slice.ms_level = ? "
+			+ "AND bounding_box.run_slice_id = run_slice.id  "
+			+ "AND run_slice.end_mz >= ? "
+			+ "AND run_slice.begin_mz <= ?"
+			+ "ORDER BY run_slice.begin_mz";
+	
 	private static String sqlSwathQuery1 = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
 			+ "WHERE bounding_box_msn_rtree.id = bounding_box.id "
 			+ "AND bounding_box.run_slice_id = run_slice.id "
-			+ "AND run_slice.ms_level = 2 "
+			+ "AND run_slice.ms_level = ? "
 			+ "AND bounding_box_msn_rtree.min_parent_mz >= ? "
 			+ "AND bounding_box_msn_rtree.max_parent_mz <= ? " + "ORDER BY run_slice.begin_mz";
 
@@ -39,17 +42,20 @@ public class RunSliceIterator extends AbstractScanSliceIterator implements Itera
 		this.runSliceHeaderById = this.mzDbReader.getRunSliceHeaderById(this.msLevel);
 	}
 
-	public RunSliceIterator(MzDbReader inst, int msLevel, double minParentMz, double maxParentMz)
+	public RunSliceIterator(MzDbReader inst, int msLevel, double minMz, double maxMz)
 			throws SQLiteException, StreamCorruptedException {
-		super(inst, sqlSwathQuery1, msLevel, minParentMz, maxParentMz);
+		super(inst, getBBSelectQuery(msLevel), msLevel, minMz, maxMz);
 		this.runSliceHeaderById = this.mzDbReader.getRunSliceHeaderById(msLevel);
 	}
 
+	private static String getBBSelectQuery(int msLevel) {
+		if (msLevel > 1) 
+			return sqlSwathQuery1;
+		return sqlBoundedQuery;
+	}
+	
 	protected void initScanSliceBuffer() {
-
-		// ArrayList<ScanSlice> merged = new ArrayList<ScanSlice>();
-		// ScanSlice[] merged = null;
-
+		
 		this.scanSliceBuffer = this.firstBB.toScanSlices();
 		ArrayList<ScanSlice> sl = new ArrayList<ScanSlice>(Arrays.asList(this.scanSliceBuffer));
 
