@@ -2,6 +2,7 @@ package fr.profi.mzdb.model
 
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.Buffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
 import fr.profi.mzdb.utils.misc.InMemoryIdGen
@@ -139,6 +140,10 @@ case class Feature(
 
   def this(mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike], isPredicted: Boolean ) = {
     this(Feature.generateNewId(), mz, charge, isotopicPatterns, isPredicted)
+  }
+  
+  def this(mz: Double, charge: Int, peakels: Buffer[Peakel], isPredicted: Boolean ) = {
+    this(id = Feature.generateNewId(), mz = mz, charge = charge, indexedPeakels = peakels.zipWithIndex.toArray, isPredicted = isPredicted)
   }
 
   // Require that all peakels have the same length
