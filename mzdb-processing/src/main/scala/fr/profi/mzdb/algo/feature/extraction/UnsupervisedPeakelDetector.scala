@@ -268,8 +268,14 @@ class UnsupervisedPeakelDetector(
       // Sort peaks by ascending scan id
       val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
       
-      // Find all peakels in the extracted range of IPs
-      val peakelsIndices = HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
+      // Check if habe enough peaks for peakel detection
+      val peakelsIndices = if( extractedPeaks.length < HistogramBasedPeakelFinder.binCount * 5 ) {
+        // Return all extracted peaks if too low number of peaks
+        Array( (0,extractedPeaks.length - 1) )
+      } else {
+        // Find all peakels in the extracted peaks
+        HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
+      }
       
       // Retrieve the peakel corresponding to the feature apex
       val matchingPeakelIdxOpt = peakelsIndices.find { idx =>

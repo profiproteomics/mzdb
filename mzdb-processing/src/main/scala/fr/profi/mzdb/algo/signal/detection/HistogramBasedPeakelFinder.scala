@@ -11,6 +11,9 @@ import fr.profi.util.stat._
  */
 object HistogramBasedPeakelFinder extends IPeakelFinder {
   
+  var consNbTimesThresh = 2
+  var binCount = 5
+  
   def findPeakelsIndices(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
     findPeakelsIndices( peaks.map( p => (p.getLcContext.getElutionTime , p.getIntensity.toDouble) ).toArray )
   }
@@ -21,14 +24,16 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
   
   // Note 1: consNbTimesThresh must equal 1 here because of the smoothing procedure (otherwise small peaks may be not detected)
   // Note 2: the binSize may be set to 2.5 seconds for an average cycle time of 0.5 s
-  protected def findPeakelsIndices(rtIntPairs: Array[(Float,Double)], consNbTimesThresh: Int = 1, binCount: Int = 5  ): Array[Tuple2[Int,Int]] = {
+  protected def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[Tuple2[Int,Int]] = {
     
     val cycleTime = (rtIntPairs.last._1 - rtIntPairs.head._1) / rtIntPairs.length
     val binSize = cycleTime * binCount
-    
-    val tmpPeakelIndices = new ArrayBuffer[Tuple2[Int,Int]]
+    val bins = _binRtIntPairs(rtIntPairs,binSize)
+
     // Check we will have at least 3 peaks after the binning
-    if( (rtIntPairs.last._1 - rtIntPairs.head._1) / binSize < 3 ) return tmpPeakelIndices.toArray
+    if( bins.size < 3 ) return Array()
+    
+    val binnedAbValues = bins.map( _._2 )
     
     var peakDetectionBegin = false
     var afterMinimum = true
@@ -39,14 +44,8 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     var prevMinIdx = 0
     
     var peakIdx = 0
-    val binnedRtIntPairs = _binRtIntPairs(rtIntPairs,binSize)
-    val binnedAbValues = binnedRtIntPairs.map( _._2 )
     
-    /*if( debugEnabled ) {
-      println( rtIntPairs.toList )
-      println( binnedRtIntPairs.toList )
-      println( this.smoothValues(binnedAbValues, times = 1 ).mkString("\t") )
-    }*/
+    val tmpPeakelIndices = new ArrayBuffer[Tuple2[Int,Int]]
     
     // TODO: factorize this code with the one from BasicPeakelFinder
     // or replace the BasicPeakelFinder by this one
@@ -96,23 +95,23 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
       peakIdx += 1
     }
     
-    if( afterMaximum ) tmpPeakelIndices += Tuple2(prevMinIdx,binnedRtIntPairs.length-1) //|| peaks.length == 0 
+    if( afterMaximum ) tmpPeakelIndices += Tuple2(prevMinIdx,bins.length-1) //|| peaks.length == 0 
     
-    // Convert peakel indices of binned values into indices of input values    
+    // Convert peakel indices of binned values into indices of input values
     val peakelIndices = new ArrayBuffer[Tuple2[Int,Int]]( tmpPeakelIndices.length )
     val rtInPairsWithIndex = rtIntPairs.zipWithIndex
     
     for( peakelIdx <- tmpPeakelIndices ) {
-      val(firstBin,lastBin) = (binnedRtIntPairs(peakelIdx._1),binnedRtIntPairs(peakelIdx._2))
-      val firstIdx = rtInPairsWithIndex.find( _._1._1 >= firstBin._1 ).get._2
-      val lastIdx = rtInPairsWithIndex.find( _._1._1 >= lastBin._1 ).get._2
+      val(firstBin,lastBin) = (bins(peakelIdx._1)._1,bins(peakelIdx._2)._1)
+      val firstIdx = rtInPairsWithIndex.find( _._1._1 >= firstBin.lowerBound ).get._2
+      val lastIdx = rtInPairsWithIndex.find( _._1._1 >= lastBin.upperBound ).map(_._2).getOrElse( rtIntPairs.length - 1 )
       peakelIndices += (firstIdx -> lastIdx)
     }
     
     peakelIndices.toArray
   }
   
-  private def _binRtIntPairs( rtIntPairs: Array[(Float,Double)], binSize: Float ): Array[(Float,Double)] = {
+  private def _binRtIntPairs( rtIntPairs: Array[(Float,Double)], binSize: Float ): Array[(Bin,Double)] = {
     
     // Instantiate an histogram computer
     val histoComputer = new EntityHistogramComputer(rtIntPairs, { rtIntPair: (Float,Double) => rtIntPair._1.toDouble } )
@@ -125,7 +124,7 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     
     val newRtIntPairs = rtIntPairsHisto.map { case (bin, dataPoints) =>
       val intSum = dataPoints.foldLeft(0.0) { (s,dp) => s + dp._2 }
-      (bin.lowerBound.toFloat,intSum)
+      (bin,intSum)
     }
     
     newRtIntPairs
