@@ -66,9 +66,8 @@ class UnsupervisedPeakelDetector(
   val nfByScanId: Map[Int,Float],
   // TODO: create configs for signal extraction
   val mzTolPPM: Float,
-  val maxConsecutiveGaps: Int = 2,
-  val maxTimeWindow: Float = 1200f,
-  val minPercentageOfMaxInt: Float = 0.005f
+  val maxConsecutiveGaps: Int = 3,
+  val maxTimeWindow: Float = 1200f
 ) extends Logging {
   
   /*val msLevel = 2
@@ -87,7 +86,7 @@ class UnsupervisedPeakelDetector(
     if( intensityDescPeaks.length < 10 ) return Array()
     
     val usedPeakSet = new HashSet[Peak]()
-    
+        
     val nbPeaks = intensityDescPeaks.length
     
     // Set up the progress computer
@@ -127,10 +126,11 @@ class UnsupervisedPeakelDetector(
           if( peakelOpt.isDefined ) {
             val peakel = peakelOpt.get
             val apexIdx = peakel.apexIndex
-            
+      
             // Append peakel only if its apex is not at the extrema
-            if( apexIdx > 0 && apexIdx < peakel.scanIds.length - 1 )
+            if( apexIdx > 0 && apexIdx < peakel.scanIds.length - 1 ) {
               peakelBuffer += peakelOpt.get
+            }
           }
         }
       }
@@ -168,6 +168,9 @@ class UnsupervisedPeakelDetector(
     
     // Create a buffer for peaks
     val peaksBuffer = new ListBuffer[Peak]()
+    
+//          logger.debug("Extract Peakel from apex mz=" + apexMz + ", intensity=" +apexIntensity + ", scanId="+apexScanHeader.getInitialId())
+
     
     // Loop until left and right directions have been analyzed
     while( numOfAnalyzedDirections < 2 ) {
@@ -221,13 +224,8 @@ class UnsupervisedPeakelDetector(
               
               // Retrieve some values
               val intensity = peak.getIntensity
-              
-              // If the peak intensity is higher than apex one
-              if( intensity > apexIntensity ) {
-                break
-              }
-              // Check if intensity equals zero
-              else if( intensity == 0 ) consecutiveGapCount += 1
+                
+              if( intensity == 0 ) consecutiveGapCount += 1
               // Add the peak to the peaks buffer
               // Note: before code
               //if( isRightDirection ) peaksBuffer += peak // append peak
@@ -326,7 +324,7 @@ class UnsupervisedPeakelDetector(
         
       // TODO: define a minimum amplitude for a peakel in the config
       val( minIntensity, maxIntensity ) = (peaksSortedByItensity.head.getIntensity, peaksSortedByItensity.last.getIntensity)
-      val intensityAmplitude = if( minIntensity == 0 ) 1f else maxIntensity / minIntensity
+      val intensityAmplitude = if( minIntensity == 0 ) 2f else maxIntensity / minIntensity
       val minAmplitude = 1.5f
       
       if( intensityAmplitude < minAmplitude ) {
