@@ -9,7 +9,7 @@
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-access</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
+  <version>0.0.3</version>
 
   <description>The mzDB access Java library</description>
 
@@ -19,7 +19,7 @@
   </properties>
 
 	<scm>
-	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/branches/0.0.3_RP1</connection>
+	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/tags/0.0.3</connection>
 	</scm>
 
   <dependencies>
