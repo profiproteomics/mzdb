@@ -10,7 +10,7 @@
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-processing</artifactId>
-  <version>0.0.5-SNAPSHOT</version>
+  <version>0.0.5</version>
 
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
@@ -20,7 +20,7 @@
   </properties>
 
 	<scm>
-	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/branches/0.0.5_RP1</connection>
+	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/tags/0.0.5</connection>
 	</scm>
 
   <dependencies>
@@ -84,7 +84,7 @@
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>mzdb-access</artifactId>
-      <version>0.0.3-SNAPSHOT</version>
+      <version>0.0.3</version>
     </dependency>
 
     <!-- Command Line Interface -->
@@ -98,7 +98,7 @@
     <dependency>
       <groupId>fr.proline.util</groupId>
       <artifactId>ProFI-Commons-Scala</artifactId>
-      <version>0.0.9-SNAPSHOT</version>
+      <version>0.0.9</version>
     </dependency>
 
     <!-- Test -->
