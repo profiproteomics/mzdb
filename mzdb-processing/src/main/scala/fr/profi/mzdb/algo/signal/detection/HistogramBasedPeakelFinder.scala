@@ -3,16 +3,20 @@ package fr.profi.mzdb.algo.signal.detection
 import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.model.IPeakelData
 import fr.profi.mzdb.model.Peak
+import fr.profi.util.math.getMedianObject
 import fr.profi.util.stat._
 
 /**
  * @author David Bouyssie
  *
  */
+case class ExtendedBin( bin: Bin, sum: Double )
+
 object HistogramBasedPeakelFinder extends IPeakelFinder {
   
-  var consNbTimesThresh = 2
-  var binCount = 5
+  var sameSlopeCountThreshold = 2
+  var expectedBinDataPointsCount = 5
+  var debug = false
   
   def findPeakelsIndices(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
     findPeakelsIndices( peaks.map( p => (p.getLcContext.getElutionTime , p.getIntensity.toDouble) ).toArray )
@@ -24,94 +28,112 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
   
   // Note 1: consNbTimesThresh must equal 1 here because of the smoothing procedure (otherwise small peaks may be not detected)
   // Note 2: the binSize may be set to 2.5 seconds for an average cycle time of 0.5 s
-  protected def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[Tuple2[Int,Int]] = {
+  def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[Tuple2[Int,Int]] = {
+    
+    // Check we have at least 5 peaks before the filtering
+    if( rtIntPairs.length < 5 ) return Array()
+    
+    // Applying a moving median filter while keeping first and last values
+    /*
+    val filteredRtIntPairs = Array(rtIntPairs.head) ++ rtIntPairs.sliding(3).map { buffer =>
+      getMedianObject( buffer, { (a: (Float,Double), b: (Float,Double)) =>
+        a._2 > b._2
+      } )
+    } ++ Array(rtIntPairs.last)
+    require( filteredRtIntPairs.length == rtIntPairs.length, "filtered array must have the same length than unfiltered one")
+    */
     
     val cycleTime = (rtIntPairs.last._1 - rtIntPairs.head._1) / rtIntPairs.length
-    val binSize = cycleTime * binCount
+    val binSize = cycleTime * expectedBinDataPointsCount
     val bins = _binRtIntPairs(rtIntPairs,binSize)
+    val nbBins = bins.length
 
-    // Check we will have at least 3 peaks after the binning
-    if( bins.size < 3 ) return Array()
+    // Check we have at least 3 peaks after the binning
+    if( nbBins < 3 ) return Array()
     
-    val binnedAbValues = bins.map( _._2 )
+    // Convert bins into array and add paddings
+    val binnedAbValues = bins.map( _.sum )
     
-    var peakDetectionBegin = false
-    var afterMinimum = true
-    var afterMaximum = false
-    var nbConsecutiveTimes = 1
-    var prevSlope = 0
-    var prevMaxValue = 0.0
-    var prevMinIdx = 0
+    // Smooth bin values
+    val nbSmoothingPoints = math.sqrt(nbBins).toInt
+    val smoothedValues = this.smoothValues(
+      binnedAbValues,
+      smoothingConfig = SmoothingConfig(
+        nbPoints = 3, //if( nbSmoothingPoints < 3 ) 3 else nbSmoothingPoints,
+        times = 1
+      )
+    )
     
-    var peakIdx = 0
+    /*if( debug ) {
+      println( bins.map(_.bin.lowerBound / 60 ).mkString("\t"))
+      println( binnedAbValues.mkString("\t") )
+      println( smoothedValues.mkString("\t") )
+    }*/
     
-    val tmpPeakelIndices = new ArrayBuffer[Tuple2[Int,Int]]
+    // Make left to right analysis
+    val leftToRightBinIndices = BasicPeakelFinder.findPeakelsIndicesFromSmoothedIntensities(
+      smoothedValues,
+      sameSlopeCountThresh = HistogramBasedPeakelFinder.sameSlopeCountThreshold
+    )
     
-    // TODO: factorize this code with the one from BasicPeakelFinder
-    // or replace the BasicPeakelFinder by this one
-    this.smoothValues(binnedAbValues, times = 1 ).sliding(2).foreach { buffer =>
-      val prevValue = buffer(0)
-      val curValue = buffer(1)
-      val curSlope = (curValue - prevValue).signum
-      
-      // Small hack to start peak detection when signal is increasing
-      if( peakDetectionBegin == false) {
-        if( curSlope == 1 ) {
-          peakDetectionBegin = true
-          prevMinIdx = peakIdx
-        }
-      }
-      
-      if( peakDetectionBegin ) {
-        
-        if( afterMaximum && curValue > prevMaxValue ) {
-          //afterMaximum = false
-          //afterMinimum = true
-          prevMaxValue = curValue
-        }
-        
-        if( curSlope != prevSlope ) {
-          if( nbConsecutiveTimes >= consNbTimesThresh ) {
-            if( prevSlope == 1 && afterMinimum ) {
-              prevMaxValue = prevValue
-              afterMaximum = true
-              afterMinimum = false
-            }
-            else if( prevSlope == -1 && afterMaximum && prevValue < prevMaxValue/2 ) {
-              tmpPeakelIndices += Tuple2(prevMinIdx,peakIdx)
-              prevMinIdx = peakIdx
-              afterMaximum = false
-              afterMinimum = true
-            }
-          }
-          
-          nbConsecutiveTimes = 1
-        }
-        else if ( curSlope != 0 ) nbConsecutiveTimes += 1
-        
-      }
-      
-      prevSlope = curSlope
-      peakIdx += 1
+    // Make right to left analysis
+    val maxBinIdx = nbBins - 1
+    val rightToLeftBinIndices = BasicPeakelFinder.findPeakelsIndicesFromSmoothedIntensities(
+      // Reverse values
+      smoothedValues.reverse,
+      sameSlopeCountThresh = HistogramBasedPeakelFinder.sameSlopeCountThreshold
+    ) map { rightToLeftBinIdx =>
+      // Reverse bin indices
+      ( maxBinIdx - rightToLeftBinIdx._2, maxBinIdx - rightToLeftBinIdx._1 )
     }
     
-    if( afterMaximum ) tmpPeakelIndices += Tuple2(prevMinIdx,bins.length-1) //|| peaks.length == 0 
+    // Check we have the same number of bins using left and right analyses
+    val finalBinIndices = if( leftToRightBinIndices.length != rightToLeftBinIndices.length ) leftToRightBinIndices.toArray
+    else {
+      // Compute intersections of detected peakel indices using both analyses
+      val allBinIndicesSorted = (leftToRightBinIndices ++ rightToLeftBinIndices).sortBy(_._1)
+      val binIndicesIntersections = new ArrayBuffer[(Int, Int)]
+      
+      // Compute intersections of detected peakel indices using both analyses
+      for( leftToRightBinIdx <- leftToRightBinIndices; rightToLeftBinIdx <- rightToLeftBinIndices ) {
+        if( rightToLeftBinIdx._1 >= leftToRightBinIdx._1 && rightToLeftBinIdx._1 < leftToRightBinIdx._2 ) {
+          val firstBinIdx = ( math.max(leftToRightBinIdx._1, rightToLeftBinIdx._1) )
+          val lastBinIdx = ( math.min(leftToRightBinIdx._2, rightToLeftBinIdx._2) )
+          
+          /*if( lastBinIdx <= firstBinIdx) {
+            println( leftToRightBinIdx )
+            println( rightToLeftBinIdx )
+            println( binnedAbValues.mkString("\t") )
+            println( smoothedValues.mkString("\t") )
+          }*/
+          
+          require( lastBinIdx > firstBinIdx, "error during computation of peakel indices intersection")
+          
+          binIndicesIntersections += ( firstBinIdx -> lastBinIdx )
+        }
+      }
+      
+      binIndicesIntersections.toArray
+    }
     
     // Convert peakel indices of binned values into indices of input values
-    val peakelIndices = new ArrayBuffer[Tuple2[Int,Int]]( tmpPeakelIndices.length )
+    val peakelIndices = new ArrayBuffer[Tuple2[Int,Int]]( finalBinIndices.length )
     val rtInPairsWithIndex = rtIntPairs.zipWithIndex
     
-    for( peakelIdx <- tmpPeakelIndices ) {
-      val(firstBin,lastBin) = (bins(peakelIdx._1)._1,bins(peakelIdx._2)._1)
+    for( binIdx <- finalBinIndices ) {
+      val(firstBin,lastBin) = (bins(binIdx._1).bin, bins(binIdx._2).bin)
       val firstIdx = rtInPairsWithIndex.find( _._1._1 >= firstBin.lowerBound ).get._2
       val lastIdx = rtInPairsWithIndex.find( _._1._1 >= lastBin.upperBound ).map(_._2).getOrElse( rtIntPairs.length - 1 )
+      
+      // TODO: remove lowest peaks from peakels ??? (threshold on relative difference ?)
+      
       peakelIndices += (firstIdx -> lastIdx)
     }
     
     peakelIndices.toArray
   }
   
-  private def _binRtIntPairs( rtIntPairs: Array[(Float,Double)], binSize: Float ): Array[(Bin,Double)] = {
+  private def _binRtIntPairs( rtIntPairs: Array[(Float,Double)], binSize: Float ): Array[ExtendedBin] = {
     
     // Instantiate an histogram computer
     val histoComputer = new EntityHistogramComputer(rtIntPairs, { rtIntPair: (Float,Double) => rtIntPair._1.toDouble } )
@@ -122,12 +144,18 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     
     val rtIntPairsHisto = histoComputer.calcHistogram(nbBins)
     
-    val newRtIntPairs = rtIntPairsHisto.map { case (bin, dataPoints) =>
+    val extendedBins = rtIntPairsHisto.map { case (bin, dataPoints) =>
       val intSum = dataPoints.foldLeft(0.0) { (s,dp) => s + dp._2 }
-      (bin,intSum)
+      
+      ExtendedBin(bin,intSum)
     }
     
-    newRtIntPairs
+    //extendedBins
+    
+    // Add some padding to the bins (needed for smoothing operation)
+    Array( extendedBins.head.copy( sum = rtIntPairs.head._2 ) ) ++ 
+      extendedBins ++ 
+    Array( extendedBins.last.copy( sum = rtIntPairs.last._2 ) )
   }
 
 }
