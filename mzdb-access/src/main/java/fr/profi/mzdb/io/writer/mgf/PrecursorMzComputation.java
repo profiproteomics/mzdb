@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.writer;
+package fr.profi.mzdb.io.writer.mgf;
 
 /** */
 public enum PrecursorMzComputation {

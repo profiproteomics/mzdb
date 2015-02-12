@@ -13,8 +13,8 @@ import com.beust.jcommander.Parameter;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.param.UserParam;
-import fr.profi.mzdb.io.writer.MgfWriter;
-import fr.profi.mzdb.io.writer.PrecursorMzComputation;
+import fr.profi.mzdb.io.writer.mgf.MgfWriter;
+import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputation;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.ScanHeader;
 

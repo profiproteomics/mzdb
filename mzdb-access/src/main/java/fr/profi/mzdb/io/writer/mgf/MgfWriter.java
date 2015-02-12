@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.writer;
+package fr.profi.mzdb.io.writer.mgf;
 
 import java.io.File;
 import java.io.FileNotFoundException;

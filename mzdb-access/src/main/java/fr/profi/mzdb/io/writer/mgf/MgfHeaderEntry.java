@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.writer;
+package fr.profi.mzdb.io.writer.mgf;
 
 /** Class representing a row in the MGF header */
 public class MgfHeaderEntry {
