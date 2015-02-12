@@ -10,6 +10,8 @@ import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.Scan;
 import fr.profi.mzdb.model.ScanSlice;
 
+import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
+
 public class MsScanIterator extends AbstractScanSliceIterator implements Iterator<Scan> {
 
 	private static String sqlQuery = "SELECT bounding_box.* FROM bounding_box, spectrum WHERE spectrum.id = bounding_box.first_spectrum_id AND spectrum.ms_level= ?";
@@ -19,7 +21,7 @@ public class MsScanIterator extends AbstractScanSliceIterator implements Iterato
 	protected boolean bbHasNext = true;
 
 	public MsScanIterator(MzDbReader inst, int msLevel) throws SQLiteException, StreamCorruptedException {
-		super(inst, sqlQuery, msLevel);
+		super(inst, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) );
 
 		this.initScanSliceBuffer();
 	}

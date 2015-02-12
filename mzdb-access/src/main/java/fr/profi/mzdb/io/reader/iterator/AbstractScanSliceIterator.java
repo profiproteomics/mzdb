@@ -1,13 +1,14 @@
 package fr.profi.mzdb.io.reader.iterator;
 
 import java.io.StreamCorruptedException;
-
-import fr.profi.mzdb.MzDbReader;
-import fr.profi.mzdb.model.BoundingBox;
+import java.util.function.Consumer;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+
+import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.model.BoundingBox;
 
 public abstract class AbstractScanSliceIterator {
 
@@ -15,48 +16,25 @@ public abstract class AbstractScanSliceIterator {
 	protected final SQLiteStatement statement;
 	protected final BoundingBoxIterator boundingBoxIterator;
 	protected BoundingBox firstBB;
-	protected int msLevel;
-
-	public AbstractScanSliceIterator(MzDbReader mzdbReader, String sqlQuery, int msLevel)
+	protected final int msLevel;
+	
+	public AbstractScanSliceIterator(MzDbReader mzDbReader, String sqlQuery, int msLevel, Consumer<SQLiteStatement> stmtBinder ) 
 			throws SQLiteException, StreamCorruptedException {
-
-		this.mzDbReader = mzdbReader;
-
+		
+		// Retrieve SQLite connection
 		SQLiteConnection conn = mzDbReader.getConnection();
-		SQLiteStatement stmt = conn.prepare(sqlQuery, true); // false = disable
-		// statement cache
-		stmt.bind(1, msLevel);
+		
+		// Create a new statement (will be automatically closed by the StatementIterator)
+		SQLiteStatement stmt = conn.prepare(sqlQuery, true); // true = cached enabled
+		
+		// Call the statement binder
+		stmtBinder.accept(stmt);
 
-		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt, msLevel);
-
-		this.statement = stmt;
-		this.msLevel = msLevel;
-
-		initBB();
-	}
-
-	public AbstractScanSliceIterator(
-		MzDbReader mzDbReader,
-		String sqlQuery,
-		int msLevel,
-		double minMz,
-		double maxMz
-	) throws SQLiteException, StreamCorruptedException {
-
+		// Set some fields
+		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt, msLevel);		
 		this.mzDbReader = mzDbReader;
-		this.msLevel = msLevel;
-
-		SQLiteConnection conn = mzDbReader.getConnection();
-		SQLiteStatement stmt = conn.prepare(sqlQuery, true);
-
-		// bind the two arguments
-		stmt.bind(1, msLevel);
-		stmt.bind(2, minMz);
-		stmt.bind(3, maxMz);
-
-		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt, this.msLevel);
-
 		this.statement = stmt;
+		this.msLevel = msLevel;
 
 		initBB();
 	}

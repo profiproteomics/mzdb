@@ -14,6 +14,8 @@ import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.Scan;
 import fr.profi.mzdb.model.ScanSlice;
 
+import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
+
 /**
  * @author Marco
  *
@@ -61,9 +63,9 @@ public class MsScanRangeIterator implements Iterator<Scan> {
 		protected ScanSlice[] scanSliceBuffer = null;
 		protected boolean bbHasNext = true;
 
-		public MsScanRangeIteratorImpl(MzDbReader inst, int msLevel) throws SQLiteException,
+		public MsScanRangeIteratorImpl(MzDbReader mzDbReader, int msLevel) throws SQLiteException,
 				StreamCorruptedException {
-			super(inst, sqlQuery, msLevel);
+			super(mzDbReader, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) ); // Bind msLevel
 			this.initScanSliceBuffer();
 		}
 

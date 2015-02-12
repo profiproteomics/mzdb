@@ -42,8 +42,9 @@ import fr.profi.mzdb.io.reader.ScanHeaderReader;
 import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
 import fr.profi.mzdb.io.reader.bb.IBlobReader;
 import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
+import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator;
+import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
 import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
-import fr.profi.mzdb.io.reader.iterator.RunSliceIterator;
 import fr.profi.mzdb.model.AcquisitionMode;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.DataEncoding;
@@ -1188,7 +1189,7 @@ public class MzDbReader {
 	}
 
 	/**
-	 * Gets the run slice data iterator.
+	 * Gets a run slice iterator.
 	 * 
 	 * @param msLevel
 	 *            the ms level
@@ -1196,51 +1197,88 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 * @throws StreamCorruptedException 
+	 * @Deprecated Use getLcMsRunSliceIterator or getLcMsbRunSliceIterator methods instead
+	 * 
+	 * 	TODO: remove me
 	 */
+	@Deprecated
 	public Iterator<RunSlice> getRunSliceIterator(int msLevel) throws SQLiteException, StreamCorruptedException {
-		// First pass to index data
+		
+		if( msLevel > 1 )
+			throw new IllegalArgumentException("can only iterate on data of ms_level = 1");
+		
+		return this.getLcMsRunSliceIterator();
+	}
+	
+	/**
+	 * Gets a RunSlice iterator.
+	 * 
+	 * @return the RunSlice iterator
+	 * @throws SQLiteException
+	 * @throws StreamCorruptedException 
+	 */
+	public Iterator<RunSlice> getLcMsRunSliceIterator() throws SQLiteException, StreamCorruptedException {
+		
+		// First pass to load the index
 		final SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
-		while (fakeStmt.step()) {
-		}
+		while (fakeStmt.step()) {}
 		fakeStmt.dispose();
-
-		return new RunSliceIterator(this, msLevel);
+		
+		return new LcMsRunSliceIterator(this);
+	}
+	
+	/**
+	 * Gets a RunSlice iterator for a given m/z range
+	 * 
+	 * @param minRunSliceMz
+	 * @param minRunSliceMz
+	 * @return the RunSlice iterator
+	 * @throws SQLiteException
+	 * @throws StreamCorruptedException 
+	 */
+	public Iterator<RunSlice> getLcMsRunSliceIterator(double minRunSliceMz, double maxRunSliceMz) throws SQLiteException, StreamCorruptedException {
+		return new LcMsRunSliceIterator(this, minRunSliceMz, maxRunSliceMz);
 	}
 
 	/**
-	 * Return a runSlice iterator
+	 * Gets a DIA data RunSlice iterator
+	 * 
+	 * @param minParentMz
+	 * @param maxParentMz
+	 * @return the RunSlice iterator
+	 * @throws SQLiteException
+	 * @throws StreamCorruptedException 
+	 */
+	public Iterator<RunSlice> getLcMsnRunSliceIterator(double minParentMz, double maxParentMz)
+			throws SQLiteException, StreamCorruptedException {
+
+		// First pass to load the index
+		final SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
+		while (fakeStmt.step()) {}
+		fakeStmt.dispose();
+
+		return new LcMsnRunSliceIterator(this, minParentMz, maxParentMz);
+	}
+	
+	/**
+	 * Gets a DIA data RunSlice iterator for a given m/z range
 	 * 
 	 * @param msLevel
 	 * @param minParentMz
 	 * @param maxParentMz
-	 * @return
+	 * @return the RunSlice iterator
 	 * @throws SQLiteException
 	 * @throws StreamCorruptedException 
 	 */
-	public Iterator<RunSlice> getRunSliceIterator(int msLevel, double minMz, double maxMz)
-			throws SQLiteException, StreamCorruptedException {
-
-		final SQLiteStatement fakeStmt = connection.prepare("SELECT * FROM bounding_box", false);
-		while (fakeStmt.step()) {
-		}
-		fakeStmt.dispose();
-
-		return new RunSliceIterator(this, msLevel, minMz, maxMz);
+	public Iterator<RunSlice> getLcMsnRunSliceIterator(
+		double minParentMz,
+		double maxParentMz,
+		double minRunSliceMz,
+		double maxRunSliceMz
+	) throws SQLiteException, StreamCorruptedException {
+		return new LcMsnRunSliceIterator(this, minParentMz, maxParentMz, minRunSliceMz, maxRunSliceMz);
 	}
 
-	/**
-	 * Gets the xic.
-	 * 
-	 * @param minMz
-	 *            the min mz
-	 * @param maxMz
-	 *            the max mz
-	 * @param msLevel
-	 *            the ms level
-	 * @return the xic
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
 	public enum XicMethod {
 		MAX(0), SUM(1);
 
@@ -1255,6 +1293,19 @@ public class MzDbReader {
 		}
 	};
 
+	/**
+	 * Gets the xic.
+	 * 
+	 * @param minMz
+	 *            the min mz
+	 * @param maxMz
+	 *            the max mz
+	 * @param msLevel
+	 *            the ms level
+	 * @return the xic
+	 * @throws SQLiteException
+	 *             the sQ lite exception
+	 */
 	public Peak[] getXIC(double minMz, double maxMz, int msLevel, XicMethod method) throws SQLiteException, StreamCorruptedException {
 		return getXIC(minMz, maxMz, -1, -1, msLevel, method);
 	}
