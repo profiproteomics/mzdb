@@ -59,7 +59,9 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
       println(s"Unsupervised ms2 feature detection: range(${minParentMz}, ${maxParentMz})")
       
       val ftDetectorMs2 = new MzDbFeatureDetector(mzDbReader, ftDetectorConfMs2)
-      val peakels = ftDetectorMs2.detectPeakels(minParentMz, maxParentMz)
+      val lcMSnRsIter = mzDbReader.getLcMsnRunSliceIterator(minParentMz, maxParentMz)
+
+      val peakels = ftDetectorMs2.detectPeakels(lcMSnRsIter)
 
       //val peakelGroupByTime = featureDetector.groupCorrelatedPeakels(peakels)
 

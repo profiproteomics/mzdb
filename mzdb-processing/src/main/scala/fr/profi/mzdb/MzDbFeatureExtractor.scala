@@ -11,7 +11,6 @@ import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.mzdb.algo.FeatureExtractor
 import fr.profi.mzdb.algo.ms.normalization.MsScanNormalizer
 import fr.profi.mzdb.io.reader.RunSliceDataProvider
-import fr.profi.mzdb.io.reader.iterator.RunSliceIterator
 import fr.profi.mzdb.model._
 import fr.proline.api.progress._
 import scala.collection.mutable.HashSet

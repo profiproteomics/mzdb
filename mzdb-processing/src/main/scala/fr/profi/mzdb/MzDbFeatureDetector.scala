@@ -272,19 +272,9 @@ class MzDbFeatureDetector(
   /**
    * Detect peakels using the unsupervised peakel detector
    */
-  def detectPeakels(minMz: Double = 0d, maxMz: Double = 0d): Array[Peakel] = { 
+  def detectPeakels(rsIter: Iterator[RunSlice]): Array[Peakel] = { 
     
     val msLevel = ftDetectorConfig.msLevel
-    
-    // Instantiates some objects
-    val rsIter = {
-      // Strange conditions : seems to be a hack to avoid new method def 
-      if (minMz != 0d && maxMz != 0d) {
-        mzDbReader.getRunSliceIterator(msLevel, minMz, maxMz)
-      } else {
-        mzDbReader.getRunSliceIterator(msLevel)
-      }
-    }
     
     val peakelDetector = new UnsupervisedPeakelDetector(
       ms1ScanHeaderById,
@@ -451,7 +441,7 @@ class MzDbFeatureDetector(
     val mzTolPPM = ftDetectorConfig.mzTolPPM
     val msLevel = ftDetectorConfig.msLevel
     
-    val detectedPeakels = this.detectPeakels()
+    val detectedPeakels = this.detectPeakels(mzDbReader.getLcMsRunSliceIterator())
     val nbDetectedPeakels = detectedPeakels.length
     
     this.logger.debug(s"Has detected # ${nbDetectedPeakels} peakels")
