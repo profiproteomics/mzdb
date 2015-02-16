@@ -34,8 +34,8 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 
 	public LcMsnRunSliceIterator(
 		MzDbReader mzDbReader,
-		double minParentMz,
-		double maxParentMz
+		final double minParentMz,
+		final double maxParentMz
 	) throws SQLiteException, StreamCorruptedException {
 		/*super(mzDbReader, allRunSlicesSqlQuery, 2, rethrowConsumer( (stmt) -> {
 			// Lambda require to catch Exceptions
@@ -58,10 +58,10 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 
 	public LcMsnRunSliceIterator(
 		MzDbReader mzDbReader,
-		double minParentMz,
-		double maxParentMz,
-		double minRunSliceMz,
-		double maxRunSliceMz
+		final double minParentMz,
+		final double maxParentMz,
+		final double minRunSliceMz,
+		final double maxRunSliceMz
 	) throws SQLiteException, StreamCorruptedException {		
 
 		/*super(mzDbReader, runSlicesSubsetSqlQuery, 2, rethrowConsumer( (stmt) -> {

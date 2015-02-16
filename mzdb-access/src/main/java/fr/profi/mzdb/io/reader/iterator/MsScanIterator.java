@@ -22,7 +22,7 @@ public class MsScanIterator extends AbstractScanSliceIterator implements Iterato
 	protected ScanSlice[] scanSliceBuffer = null;
 	protected boolean bbHasNext = true;
 
-	public MsScanIterator(MzDbReader inst, int msLevel) throws SQLiteException, StreamCorruptedException {
+	public MsScanIterator(MzDbReader inst, final int msLevel) throws SQLiteException, StreamCorruptedException {
 		//super(inst, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) ); // Bind msLevel
 		super(inst, sqlQuery, msLevel, new ISQLiteStatementConsumer() {
 			public void accept(SQLiteStatement stmt) throws SQLiteException {

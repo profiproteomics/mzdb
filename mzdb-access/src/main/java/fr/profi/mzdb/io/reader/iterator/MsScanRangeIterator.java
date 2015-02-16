@@ -62,7 +62,7 @@ public class MsScanRangeIterator implements Iterator<Scan> {
 		protected ScanSlice[] scanSliceBuffer = null;
 		protected boolean bbHasNext = true;
 
-		public MsScanRangeIteratorImpl(MzDbReader mzDbReader, int msLevel) throws SQLiteException,
+		public MsScanRangeIteratorImpl(MzDbReader mzDbReader, final int msLevel) throws SQLiteException,
 				StreamCorruptedException {
 			//super(mzDbReader, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) ); // Bind msLevel
 			super(mzDbReader, sqlQuery, msLevel, new ISQLiteStatementConsumer() {

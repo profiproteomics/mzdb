@@ -35,7 +35,10 @@ public class LcMsRunSliceIterator extends AbstractRunSliceIterator implements It
 		};
 	}
 	
-	private static ISQLiteStatementConsumer createRunSlicesSubsetStatementBinder(double minRunSliceMz, double maxRunSliceMz) {
+	private static ISQLiteStatementConsumer createRunSlicesSubsetStatementBinder(
+		final double minRunSliceMz,
+		final double maxRunSliceMz
+	) {
 		// Lambda require to catch Exceptions
 		// For workarounds see: http://stackoverflow.com/questions/14039995/java-8-mandatory-checked-exceptions-handling-in-lambda-expressions-why-mandato	
 		/*return rethrowConsumer( (stmt) -> {
