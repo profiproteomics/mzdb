@@ -445,13 +445,13 @@ object RunCommand extends App with Logging {
 
   protected def smoothIntensities(intensities: Array[Float]): Array[Float] = {
     val times = 3
-    import mr.go.sgfilter.SGFilter
+    import mr.go.sgfilter.SGFilterMath3
 
     // TODO: static values
     val (nl, nr, order) = (5, 5, 4)
-    val coeffs = SGFilter.computeSGCoefficients(nl, nr, order)
+    val coeffs = SGFilterMath3.computeSGCoefficients(nl, nr, order)
 
-    val sgFilter = new SGFilter(5, 5)
+    val sgFilter = new SGFilterMath3(5, 5)
     var smoothedIntensities = intensities
     for (i <- 1 to times) {
       smoothedIntensities = sgFilter.smooth(smoothedIntensities, coeffs)

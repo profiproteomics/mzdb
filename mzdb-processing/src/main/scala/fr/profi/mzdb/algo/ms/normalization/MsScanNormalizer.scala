@@ -56,14 +56,14 @@ object MsScanNormalizer {
   
   protected def smoothValues(values: Array[Float], times: Int): Array[Float] = {
     
-    import mr.go.sgfilter.SGFilter
+    import mr.go.sgfilter.SGFilterMath3
     
     val(nl,nr,order) = (10,10,1)
     
     val leftPad = Array.fill(nl)( values.head )
     val rightPad = Array.fill(nl)( values.last )
-    val coeffs = SGFilter.computeSGCoefficients(nl,nr,order)    
-    val sgFilter = new SGFilter(nl,nr)
+    val coeffs = SGFilterMath3.computeSGCoefficients(nl,nr,order)    
+    val sgFilter = new SGFilterMath3(nl,nr)
     
     var smoothedValues = values
     for( i <- 1 to times ) {

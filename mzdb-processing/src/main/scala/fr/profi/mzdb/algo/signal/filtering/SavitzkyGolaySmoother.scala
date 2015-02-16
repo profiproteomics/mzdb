@@ -1,6 +1,6 @@
 package fr.profi.mzdb.algo.signal.filtering
 
-import mr.go.sgfilter.SGFilter
+import mr.go.sgfilter.SGFilterMath3
 
 /**
  * @author David Bouyssie
@@ -15,9 +15,9 @@ class SavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfig ) ext
     val times = smoothingConfig.times
     
     val(nl,nr,order) = (nbPoints,nbPoints,polyOrder)
-    val coeffs = SGFilter.computeSGCoefficients(nl,nr,order)
+    val coeffs = SGFilterMath3.computeSGCoefficients(nl,nr,order)
 
-    val sgFilter = new SGFilter(nbPoints,nbPoints)
+    val sgFilter = new SGFilterMath3(nbPoints,nbPoints)
     var smoothedValues = rtIntPairs.map(_._2)
     val maxBeforeSG = smoothedValues.max
     

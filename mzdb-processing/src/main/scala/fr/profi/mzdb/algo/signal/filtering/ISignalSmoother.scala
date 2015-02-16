@@ -1,9 +1,9 @@
 package fr.profi.mzdb.algo.signal.filtering
 
+import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.algo.signal.generation.ChromatogramBuilder
 import fr.profi.mzdb.model.PeakelBuilder
-import scala.collection.mutable.ArrayBuffer
 
 trait ISmoothingConfig
 
