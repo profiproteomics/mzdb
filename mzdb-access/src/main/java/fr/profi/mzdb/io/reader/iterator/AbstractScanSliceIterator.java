@@ -1,7 +1,6 @@
 package fr.profi.mzdb.io.reader.iterator;
 
 import java.io.StreamCorruptedException;
-import java.util.function.Consumer;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
@@ -9,6 +8,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.model.BoundingBox;
+import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
 public abstract class AbstractScanSliceIterator {
 
@@ -18,7 +18,7 @@ public abstract class AbstractScanSliceIterator {
 	protected BoundingBox firstBB;
 	protected final int msLevel;
 	
-	public AbstractScanSliceIterator(MzDbReader mzDbReader, String sqlQuery, int msLevel, Consumer<SQLiteStatement> stmtBinder ) 
+	public AbstractScanSliceIterator(MzDbReader mzDbReader, String sqlQuery, int msLevel, ISQLiteStatementConsumer stmtBinder ) 
 			throws SQLiteException, StreamCorruptedException {
 		
 		// Retrieve SQLite connection

@@ -5,10 +5,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.function.Consumer;
 
 import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.model.BoundingBox;
@@ -16,6 +14,7 @@ import fr.profi.mzdb.model.RunSlice;
 import fr.profi.mzdb.model.RunSliceData;
 import fr.profi.mzdb.model.RunSliceHeader;
 import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
 public abstract class AbstractRunSliceIterator extends AbstractScanSliceIterator implements Iterator<RunSlice> {
 
@@ -27,7 +26,7 @@ public abstract class AbstractRunSliceIterator extends AbstractScanSliceIterator
 		MzDbReader mzDbReader,
 		String sqlQuery,
 		int msLevel,
-		Consumer<SQLiteStatement> stmtBinder
+		ISQLiteStatementConsumer stmtBinder
 	) throws SQLiteException, StreamCorruptedException {
 		super(mzDbReader, sqlQuery, msLevel, stmtBinder);
 		

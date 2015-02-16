@@ -1,20 +1,19 @@
-/**
- * 
- */
 package fr.profi.mzdb.io.reader.iterator;
 
 import java.io.StreamCorruptedException;
 import java.util.Iterator;
 
 import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.io.reader.bb.IBlobReader;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.Scan;
 import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
-import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
+//import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
 
 /**
  * @author Marco
@@ -65,7 +64,13 @@ public class MsScanRangeIterator implements Iterator<Scan> {
 
 		public MsScanRangeIteratorImpl(MzDbReader mzDbReader, int msLevel) throws SQLiteException,
 				StreamCorruptedException {
-			super(mzDbReader, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) ); // Bind msLevel
+			//super(mzDbReader, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) ); // Bind msLevel
+			super(mzDbReader, sqlQuery, msLevel, new ISQLiteStatementConsumer() {
+				public void accept(SQLiteStatement stmt) throws SQLiteException {
+					stmt.bind(1, msLevel); // Bind msLevel
+				}
+			} );
+			
 			this.initScanSliceBuffer();
 		}
 

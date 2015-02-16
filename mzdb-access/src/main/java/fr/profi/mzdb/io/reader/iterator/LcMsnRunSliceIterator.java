@@ -4,11 +4,13 @@ import java.io.StreamCorruptedException;
 import java.util.Iterator;
 
 import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.model.RunSlice;
+import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
-import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
+//import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
 
 /** Class used for DIA/SWATH data **/
 public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements Iterator<RunSlice> {
@@ -35,15 +37,23 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		double minParentMz,
 		double maxParentMz
 	) throws SQLiteException, StreamCorruptedException {
-		// Set msLevel to 2
-		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, allRunSlicesSqlQuery, 2, rethrowConsumer( (stmt) -> {
+		/*super(mzDbReader, allRunSlicesSqlQuery, 2, rethrowConsumer( (stmt) -> {
 			// Lambda require to catch Exceptions
 			// For workarounds see: http://stackoverflow.com/questions/14039995/java-8-mandatory-checked-exceptions-handling-in-lambda-expressions-why-mandato		
 			stmt.bind(1, 2); // Bind the msLevel
 			stmt.bind(2, minParentMz); // Bind the minParentMz
 			stmt.bind(3, maxParentMz); // Bind the maxParentMz
-		}) );
+		}) );*/
+		
+		// Set msLevel to 2
+		// FIXME: what about msLevel > 2 ?
+		super(mzDbReader, allRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
+			public void accept(SQLiteStatement stmt) throws SQLiteException {
+				stmt.bind(1, 2); // Bind the msLevel
+				stmt.bind(2, minParentMz); // Bind the minParentMz
+				stmt.bind(3, maxParentMz); // Bind the maxParentMz
+			}
+		} );
 	}
 
 	public LcMsnRunSliceIterator(
@@ -53,9 +63,8 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		double minRunSliceMz,
 		double maxRunSliceMz
 	) throws SQLiteException, StreamCorruptedException {		
-		// Set msLevel to 2
-		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, runSlicesSubsetSqlQuery, 2, rethrowConsumer( (stmt) -> {
+
+		/*super(mzDbReader, runSlicesSubsetSqlQuery, 2, rethrowConsumer( (stmt) -> {
 			// Lambda require to catch Exceptions
 			// For workarounds see: http://stackoverflow.com/questions/14039995/java-8-mandatory-checked-exceptions-handling-in-lambda-expressions-why-mandato
 			stmt.bind(1, 2); // Bind the msLevel
@@ -63,7 +72,19 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 			stmt.bind(3, maxParentMz); // Bind the maxParentMz
 			stmt.bind(4, minRunSliceMz); // Bind the minRunSliceMz
 			stmt.bind(5, maxRunSliceMz); // Bind the maxRunSliceMz
-		}) );
+		}) );*/
+		
+		// Set msLevel to 2
+		// FIXME: what about msLevel > 2 ?
+		super(mzDbReader, runSlicesSubsetSqlQuery, 2, new ISQLiteStatementConsumer() {
+			public void accept(SQLiteStatement stmt) throws SQLiteException {
+				stmt.bind(1, 2); // Bind the msLevel
+				stmt.bind(2, minParentMz); // Bind the minParentMz
+				stmt.bind(3, maxParentMz); // Bind the maxParentMz
+				stmt.bind(4, minRunSliceMz); // Bind the minRunSliceMz
+				stmt.bind(5, maxRunSliceMz); // Bind the maxRunSliceMz
+			}
+		} );
 	}
 
 }
