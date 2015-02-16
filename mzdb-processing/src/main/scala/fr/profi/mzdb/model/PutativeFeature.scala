@@ -23,6 +23,8 @@ case class PutativeFeature(
 
   @BeanProperty var scanId: Int = 0
   @BeanProperty var elutionTime: Float = 0
+  @BeanProperty var elutionStartTime: Float = 0
+  @BeanProperty var elutionStopTime: Float = 0
   @BeanProperty var firstScanId: Int = 0
   @BeanProperty var lastScanId: Int = 0
   @BeanProperty var evidenceMsLevel: Int = 0 // TODO: comment this attribute
