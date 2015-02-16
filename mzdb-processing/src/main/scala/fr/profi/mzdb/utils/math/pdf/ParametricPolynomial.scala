@@ -1,9 +1,6 @@
-/**
- *
- */
 package fr.profi.mzdb.utils.math.pdf
 
-import org.apache.commons.math.optimization.fitting.ParametricRealFunction
+import org.apache.commons.math3.analysis.ParametricUnivariateFunction
 
 /**
  * @author Marco
@@ -11,9 +8,9 @@ import org.apache.commons.math.optimization.fitting.ParametricRealFunction
  * but it is private, and inaccessible
  *
  */
-class ParametricPolynomial extends ParametricRealFunction {
+class ParametricPolynomial extends ParametricUnivariateFunction {
 
-  def gradient(x: Double, parameters: Array[Double]): Array[Double] = {
+  def gradient(x: Double, parameters: Double*): Array[Double] = {
     val gradient = new Array[Double](parameters.length);
     var xn = 1.0d;
     for (i <- 0 until parameters.length) {
@@ -23,7 +20,7 @@ class ParametricPolynomial extends ParametricRealFunction {
     gradient;
   }
 
-  def value(x: Double, parameters: Array[Double]): Double = {
+  def value(x: Double, parameters: Double*): Double = {
     var y = 0d;
     for (i <- parameters.length - 1 to 0 by -1) {
       y = y * x + parameters(i);
@@ -33,9 +30,9 @@ class ParametricPolynomial extends ParametricRealFunction {
 }
     
 /*
-class ParametricPoly2 extends ParametricRealFunction{
+class ParametricPoly2 extends ParametricUnivariateFunction {
 
-  def gradient(x:Double, params: Array[Double]) : Array[Double] = {
+  def gradient(x:Double, params: Double*) : Array[Double] = {
     val grad = new Array[Double](params.length)
     grad(0) = 1.0
     grad(1) = x
@@ -43,7 +40,7 @@ class ParametricPoly2 extends ParametricRealFunction{
     grad
   }
   
-  def value(x:Double, params: Array[Double]): Double = {
+  def value(x:Double, params: Double*): Double = {
     val a = params(0)
     val b = params(1)
     val c = params(2)

@@ -1,4 +1,5 @@
-package fr.profi.mzdb.algo.signal.fitting
+// DO NOT REMOVE: ME: this class must be updated to org.apache.commons.math3
+/*package fr.profi.mzdb.algo.signal.fitting
 
 import scala.reflect.BeanProperty
 import scala.collection.mutable.ArrayBuffer
@@ -6,7 +7,7 @@ import org.apache.commons.math.analysis.MultivariateMatrixFunction
 import org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimizer
 import org.apache.commons.math.optimization.VectorialPointValuePair
 import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
-import org.apache.commons.math.optimization.fitting.GaussianParametersGuesser
+import org.apache.commons.math.optimization.fitting.GaussianFitter
 import org.apache.commons.math.optimization.fitting.WeightedObservedPoint
 import org.apache.commons.math.optimization.fitting.ParametricGaussianFunction
 import org.apache.commons.math.optimization.fitting.ParametricRealFunction
@@ -106,4 +107,4 @@ class GaussFitter(@BeanProperty val x: Array[Double], //mz
     }
     optimum
   }
-}
+}*/

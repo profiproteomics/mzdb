@@ -1,9 +1,6 @@
-/**
- *
- */
 package fr.profi.mzdb.utils.math.pdf
 
-import org.apache.commons.math.optimization.fitting.ParametricRealFunction
+import org.apache.commons.math3.analysis.ParametricUnivariateFunction
 
 /**
  * @author Marco
@@ -11,11 +8,12 @@ import org.apache.commons.math.optimization.fitting.ParametricRealFunction
  * c = hwhm represents the half width at half maximum
  * fwhm = 2 * hwhm
  */
-class ParametricLorentzian extends ParametricRealFunction {
+class ParametricLorentzian extends ParametricUnivariateFunction {
+  
   /**
    * return the value with associated params 
    */
-  def value(x: Double, params: Array[Double]): Double = {
+  def value(x: Double, params: Double*): Double = {
     val a = params(0)
     val b = params(1)
     val c = params(2)
@@ -26,7 +24,7 @@ class ParametricLorentzian extends ParametricRealFunction {
   /**
    * return the partial derivatives (to a, b, and c) at point x
    */
-  def gradient(x: Double, params: Array[Double]): Array[Double] = {
+  def gradient(x: Double, params: Double*): Array[Double] = {
     val a = params(0)
     val b = params(1)
     val c = params(2)

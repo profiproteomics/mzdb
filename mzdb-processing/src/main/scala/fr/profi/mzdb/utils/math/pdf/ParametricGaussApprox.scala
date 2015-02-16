@@ -1,6 +1,7 @@
 package fr.profi.mzdb.utils.math.pdf
+
 import math.log
-import org.apache.commons.math.optimization.fitting.ParametricRealFunction
+import org.apache.commons.math3.analysis.ParametricUnivariateFunction
 
 /**
  * alpha^2x + betax + gamma
@@ -11,12 +12,12 @@ import org.apache.commons.math.optimization.fitting.ParametricRealFunction
  * 
  * This is particulary true around the detected apex
  */
-class ParametricGaussApprox extends ParametricRealFunction {
+class ParametricGaussApprox extends ParametricUnivariateFunction {
   
   /**
    * return the value with associated params 
    */
-  def value(x: Double, params: Array[Double]): Double = {
+  def value(x: Double, params: Double*): Double = {
     val a = params(0)
     val b = params(1)
     val c = params(2)
@@ -27,7 +28,7 @@ class ParametricGaussApprox extends ParametricRealFunction {
   /**
    * return the partial derivatives (to a, b, and c) at point x
    */
-  def gradient(x: Double, params: Array[Double]): Array[Double] = {
+  def gradient(x: Double, params: Double*): Array[Double] = {
     val a = params(0)
     val b = params(1)
     val c = params(2)

@@ -1,14 +1,17 @@
 package fr.profi.mzdb.utils.math.wavelet
+
 import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.Buffer
 import scala.Numeric
-import org.apache.commons.math.transform.FastFourierTransformer
-import org.apache.commons.math.complex.Complex
-import org.apache.commons.math.MathRuntimeException
+import org.apache.commons.math3.transform.DftNormalization
+import org.apache.commons.math3.transform.FastFourierTransformer
+import org.apache.commons.math3.complex.Complex
+import org.apache.commons.math3.exception.MathRuntimeException
 import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D
 import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D
+import org.apache.commons.math3.transform.TransformType
 
 /**
  * static object performing continous wavelet transform
@@ -16,7 +19,7 @@ import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D
 object WaveletUtils {
 
   /** construct a fast fourier transformer */
-  val transformer = new FastFourierTransformer
+  val transformer = new FastFourierTransformer(DftNormalization.STANDARD)
 
   /**
    * Make input length array to be power of 2
@@ -99,16 +102,16 @@ object WaveletUtils {
   def convolveUsingFft(y: Array[Double], wavelet: Array[Double], useConjugate: Boolean=true): Array[Double] = {
     val initLength = y.length
     val ypower2 = this.makePowerOf2(y)
-    val yfft = transformer.transform(ypower2)
+    val yfft = transformer.transform(ypower2, TransformType.FORWARD)
     
     val waveletsized = wavelet ++ ((for (i <- 0 until (ypower2.length - wavelet.length)) yield 0d))
     require(waveletsized.length == ypower2.length, s"ydata length: ${ypower2.length}, wavelet size: ${waveletsized.length}")
     
-    val waveletfft = transformer.transform(waveletsized).map( _.conjugate )//do not forget to take the conjugate
+    val waveletfft = transformer.transform(waveletsized, TransformType.FORWARD).map( _.conjugate )//do not forget to take the conjugate
     
     //multiply
     val x = yfft.zip(waveletfft).map { case (a, b) => a.multiply(b) }
-    return transformer.inversetransform(x).map(_.getReal).take(initLength)
+    return transformer.transform(x, TransformType.INVERSE).map(_.getReal).take(initLength)
   }
   
   /**for the cwt we need */

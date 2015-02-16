@@ -1,7 +1,8 @@
 package fr.profi.mzdb.utils.math.wavelet
+
 import scala.collection.mutable.ArrayBuffer
-import org.apache.commons.math.complex.Complex
 import scala.collection.mutable.Buffer
+import org.apache.commons.math3.complex.Complex
 
 /**
  * static function performing fast fourier transform

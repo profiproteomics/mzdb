@@ -1,22 +1,22 @@
-/**
- *
- */
 package fr.profi.mzdb.utils.math.pdf
 
-import org.apache.commons.math.analysis.DifferentiableUnivariateRealFunction
 import scala.reflect.BeanProperty
+import org.apache.commons.math3.analysis.UnivariateFunction
 
 /**
  * @author Marco
  *
  */
-class LorentzianFunction (@BeanProperty val intensity:Double, 
-                          @BeanProperty val center:Double, 
-                          @BeanProperty val demiWidth:Double) {
+class LorentzianFunction(
+  @BeanProperty val intensity:Double, 
+  @BeanProperty val center:Double, 
+  @BeanProperty val demiWidth:Double
+) extends UnivariateFunction {
   
   def this(params:Array[Double]) {
     this(params(0), params(1), params(3))
   }
+  
   /** a * ( c^2 / ((x -b)^2 + c^2)) */
   def value(x: Double) :Double = {
         val dx = x - demiWidth;

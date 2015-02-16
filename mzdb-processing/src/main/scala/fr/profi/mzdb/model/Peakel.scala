@@ -3,7 +3,7 @@ package fr.profi.mzdb.model
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 
-import org.apache.commons.math.stat.StatUtils
+import org.apache.commons.math3.stat.StatUtils
 
 import fr.profi.mzdb.utils.misc.InMemoryIdGen
 import fr.profi.util.math.linearInterpolation

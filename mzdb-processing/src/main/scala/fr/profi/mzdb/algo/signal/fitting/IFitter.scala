@@ -1,4 +1,5 @@
-package fr.profi.mzdb.algo.signal.fitting
+// DO NOT REMOVE: ME: this class must be updated to org.apache.commons.math3
+/*package fr.profi.mzdb.algo.signal.fitting
 
 import org.apache.commons.math.analysis.DifferentiableMultivariateVectorialFunction
 import org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimizer
@@ -76,4 +77,4 @@ trait IFitter extends DifferentiableMultivariateVectorialFunction {
   def optimize(iteration: Int,
                optimizer: AbstractLeastSquaresOptimizer,
                weights: Array[Double]): VectorialPointValuePair
-}
+}*/

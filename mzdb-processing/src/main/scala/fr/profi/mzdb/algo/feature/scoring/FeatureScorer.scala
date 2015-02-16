@@ -2,13 +2,12 @@ package fr.profi.mzdb.algo.feature.scoring
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
-import org.apache.commons.math.optimization.OptimizationException
-import org.apache.commons.math.stat.StatUtils
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
+import org.apache.commons.math3.stat.StatUtils
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
-import fr.profi.mzdb.algo.signal.fitting._
+//import fr.profi.mzdb.algo.signal.fitting._
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.StatisticsConversion
@@ -238,7 +237,8 @@ object FeatureScorer {
    */
 
   /**using gaussLorentz fitting*/
-  def calcShapeByGaussLorentzFitting(f: Feature): Float = {
+  // TODO: uncomment me when fitters have been upgraded to math3
+  /*def calcShapeByGaussLorentzFitting(f: Feature): Float = {
     val rmsds = f.indexedPeakels.map { case (p,idx) => 
       val xObs = p.mzValues
       val yObs = p.intensityValues.map(_.toDouble)
@@ -250,10 +250,11 @@ object FeatureScorer {
     }
 
     ( rmsds.sum / f.indexedPeakels.map(_._1.area).sum ).toFloat
-  }
+  }*/
 
   /**using gaussian fitting*/
-  def calcShapeByGaussFitting(f: Feature): Float = {
+  // TODO: uncomment me when fitters have been upgraded to math3
+  /*def calcShapeByGaussFitting(f: Feature): Float = {
     val rmsds = f.indexedPeakels.map { case (p,idx) => 
       val xObs = p.mzValues
       val yObs = p.intensityValues.map(_.toDouble)
@@ -265,7 +266,6 @@ object FeatureScorer {
           val yCalc = refPeak.getFittedY(xObs) //throw zero exception Apache commons math
           VectorSimilarity.rmsd(yObs, yCalc) * p.getArea
         } catch {
-          case optimzExcept: OptimizationException => Float.NaN
           case _: Throwable                        => Float.NaN
         }
       } else {
@@ -274,10 +274,11 @@ object FeatureScorer {
     }
     
     rmsds.filter(_ != Float.NaN).sum / math.pow(f.indexedPeakels.map(_._1.getArea).sum, 2) toFloat
-  }
+  }*/
 
   /**using parabola fitting*/
-  def calcShapeByParabolaFitting(f: Feature): Float = {
+  // TODO: uncomment me when fitters have been upgraded to math3
+  /*def calcShapeByParabolaFitting(f: Feature): Float = {
     val rmsds = f.indexedPeakels.map { case (p,idx) => 
       val xObs = p.mzValues
       val yObs = p.intensityValues.map(_.toDouble)
@@ -292,7 +293,7 @@ object FeatureScorer {
     }
     
     rmsds.sum / f.indexedPeakels.map(_._1.getArea).sum toFloat
-  }
+  }*/
 
   /**
    * ***************************************************************

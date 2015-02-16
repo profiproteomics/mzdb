@@ -1,12 +1,6 @@
 package fr.profi.mzdb.algo.feature.scoring
 
 import fr.profi.mzdb.model.Feature
-import scala.reflect.BeanProperty
-import scala.collection.mutable.ArrayBuffer
-import org.apache.commons.math.optimization.general.LevenbergMarquardtOptimizer
-import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
-import scala.collection.parallel.mutable.ParArray
 import fr.profi.mzdb.model.ILcContext
 
 /**
@@ -393,12 +387,12 @@ object FeatureEvaluator  {
       case _ => throw new Exception("Error when assigning a  shape to a feature")
     }
     
-    ftScoringConfig.methods("shape") match {
+    // TODO: uncomment me when fitters have been upgraded to math3
+    /*ftScoringConfig.methods("shape") match {
       case "Gauss" => shape = FeatureScorer.calcShapeByGaussFitting(f)
       case "GaussLorentz" => shape = FeatureScorer.calcShapeByGaussLorentzFitting(f)
       case "Parabola" => shape = FeatureScorer.calcShapeByParabolaFitting(f)
-        
-    }
+    }*/
    
     val isotopesCount = f.getPeakelsCount
     val isotopesPattern = FeatureScorer.calcRmsdIsotopicPattern(f)

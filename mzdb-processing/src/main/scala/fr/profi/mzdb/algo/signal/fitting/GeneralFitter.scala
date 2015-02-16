@@ -1,6 +1,5 @@
-/**
- *
- */
+// DO NOT REMOVE: ME: this class must be updated to org.apache.commons.math3
+/*
 package fr.profi.mzdb.algo.signal.fitting
 
 import scala.collection.mutable.ArrayBuffer
@@ -53,3 +52,4 @@ class GeneralFitter(@BeanProperty val x: Array[Double], //mz
     
 }
 
+*/
