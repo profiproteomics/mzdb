@@ -67,7 +67,8 @@ class UnsupervisedPeakelDetector(
   // TODO: create configs for signal extraction
   val mzTolPPM: Float,
   val maxConsecutiveGaps: Int = 3,
-  val maxTimeWindow: Float = 1200f
+  val maxTimeWindow: Float = 1200f,
+  val minPercentageOfMaxInt: Float = 0.01f
 ) extends Logging {
   
   /*val msLevel = 2
@@ -161,6 +162,7 @@ class UnsupervisedPeakelDetector(
     
     // Compute the m/z tolerance in Daltons
     val mzTolDa = MsUtils.ppmToDa( apexMz, mzTolPPM )
+    val intensityThreshold = apexIntensity * minPercentageOfMaxInt
     
     // Define some vars
     var numOfAnalyzedDirections = 0
@@ -226,6 +228,10 @@ class UnsupervisedPeakelDetector(
               val intensity = peak.getIntensity
                 
               if( intensity == 0 ) consecutiveGapCount += 1
+              /*// Check if intensity lower than threshold (a given percentage of max. intensity)
+              if( intensity < intensityThreshold ) {
+                consecutiveGapCount += 1
+              }*/
               // Add the peak to the peaks buffer
               // Note: before code
               //if( isRightDirection ) peaksBuffer += peak // append peak
@@ -267,7 +273,7 @@ class UnsupervisedPeakelDetector(
       val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
       
       // Check if habe enough peaks for peakel detection
-      val peakelsIndices = if( extractedPeaks.length < HistogramBasedPeakelFinder.binCount * 5 ) {
+      val peakelsIndices = if( extractedPeaks.length < HistogramBasedPeakelFinder.expectedBinDataPointsCount * 5 ) {
         // Return all extracted peaks if too low number of peaks
         Array( (0,extractedPeaks.length - 1) )
       } else {
@@ -280,6 +286,21 @@ class UnsupervisedPeakelDetector(
         apexTime >= extractedPeaks(idx._1).getLcContext.getElutionTime && 
         apexTime <= extractedPeaks(idx._2).getLcContext.getElutionTime
       }
+      
+      /*
+      val mozToFind = 437.2611
+      val mzTol = 20
+      val mozTolInDa = MsUtils.ppmToDa(mozToFind, mzTol)
+      if( apexMz > mozToFind - mozTolInDa && apexMz < mozToFind + mozTolInDa ) {
+        println("extractedPeaks")
+        println(extractedPeaks.map(_.getLcContext().getElutionTime() / 60).mkString("\t"))
+        println(extractedPeaks.map(_.getIntensity()).mkString("\t"))
+        println(matchingPeakelIdxOpt)
+        
+        HistogramBasedPeakelFinder.debug = true
+        HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
+        HistogramBasedPeakelFinder.debug = false
+      }*/
       
       if( matchingPeakelIdxOpt.isEmpty ) {
         /*this.logger.warn(
