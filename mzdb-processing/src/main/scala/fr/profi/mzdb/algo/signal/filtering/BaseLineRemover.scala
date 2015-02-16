@@ -15,7 +15,7 @@ object BaseLineRemover {
     require( gapTolerance >= 1, "gapTolerance must be strictly positive")
     
     val noiseThreshold = calcNoiseThreshold(rtIntPairs)
-    val pairIsAboveNoise = rtIntPairs.map( _._2 >= noiseThreshold )
+    //val pairIsAboveNoise = rtIntPairs.map( _._2 >= noiseThreshold )
     
     // Clusterize peaks being consecutively above the nosie thresholds
     val groupedRtIntPairIndices = new ArrayBuffer[ArrayBuffer[Int]]()
@@ -24,7 +24,7 @@ object BaseLineRemover {
     
     for( (rtIntPair,index) <- rtIntPairs.zipWithIndex ) {
 
-      val isUnderThreshold = rtIntPair._2 >= noiseThreshold
+      val isUnderThreshold = rtIntPair._2 < noiseThreshold
       if( isUnderThreshold ) underThresholdCount += 1
       else {
         if( underThresholdCount > gapTolerance ) {
