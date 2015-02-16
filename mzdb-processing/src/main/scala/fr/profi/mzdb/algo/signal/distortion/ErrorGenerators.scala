@@ -4,31 +4,77 @@ import scala.util.Random
 
 trait IErrorGenerator {
   
-  val stdDevCoeff = 0.0
   protected val _randomGenerator = new Random()
   
-  def nextRandomError( value: Double )
+  def nextError( value: Double ): Double
 
 }
 
-case class FixedErrorGenerator( override val stdDevCoeff: Double ) extends IErrorGenerator {
+class GaussianAbsoluteErrorGenerator( val error: Double, isOscillating: Boolean = false ) extends IErrorGenerator {
   
-  def nextRandomError( value: Double ) = {
-    _randomGenerator.nextGaussian() * stdDevCoeff * value
-  }  
+  var lastSign = 1
+  
+  def nextError( value: Double ): Double = {
+    val finalError = _randomGenerator.nextGaussian() * error
+    if( isOscillating == false ) finalError
+    else {
+      lastSign *= -1
+      lastSign * finalError.abs
+    }
+  }
 
 }
 
-case class BinnedErrorGenerator() {
+class GaussianRelativeErrorGenerator( val stdDevCoeff: Double, isOscillating: Boolean = false ) extends IErrorGenerator {
+  
+  var lastSign = 1
+  
+  def nextError( value: Double ): Double = {
+    val finalError = _randomGenerator.nextGaussian() * stdDevCoeff * value
+    if( isOscillating == false ) finalError
+    else {
+      lastSign *= -1
+      lastSign * finalError.abs
+    }
+  }
 
 }
 
-case class LinearErrorGenerator() {
+class OscillatingAbsoluteErrorGenerator( val error: Double ) extends IErrorGenerator {
+
+  var lastSign = 1
+  
+  def nextError( value: Double ): Double = {
+    lastSign *= -1
+    lastSign * error
+  }
 
 }
 
-case class NonLinearErrorGenerator() {
+class OscillatingRelativeErrorGenerator( val stdDevCoeff: Double ) extends IErrorGenerator {
+  
+  var lastSign = 1
+  
+  def nextError( value: Double ): Double = {
+    lastSign *= -1
+    lastSign * stdDevCoeff * value
+  }
 
 }
 
+
+
+/*
+class BinnedErrorGenerator() {
+
+}
+
+class LinearErrorGenerator() {
+
+}
+
+class NonLinearErrorGenerator() {
+
+}
+*/
 
