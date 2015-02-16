@@ -6,9 +6,9 @@ import fr.profi.mzdb.utils.math.pdf.GaussianModel
 
 object PeakelGenerator {
 
-  def generate( mz: Double, time: Float, intensity: Float, duration: Float, samplingSize: Float, peakHwhm: Float ): Peakel = {
-    require( samplingSize > 0 )
-    require( duration > 0 )
+  def generate( mz: Double, time: Float, intensity: Float, duration: Float, samplingSize: Int, mzPeakHwhm: Float ): Peakel = {
+    require( samplingSize > 0, "samplingSize must be strictly positive" )
+    require( duration > 0, "duration must be strictly positive" )
     
     val halfDuration = duration / 2
     val gaussModel = new GaussianModel( time, intensity.toDouble, halfDuration, 0.5 )
@@ -16,8 +16,7 @@ object PeakelGenerator {
     val peaks = new ArrayBuffer[Peak]
     for( x <- ((time - halfDuration)) to ((time + halfDuration)) by samplingSize ) {
       val y = gaussModel.getYValue(x)
-      //println( ""+x +"\t"+y )
-      peaks +=  new Peak( mz, y.toFloat, peakHwhm, peakHwhm, new ElutionTimeContext(x) ) 
+      peaks += new Peak( mz, y.toFloat, mzPeakHwhm, mzPeakHwhm, new FullLcContext(x.round,x) )
     }
     
     new PeakelBuilder( peaks.toArray ).result()
