@@ -3,7 +3,7 @@ package fr.profi.mzdb.algo.signal.detection.waveletImpl
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
-import org.apache.commons.math.stat.descriptive.moment.StandardDeviation
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation
 
 import fr.profi.mzdb.algo.signal.detection._
 import fr.profi.mzdb.model.Peak

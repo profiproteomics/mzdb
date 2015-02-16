@@ -1,76 +1,129 @@
 package fr.profi.mzdb.io.exporter
 
-import scala.collection.mutable.ArrayBuffer
-import java.io.File
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
+import java.io.File
 import org.jfree.chart._
 import org.jfree.chart.plot.PlotOrientation
-import org.jfree.data.category.DefaultCategoryDataset
-import org.jfree.data.general.DefaultPieDataset
-import org.jfree.data.xy._
 import org.jfree.data._
-import org.apache.commons.math.stat.StatUtils
+import org.jfree.data.xy._
 import com.almworks.sqlite4java.SQLiteConnection
 import fr.profi.mzdb.model.Feature
-import fr.profi.mzdb.utils.math.VectorSimilarity
-import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.model.Peakel
+import fr.profi.mzdb.algo.signal.filtering._
+import fr.profi.mzdb.utils.math.DerivativeAnalysis
 
-
-
-object SQLiteXicStorer extends AutoCloseable {
-  val connection = new SQLiteConnection(new File("extracted_xics.sqlite"))
-  connection.open(true)
+object SQLitePeakelStorer {
   
-  connection.exec("PRAGMA temp_store=2;")
-  connection.exec("PRAGMA cache_size=8000;")
-
-    // Create tables
-  connection.exec("CREATE TABLE xics (" +
-    " id INTEGER primary key autoincrement,\n" +
-    " mz REAL,\n" +
-    " time REAL,\n" +
-    " ms1_count INTEGER,\n" +
-    " xic BLOB,\n" +
-    ")"
-  )
+  val psgSmoother = new PartialSavitzkyGolaySmoother( SavitzkyGolaySmoothingConfig(polyOrder = 4, times = 1))
+  val xicBinner = new XicBinner( XicBinnerConfig(10) )
   
-  connection.exec("BEGIN TRANSACTION")
-
-  def insertXic(peakel: Peakel) = {
-    val x = createFeatureChart(peakel.elutionTimes, peakel.intensityValues)
-    connection.exec(s"INSERT INTO xics VALUES (?, ${peakel.getMz}, ${peakel.getApexElutionTime}, ${peakel.scanIds.length}, ${x})") //, true)
-  }
+  def storePeakels(peakels: Seq[Peakel], dbLocation: File ) {
+    
+    println("nb peakels:"+peakels.length)
+    
+    //val connection = new SQLiteConnection(new File("extracted_xics.sqlite"))
+    val connection = new SQLiteConnection(dbLocation)
+    connection.open(true) // allowsCreate = true
+    
+    connection.exec("PRAGMA temp_store=2;")
+    connection.exec("PRAGMA cache_size=8000;")
   
-  def close() = { 
+      // Create tables
+    connection.exec("CREATE TABLE peakel (" +
+      " id INTEGER,\n" +
+      " mz REAL,\n" +
+      " time REAL,\n" +
+      " apex REAL,\n" +
+      " ms1_count INTEGER,\n" +
+      " noise REAL,\n" +
+      " xic BLOB,\n" +
+      " smoothed_xic BLOB,\n" +
+      " binned_xic BLOB,\n" +
+      " baseline_analysis BLOB\n" +
+      ")"
+    )
+    
+    connection.exec("BEGIN TRANSACTION")
+    
+    // Prepare INSERT statement
+    val stmt = connection.prepare("INSERT INTO peakel VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",true)
+    
+    peakels.foreach { peakel =>
+
+      val xic = peakel.elutionTimes.zip(peakel.intensityValues.map(_.toDouble))
+      val chartBytes = createXicChart(xic)
+      
+      def calcOscillationCount(xic: Array[(Float,Double)]): Double = {
+        val slopes = DerivativeAnalysis.calcTernarySlopes( xic.map(_._2), derivativeLevel = 2)
+        
+        // Remove isolated osciallations
+        var prevSlope = 0.0
+        val consecutiveSlopes = for( slope <- slopes ) yield {
+          val newSlope = if( prevSlope != 0 && slope != 0) slope else 0
+          prevSlope = slope
+          newSlope
+        }
+        
+        consecutiveSlopes.map(math.abs(_)).sum
+      }
+      val oscillationCount = calcOscillationCount(xic)
+      // TODO: calc sd of residues of diff between raw xic and binned one
+      val noise = BaseLineRemover.calcNoiseThreshold(xic)
+      
+      val baselineAnalysis = BaseLineRemover.removeBaseLine(xic)
+      val baselineAnalysisChartBytes = createXicChart(baselineAnalysis)
+      
+      val smoothedXic = psgSmoother.smoothTimeIntensityPairs(xic)
+      val smootheChartBytes = createXicChart(smoothedXic)
+      
+      val binnedXic = xicBinner.binRtIntPairs(xic)
+      val binnedChartBytes = createXicChart(binnedXic)
+      
+      var j = 0
+      j+=1; stmt.bind(j, peakel.getId() )
+      j+=1; stmt.bind(j, peakel.getMz() )
+      j+=1; stmt.bind(j, peakel.getApexElutionTime() )
+      j+=1; stmt.bind(j, peakel.getApexIntensity() )
+      j+=1; stmt.bind(j, peakel.getScanIds().length )
+      j+=1; stmt.bind(j, noise )
+      j+=1; stmt.bind(j, chartBytes )
+      j+=1; stmt.bind(j, smootheChartBytes )
+      j+=1; stmt.bind(j, binnedChartBytes )
+      j+=1; stmt.bind(j, baselineAnalysisChartBytes )
+      stmt.step()
+      stmt.reset()
+      
+    }
+
     connection.exec("COMMIT TRANSACTION")
     connection.dispose()
-    }
+  }
   
-  def createFeatureChart( xic: Tuple2[ Array[Float], Array[Float]] ): Array[Byte] = {
+  protected def createXicChart( xic: Array[(Float,Double)], scaling: Float = 1f/60 ): Array[Byte] = {
     
     val series = new XYSeries("XIC")
     
-    xic._1.zip(xic._2).foreach { dataPoint =>
-      series.add(dataPoint._1 / 60, dataPoint._2 ) // convert seconds into minutes
+    xic.foreach { dataPoint =>
+      series.add(dataPoint._1 * scaling, dataPoint._2 ) // convert seconds into minutes
     }
     
     val xyDataset = new XYSeriesCollection(series)
     val chart = ChartFactory.createXYLineChart(
-                  "Feature XIC", "Time", "Intensity",
-                  xyDataset, PlotOrientation.VERTICAL, true, true, false
-                )
+      "XIC", "Time", "Intensity",
+      xyDataset, PlotOrientation.VERTICAL, true, true, false
+    )
                 
     val bi = chartToImage(chart, 400, 300)
     ChartUtilities.encodeAsPNG( bi )
   }
   
-  protected def chartToImage( chart: JFreeChart, width: Int, height: Int):  BufferedImage = { 
-    val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-    val g2 = img.createGraphics();
-    chart.draw(g2, new Rectangle2D.Double(0, 0, width, height));
-    g2.dispose();
+  protected def chartToImage( chart: JFreeChart, width: Int, height: Int): BufferedImage = { 
+    val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    val g2 = img.createGraphics()
+    
+    chart.draw(g2, new Rectangle2D.Double(0, 0, width, height))
+    g2.dispose()
     
     img
   }
