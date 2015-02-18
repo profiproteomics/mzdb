@@ -15,7 +15,6 @@ object SmartPeakelFinder extends IPeakelFinder {
   
   var minPeaksCount = 5
   var miniMaxiDistanceThresh = 3
-  var expectedBinDataPointsCount = 10
   var maxOscillationFactor = 10
   
   // gapTolerance set to 1 means that ponctual intensity hole won't be removed

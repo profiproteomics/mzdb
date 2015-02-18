@@ -90,13 +90,7 @@ object SQLitePeakelStorer {
       //val residualsChartBytes = createXicChart(residuals)
       */
       
-      def sumDeltaIntensities(xic: Array[(Float,Double)]): Double = {        
-        xic.sliding(2).foldLeft(0.0) { (sum,buffer) =>
-          sum + math.abs(buffer(1)._2 - buffer(0)._2)
-        }
-      }
-      val xicIntensities = xic.map(_._2)
-      val oscillationFactor = sumDeltaIntensities(xic) / (xicIntensities.max - xicIntensities.min)
+      val oscillationFactor = SmartPeakelFinder.calcOscillationFactor(xic)
       
       // Compute histogram of observed intensities
       /*val intensityHistoComputer = new fr.profi.util.stat.EntityHistogramComputer(xic, 

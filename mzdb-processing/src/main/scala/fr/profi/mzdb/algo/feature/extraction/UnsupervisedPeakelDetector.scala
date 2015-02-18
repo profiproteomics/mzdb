@@ -214,7 +214,7 @@ class UnsupervisedPeakelDetector(
             }
             
             // Try to retrieve a peaklist group for the current scan header
-            val pklGroupOpt = pklTree.pklGroupByScanId.get(curScanId)    
+            val pklGroupOpt = pklTree.pklGroupByScanId.get(curScanId)
             require( pklGroupOpt.isDefined, "pklGroupOpt is empty" )
             
             val pklGroup = pklGroupOpt.get
@@ -268,7 +268,7 @@ class UnsupervisedPeakelDetector(
     //progressComputer.setCurrentStepAsCompleted()
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP2)
     
-    // TODO: define a minimum number of peaks for a peakel in the config    
+    // TODO: define a minimum number of peaks for a peakel in the config
     val peakelAndPeaksOpt = if( peaksBuffer.length < minPeaksCount ) {
       return None
     }
@@ -276,13 +276,32 @@ class UnsupervisedPeakelDetector(
     // Sort peaks by ascending scan id
     val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
     
-    // Check if habe enough peaks for peakel detection
+    // Check if we have enough peaks for peakel detection
     val peakelsIndices = SmartPeakelFinder.findPeakelsIndices(extractedPeaks)
     
     // Retrieve the peakel corresponding to the feature apex
-    val matchingPeakelIdxOpt = peakelsIndices.find { idx =>
-      apexTime >= extractedPeaks(idx._1).getLcContext.getElutionTime && 
-      apexTime <= extractedPeaks(idx._2).getLcContext.getElutionTime
+    // and memorize peak indices
+    var matchingPeakelIdxOpt = Option.empty[(Int, Int)]
+    val detectedPeaksIndices = new ArrayBuffer[Int]()
+    
+    for( peakelIdx <- peakelsIndices ) {
+      
+      if(
+        apexTime >= extractedPeaks(peakelIdx._1).getLcContext.getElutionTime && 
+        apexTime <= extractedPeaks(peakelIdx._2).getLcContext.getElutionTime
+      ) matchingPeakelIdxOpt = Some(peakelIdx)
+      
+      detectedPeaksIndices ++= peakelIdx._1 to peakelIdx._2
+    }
+    
+    // Remove noisy peaks from future peakel extractions
+    val detectedPeaksIndexSet = detectedPeaksIndices.toSet
+    for( i <- 0 until extractedPeaks.length ) {
+      // Check if this peak has belong to a peakel
+      if( detectedPeaksIndexSet.contains(i) == false ) {
+        // If this is not the case we add it to the usedPeakSet (it corresponds to noise)
+        usedPeakSet += extractedPeaks(i)
+      }
     }
     
     /*
