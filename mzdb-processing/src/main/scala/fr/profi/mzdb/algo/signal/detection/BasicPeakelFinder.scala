@@ -1,6 +1,8 @@
 package fr.profi.mzdb.algo.signal.detection
 
 import scala.collection.mutable.ArrayBuffer
+
+import fr.profi.mzdb.algo.signal.filtering._
 import fr.profi.mzdb.model.IPeakelData
 import fr.profi.mzdb.model.Peak
 
@@ -12,21 +14,14 @@ object BasicPeakelFinder extends IPeakelFinder {
   
   var sameSlopeCountThreshold = 2
   
-  def findPeakelsIndices(peaks: Seq[Peak] ): Array[Tuple2[Int,Int]] = {
-    findPeakelsIndices( peaks.map( _.getIntensity.toDouble ).toArray)
-  }
-  
-  def findPeakelsIndices(peakel: IPeakelData): Array[Tuple2[Int,Int]] = {
-    findPeakelsIndices( peakel.getIntensityValues.map(_.toDouble).toArray)
-  }
-  
-  def findPeakelsIndices(values: Array[Double] ): Array[Tuple2[Int,Int]] = {
+  def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[Tuple2[Int,Int]] = {
     
-    if( values.length < 5 ) 
+    if( rtIntPairs.length < 5 )
       return Array()
     
-    val smoothedValues = smoothValues(values, smoothingConfig = SmoothingConfig() )
-    findPeakelsIndicesFromSmoothedIntensities( smoothedValues ).toArray
+    val sgMoother = new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 3))
+    val smoothedRtIntPairs = sgMoother.smoothTimeIntensityPairs(rtIntPairs)
+    findPeakelsIndicesFromSmoothedIntensities( smoothedRtIntPairs.map(_._2) ).toArray
       
     /*var peakDetectionBegin = false
     var afterMinimum = true
@@ -92,7 +87,7 @@ object BasicPeakelFinder extends IPeakelFinder {
   def findPeakelsIndicesFromSmoothedIntensities(
     smoothedIntensities: Array[Double],
     sameSlopeCountThresh: Int = BasicPeakelFinder.sameSlopeCountThreshold
-  ): ArrayBuffer[Tuple2[Int,Int]] = {
+  ): ArrayBuffer[(Int,Int)] = {
     
     var peakIdx = 0
     var prevMinIdx = peakIdx
@@ -103,13 +98,13 @@ object BasicPeakelFinder extends IPeakelFinder {
     var afterMinimum = true
     var afterMaximum = false
     
-    val peakelIndices = new ArrayBuffer[Tuple2[Int,Int]]
+    val peakelIndices = new ArrayBuffer[(Int,Int)]
     
     smoothedIntensities.sliding(2).foreach { buffer =>
       val prevValue = buffer(0)
       val curValue = buffer(1)
       val curDiff = (curValue - prevValue)
-      val curSlope = curDiff.signum
+      val curSlope = if( curDiff == 0 ) 0 else curDiff.signum
       
       // Small hack to start peak detection when signal is increasing
       if( peakDetectionBegin == false) {
@@ -133,9 +128,9 @@ object BasicPeakelFinder extends IPeakelFinder {
               afterMinimum = false
             }
             // Detects minimum local with the constraint of being lower than 66% of previous maximum
-            else if( afterMaximum && prevSlope == -1 && prevValue < prevMaxValue * 0.66 ) {
+            else if( prevSlope == -1 && afterMaximum && prevValue < prevMaxValue * 0.66 ) {
               
-              peakelIndices += Tuple2(prevMinIdx,peakIdx)
+              peakelIndices += (prevMinIdx -> peakIdx)
               prevMinIdx = peakIdx
               afterMaximum = false
               afterMinimum = true
@@ -144,7 +139,7 @@ object BasicPeakelFinder extends IPeakelFinder {
           
           sameSlopeCount = 1
         }
-        else if ( curSlope != 0 ) sameSlopeCount += 1
+        else sameSlopeCount += 1
         
       }
       
@@ -152,7 +147,7 @@ object BasicPeakelFinder extends IPeakelFinder {
       peakIdx += 1
     } //end sliding foreach
     
-    if( afterMaximum ) peakelIndices += Tuple2(prevMinIdx,smoothedIntensities.length-1)
+    if( afterMaximum ) peakelIndices += prevMinIdx -> (smoothedIntensities.length-1)
     
     peakelIndices
   }

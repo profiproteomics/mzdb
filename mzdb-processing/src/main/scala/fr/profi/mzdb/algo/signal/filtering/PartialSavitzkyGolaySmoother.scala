@@ -18,11 +18,8 @@ class PartialSavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfi
     val intensities = rtIntPairs.map(_._2 )
     val peakCount = rtIntPairs.length
     
-    //println("***")
-    
     // Calc second derivative as ternary slopes (-1,0,+1)
     val slopes = DerivativeAnalysis.calcTernarySlopes( intensities, derivativeLevel = 2)
-    //slopes.foreach(println)
     
     // Detect noisy parts (where smoothing is needed)
     var i = 2 // have a shift of 2 indices because of second derivative computation
@@ -64,8 +61,6 @@ class PartialSavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfi
         if (noisyPartBoundaryPair._2 - noisyPartBoundaryPair._1) > 1
       ) {
         
-        //println("noisyPartBoundaryPair "+noisyPartBoundaryPair)
-        
         // Extend noise parts with previous and next values
         val extendedBoundaries = {
           val(start,end) = noisyPartBoundaryPair
@@ -74,28 +69,17 @@ class PartialSavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfi
           extendedStart -> extendedEnd
         }
         
-        //println("extendedBoundaries "+extendedBoundaries)
-        
         // Smooth extended noisy part
         val extendedNoisyPart = rtIntPairs.slice(extendedBoundaries._1, extendedBoundaries._2 + 1)
-        //extendedNoisyPart.foreach( pair => println( pair._1 + "\t" + pair._2 ))
-        //println("---")
         val smoothedExtendedNoisyPart = sgSmoother.smoothTimeIntensityPairs(extendedNoisyPart)
-        //smoothedExtendedNoisyPart.foreach( pair => println( pair._1 + "\t" + pair._2 ))
         
         // Retrieve only the part corresponding to non-extended boundaries
         val startIdx = noisyPartBoundaryPair._1 - extendedBoundaries._1
         val endIdx = startIdx + (noisyPartBoundaryPair._2 - noisyPartBoundaryPair._1)
-        //println("startIdx "+startIdx)
-        //println("endIdx "+endIdx)
         val smoothedNoisyPart = smoothedExtendedNoisyPart.slice(startIdx,endIdx+1)
-        //println("%%%")
-        //smoothedNoisyPart.foreach( pair => println( pair._1 + "\t" + pair._2 ))
         
         // Merge noisy part into smoothedRtIntPairs
-        val noisyPartIndices = (noisyPartBoundaryPair._1 to noisyPartBoundaryPair._2).toArray
-        //println( noisyPartIndices.length )
-        //println( smoothedNoisyPart.length )
+        val noisyPartIndices = (noisyPartBoundaryPair._1 to noisyPartBoundaryPair._2).toArray 
         require( noisyPartIndices.length == smoothedNoisyPart.length, "invalid noise boundaries")
         
         for( (rtIntPair,i) <- smoothedNoisyPart.zip(noisyPartIndices) ) {
@@ -106,8 +90,6 @@ class PartialSavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfi
       
       smoothedRtIntPairs
     }
-
-    //rtIntPairsResult.foreach( pair => println( pair._1 + "\t" + pair._2 ))
     
     rtIntPairsResult
   }

@@ -3,20 +3,24 @@ package fr.profi.mzdb.io.exporter
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
 import java.io.File
+import scala.collection.mutable.ArrayBuffer
 import org.jfree.chart._
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.data._
 import org.jfree.data.xy._
 import com.almworks.sqlite4java.SQLiteConnection
+import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
+import fr.profi.mzdb.algo.signal.filtering._
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.algo.signal.filtering._
+import fr.profi.util.math.median
 import fr.profi.mzdb.utils.math.DerivativeAnalysis
 
 object SQLitePeakelStorer {
   
-  val psgSmoother = new PartialSavitzkyGolaySmoother( SavitzkyGolaySmoothingConfig(polyOrder = 4, times = 1))
-  val xicBinner = new XicBinner( XicBinnerConfig(10) )
+  val sgSmoother = new SavitzkyGolaySmoother( SavitzkyGolaySmoothingConfig())
+  val psgSmoother = new PartialSavitzkyGolaySmoother( SavitzkyGolaySmoothingConfig(iterationCount = 1))
+  val xicBinner = new XicBinner( XicBinnerConfig(5) )
   
   def storePeakels(peakels: Seq[Peakel], dbLocation: File ) {
     
@@ -36,25 +40,26 @@ object SQLitePeakelStorer {
       " time REAL,\n" +
       " apex REAL,\n" +
       " ms1_count INTEGER,\n" +
-      " noise REAL,\n" +
+      " factor REAL,\n" +
       " xic BLOB,\n" +
       " smoothed_xic BLOB,\n" +
-      " binned_xic BLOB,\n" +
-      " baseline_analysis BLOB\n" +
+      " noise_free_xic BLOB,\n" +
+      " found_peakels BLOB,\n" +
+      " mini_maxi TEXT\n" +
       ")"
     )
     
     connection.exec("BEGIN TRANSACTION")
     
     // Prepare INSERT statement
-    val stmt = connection.prepare("INSERT INTO peakel VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",true)
+    val stmt = connection.prepare("INSERT INTO peakel VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",true)
     
     peakels.foreach { peakel =>
 
       val xic = peakel.elutionTimes.zip(peakel.intensityValues.map(_.toDouble))
       val chartBytes = createXicChart(xic)
       
-      def calcOscillationCount(xic: Array[(Float,Double)]): Double = {
+      /*def calcOscillationCount(xic: Array[(Float,Double)]): Double = {
         val slopes = DerivativeAnalysis.calcTernarySlopes( xic.map(_._2), derivativeLevel = 2)
         
         // Remove isolated osciallations
@@ -68,17 +73,65 @@ object SQLitePeakelStorer {
         consecutiveSlopes.map(math.abs(_)).sum
       }
       val oscillationCount = calcOscillationCount(xic)
-      // TODO: calc sd of residues of diff between raw xic and binned one
-      val noise = BaseLineRemover.calcNoiseThreshold(xic)
+      val noise = BaseLineRemover.calcNoiseThreshold(xic)*/
       
-      val baselineAnalysis = BaseLineRemover.removeBaseLine(xic)
-      val baselineAnalysisChartBytes = createXicChart(baselineAnalysis)
+      // TODO: move to derivative utils ???
+      /*def calcMedianSlope(xic: Array[(Float,Double)]): Double = {
+        
+        val slopes = xic.sliding(2).map { buffer =>
+          if(buffer(0)._1 == 0) 0 else math.log(buffer(1)._2 / buffer(0)._2).abs
+        } toArray
+        
+        median(slopes)
+      }
+      val medianSlope = calcMedianSlope(xic)
+      val residualsCV = SignalSmoothingUtils.calcResidualsAbsoluteCV(xic, sgSmoother.smoothTimeIntensityPairs(xic))
+      //val residuals = SignalSmoothingUtils.calcSmoothingResiduals(xic, sgSmoother.smoothTimeIntensityPairs(xic))
+      //val residualsChartBytes = createXicChart(residuals)
+      */
+      
+      def sumDeltaIntensities(xic: Array[(Float,Double)]): Double = {        
+        xic.sliding(2).foldLeft(0.0) { (sum,buffer) =>
+          sum + math.abs(buffer(1)._2 - buffer(0)._2)
+        }
+      }
+      val xicIntensities = xic.map(_._2)
+      val oscillationFactor = sumDeltaIntensities(xic) / (xicIntensities.max - xicIntensities.min)
+      
+      // Compute histogram of observed intensities
+      /*val intensityHistoComputer = new fr.profi.util.stat.EntityHistogramComputer(xic, 
+        { rtIntPair: (Float,Double) => rtIntPair._2 }
+      )
+      val intensityHisto = intensityHistoComputer.calcHistogram(5)
+      val xicFreq = intensityHisto.map( bin => bin._1.center.toFloat -> bin._2.length.toDouble )
+      val xicFreqChartBytes = createXicChart(xicFreq, scaling = 1)
+      */
       
       val smoothedXic = psgSmoother.smoothTimeIntensityPairs(xic)
-      val smootheChartBytes = createXicChart(smoothedXic)
+      val smoothedChartBytes = createXicChart(smoothedXic)
       
-      val binnedXic = xicBinner.binRtIntPairs(xic)
-      val binnedChartBytes = createXicChart(binnedXic)
+      val baselineAnalysis = new BaselineRemover().removeBaseLine(xic)
+      val baselineAnalysisChartBytes = createXicChart(baselineAnalysis)
+      
+      //val binnedXic = xicBinner.binRtIntPairs(xic)
+      //val binnedChartBytes = createXicChart(binnedXic)
+      
+      val peakelsIndices = SmartPeakelFinder.findPeakelsIndices(xic)
+      val mergedXic = if( peakelsIndices.isEmpty ) xic
+      else {
+        val mergedXicBuffer = new ArrayBuffer[(Float,Double)](xic.length)
+        for( peakelIndices <- peakelsIndices ) {
+          val peaks = xic.slice(peakelIndices._1, peakelIndices._2 + 1)
+          mergedXicBuffer += ( (peaks.head._1 - 0.1f) -> 0.0)
+          mergedXicBuffer ++= peaks
+          mergedXicBuffer += ( (peaks.last._1 + 0.1f) -> 0.0)
+        }
+        mergedXicBuffer.toArray
+      }
+      val mergedXicChartBytes = createXicChart(mergedXic)
+      //val mergedXicChartBytes: Array[Byte] = null
+      
+      val miniMaxi = DerivativeAnalysis.findSignificantMiniMaxi(smoothedXic.map(_._2), miniMaxiDistanceThresh = 3, maxIntensityRelThresh = 0.66f)
       
       var j = 0
       j+=1; stmt.bind(j, peakel.getId() )
@@ -86,11 +139,12 @@ object SQLitePeakelStorer {
       j+=1; stmt.bind(j, peakel.getApexElutionTime() )
       j+=1; stmt.bind(j, peakel.getApexIntensity() )
       j+=1; stmt.bind(j, peakel.getScanIds().length )
-      j+=1; stmt.bind(j, noise )
+      j+=1; stmt.bind(j, oscillationFactor )
       j+=1; stmt.bind(j, chartBytes )
-      j+=1; stmt.bind(j, smootheChartBytes )
-      j+=1; stmt.bind(j, binnedChartBytes )
+      j+=1; stmt.bind(j, smoothedChartBytes )
       j+=1; stmt.bind(j, baselineAnalysisChartBytes )
+      j+=1; stmt.bind(j, mergedXicChartBytes )
+      j+=1; stmt.bind(j, miniMaxi.map(m => m.value + s"(${m.isMaximum})").mkString("\t") )
       stmt.step()
       stmt.reset()
       
@@ -383,13 +437,13 @@ object SQLiteFeatureStorer {
   protected def smoothIntensities(intensities: Array[Float]): Array[Float] = {
     
     val times = 3
-    import mr.go.sgfilter.SGFilter
+    import mr.go.sgfilter.SGFilterMath3
     
     // TODO: static values
     val(nl,nr,order) = (5,5,4)
     val coeffs = SGFilter.computeSGCoefficients(nl,nr,order)
 
-    val sgFilter = new SGFilter(5,5)
+    val sgFilter = new SGFilterMath3(5,5)
     var smoothedIntensities = intensities
     for( i <- 1 to times ) {
       smoothedIntensities = sgFilter.smooth(smoothedIntensities,coeffs)

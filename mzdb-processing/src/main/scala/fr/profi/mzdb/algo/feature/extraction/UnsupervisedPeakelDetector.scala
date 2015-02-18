@@ -4,13 +4,12 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
-
 import com.typesafe.scalalogging.slf4j.Logging
-
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.proline.api.progress._
+import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 
 object UnsupervisedPeakelDetector {
   
@@ -70,6 +69,10 @@ class UnsupervisedPeakelDetector(
   val maxTimeWindow: Float = 1200f,
   val minPercentageOfMaxInt: Float = 0.01f
 ) extends Logging {
+  
+  // TODO: add to config
+  val minPeaksCount = 5
+  val minPeakelAmplitude = 1.5f
   
   /*val msLevel = 2
   
@@ -212,26 +215,28 @@ class UnsupervisedPeakelDetector(
             
             // Try to retrieve a peaklist group for the current scan header
             val pklGroupOpt = pklTree.pklGroupByScanId.get(curScanId)    
+            require( pklGroupOpt.isDefined, "pklGroupOpt is empty" )
             
-            if( pklGroupOpt == None ) {
-              return None
-            }
             val pklGroup = pklGroupOpt.get
   
             // Try to retrieve the nearest peak
             val peak = pklGroup.getNearestPeak( apexMz, mzTolDa )
             
             // Check if a peak has been found
+            // TODO: should we search the peak again with getNearestPeak if it has already been used ???
             if( peak != null && usedPeakSet.contains(peak) == false ) {
               
               // Retrieve some values
               val intensity = peak.getIntensity
-                
-              if( intensity == 0 ) consecutiveGapCount += 1
+              
+              if( intensity == 0 ) {
+                consecutiveGapCount += 1
+              }
               /*// Check if intensity lower than threshold (a given percentage of max. intensity)
               if( intensity < intensityThreshold ) {
                 consecutiveGapCount += 1
               }*/
+              
               // Add the peak to the peaks buffer
               // Note: before code
               //if( isRightDirection ) peaksBuffer += peak // append peak
@@ -263,99 +268,78 @@ class UnsupervisedPeakelDetector(
     //progressComputer.setCurrentStepAsCompleted()
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP2)
     
-    // TODO: define a minimum number of peaks for a peakel in the config
-    val peakelAndPeaksOpt = if( peaksBuffer.length < 5 ) {
-      Option.empty[(Peakel,Array[Peak])]
+    // TODO: define a minimum number of peaks for a peakel in the config    
+    val peakelAndPeaksOpt = if( peaksBuffer.length < minPeaksCount ) {
+      return None
     }
-    else {
       
-      // Sort peaks by ascending scan id
-      val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
-      
-      // Check if habe enough peaks for peakel detection
-      val peakelsIndices = if( extractedPeaks.length < HistogramBasedPeakelFinder.expectedBinDataPointsCount * 5 ) {
-        // Return all extracted peaks if too low number of peaks
-        Array( (0,extractedPeaks.length - 1) )
-      } else {
-        // Find all peakels in the extracted peaks
-        HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
-      }
-      
-      // Retrieve the peakel corresponding to the feature apex
-      val matchingPeakelIdxOpt = peakelsIndices.find { idx =>
-        apexTime >= extractedPeaks(idx._1).getLcContext.getElutionTime && 
-        apexTime <= extractedPeaks(idx._2).getLcContext.getElutionTime
-      }
-      
-      /*
-      val mozToFind = 437.2611
-      val mzTol = 20
-      val mozTolInDa = MsUtils.ppmToDa(mozToFind, mzTol)
-      if( apexMz > mozToFind - mozTolInDa && apexMz < mozToFind + mozTolInDa ) {
-        println("extractedPeaks")
-        println(extractedPeaks.map(_.getLcContext().getElutionTime() / 60).mkString("\t"))
-        println(extractedPeaks.map(_.getIntensity()).mkString("\t"))
-        println(matchingPeakelIdxOpt)
-        
-        HistogramBasedPeakelFinder.debug = true
-        HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
-        HistogramBasedPeakelFinder.debug = false
-      }*/
-      
-      if( matchingPeakelIdxOpt.isEmpty ) {
-        /*this.logger.warn(
-          s"no peakel detected for peak with m/z=${apexMz} and scan id=${apexScanHeader.getId}"
-        )*/
-        None
-      } else {
-        
-        val matchingPeakelIdx = matchingPeakelIdxOpt.get
-        val peakelPeaks = extractedPeaks.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 ).toArray
-        
-        val peakel = new PeakelBuilder( peakelPeaks ).result()
-        
-        Some( peakel, peakelPeaks )
-      }
+    // Sort peaks by ascending scan id
+    val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
+    
+    // Check if habe enough peaks for peakel detection
+    val peakelsIndices = SmartPeakelFinder.findPeakelsIndices(extractedPeaks)
+    
+    // Retrieve the peakel corresponding to the feature apex
+    val matchingPeakelIdxOpt = peakelsIndices.find { idx =>
+      apexTime >= extractedPeaks(idx._1).getLcContext.getElutionTime && 
+      apexTime <= extractedPeaks(idx._2).getLcContext.getElutionTime
     }
+    
+    /*
+    val mozToFind = 437.2611
+    val mzTol = 20
+    val mozTolInDa = MsUtils.ppmToDa(mozToFind, mzTol)
+    if( apexMz > mozToFind - mozTolInDa && apexMz < mozToFind + mozTolInDa ) {
+      println("extractedPeaks")
+      println(extractedPeaks.map(_.getLcContext().getElutionTime() / 60).mkString("\t"))
+      println(extractedPeaks.map(_.getIntensity()).mkString("\t"))
+      println(matchingPeakelIdxOpt)
+      
+      HistogramBasedPeakelFinder.debug = true
+      HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
+      HistogramBasedPeakelFinder.debug = false
+    }*/
+    
+    if( matchingPeakelIdxOpt.isEmpty ) {
+      /*this.logger.warn(
+        s"no peakel detected for peak with m/z=${apexMz} and scan id=${apexScanHeader.getId}"
+      )*/
+      return None
+    }
+    
+    // Retrieve peakel peaks
+    val matchingPeakelIdx = matchingPeakelIdxOpt.get
+    val peakelPeaks = extractedPeaks.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 ).toArray
+    
+    // Build the peakel
+    val peakel = new PeakelBuilder( peakelPeaks ).result()
     
     //progressComputer.setCurrentStepAsCompleted()
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP3)
     
-    // Update usedPeakSet
-    // Remove all extracted peaks from usedPeakSet
-    //peaksBuffer.foreach { p => usedPeakSet -= p }
-    
-    if( peakelAndPeaksOpt.isEmpty ) {
-      // Re-add input apexPeak to usedPeakSet
-      // Marco: it may lead to missing peakel => we should not remove the apexPeak if no detected peakel
-      //usedPeakSet += apexPeak
-    } else {
-      // Re-add peakel peaks to usedPeakMap
-      val( peakel, extractedPeaks ) = peakelAndPeaksOpt.get
-      for( peak <- extractedPeaks)
-        usedPeakSet += peak
-      
-      // Check that apex is not the first or last peak
-      if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.scanIds.length - 1) ) {
-        return None
-      }
-      
-      // Check peakel amplitude is big enough
-      val peaksSortedByItensity = extractedPeaks.sortBy(_.getIntensity)
-        
-      // TODO: define a minimum amplitude for a peakel in the config
-      val( minIntensity, maxIntensity ) = (peaksSortedByItensity.head.getIntensity, peaksSortedByItensity.last.getIntensity)
-      val intensityAmplitude = if( minIntensity == 0 ) 2f else maxIntensity / minIntensity
-      val minAmplitude = 1.5f
-      
-      if( intensityAmplitude < minAmplitude ) {
-        return None
-      }
+    // Check that apex is not the first or last peak
+    if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.scanIds.length - 1) ) {
+      return None
     }
     
-    //progressComputer.setCurrentStepAsCompleted()
+    // Check peakel amplitude is big enough
+    val peaksSortedByItensity = extractedPeaks.sortBy(_.getIntensity)
+      
+    // TODO: define a minimum amplitude for a peakel in the config
+    val( minIntensity, maxIntensity ) = (peaksSortedByItensity.head.getIntensity, peaksSortedByItensity.last.getIntensity)
+    val intensityAmplitude = if( minIntensity == 0 ) 2f else maxIntensity / minIntensity
     
-    peakelAndPeaksOpt.map(_._1)
+    if( intensityAmplitude < minPeakelAmplitude ) {
+      return None
+    }
+    
+    // Re-add peakel peaks to usedPeakMap
+    for( peak <- extractedPeaks)
+      usedPeakSet += peak
+  
+    //progressComputer.setCurrentStepAsCompleted()
+
+    Some( peakel )
   }
 
 }

@@ -12,7 +12,7 @@ class SavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfig ) ext
     
     val nbPoints = smoothingConfig.nbPoints
     val polyOrder = smoothingConfig.polyOrder
-    val times = smoothingConfig.times
+    val times = smoothingConfig.iterationCount
     
     val(nl,nr,order) = (nbPoints,nbPoints,polyOrder)
     val coeffs = SGFilterMath3.computeSGCoefficients(nl,nr,order)
@@ -41,5 +41,5 @@ class SavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfig ) ext
 case class SavitzkyGolaySmoothingConfig(
   nbPoints: Int = 5,
   polyOrder: Int = 4,
-  times: Int = 3 // TODO: rename to iterationCount and set default to 1
+  iterationCount: Int = 1
 ) extends ISmoothingConfig

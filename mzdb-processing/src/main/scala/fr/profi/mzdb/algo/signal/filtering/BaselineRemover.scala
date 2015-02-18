@@ -8,14 +8,31 @@ import fr.profi.mzdb.utils.math.DerivativeAnalysis
  * @author David Bouyssie
  *
  */
-object BaseLineRemover {
+class BaselineRemover( gapTolerance: Int = 1 ) {
   
-  def removeBaseLine( rtIntPairs: Array[(Float,Double)], gapTolerance: Int = 1 ): Array[(Float,Double)] = {
+  require( gapTolerance >= 1, "gapTolerance must be strictly positive")
+  
+  def removeBaseLine( rtIntPairs: Array[(Float,Double)] ): Array[(Float,Double)] = {
     require( rtIntPairs != null, "rtIntPairs is null")
-    require( gapTolerance >= 1, "gapTolerance must be strictly positive")
     
-    val noiseThreshold = calcNoiseThreshold(rtIntPairs)
-    //val pairIsAboveNoise = rtIntPairs.map( _._2 >= noiseThreshold )
+    removeBaseLine( rtIntPairs, calcNoiseThreshold(rtIntPairs) )
+  }
+  
+  def removeBaseLine( rtIntPairs: Array[(Float,Double)], noiseThreshold: Double ): Array[(Float,Double)] = {
+    val noiseFreePeakGroupsIndices = findNoiseFreePeakGroupsIndices(rtIntPairs, noiseThreshold)
+    
+    val rtIntPairsAboveThreshold = new ArrayBuffer[(Float,Double)]()
+    
+    for( noiseFreePeakGroupIndices <- noiseFreePeakGroupsIndices ) {
+      val( firstIndex, lastIndex ) = noiseFreePeakGroupIndices
+      rtIntPairsAboveThreshold ++= rtIntPairs.slice( firstIndex, lastIndex +1 )
+    }
+
+    rtIntPairsAboveThreshold.toArray
+  }
+  
+  def findNoiseFreePeakGroupsIndices( rtIntPairs: Array[(Float,Double)], noiseThreshold: Double ): Array[(Int,Int)] = {
+    require( rtIntPairs != null, "rtIntPairs is null")
     
     // Clusterize peaks being consecutively above the nosie thresholds
     val groupedRtIntPairIndices = new ArrayBuffer[ArrayBuffer[Int]]()
@@ -43,7 +60,7 @@ object BaseLineRemover {
     // Keep only peak groups with a sufficient number of peaks (at least 3)
     // and extend group indices to maximize peak duration
     val rtIntPairsCount = rtIntPairs.length
-    val rtIntPairsAboveThreshold = new ArrayBuffer[(Float,Double)]
+    val rtIntPairsIndicesAboveThreshold = new ArrayBuffer[(Int,Int)]
     for(
       rtIntPairIndices <- groupedRtIntPairIndices;
       if rtIntPairIndices.length >= 3
@@ -54,28 +71,41 @@ object BaseLineRemover {
       val extendedFirstIndex = if( firstIndex == 0 ) firstIndex else firstIndex - 1
       val extendedLastIndex = if( lastIndex == rtIntPairsCount - 1 ) lastIndex else lastIndex + 1
       
-      for( i <- (extendedFirstIndex to extendedLastIndex).toArray )
-        rtIntPairsAboveThreshold += rtIntPairs(i)
+      rtIntPairsIndicesAboveThreshold += extendedFirstIndex -> extendedLastIndex
     }
-    
-    rtIntPairsAboveThreshold.toArray
+ 
+    rtIntPairsIndicesAboveThreshold.toArray
   }
 
   def calcNoiseThreshold( rtIntPairs: Array[(Float,Double)] ): Double = {
+    require( rtIntPairs != null, "rtIntPairs is null")
     
     // Compute histogram of observed intensities
     val intensityHistoComputer = new fr.profi.util.stat.EntityHistogramComputer(rtIntPairs, 
       { rtIntPair: (Float,Double) => rtIntPair._2 }
     )
     val intensityHisto = intensityHistoComputer.calcHistogram(20)
+    val indexedHisto = intensityHisto.zipWithIndex
     
     // Search for first minimum frequency
-    val firstMinimumFreq = intensityHisto.zipWithIndex.sliding(3).find { buffer =>
+    val firstTupleWithMinimumFreqOpt = indexedHisto.sliding(3).find { buffer =>
       val freq1 = buffer(0)._1._2.length
       val freq2 = buffer(1)._1._2.length
       val freq3 = buffer(2)._1._2.length
       if( freq2 < freq1 && freq3 >= freq2 ) true else false
-    }.get(1)
+    }
+    
+    // If no minimum found
+    val firstMinimumFreq = if( firstTupleWithMinimumFreqOpt.isEmpty ) {
+      return 0.0
+      
+      // Take the last frequency
+      //indexedHisto.last
+      
+      //println("rtIntPairs : "+ rtIntPairs.map(p => p._1 + "\t" +p._2).mkString( "\n"))
+      //println("intensityHisto L: "+ intensityHisto.length)
+      //println("intensityHisto: "+ intensityHisto.map(_._2.length).toList)
+    } else firstTupleWithMinimumFreqOpt.get(1)
     
     // Search for maximum frequency after first frequency minimum
     val maxFreqAfterFirstMinimum = intensityHisto
