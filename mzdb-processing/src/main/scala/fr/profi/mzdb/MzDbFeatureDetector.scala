@@ -1,7 +1,9 @@
 package fr.profi.mzdb
 
+import java.util.Iterator
+
 import java.util.concurrent.Executors
-import java.util.Iterator;
+
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
@@ -11,7 +13,9 @@ import scala.collection.mutable.Queue
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.control.Breaks._
+
 import com.typesafe.scalalogging.slf4j.Logging
+
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.feature.extraction.UnsupervisedPeakelDetector
 import fr.profi.mzdb.model._
@@ -19,7 +23,6 @@ import fr.profi.mzdb.utils.misc.SetClusterer
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.profi.util.stat._
 import fr.proline.api.progress._
-import scala.util.Failure
 
 case class FeatureDetectorConfig(
   msLevel: Int = 1,
@@ -90,7 +93,7 @@ class PeakelDetectorConsumer(
   }
   
   future.onFailure { case e =>
-    logger.error(s"exiting consumer ${consumerNumber} with error")
+    logger.error(s"exiting consumer ${consumerNumber} with error", e)
     
     detectorQueue.enqueueException(e)
   }
@@ -409,8 +412,10 @@ class MzDbFeatureDetector(
     val result = try {
       
       // Throw an exception if the queue has exceptions
-      if( detectorQueue.hasExceptions() )
+      if( detectorQueue.hasExceptions() ) {
+        logger.error("Exception catched in detector queue !")
         throw detectorQueue.dequeueException()
+      }
       
       Await.result(
         
@@ -420,7 +425,7 @@ class MzDbFeatureDetector(
         Duration.Inf
       )
 
-    } finally {      
+    } finally {
       logger.debug( "Shutting down thread pool used for peakel detection..." )
       if(threadPool.isShutdown() == false ) threadPool.shutdownNow()
     }
