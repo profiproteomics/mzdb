@@ -15,6 +15,45 @@ object Feature extends InMemoryIdGen {
     indexedPeakels.toArray.flatMap(_._1.scanIds).distinct.sorted
   }
 
+  /*def calcScanHeaderRange(peakels: Seq[Peakel]): Pair[ScanHeader, ScanHeader] = {
+
+    var firstScanHeader: ScanHeader = null
+    var lastScanHeader: ScanHeader = null
+
+    val nbPeakels = peakels.length
+    for (peakel <- peakels) {
+      if (firstScanHeader == null || peakel.getFirstLcContext().getScanId < firstScanHeader.getId) {
+        firstScanHeader = peakel.getFirstLcContext().asInstanceOf[ScanHeader]
+      }
+      if (lastScanHeader == null || peakel.getLastLcContext().getScanId > lastScanHeader.getId) {
+        lastScanHeader = peakel.getLastLcContext.asInstanceOf[ScanHeader]
+      }
+    }
+
+    (firstScanHeader, lastScanHeader)
+  }
+  */
+  
+  /**
+   * Take independant peakels and return an array of aligned peakel.
+   */
+  /*def alignPeakels( unalignedPeakels: Array[Peakel] ): Array[Peakel] = {
+    
+    val distinctLcContexts = unalignedPeakels
+      .flatMap( _.definedPeaks.map( _.getLcContext ) )
+      .distinct
+      .sortBy( _.getScanId )
+    
+    for( peakel <- unalignedPeakels ) yield {
+      val peakByLcCtx = peakel.definedPeaks.map( p => p.getLcContext -> p ).toMap
+
+      val newPeaks = distinctLcContexts.map( lcCtx => peakByLcCtx.getOrElse(lcCtx, null) )
+      
+      peakel.copy( peaks = newPeaks )
+    }
+        
+  }*/
+  
   def ipsToIndexedPeakels(ips: Seq[IsotopicPatternLike]): Array[(Peakel,Int)] = {
     for( (peakelBuilder,idx) <- this.ipsToIndexedPeakelBuilders(ips) )
       yield peakelBuilder.result() -> idx
@@ -54,7 +93,7 @@ object Feature extends InMemoryIdGen {
       }
     }
 
-    if (peaks.isEmpty == false)    
+    if (peaks.isEmpty == false)
       Some( new PeakelBuilder(peaks.toArray) -> peakelIdx )
     else
       Option.empty[(PeakelBuilder,Int)]
@@ -168,7 +207,37 @@ case class Feature(
   
   // ILcContext java interface implementation 
   def getScanId() : Int = getApexScanId()
-  
+
+  /*def getIsotopicPattern(idx: Int): IsotopicPattern = {
+    val ipPeaks = peakels.map { _.peaks(idx) }
+
+    // FIX BUG: at predicted time ft extractor
+    //if (ipPeaks.forall(_ == null))
+    //  return null
+
+    val mz = if (ipPeaks(0) != null) ipPeaks(0).mz else this.mz
+
+    val intensity = IsotopicPatternLike.sumPeakIntensities(ipPeaks, Feature.nbPeakelsToIntegrate)
+
+    new IsotopicPattern(
+      mz = mz,
+      intensity = intensity,
+      charge = this.charge,
+      peaks = ipPeaks,
+      scanHeader = scanHeaders(idx)
+    )
+  }
+
+  def getIsotopicPatternAtApex(): IsotopicPattern = {
+    getIsotopicPattern(apexIndex)
+  }
+
+  def getIsotopicPatterns(): Array[IsotopicPattern] = {
+    val nbPeaks = this.peakels(0).peaks.length
+
+    (0 until nbPeaks).map { this.getIsotopicPattern(_) } toArray
+  }*/
+
   def getXIC(peakelIdx: Int): Tuple2[Array[Float], Array[Float]] = {
     require( peakelIdx >= 0 && peakelIdx < indexedPeakels.length, "peakelIdx is out of range")
 
@@ -184,7 +253,7 @@ case class Feature(
     intSumByTime.sizeHint(this.getMs1Count)
 
     // Sum all peakel intensities
-    for ( (peakel,idx) <- this.indexedPeakels) {      
+    for ( (peakel,idx) <- this.indexedPeakels) {
       for( (time,intensity) <- peakel.getElutionTimeIntensityPairs ) {
         intSumByTime.getOrElseUpdate(time, 0f)
         intSumByTime(time) += intensity
@@ -207,9 +276,46 @@ case class Feature(
   }
 
   override def toString(): String = {
-    "" + this.mz + "/" + this.getElutionTime
+    "" + this.mz + "@" + this.getElutionTime
   }
  
+  
+  /**
+   * Creates a feature object from ips and averagine
+   * @param minLcContext minimum LC context used to restrict the length of peakels
+   * @param maxLcContext maximum LC context used to restrict the length of peakels
+   * @retrun a new Feature or null if there are no peaks in the provided index range
+   */
+  /*def restrictToScanIdRange( minScanId: Int, maxScanId: Int ): Option[Feature] = {
+    require(minScanId != maxScanId, "different scan ids must be provided")
+    
+    val restrictedPeakels = new ArrayBuffer[Peakel]()
+    
+    breakable {
+      for ( (peakel,idx) <- this.indexedPeakels) {
+        
+        val slicedPeakelOpt = peakel.restrictToScanIdRange(minScanId, maxScanId)
+        
+        if ( slicedPeakelOpt.isDefined )
+          restrictedPeakels += slicedPeakelOpt.get
+        else
+          break
+      }
+    }
+
+    if (restrictedPeakels.isEmpty) return None
+
+    Some(
+      Feature(
+        this.id,
+        this.mz,
+        this.charge,
+        restrictedPeakels.toArray.zipWithIndex,
+        isPredicted = this.isPredicted,
+        ms2ScanIds = this.ms2ScanIds
+      )
+    )
+  }*/
   
 }
 
