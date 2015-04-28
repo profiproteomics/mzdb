@@ -1119,22 +1119,16 @@ public class MzDbReader {
 		
 		ArrayList<ScanSlice> finalScanSlices = new ArrayList<ScanSlice>();
 		
-		int i = 1;
-		float curElutionTime = scanSlices.get(0).getHeader().getElutionTime();
-		while (i < scanSlices.size() && curElutionTime <= minrt) {
-			curElutionTime = scanSlices.get(i).getHeader().getElutionTime();
+		int i = 0;
+		while (i < scanSlices.size() && scanSlices.get(i).getHeader().getElutionTime() <= minrt) {
 			i++;
 		}
 		
-		while (i < scanSlices.size() && curElutionTime <= maxrt) {
+		while (i < scanSlices.size() && scanSlices.get(i).getHeader().getElutionTime() <= maxrt) {
 			
 			// Retrieve current scan slice
-			ScanSlice currentScanSlice = scanSlices.get(i);
-			
-			// Update current eluetion time and i
-			curElutionTime = currentScanSlice.getHeader().getElutionTime();
+			ScanSlice currentScanSlice = scanSlices.get(i);			
 			i++;
-			
 			// Filter m/z values to be sure we match the minmz/maxmz range
 			ScanData filteredScanData = currentScanSlice.getData().mzRangeFilter(minmz, maxmz);
 			
@@ -1333,6 +1327,7 @@ public class MzDbReader {
 			case MAX: {
 				
 				for (ScanSlice sl : scanSlices) {
+					
 					Peak[] peaks = sl.getPeaks();
 					
 					if (peaks.length == 0)
@@ -1347,6 +1342,7 @@ public class MzDbReader {
 			}
 			case SUM: {
 				for (ScanSlice sl : scanSlices) {
+					
 					Peak[] peaks = sl.getPeaks();
 					
 					if (peaks.length == 0)

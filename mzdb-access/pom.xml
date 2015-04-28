@@ -4,7 +4,7 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.0.6</version>
+    <version>0.1.0-SNAPSHOT</version>
   </parent>
 
   <groupId>fr.profi</groupId>
@@ -71,6 +71,13 @@
       <version>1.47</version> <!-- Latest version checked on 21 january 2015 -->
     </dependency>
 
+	<!-- JUnit testing -->
+	<dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.11</version>
+        <scope>test</scope>
+      </dependency>
   </dependencies>
 
   <build>
