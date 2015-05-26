@@ -1274,7 +1274,7 @@ public class MzDbReader {
 	}
 
 	public enum XicMethod {
-		MAX(0), SUM(1);
+		MAX(0), NEAREST(1), SUM(2);
 
 		private final Integer val;
 
@@ -1306,16 +1306,32 @@ public class MzDbReader {
 
 	public Peak[] getXIC(double minMz, double maxMz, float minRt, float maxRt, int msLevel, XicMethod method)
 			throws SQLiteException, StreamCorruptedException {
-		
+
+		double mzCenter = (minMz + maxMz) / 2;
+		double mzTolInDa = maxMz - mzCenter;
+
+		return getXICForMz(mzCenter, mzTolInDa, minRt, maxRt, msLevel, method);
+	}
+
+	public Peak[] getXICForMz(
+		double mz,
+		double mzTolInDa,
+		float minRt,
+		float maxRt,
+		int msLevel,
+		XicMethod method) throws SQLiteException, StreamCorruptedException {
+
+		double minMz = mz - mzTolInDa;
+		double maxMz = mz + mzTolInDa;
 		double minRtForRtree = minRt >= 0 ? minRt : 0;
 		double maxRtForRtree = maxRt > 0 ? maxRt : this.getLastTime();
-		
+
 		// System.out.println(minRt+ "," + maxRt);
 		ScanSlice[] scanSlices = getScanSlices(minMz, maxMz, minRtForRtree, maxRtForRtree, msLevel);
-		
+
 		if (scanSlices == null)
 			logger.warn("null detected");// throw new
-		
+
 		// Exception("Empty scanSlices, narrow request ?");
 		if (scanSlices.length == 0) {
 			logger.warn("Empty scanSlices, narrow request ?");
@@ -1325,38 +1341,42 @@ public class MzDbReader {
 		List<Peak> results = new ArrayList<Peak>();
 		switch (method) {
 			case MAX: {
-				
+	
 				for (ScanSlice sl : scanSlices) {
 					
 					Peak[] peaks = sl.getPeaks();
-					
+	
 					if (peaks.length == 0)
 						continue;
-					
+	
 					Arrays.sort(peaks, Peak.getIntensityComp());
-					
+	
 					results.add(peaks[peaks.length - 1]);
 				}
-				
+	
 				return results.toArray(new Peak[results.size()]);
+			}
+			case NEAREST: {
+				// TODO: implement me
+				return null;
 			}
 			case SUM: {
 				for (ScanSlice sl : scanSlices) {
 					
 					Peak[] peaks = sl.getPeaks();
-					
+	
 					if (peaks.length == 0)
 						continue;
-					
+	
 					Arrays.sort(peaks, Peak.getIntensityComp());
-					
+	
 					float sum = 0.0f;
 					for (Peak p : peaks) {
 						sum += p.getIntensity();
 					}
-					
+	
 					Peak refPeak = peaks[(int) Math.floor(0.5 * peaks.length)];
-					
+	
 					Peak fp = new Peak(
 						refPeak.getMz(),
 						sum,
@@ -1364,19 +1384,18 @@ public class MzDbReader {
 						refPeak.getRightHwhm(),
 						refPeak.getLcContext()
 					);
-					
+	
 					results.add(fp);
 				}
-				
+	
 				return results.toArray(new Peak[results.size()]);
 			}
 			default: {
-				logger.error("[getXIC]: method must be one of 'max' or 'sum', returning null");
+				logger.error("[getXIC]: method must be one of 'max', 'nearest' or 'sum', returning null");
 				return null;
 			}
 		}
 	}
-	
 
 	/**
 	 * Gets the peaks.
