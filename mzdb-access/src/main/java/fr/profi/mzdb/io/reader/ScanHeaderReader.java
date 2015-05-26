@@ -40,7 +40,7 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	private static String _ms1ScanHeaderQueryStr = _scanHeaderQueryStr + " WHERE ms_level = 1";	
 	private static String _ms2ScanHeaderQueryStr = _scanHeaderQueryStr + " WHERE ms_level = 2";
 	
-	private enum ScanHeaderCols {
+	private enum ScanHeaderCol {
 
 		ID("id"),
 		INITIAL_ID("initial_id"),
@@ -59,65 +59,67 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 		@SuppressWarnings("unused")
 		protected final String columnName;
 
-		private ScanHeaderCols(String colName) {
+		private ScanHeaderCol(String colName) {
 			this.columnName = colName;
 		}
 
 	}
+	
+	private static class ScanHeaderColIdx {	
+	  static int id = ScanHeaderCol.ID.ordinal();
+	  static int initialId= ScanHeaderCol.INITIAL_ID.ordinal();
+	  static int cycleCol= ScanHeaderCol.CYCLE.ordinal();
+	  static int time = ScanHeaderCol.TIME.ordinal();
+	  static int msLevel = ScanHeaderCol.MS_LEVEL.ordinal();
+	  static int tic = ScanHeaderCol.TIC.ordinal();
+	  static int basePeakMz = ScanHeaderCol.BASE_PEAK_MZ.ordinal();
+	  static int basePeakIntensity = ScanHeaderCol.BASE_PEAK_INTENSITY.ordinal();
+	  static int mainPrecursorMz = ScanHeaderCol.MAIN_PRECURSOR_MZ.ordinal();
+	  static int mainPrecursorCharge = ScanHeaderCol.MAIN_PRECURSOR_CHARGE.ordinal();
+	  static int dataPointsCount = ScanHeaderCol.DATA_POINTS_COUNT.ordinal();
+	  static int dataEncodingId = ScanHeaderCol.DATA_ENCODING_ID.ordinal();
+	  static int bbFirstSpectrumId = ScanHeaderCol.BB_FIRST_SPECTRUM_ID.ordinal();
+	}
 
 	private ISQLiteRecordExtraction<ScanHeader> _scanHeaderExtractor = new ISQLiteRecordExtraction<ScanHeader>() {
-
-		int idColIdx = ScanHeaderCols.ID.ordinal();
-		int initialIdColIdx = ScanHeaderCols.INITIAL_ID.ordinal();
-		int cycleColIdx = ScanHeaderCols.CYCLE.ordinal();
-		int timeColIdx = ScanHeaderCols.TIME.ordinal();
-		int msLevelColIdx = ScanHeaderCols.MS_LEVEL.ordinal();
-		int ticColIdx = ScanHeaderCols.TIC.ordinal();
-		int basePeakMzColIdx = ScanHeaderCols.BASE_PEAK_MZ.ordinal();
-		int basePeakIntensityColIdx = ScanHeaderCols.BASE_PEAK_INTENSITY.ordinal();
-		int mainPrecursorMzColIdx = ScanHeaderCols.MAIN_PRECURSOR_MZ.ordinal();
-		int mainPrecursorChargeColIdx = ScanHeaderCols.MAIN_PRECURSOR_CHARGE.ordinal();
-		int dataPointsCountColIdx = ScanHeaderCols.DATA_POINTS_COUNT.ordinal();
-		int dataEncodingIdColIdx = ScanHeaderCols.DATA_ENCODING_ID.ordinal();
-		int bbFirstSpectrumIdColIdx = ScanHeaderCols.BB_FIRST_SPECTRUM_ID.ordinal();
 		
 		public ScanHeader extract(SQLiteRecord record) throws SQLiteException {
 		  
 		  SQLiteStatement stmt = record.getStatement();
 			
 			//long nano = System.nanoTime();
-			int msLevel = stmt.columnInt(msLevelColIdx);
+			int msLevel = stmt.columnInt(ScanHeaderColIdx.msLevel);
 
 			double precursorMz = 0.0;
 			int precursorCharge = 0;
 			if (msLevel == 2) {
-				precursorMz = stmt.columnDouble(mainPrecursorMzColIdx);
-				precursorCharge = stmt.columnInt(mainPrecursorChargeColIdx);
+				precursorMz = stmt.columnDouble(ScanHeaderColIdx.mainPrecursorMz);
+				precursorCharge = stmt.columnInt(ScanHeaderColIdx.mainPrecursorCharge);
 			}
 
-			int bbFirstSpectrumId = stmt.columnInt(bbFirstSpectrumIdColIdx);
+			int bbFirstSpectrumId = stmt.columnInt(ScanHeaderColIdx.bbFirstSpectrumId);
 			
-			DataEncoding dataEnc = mzDbReader.getDataEncoding( stmt.columnInt(dataEncodingIdColIdx) );
+			DataEncoding dataEnc = mzDbReader.getDataEncoding( stmt.columnInt(ScanHeaderColIdx.dataEncodingId) );
 			
 			boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
 			
 			ScanHeader sh = new ScanHeader(
-			  stmt.columnInt(idColIdx),
-			  stmt.columnInt(initialIdColIdx),
-			  stmt.columnInt(cycleColIdx),
-				(float) stmt.columnDouble(timeColIdx),
+			  stmt.columnInt(ScanHeaderColIdx.id),
+			  stmt.columnInt(ScanHeaderColIdx.initialId),
+			  stmt.columnInt(ScanHeaderColIdx.cycleCol),
+				(float) stmt.columnDouble(ScanHeaderColIdx.time),
 				msLevel,
-				stmt.columnInt(dataPointsCountColIdx),
+				stmt.columnInt(ScanHeaderColIdx.dataPointsCount),
 				isHighRes,
-				(float) stmt.columnDouble(ticColIdx),
-				stmt.columnDouble(basePeakMzColIdx),
-				(float) stmt.columnDouble(basePeakIntensityColIdx),
+				(float) stmt.columnDouble(ScanHeaderColIdx.tic),
+				stmt.columnDouble(ScanHeaderColIdx.basePeakMz),
+				(float) stmt.columnDouble(ScanHeaderColIdx.basePeakIntensity),
 				precursorMz,
 				precursorCharge,
 				bbFirstSpectrumId
 			);
 			
-			//System.out.println(System.nanoTime() - nano);
+			//System.out.println( (double) (System.nanoTime() - nano) / 1e3 );
 
 			// sh.setParamTree(paramTree);
 
@@ -137,6 +139,11 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 		if (this.entityCache != null && this.entityCache.ms1ScanHeaders != null) {
 			return this.entityCache.ms1ScanHeaders;
 		} else {
+
+			// First pass to load the index
+			//final SQLiteStatement fakeStmt = connection.prepare(_ms1ScanHeaderQueryStr, true);
+			//while (fakeStmt.step()) {}
+			//fakeStmt.dispose();
 
 			ScanHeader[] ms1ScanHeaders = new ScanHeader[this.mzDbReader.getScansCount(1)];
 			
