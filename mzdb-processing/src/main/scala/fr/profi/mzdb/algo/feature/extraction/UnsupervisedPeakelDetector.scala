@@ -342,7 +342,7 @@ class UnsupervisedPeakelDetector(
     }
     
     // Check peakel amplitude is big enough
-    val peaksSortedByItensity = extractedPeaks.sortBy(_.getIntensity)
+    val peaksSortedByItensity = peakelPeaks.sortBy(_.getIntensity)
       
     // TODO: define a minimum amplitude for a peakel in the config
     val( minIntensity, maxIntensity ) = (peaksSortedByItensity.head.getIntensity, peaksSortedByItensity.last.getIntensity)
@@ -353,7 +353,7 @@ class UnsupervisedPeakelDetector(
     }
     
     // Re-add peakel peaks to usedPeakMap
-    for( peak <- extractedPeaks)
+    for( peak <- peakelPeaks)
       usedPeakSet += peak
   
     //progressComputer.setCurrentStepAsCompleted()
