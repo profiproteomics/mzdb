@@ -41,19 +41,10 @@ class MolecularFormula(private var internalMap: HashMap[Element, Float]) {
   def &(): HashMap[Element, Float] = internalMap
 }
 
-object AveragineComputer {
+class AveragineComputer(val averagine: MolecularFormula, val averageMass: Float)  {
   
-  val defaultAveragine = MolecularFormula(
-    Elements.C -> 4.9384f,
-    Elements.H -> 7.7577f,
-    Elements.N -> 1.3577f,
-    Elements.O -> 1.4773f,
-    Elements.S -> 0.0417f
-  )
-
-  val defaultMass = 111.1254f
-  var averagine = defaultAveragine
-  var averageMass = defaultMass
+//  var averagine = defaultAveragine
+//  var averageMass = defaultMass
 
   /*
   def setAveragine(averagine_ : Map[String, Float]) {
@@ -88,7 +79,13 @@ object AveragineComputer {
   }
 }
 
-
+object AveragineComputer extends AveragineComputer(MolecularFormula(
+    Elements.C -> 4.9494f,
+    Elements.H -> 7.8306f,
+    Elements.N -> 1.3602f,
+    Elements.O -> 1.4720f,
+    Elements.S -> 0.0378f
+  ), 111.0840f)
 
 /*
 trait MercuryLauncher {
