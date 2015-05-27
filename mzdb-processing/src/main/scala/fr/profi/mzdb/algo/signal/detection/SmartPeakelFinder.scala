@@ -11,15 +11,17 @@ import fr.profi.mzdb.utils.math.DerivativeAnalysis
  * @author David Bouyssie
  *
  */
+
 object SmartPeakelFinder extends IPeakelFinder {
   
   var minPeaksCount = 5
   var miniMaxiDistanceThresh = 3
+  var useOscillationFactor = false
   var maxOscillationFactor = 10
+  var usePartialSGSmoother = false
   
   // gapTolerance set to 1 means that ponctual intensity hole won't be removed
   val baselineRemover = new BaselineRemover( gapTolerance = 1 )
-  val psgSmoother = new PartialSavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 1))
   
   def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[(Int,Int)] = {
     
@@ -28,15 +30,22 @@ object SmartPeakelFinder extends IPeakelFinder {
     if( peaksCount < minPeaksCount ) return Array()
     
     // Compute the oscillation factor
-    val oscillationFactor = calcOscillationFactor(rtIntPairs)
-    
     // If the oscillationFactor is high, the SavitskyGolay filter will not provide a good result
-    if( oscillationFactor >= maxOscillationFactor ) {
+    if( useOscillationFactor && (calcOscillationFactor(rtIntPairs) >= maxOscillationFactor) ) {
       // TODO: should we apply the HistogramBasedPeakelFinder ???
       
       // Then we only apply a baseline filter
       val noiseThreshold = baselineRemover.calcNoiseThreshold(rtIntPairs)
       return baselineRemover.findNoiseFreePeakGroupsIndices(rtIntPairs, noiseThreshold)
+    }
+    
+    val psgSmoother = { 
+      if (usePartialSGSmoother) {
+        new PartialSavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 1))
+      } else {
+    	val nbSmoothingPoints = { if (peaksCount <= 20) 5 else if (peaksCount <=50) 7 else 11}
+    	new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(nbPoints = nbSmoothingPoints, polyOrder = 2, iterationCount = 1))
+      }
     }
     
     // Smooth intensities
