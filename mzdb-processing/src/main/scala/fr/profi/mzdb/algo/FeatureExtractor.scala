@@ -14,14 +14,12 @@ import fr.proline.api.progress._
 
 class FeatureExtractor(
   val mzDbReader: MzDbReader,
-  val ms1ScanHeaderById: Map[Int,ScanHeader],
+  val scanHeaderById: Map[Int,ScanHeader],
   val nfByScanId: Map[Int,Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
 ) extends AbstractFeatureExtractor { //with ProgressComputing {
-  
-  val scanHeaderById = ms1ScanHeaderById
-  
+    
   final case object STEP1 extends IProgressStepIdentity {
     val stepDescription = "Feature extraction step"
   }  
@@ -35,25 +33,25 @@ class FeatureExtractor(
   )
  
   protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor(
-    ms1ScanHeaderById,
+    scanHeaderById,
     nfByScanId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
   )
   protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor(
-    ms1ScanHeaderById,
+    scanHeaderById,
     nfByScanId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
    )
   protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor(
-    ms1ScanHeaderById,
+    scanHeaderById,
     nfByScanId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
   )
   protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor(
-    ms1ScanHeaderById,
+    scanHeaderById,
     nfByScanId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
