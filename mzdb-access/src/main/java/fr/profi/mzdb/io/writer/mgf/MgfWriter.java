@@ -1,7 +1,9 @@
 package fr.profi.mzdb.io.writer.mgf;
 
-import java.io.File;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StreamCorruptedException;
 import java.util.ArrayList;
@@ -20,10 +22,11 @@ import com.almworks.sqlite4java.SQLiteException;
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.IsolationWindow;
 import fr.profi.mzdb.db.model.params.Precursor;
-import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.CVEntry;
+import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.table.SpectrumTable;
+import fr.profi.mzdb.io.reader.ScanHeaderReader;
 import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.Peak;
@@ -55,27 +58,18 @@ public class MgfWriter {
 
 	private Map<Integer, String> titleByScanId = new HashMap<Integer, String>();
 
-	private PrintWriter writer;
-
 	/**
 	 * 
 	 * @param mzDBFilePath
 	 * @throws SQLiteException
 	 * @throws FileNotFoundException
+	 * @throws ClassNotFoundException 
 	 */
-	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException {
+	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
 		this.mzDBFilePath = mzDBFilePath;
 
 		// Create reader
-		try {
-			this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLiteException e) {
-			e.printStackTrace();
-		}
+		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
 
 		this._fillTitleByScanId();
 		this.logger.info("Number of loaded spectra titles: " + this.titleByScanId.size());
@@ -101,42 +95,50 @@ public class MgfWriter {
 		} // end inner class
 
 		TitleByIdFiller f = new TitleByIdFiller(this.titleByScanId);
+		
 		new SQLiteQuery(this.mzDbReader.getConnection(), titleQuery).forEachRecord(f);
-
 	}
 
 	/**
 	 * 
 	 * @param mgfFile
 	 * @param pm
-	 * @throws FileNotFoundException
 	 * @throws SQLiteException
-	 * @throws StreamCorruptedException 
+	 * @throws IOException 
 	 */
-	public void write(String mgfFile, PrecursorMzComputation precComp// ,
-	// float intensityCutoff
-	) throws FileNotFoundException, SQLiteException, StreamCorruptedException {
+	public void write(String mgfFile, PrecursorMzComputation precComp, float intensityCutoff ) throws SQLiteException, IOException {
 
 		// treat path mgfFile ?
 		if (mgfFile.isEmpty())
 			mgfFile = this.mzDBFilePath + ".mgf";
+		
+		// Reset precNotFound static var
+		MgfWriter.precNotFound = 0;
+		
+		// Configure the ScanHeaderReader in order to load all precursor lists when reading spectra headers
+		ScanHeaderReader.loadPrecursorList = true;
 
-		this.writer = new PrintWriter(new File("test.txt"));
-
-		// iterate over ms2 scan
+		// Iterate over MS2 scan
 		final Iterator<Scan> scanIterator = new MsScanIterator(this.mzDbReader, 2);
-		final PrintWriter mgfWriter = new PrintWriter(new File(mgfFile));
+		final PrintWriter mgfWriter = new PrintWriter(new BufferedWriter(new FileWriter(mgfFile)));
 		final Map<Integer, DataEncoding> dataEncodingByScanId = this.mzDbReader.getDataEncodingByScanId();
 
 		int spectraCount = 0;
 		while (scanIterator.hasNext()) {
+			
 			Scan s = scanIterator.next();
-			DataEncoding dataEnc = dataEncodingByScanId.get(s.getHeader().getId());
-			String spectrumAsStr = this.stringifySpectrum(s, dataEnc, precComp); // , intensityCutoff);
+			int scanId = s.getHeader().getId();
+			DataEncoding dataEnc = dataEncodingByScanId.get(scanId);
+			String spectrumAsStr = this.stringifySpectrum(s, dataEnc, precComp, intensityCutoff);
+			
+			//this.logger.debug("Writing spectrum with ID="+scanId);
 
-			// make a space between two spectra
+			// Write the spectrum			
 			mgfWriter.println(spectrumAsStr);
+			
+			// Write a blank line between two spectra
 			mgfWriter.println();
+			
 			spectraCount++;
 		}
 
@@ -144,8 +146,6 @@ public class MgfWriter {
 		this.logger.info(String.format("#Precursor not found: %d", MgfWriter.precNotFound));
 		mgfWriter.flush();
 		mgfWriter.close();
-
-		this.writer.close();
 	}
 
 	/**
@@ -157,6 +157,7 @@ public class MgfWriter {
 	 */
 	public double refinePrecMz(double targetMz, double mzTolPPM, float time, Precursor precursor)
 			throws SQLiteException, StreamCorruptedException {
+		
 		// do a XIC over isolation window
 		final IsolationWindow iw = precursor.getIsolationWindow();
 		final CVParam[] cvParams = iw.getCVParams(new CVEntry[] { CVEntry.ISOLATION_WINDOW_LOWER_OFFSET,
@@ -197,6 +198,7 @@ public class MgfWriter {
 		} else {
 			medMz = (peaks.get(l / 2 - 1).getMz() + peaks.get(l / 2).getMz()) / 2.0;
 		}
+		
 		return medMz;
 	}
 
@@ -210,9 +212,8 @@ public class MgfWriter {
 	 * @throws SQLiteException
 	 * @throws StreamCorruptedException 
 	 */
-	protected String stringifySpectrum(Scan scan, DataEncoding dataEnc, PrecursorMzComputation precComp
-	// float intensityCutoff
-	) throws SQLiteException, StreamCorruptedException {
+	protected String stringifySpectrum(Scan scan, DataEncoding dataEnc, PrecursorMzComputation precComp, float intensityCutoff )
+		throws SQLiteException, StreamCorruptedException {
 
 		String mzFragFormat = null;
 		// FIXME: check if is_high_res parameter is used and is correct
@@ -222,33 +223,44 @@ public class MgfWriter {
 			mzFragFormat = "%.3f";
 		}
 
-		// unpack data
+		// Unpack data
 		final ScanHeader scanHeader = scan.getHeader();
 		final String title = this.titleByScanId.get(scanHeader.getScanId());
 		final float time = scanHeader.getElutionTime();
-		double precMz = scanHeader.getPrecursorMz();
+		double precMz = scanHeader.getPrecursorMz(); // main precursor m/z
 
-		if (precComp == PrecursorMzComputation.DEFAULT) {
-			scanHeader.loadScanList(this.mzDbReader);
-			UserParam precMzParam = scanHeader.getScanList().getScans().get(0)
-					.getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
+		if (precComp == PrecursorMzComputation.SELECTED_ION_MZ) {
+			try {
+				scanHeader.loadPrecursorList(mzDbReader);
+				Precursor precursor = scanHeader.getPrecursor();
+				precMz = precursor.parseFirstSelectedIonMz();
+			} catch (Exception e) {
+				this.logger.error("Selected ion m/z value not found: fall back to default", e);
+			}
+		} else if (precComp == PrecursorMzComputation.REFINED) {
+			//scanHeader.loadScanList(this.mzDbReader);
+			//UserParam precMzParam = scanHeader.getScanList().getScans().get(0)
+			//		.getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
 
-			double thermoTrailer = Double.parseDouble(precMzParam.getValue());
-
-			scanHeader.loadPrecursorList(mzDbReader);
-			Precursor precursor = scanHeader.getPrecursor();
-			double refinedPrecMz = this.refinePrecMz(precMz, 20.0, time, precursor);
-			if (Math.abs(refinedPrecMz - precMz) > 0.5) {
+			//double thermoTrailer = Double.parseDouble(precMzParam.getValue());
+			
+			try {
+				scanHeader.loadPrecursorList(mzDbReader);
+				Precursor precursor = scanHeader.getPrecursor();
+				precMz = this.refinePrecMz(precMz, 20.0, time, precursor);
+			} catch (Exception e) {
+				this.logger.error("Refined precursor m/z computation failed: fall back to default", e);
+			}
+			
+			/*if (Math.abs(refinedPrecMz - precMz) > 0.5) {
 				System.out.println("" + precMz + ", " + refinedPrecMz + ", " + thermoTrailer);
 			}
 
 			if (Math.abs(refinedPrecMz - thermoTrailer) > 0.5) {
 				System.out.println("" + precMz + ", " + refinedPrecMz + ", " + thermoTrailer);
-			}
+			}*/
 
-			this.writer.println(thermoTrailer - precMz);
-
-		} else if (precComp == PrecursorMzComputation.REFINED_PWIZ) {
+		} else if (precComp == PrecursorMzComputation.REFINED_THERMO) {
 			try {
 				scanHeader.loadScanList(this.mzDbReader);
 				UserParam precMzParam = scanHeader.getScanList().getScans().get(0)
@@ -256,20 +268,19 @@ public class MgfWriter {
 
 				precMz = Double.parseDouble(precMzParam.getValue());
 			} catch (NullPointerException e) {
-				this.logger.trace("Refined pwiz user param name not found: fall back to default");
+				this.logger.error("Refined thermo value not found: fall back to default");
 			}
-		} else if (precComp == PrecursorMzComputation.REFINED_MZDB) {
+		}/* else if (precComp == PrecursorMzComputation.REFINED_MZDB) {
 			try {
 				precMz = Double.parseDouble(scanHeader.getUserParam(
 						PrecursorMzComputation.REFINED_MZDB.getUserParamName()).getValue());
 			} catch (NullPointerException e) {
 				this.logger.trace("Refined mdb user param name not found: fall back to default");
 			}
-			// if (precMz == 0.0d) precMz = scanHeader.getPrecursorMz();
-		}
+		}*/
 
 		final int charge = scanHeader.getPrecursorCharge();
-		final MgfHeader mgfScanHeader = new MgfHeader(title, precMz, charge, time);
+		final MgfHeader mgfScanHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
 
 		StringBuilder spectrumStringBuilder = new StringBuilder();
 		mgfScanHeader.appendToStringBuilder(spectrumStringBuilder);
@@ -285,16 +296,19 @@ public class MgfWriter {
 		for (int i = 0; i < intsLength; ++i) {
 			intsAsDouble[i] = (double) ints[i];
 		}
-		final double intensityCutOff = 0.0; // new Percentile().evaluate(intsAsDouble, 5.0);
+		//final double intensityCutOff = 0.0; // new Percentile().evaluate(intsAsDouble, 5.0);
 
 		for (int i = 0; i < intsLength; ++i) {
 			float intensity = ints[i];
 
-			if (intensity >= intensityCutOff) {
+			if (intensity >= intensityCutoff) {
 				double mz = mzs[i];
 
-				spectrumStringBuilder.append(String.format(mzFragFormat, mz)).append(" ")
-						.append(String.format("%.0f", intensity)).append(LINE_SPERATOR);
+				spectrumStringBuilder
+					.append(String.format(mzFragFormat, mz))
+					.append(" ")
+					.append(String.format("%.0f", intensity))
+					.append(LINE_SPERATOR);
 			}
 		}
 

@@ -23,6 +23,10 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	
 	/** The time index width. */
 	protected final static int TIME_INDEX_WIDTH = 15;
+	
+	public static boolean loadParamTree = false;
+	public static boolean loadScanList = false;
+	public static boolean loadPrecursorList = false;
 
 	/**
 	 * @param mzDbReader
@@ -35,7 +39,7 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	private static String _scanHeaderQueryStr = 
 		"SELECT id, initial_id, cycle, time, ms_level, tic, "+
 		"base_peak_mz, base_peak_intensity, main_precursor_mz, main_precursor_charge, " +
-		"data_points_count, data_encoding_id, bb_first_spectrum_id FROM spectrum";
+		"data_points_count, param_tree, scan_list, precursor_list, data_encoding_id, bb_first_spectrum_id FROM spectrum";
 	
 	private static String _ms1ScanHeaderQueryStr = _scanHeaderQueryStr + " WHERE ms_level = 1";	
 	private static String _ms2ScanHeaderQueryStr = _scanHeaderQueryStr + " WHERE ms_level = 2";
@@ -53,6 +57,9 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 		MAIN_PRECURSOR_MZ("main_precursor_mz"),
 		MAIN_PRECURSOR_CHARGE("main_precursor_charge"),
 		DATA_POINTS_COUNT("data_points_count"),
+		PARAM_TREE("param_tree"),
+		SCAN_LIST("scan_list"),
+		PRECURSOR_LIST("precursor_list"),
 		DATA_ENCODING_ID("data_encoding_id"),
 		BB_FIRST_SPECTRUM_ID("bb_first_spectrum_id");
 
@@ -77,6 +84,9 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	  static int mainPrecursorMz = ScanHeaderCol.MAIN_PRECURSOR_MZ.ordinal();
 	  static int mainPrecursorCharge = ScanHeaderCol.MAIN_PRECURSOR_CHARGE.ordinal();
 	  static int dataPointsCount = ScanHeaderCol.DATA_POINTS_COUNT.ordinal();
+	  static int paramTree = ScanHeaderCol.PARAM_TREE.ordinal();
+	  static int scanList = ScanHeaderCol.SCAN_LIST.ordinal();
+	  static int precursorList = ScanHeaderCol.PRECURSOR_LIST.ordinal();
 	  static int dataEncodingId = ScanHeaderCol.DATA_ENCODING_ID.ordinal();
 	  static int bbFirstSpectrumId = ScanHeaderCol.BB_FIRST_SPECTRUM_ID.ordinal();
 	}
@@ -84,8 +94,8 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 	private ISQLiteRecordExtraction<ScanHeader> _scanHeaderExtractor = new ISQLiteRecordExtraction<ScanHeader>() {
 		
 		public ScanHeader extract(SQLiteRecord record) throws SQLiteException {
-		  
-		  SQLiteStatement stmt = record.getStatement();
+			
+			SQLiteStatement stmt = record.getStatement();
 			
 			//long nano = System.nanoTime();
 			int msLevel = stmt.columnInt(ScanHeaderColIdx.msLevel);
@@ -104,9 +114,9 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
 			
 			ScanHeader sh = new ScanHeader(
-			  stmt.columnInt(ScanHeaderColIdx.id),
-			  stmt.columnInt(ScanHeaderColIdx.initialId),
-			  stmt.columnInt(ScanHeaderColIdx.cycleCol),
+				stmt.columnInt(ScanHeaderColIdx.id),
+				stmt.columnInt(ScanHeaderColIdx.initialId),
+				stmt.columnInt(ScanHeaderColIdx.cycleCol),
 				(float) stmt.columnDouble(ScanHeaderColIdx.time),
 				msLevel,
 				stmt.columnInt(ScanHeaderColIdx.dataPointsCount),
@@ -118,6 +128,16 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 				precursorCharge,
 				bbFirstSpectrumId
 			);
+			
+			if( loadParamTree ) {
+				sh.setParamTree( ParamTreeParser.parseParamTree(stmt.columnString(ScanHeaderColIdx.paramTree)) );
+			}
+			if( loadScanList ) {
+				sh.setScanList( ParamTreeParser.parseScanList(stmt.columnString(ScanHeaderColIdx.scanList)) );
+			}
+			if( loadPrecursorList ) {
+				sh.setPrecursor( ParamTreeParser.parsePrecursor(stmt.columnString(ScanHeaderColIdx.precursorList)) );
+			}
 			
 			//System.out.println( (double) (System.nanoTime() - nano) / 1e3 );
 
