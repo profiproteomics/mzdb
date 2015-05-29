@@ -248,7 +248,7 @@
                   <version>${sqlite4java.version}</version>
                   <type>dll</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/ProlineWeb-Core-${project.version}/WEB-INF/lib</outputDirectory>
+                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
                 </artifactItem>
 
                 <artifactItem>
@@ -257,7 +257,7 @@
                   <version>${sqlite4java.version}</version>
                   <type>so</type>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/ProlineWeb-Core-${project.version}/WEB-INF/lib</outputDirectory>
+                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
                 </artifactItem>
 
               </artifactItems>
