@@ -17,6 +17,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <sqlite4java.version>1.0.392</sqlite4java.version>
   </properties>
 
 	<scm>
@@ -113,7 +114,21 @@
       <artifactId>scalatest_${scala.version}</artifactId>
       <!-- Version and scope inherited from ProFI-Pom -->
     </dependency>
-
+    
+    <!-- sqlite4java  native libraries (needed for mzDB-access) -->
+    <dependency>
+      <groupId>com.almworks.sqlite4java</groupId>
+      <artifactId>sqlite4java-win32-x64</artifactId>
+      <version>${sqlite4java.version}</version>
+      <type>dll</type>
+    </dependency>
+    <dependency>
+      <groupId>com.almworks.sqlite4java</groupId>
+      <artifactId>libsqlite4java-linux-amd64</artifactId>
+      <version>${sqlite4java.version}</version>
+      <type>so</type>
+    </dependency>
+    
   </dependencies>
 
   <build>
@@ -152,6 +167,33 @@
 
     <plugins>
 
+    <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <!-- Version inherited from ProFI-Pom -->
+        <configuration>
+          <recompileMode>incremental</recompileMode>
+          <!-- <residentCompilerLimit>1</residentCompilerLimit> -->
+          <args>
+            <arg>-deprecation</arg>
+            <arg>-unchecked</arg>
+            <arg>-P:continuations:enable</arg>
+          </args>
+          <javacArgs>
+            <javacArg>-Xlint:unchecked</javacArg>
+            <javacArg>-Xlint:deprecation</javacArg>
+          </javacArgs>
+          <charset>UTF-8</charset>
+          <compilerPlugins>
+            <compilerPlugin>
+              <groupId>org.scala-lang.plugins</groupId>
+              <artifactId>continuations</artifactId>
+              <version>${scala-library.version}</version>
+            </compilerPlugin>
+          </compilerPlugins>
+        </configuration>
+      </plugin>
+
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <!-- Version inherited from ProFI-Pom -->
@@ -185,8 +227,55 @@
               <overWriteSnapshots>false</overWriteSnapshots>
               <overWriteIfNewer>true</overWriteIfNewer>
             </configuration>
+                        
           </execution>
+          
+		<execution>
+            <id>copysqlite4java</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
 
+            <configuration>
+
+              <artifactItems>
+
+              
+                <artifactItem>
+                  <groupId>com.almworks.sqlite4java</groupId>
+                  <artifactId>sqlite4java-win32-x64</artifactId>
+                  <version>${sqlite4java.version}</version>
+                  <type>dll</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/ProlineWeb-Core-${project.version}/WEB-INF/lib</outputDirectory>
+                </artifactItem>
+
+                <artifactItem>
+                  <groupId>com.almworks.sqlite4java</groupId>
+                  <artifactId>libsqlite4java-linux-amd64</artifactId>
+                  <version>${sqlite4java.version}</version>
+                  <type>so</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/ProlineWeb-Core-${project.version}/WEB-INF/lib</outputDirectory>
+                </artifactItem>
+
+              </artifactItems>
+
+              <outputDirectory>${project.build.directory}</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+
+              <!-- <outputDirectory>${project.build.directory}</outputDirectory> -->
+              <!-- <includeScope>provided</includeScope> -->
+              <!-- <includeTypes>jar</includeTypes> -->
+              <!-- <stripVersion>true</stripVersion> -->
+              <!-- <overWriteReleases>false</overWriteReleases> -->
+              <!-- <overWriteSnapshots>false</overWriteSnapshots> -->
+              <!-- <overWriteIfNewer>true</overWriteIfNewer>  -->
+
+            </configuration>
+             </execution>
         </executions>
       </plugin>
 
