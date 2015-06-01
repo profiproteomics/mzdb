@@ -5,7 +5,7 @@ import scala.collection.mutable.ArrayBuffer
 
 //import java.io.InputStream
 //import scala.collection.generic.Shrinkable
-
+@deprecated("use fr.profi.chmistry API instead","0.2.0")
 case class Element(
   val abrev: String,
   val massMonoistopic: Double,
@@ -14,6 +14,7 @@ case class Element(
   val fullName: String = "")
 
 // TODO: check elements table in python lib
+  @deprecated("use fr.profi.chmistry API instead","0.2.0")
 object Elements {
 
   val C = Element("C", 12d, null, null, "Carbon")
@@ -23,12 +24,14 @@ object Elements {
   val S = Element("S", 31.9720707d, null, null, "Sulfur")
 }
 
+@deprecated("use fr.profi.chmistry API instead","0.2.0")
 object MolecularFormula {
   def apply(ts: (Element, Float)*): MolecularFormula = new MolecularFormula(new HashMap[Element, Float] ++ ts.toMap)
   def apply(): MolecularFormula = new MolecularFormula(new HashMap[Element, Float]())
   //def apply(t:HashMap[Element, Float]) : MolecularFormula = new MolecularFormula(t)
 }
 
+@deprecated("use fr.profi.chmistry API instead","0.2.0")
 class MolecularFormula(private var internalMap: HashMap[Element, Float]) {
   def apply(key: Element): Float = internalMap(key)
   def update(key: Element, v: Float): Unit = internalMap(key) = v
@@ -41,6 +44,7 @@ class MolecularFormula(private var internalMap: HashMap[Element, Float]) {
   def &(): HashMap[Element, Float] = internalMap
 }
 
+@deprecated("use fr.profi.chmistry API instead","0.2.0")
 class AveragineComputer(val averagine: MolecularFormula, val averageMass: Float)  {
   
 //  var averagine = defaultAveragine
@@ -79,6 +83,7 @@ class AveragineComputer(val averagine: MolecularFormula, val averageMass: Float)
   }
 }
 
+@deprecated("use fr.profi.chmistry API instead","0.2.0")
 object AveragineComputer extends AveragineComputer(MolecularFormula(
     Elements.C -> 4.9494f,
     Elements.H -> 7.8306f,
