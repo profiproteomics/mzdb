@@ -1,11 +1,13 @@
 package fr.profi.ms.algo
 
-import scala.io.Source
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.TreeMap
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 import scala.util.control.Breaks._
+
 import com.typesafe.scalalogging.slf4j.Logging
+
+import fr.profi.chemistry.model.MolecularConstants
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.util.math.calcLineParams
 import fr.profi.util.ms.mozToMass
@@ -17,9 +19,9 @@ import fr.profi.util.ms.mozToMass
 object IsotopePatternInterpolator extends Logging {
   
   final val LOOKUP_TABLE_URL = "/lookup_table.txt"
-  final val avgIsoMassDiff = 1.0027
+  final val avgIsoMassDiff = MolecularConstants.AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF
     
-  lazy val lookupTable: TreeMap[Int, Array[Int]] = {
+  val lookupTable: TreeMap[Int, Array[Int]] = {
     
     // Parse the file into an array buffer
     val rows = new ArrayBuffer[Array[Int]]
@@ -41,17 +43,18 @@ object IsotopePatternInterpolator extends Logging {
     tableBuilder.result
   }
   
-  // A mass (not m/z) must be provided
+  val lookupTableMasses: Array[Int] = lookupTable.keys.toArray
+
   def getTheoreticalPattern(mz: Double, charge: Int): TheoreticalIsotopePattern = {
     require( charge > 0, "charge must be greater than zero" )
     
-    val keys = lookupTable.keys.toBuffer
+    val keys = lookupTableMasses
     //require(mass >= keys.head && mass <= keys.last, "provided m/z is out of lookup table bounds: " + mass)
     
     // Convert m/z into mass
     var mass = mozToMass(mz,charge)
-    if (mass > keys.last ) 
-      mass= keys.last
+    if (mass > keys.last )
+      mass = keys.last
      
     val idx = keys.indexWhere(_ >= mass)
     val (x1, x2) = (keys(idx - 1), keys(idx))
@@ -59,17 +62,17 @@ object IsotopePatternInterpolator extends Logging {
     
     val mzIntPairs = new ArrayBuffer[(Double,Float)](minArray.length)
     
-    breakable {
-      for( i <- 0 until minArray.length) {
-        val (y1,y2) = (minArray(i),maxArray(i))
-        if (y1 > 0 || y2 > 0) {
-          val (slope, intercept) = calcLineParams(x1, y1, x2, y2)
-          val abundance = ( (slope * mass) + intercept ).toFloat
-          val isoMz = mz + (i * avgIsoMassDiff / charge)
-          mzIntPairs += (isoMz -> abundance)
-        } else 
-          break
+    var i = 0
+    while( i < minArray.length ) {
+      val (y1,y2) = (minArray(i),maxArray(i))
+      if (y1 > 0 || y2 > 0) {
+        val (slope, intercept) = calcLineParams(x1, y1, x2, y2)
+        val abundance = ( (slope * mass) + intercept ).toFloat
+        val isoMz = mz + (i * avgIsoMassDiff / charge)
+        mzIntPairs += (isoMz -> abundance)
       }
+      
+      i += 1
     }
     
     TheoreticalIsotopePattern(mzIntPairs.toArray,charge)

@@ -9,6 +9,7 @@ import com.typesafe.scalalogging.slf4j.Logging
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.util.math.calcLineParams
 import fr.profi.util.ms.mozToMass
+import fr.profi.chemistry.model.MolecularConstants
 
 /**
  * Isotopic Pattern (mz, intensities) estimator based on a probabilistic distribution of atom isotopes 
@@ -19,7 +20,7 @@ import fr.profi.util.ms.mozToMass
  */
 object IsotopePatternEstimator extends Logging {
 
-  final val avgIsoMassDiff = 1.0027
+  final val avgIsoMassDiff = MolecularConstants.AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF
 
   final val coeffs = Array(
     Array(1.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00),
