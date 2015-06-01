@@ -280,7 +280,11 @@ public class MzDbReader {
 	public String getSoftwareVersion() throws SQLiteException {
 		String sqlString = "SELECT version FROM software WHERE name='mzDB'";
 		return new SQLiteQuery(connection, sqlString).extractSingleString();
-
+	}
+	
+	public String getSourceFileName() throws SQLiteException {
+		String sqlString = "SELECT name FROM source_file LIMIT 1";
+		return new SQLiteQuery(connection, sqlString).extractSingleString();
 	}
 
 	/**

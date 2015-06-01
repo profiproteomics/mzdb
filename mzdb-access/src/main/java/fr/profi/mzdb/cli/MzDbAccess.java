@@ -89,11 +89,17 @@ public class MzDbAccess {
 		@Parameter(names = { "-o", "--output_file_path" }, description = "mgf output file path", required = true)
 		private String outputFile = "";
 
-		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo'", required = false)
+		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, extracted, refined, refined_thermo'", required = false)
 		private PrecursorMzComputation precMzComputation = PrecursorMzComputation.MAIN_PRECURSOR_MZ;
+		
+		@Parameter(names = { "-mztol", "--mz_tol_ppm" }, description = "m/z tolerance used for precursor m/z value definition", required = false)
+		private float mzTolPPM = 20;
 
 		@Parameter(names = { "-cutoff", "--intensity_cutoff" }, description = "optional intensity cutoff to use", required = false)
 		private float intensityCutoff = 0f;
+		
+		@Parameter(names = { "-ptitle", "--proline_title" }, description = "export TITLE using the Proline convention", required = false)
+		private boolean exportProlineTitle = false;
 	}
 
 	public static class DebugCommand {
@@ -204,7 +210,7 @@ public class MzDbAccess {
 		logger.info("Precursor m/z values will be defined using the method: " + cmd.precMzComputation);
 
 		MgfWriter writer = new MgfWriter(cmd.mzdbFile);
-		writer.write(cmd.outputFile, cmd.precMzComputation, cmd.intensityCutoff);
+		writer.write(cmd.outputFile, cmd.precMzComputation, cmd.mzTolPPM, cmd.intensityCutoff, cmd.exportProlineTitle);
 	}
 
 	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException {

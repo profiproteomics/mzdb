@@ -135,7 +135,7 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			if( loadScanList ) {
 				sh.setScanList( ParamTreeParser.parseScanList(stmt.columnString(ScanHeaderColIdx.scanList)) );
 			}
-			if( loadPrecursorList ) {
+			if( loadPrecursorList && msLevel > 1 ) {
 				sh.setPrecursor( ParamTreeParser.parsePrecursor(stmt.columnString(ScanHeaderColIdx.precursorList)) );
 			}
 			
