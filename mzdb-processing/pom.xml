@@ -230,11 +230,11 @@
                         
           </execution>
           
-		<execution>
+		 <execution>
             <id>copysqlite4java</id>
-            <phase>package</phase>
+            <phase>compile</phase>
             <goals>
-              <goal>copy</goal>
+              <goal>copy-dependencies</goal>
             </goals>
 
             <configuration>
