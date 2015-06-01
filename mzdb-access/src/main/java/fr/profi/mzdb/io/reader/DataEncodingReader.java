@@ -45,54 +45,106 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 	private static String _dataEncodingQueryStr = "SELECT * FROM data_encoding";
 
 	/** The _data encoding extractor. */
-	private ISQLiteRecordExtraction<DataEncoding> _dataEncodingExtractor = new ISQLiteRecordExtraction<DataEncoding>() {
+	private ISQLiteRecordExtraction<DataEncoding> _dataEncodingExtractor = _getDataEncodingExtractor();
+	
+	private ISQLiteRecordExtraction<DataEncoding> _getDataEncodingExtractor() throws SQLiteException {
+		String modelVersion = mzDbReader.getModelVersion();
+		System.out.println(modelVersion);
+		
+		// Check if model version is newer than 0.6
+		if ( modelVersion.compareTo("0.6") > 0 ) {
+			return new ISQLiteRecordExtraction<DataEncoding>() {
 
-		public DataEncoding extract(SQLiteRecord record) throws SQLiteException {
+				public DataEncoding extract(SQLiteRecord record) throws SQLiteException {
 
-			// Extract record values
-			int id = record.columnInt(DataEncodingTable.ID);
-			String dmAsStr = record.columnString(DataEncodingTable.MODE);
-			String compression = record.columnString(DataEncodingTable.COMPRESSION);
-			String byteOrderAsStr = record.columnString(DataEncodingTable.BYTE_ORDER);
+					// Extract record values
+					int id = record.columnInt(DataEncodingTable.ID);
+					String dmAsStr = record.columnString(DataEncodingTable.MODE);
+					String compression = record.columnString(DataEncodingTable.COMPRESSION);
+					String byteOrderAsStr = record.columnString(DataEncodingTable.BYTE_ORDER);
 
-			// Parse record values
-			DataMode dm;
-			if (dmAsStr.equalsIgnoreCase("FITTED"))
-				dm = DataMode.FITTED;
-			else
-				dm = DataMode.CENTROID;
+					// Parse record values
+					DataMode dm;
+					if (dmAsStr.equalsIgnoreCase("FITTED"))
+						dm = DataMode.FITTED;
+					else
+						dm = DataMode.CENTROID;
 
-			ByteOrder bo;
-			if (byteOrderAsStr.equalsIgnoreCase("big_endian"))
-				bo = ByteOrder.BIG_ENDIAN;
-			else
-				bo = ByteOrder.LITTLE_ENDIAN;
-			
-			// Parse param tree
-			String paramTreeAsStr = record.columnString(SpectrumTable.PARAM_TREE);
-			ParamTree paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);		
-			
-			// FIXME: the two CV params may have the same AC => it could be conflicting...
-			List<CVParam> cvParams = paramTree.getCVParams();
-			CVParam mzEncoding = cvParams.get(0);
-			CVParam intEncoding = cvParams.get(1);
-			
-			PeakEncoding peakEnc = null;
-			if( mzEncoding.getValue().equals("32") ) {
-				peakEnc = PeakEncoding.LOW_RES_PEAK;
-			} else {
-				if( intEncoding.getValue().equals("32") ) {
-					peakEnc = PeakEncoding.HIGH_RES_PEAK;
-				} else {
-					peakEnc = PeakEncoding.NO_LOSS_PEAK;
+					ByteOrder bo;
+					if (byteOrderAsStr.equalsIgnoreCase("big_endian"))
+						bo = ByteOrder.BIG_ENDIAN;
+					else
+						bo = ByteOrder.LITTLE_ENDIAN;
+					
+					int mzPrecision = record.columnInt(DataEncodingTable.MZ_PRECISION);
+					int intPrecision = record.columnInt(DataEncodingTable.INTENSITY_PRECISION);
+
+					PeakEncoding peakEnc = null;
+					if( mzPrecision == 32 ) {
+						peakEnc = PeakEncoding.LOW_RES_PEAK;
+					} else {
+						if( intPrecision == 32 ) {
+							peakEnc = PeakEncoding.HIGH_RES_PEAK;
+						} else {
+							peakEnc = PeakEncoding.NO_LOSS_PEAK;
+						}
+					}
+
+					// Return data encoding object
+					return new DataEncoding(id, dm, peakEnc, compression, bo);
 				}
-			}
+			};
+		} else {
+			return new ISQLiteRecordExtraction<DataEncoding>() {
 
-			// Return data encoding object
-			return new DataEncoding(id, dm, peakEnc, compression, bo);
+				public DataEncoding extract(SQLiteRecord record) throws SQLiteException {
+
+					// Extract record values
+					int id = record.columnInt(DataEncodingTable.ID);
+					String dmAsStr = record.columnString(DataEncodingTable.MODE);
+					String compression = record.columnString(DataEncodingTable.COMPRESSION);
+					String byteOrderAsStr = record.columnString(DataEncodingTable.BYTE_ORDER);
+
+					// Parse record values
+					DataMode dm;
+					if (dmAsStr.equalsIgnoreCase("FITTED"))
+						dm = DataMode.FITTED;
+					else
+						dm = DataMode.CENTROID;
+
+					ByteOrder bo;
+					if (byteOrderAsStr.equalsIgnoreCase("big_endian"))
+						bo = ByteOrder.BIG_ENDIAN;
+					else
+						bo = ByteOrder.LITTLE_ENDIAN;
+					
+					// Parse param tree
+					String paramTreeAsStr = record.columnString(SpectrumTable.PARAM_TREE);
+					ParamTree paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);		
+					
+					// NOTE: the two CV params may have the same AC => it could be conflicting...
+					// It has been in fixed in version 0.9.8 of pwiz-mzdb
+					List<CVParam> cvParams = paramTree.getCVParams();
+					CVParam mzEncoding = cvParams.get(0);
+					CVParam intEncoding = cvParams.get(1);
+					
+					PeakEncoding peakEnc = null;
+					if( mzEncoding.getValue().equals("32") ) {
+						peakEnc = PeakEncoding.LOW_RES_PEAK;
+					} else {
+						if( intEncoding.getValue().equals("32") ) {
+							peakEnc = PeakEncoding.HIGH_RES_PEAK;
+						} else {
+							peakEnc = PeakEncoding.NO_LOSS_PEAK;
+						}
+					}
+
+					// Return data encoding object
+					return new DataEncoding(id, dm, peakEnc, compression, bo);
+				}
+			};
 		}
-
-	};
+	}
 
 	/**
 	 * Gets the data encoding.
@@ -110,8 +162,9 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 		} else {
 			// Retrieve data encoding record
 			String queryStr = _dataEncodingQueryStr + " WHERE id = ?";
-			return new SQLiteQuery(connection, queryStr).bind(1, dataEncodingId).extractRecord(
-					this._dataEncodingExtractor);
+			return new SQLiteQuery(connection, queryStr)
+				.bind(1, dataEncodingId)
+				.extractRecord(this._dataEncodingExtractor);
 		}
 
 	}
@@ -125,8 +178,8 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 	 */
 	public DataEncoding[] getDataEncodings() throws SQLiteException {
 		DataEncoding[] dataEncodings = new DataEncoding[this.mzDbReader.getDataEncodingsCount()];
-		return new SQLiteQuery(connection, _dataEncodingQueryStr).extractRecords(this._dataEncodingExtractor,
-				dataEncodings);
+		return new SQLiteQuery(connection, _dataEncodingQueryStr)
+			.extractRecords(this._dataEncodingExtractor, dataEncodings);
 	}
 
 	/**

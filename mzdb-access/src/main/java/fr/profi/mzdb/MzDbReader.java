@@ -271,6 +271,16 @@ public class MzDbReader {
 	public MzDbHeader getMzDbHeader() throws SQLiteException {
 		return _mzDbHeaderReader.getMzDbHeader();
 	}
+	
+	/**
+	 * 
+	 * @return
+	 * @throws SQLiteException
+	 */
+	public String getModelVersion() throws SQLiteException {
+		String sqlString = "SELECT version FROM mzdb LIMIT 1";
+		return new SQLiteQuery(connection, sqlString).extractSingleString();
+	}
 
 	/**
 	 * 
@@ -278,7 +288,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 */
 	public String getSoftwareVersion() throws SQLiteException {
-		String sqlString = "SELECT version FROM software WHERE name='mzDB'";
+		String sqlString = "SELECT version FROM software WHERE name LIKE '%mzDB'";
 		return new SQLiteQuery(connection, sqlString).extractSingleString();
 	}
 	
