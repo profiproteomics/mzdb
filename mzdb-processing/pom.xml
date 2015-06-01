@@ -221,7 +221,7 @@
             </goals>
             <configuration>
               <outputDirectory>${project.build.directory}/lib</outputDirectory>
-              <includeTypes>dll,exe</includeTypes>
+              <includeTypes>dll,exe,so</includeTypes>
               <stripVersion>true</stripVersion>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>false</overWriteSnapshots>
@@ -230,52 +230,7 @@
                         
           </execution>
           
-		 <execution>
-            <id>copysqlite4java</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-
-            <configuration>
-
-              <artifactItems>
-
-              
-                <artifactItem>
-                  <groupId>com.almworks.sqlite4java</groupId>
-                  <artifactId>sqlite4java-win32-x64</artifactId>
-                  <version>${sqlite4java.version}</version>
-                  <type>dll</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                </artifactItem>
-
-                <artifactItem>
-                  <groupId>com.almworks.sqlite4java</groupId>
-                  <artifactId>libsqlite4java-linux-amd64</artifactId>
-                  <version>${sqlite4java.version}</version>
-                  <type>so</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                </artifactItem>
-
-              </artifactItems>
-
-              <outputDirectory>${project.build.directory}</outputDirectory>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
-
-              <!-- <outputDirectory>${project.build.directory}</outputDirectory> -->
-              <!-- <includeScope>provided</includeScope> -->
-              <!-- <includeTypes>jar</includeTypes> -->
-              <!-- <stripVersion>true</stripVersion> -->
-              <!-- <overWriteReleases>false</overWriteReleases> -->
-              <!-- <overWriteSnapshots>false</overWriteSnapshots> -->
-              <!-- <overWriteIfNewer>true</overWriteIfNewer>  -->
-
-            </configuration>
-             </execution>
+		
         </executions>
       </plugin>
 
