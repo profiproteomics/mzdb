@@ -255,9 +255,9 @@ case class Peakel(
   //def getApexLcContext() = lcContexts(apexIndex)
   //def getFirstLcContext() = lcContexts.head
   //def getLastLcContext() = lcContexts.last
-  def getApexScanId() = scanInitialIds(apexIndex)
-  def getFirstScanId() = scanInitialIds.head
-  def getLastScanId() = scanInitialIds.last
+  def getApexScanInitialId() = scanInitialIds(apexIndex)
+  def getFirstScanInitialId() = scanInitialIds.head
+  def getLastScanInitialIdId() = scanInitialIds.last
   
   def getApexElutionTime() = elutionTimes(apexIndex)
   def getFirstElutionTime() = elutionTimes.head
@@ -271,7 +271,7 @@ case class Peakel(
   def getCursorAtApex(): PeakelCursor = PeakelCursor(this, apexIndex)
   
   // ILcContext java interface implementation 
-  def getScanId() : Int = getApexScanId()
+  def getScanId() : Int = getApexScanInitialId()
   def getElutionTime(): Float = getApexElutionTime()
   
   // Access to data of a peak at a given index

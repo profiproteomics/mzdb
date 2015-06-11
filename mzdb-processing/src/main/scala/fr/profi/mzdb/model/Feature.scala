@@ -191,7 +191,7 @@ case class Feature(
   }
   
   def getApexIndex() = getBasePeakel.apexIndex
-  def getApexScanId() = getBasePeakel.getApexScanId()
+  def getApexScanInitialId() = getBasePeakel.getApexScanInitialId()
   def getBasePeakel() = getPeakel(_basePeakelIndex)
   def getBasePeakelIndex() = _basePeakelIndex
   def getFirstPeakel() = indexedPeakels.head._1
@@ -205,8 +205,9 @@ case class Feature(
   def getPeakelsCount() = indexedPeakels.length
   def getScanIds() = Feature.getPeakelsScanIds(indexedPeakels)
   
-  // ILcContext java interface implementation 
-  def getScanId() : Int = getApexScanId()
+  // ILcContext java interface implementation
+  // FIXME: incoherent scanId <-> initialId mapping
+  def getScanId() : Int = getApexScanInitialId()
 
   /*def getIsotopicPattern(idx: Int): IsotopicPattern = {
     val ipPeaks = peakels.map { _.peaks(idx) }

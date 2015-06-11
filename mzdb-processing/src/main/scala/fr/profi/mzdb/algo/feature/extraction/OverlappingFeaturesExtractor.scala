@@ -100,7 +100,7 @@ class OverlappingFeaturesExtractor(
     val firstFtPeakel = ft.getFirstPeakel()
     val firstFtMz = firstFtPeakel.getMz
     //getting the maxScanId, the idea is to use extractIsotopicPattern and use only first peakel
-    val maxScanId = firstFtPeakel.getApexScanId()
+    val maxScanId = firstFtPeakel.getApexScanInitialId()
 
     // if we do not have a defined scanId, we stop
     require(maxScanId != 0)
@@ -249,8 +249,9 @@ class OverlappingFeaturesExtractor(
 //          val previousOvlFtPeakel = ovlFt.peakels(previousOvlFtIndex)
 
         val apexDistanceInCycle = math.abs(
-          this.scanHeaderById(prevOvlFtPeakel.getApexScanId).getCycle -
-          this.scanHeaderById(monoFtPeakel.getApexScanId).getCycle
+          // FIXME: incoherent scanId <-> scanInitialId mapping
+          this.scanHeaderById(prevOvlFtPeakel.getApexScanInitialId).getCycle -
+          this.scanHeaderById(monoFtPeakel.getApexScanInitialId).getCycle
         )
 
         val correlation = FeatureScorer.calcPeakelCorrelation(prevOvlFtPeakel, monoFtPeakel).toFloat
