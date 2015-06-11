@@ -119,12 +119,12 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       // TODO: check what was the purpose of this
       //val ipsIndexes = (peaks.indexOf(definedPeaks(matchingPeakIdx._1)), peaks.indexOf(definedPeaks(matchingPeakIdx._2)))
 
-      val maxPeakelScanIds = maxPeakelBuilder.getScanIds()
+      val maxPeakelScanInitialIds = maxPeakelBuilder.getScanInitialIds()
       
       val(firstPeakelIdx, lastPeakelIdx) = matchingPeakelIdxPair
-      val(firstScanId, lastScanId) = (maxPeakelScanIds(firstPeakelIdx), maxPeakelScanIds(lastPeakelIdx) )
+      val(firstScanInitialId, lastScanInitialId) = (maxPeakelScanInitialIds(firstPeakelIdx), maxPeakelScanInitialIds(lastPeakelIdx) )
       
-      this.restrictPeakelBuildersToScanIdRange(indexedPeakelBuilders, firstScanId, lastScanId)
+      this.restrictPeakelBuildersToScanInitialIdRange(indexedPeakelBuilders, firstScanInitialId, lastScanInitialId)
     }
     
     if( newIndexedPeakelBuilders.isEmpty )
@@ -148,7 +148,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
    * @param maxLcContext maximum LC context used to restrict the length of peakels
    * @retrun a new Feature or null if there are no peaks in the provided index range
    */
-  protected def restrictPeakelBuildersToScanIdRange(
+  protected def restrictPeakelBuildersToScanInitialIdRange(
     indexedPeakelBuilders: Array[(PeakelBuilder, Int)],
     firstScanId: Int,
     lastScanId: Int
@@ -158,7 +158,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     breakable {
       for ( (peakelBuilder,idx) <- indexedPeakelBuilders) {
         
-        val slicedPeakelOpt = peakelBuilder.restrictToScanIdRange(firstScanId, lastScanId)
+        val slicedPeakelOpt = peakelBuilder.restrictToScanInitialIdRange(firstScanId, lastScanId)
         
         if ( slicedPeakelOpt.isDefined )
           restrictedIndexedPeakels += slicedPeakelOpt.get -> idx

@@ -18,12 +18,12 @@ trait ISignalSmoother {
     val rtIntPairs = chromBuilder.result()
     val smoothedRtIntPairs = smoothTimeIntensityPairs(rtIntPairs)
     require(
-      smoothedRtIntPairs.length == peakel.scanIds.length,
+      smoothedRtIntPairs.length == peakel.scanInitialIds.length,
       "can't use the smoothPeakel method with a smoother algo returning different number of values"
     )
     
     val tmpPeakel = new PeakelBuilder(
-      scanIds = new ArrayBuffer() ++ peakel.scanIds,
+      scanInitialIds = new ArrayBuffer() ++ peakel.scanInitialIds,
       elutionTimes = new ArrayBuffer() ++ peakel.elutionTimes,
       mzValues = new ArrayBuffer() ++ peakel.mzValues,
       intensityValues = new ArrayBuffer() ++ smoothedRtIntPairs.map(_._2.toFloat)

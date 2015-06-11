@@ -12,7 +12,7 @@ object Feature extends InMemoryIdGen {
   var nbPeakelsToIntegrate = 3
 
   def getPeakelsScanIds(indexedPeakels: Seq[(Peakel,Int)]): Array[Int] = {
-    indexedPeakels.toArray.flatMap(_._1.scanIds).distinct.sorted
+    indexedPeakels.toArray.flatMap(_._1.scanInitialIds).distinct.sorted
   }
 
   /*def calcScanHeaderRange(peakels: Seq[Peakel]): Pair[ScanHeader, ScanHeader] = {

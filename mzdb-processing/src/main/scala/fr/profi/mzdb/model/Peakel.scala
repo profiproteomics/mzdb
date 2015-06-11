@@ -48,7 +48,7 @@ import fr.profi.util.math.linearInterpolation
 
 trait IPeakelData {
   
-  def getScanIds(): Seq[Int]
+  def getScanInitialIds(): Seq[Int]
   def getElutionTimes(): Seq[Float]
   def getMzValues(): Seq[Double]
   def getIntensityValues(): Seq[Float]
@@ -59,7 +59,7 @@ trait IPeakelData {
     this match {
       case peakel: Peakel => new PeakelCursor(peakel)
       case peakelBuilder: PeakelBuilder => new PeakelBuilderCursor(peakelBuilder)
-      case dataMessage: PeakelDataMessage => new PeakelDataMessageCursor(dataMessage)
+      case dataMessage: PeakelDataMatrix => new PeakelDataMatrixCursor(dataMessage)
     }
   }
   
@@ -156,20 +156,24 @@ trait IPeakelData {
   /** Just check elution peak in terms of duration in nb scans */
   def hasEnoughPeaks(minPeaksCount:Int): Boolean = {
     
-    if (getScanIds.length < minPeaksCount)
+    if (getScanInitialIds.length < minPeaksCount)
       return false
     
     true
   }
-
-  def toPeaks( lcContextByScanId: Map[Int,ILcContext] ): Array[Peak] = {
-    
-    val peakelCursor = this match {
+  
+  protected def getPeakelCursor(): IPeakelDataCursor = {
+    this match {
       case peakel: Peakel => new PeakelCursor(peakel)
       case peakelBuilder: PeakelBuilder => new PeakelBuilderCursor(peakelBuilder)
     }
+  }
+
+  def toPeaks( lcContextByScanId: Map[Int,ILcContext] ): Array[Peak] = {
     
-    val peaks = new Array[Peak](this.getScanIds.length)
+    val peakelCursor = this.getPeakelCursor()
+    
+    val peaks = new Array[Peak](this.getScanInitialIds.length)
     while( peakelCursor.next() ) {
       peaks(peakelCursor.peakIndex) = peakelCursor.toPeak( lcContextByScanId )
     }
@@ -177,18 +181,16 @@ trait IPeakelData {
     peaks
   }
   
-  /*def toLcMsPeaks(): Array[LcMsPeak] = {
-    val cursor = new PeakelCursor(this)
+  def toLcMsPeaks(): Array[LcMsPeak] = {
+    val peakelCursor = this.getPeakelCursor()
     
-    val peaks = new Array[LcMsPeak](this.scanIds.length)
-    while( cursor.next() ) {
-      peaks(cursor.peakIndex) = cursor.toLcMsPeak()
+    val lcMspeaks = new Array[LcMsPeak](this.getScanInitialIds.length)
+    while( peakelCursor.next() ) {
+      lcMspeaks(peakelCursor.peakIndex) = peakelCursor.toLcMsPeak()
     }
     
-    peaks
-  }*/
-  
-  
+    lcMspeaks
+  }
   
 }
 
@@ -200,7 +202,7 @@ object Peakel extends InMemoryIdGen
  */
 case class Peakel(
   @BeanProperty var id: Int = Peakel.generateNewId(),
-  scanIds: Array[Int],
+  scanInitialIds: Array[Int],
   elutionTimes: Array[Float],
   mzValues: Array[Double],
   intensityValues: Array[Float],
@@ -212,22 +214,22 @@ case class Peakel(
   @BeanProperty rightHwhmCv: Float = 0f
 ) extends IPeakelData with ILcContext {
   
-  def getScanIds(): Seq[Int] = scanIds
+  def getScanInitialIds(): Seq[Int] = scanInitialIds
   def getElutionTimes(): Seq[Float] = elutionTimes
   def getMzValues(): Seq[Double] = mzValues
   def getIntensityValues(): Seq[Float] = intensityValues
   
   // Make some requirements
-  require( scanIds != null && scanIds.length > 0, "some scanIds must be provided" )
-  require( mzValues != null && mzValues.length > 0, "some peaks must be provided" )
-  require( scanIds.length == mzValues.length, "scanIds and mzValues must have the same size" )
+  require( scanInitialIds != null && scanInitialIds.length > 0, "some scanInitialIds must be provided" )
+  require( mzValues != null && mzValues.length > 0, "some mzValues must be provided" )
+  require( scanInitialIds.length == mzValues.length, "scanInitialIds and mzValues must have the same size" )
   require( mzValues.length == intensityValues.length, "mzList and intensityList must have the same size" )
   
   @BeanProperty val apexIndex = intensityValues.zipWithIndex.maxBy(_._1)._2
   
   def this(
     id: Int,
-    dataMessage: PeakelDataMessage,
+    dataMatrix: PeakelDataMatrix,
     intensitySum: Float,
     area: Float,
     leftHwhmMean: Float,
@@ -237,10 +239,10 @@ case class Peakel(
   ) {
     this(
       id,
-      dataMessage.scanIds,
-      dataMessage.elutionTimes,
-      dataMessage.mzValues,
-      dataMessage.intensityValues,
+      dataMatrix.scanInitialIds,
+      dataMatrix.elutionTimes,
+      dataMatrix.mzValues,
+      dataMatrix.intensityValues,
       intensitySum,
       area,
       leftHwhmMean,
@@ -253,9 +255,9 @@ case class Peakel(
   //def getApexLcContext() = lcContexts(apexIndex)
   //def getFirstLcContext() = lcContexts.head
   //def getLastLcContext() = lcContexts.last
-  def getApexScanId() = scanIds(apexIndex)
-  def getFirstScanId() = scanIds.head
-  def getLastScanId() = scanIds.last
+  def getApexScanId() = scanInitialIds(apexIndex)
+  def getFirstScanId() = scanInitialIds.head
+  def getLastScanId() = scanInitialIds.last
   
   def getApexElutionTime() = elutionTimes(apexIndex)
   def getFirstElutionTime() = elutionTimes.head
@@ -303,14 +305,14 @@ case class Peakel(
     Pair( intersectingTimes.map( thisPeakBytTime(_) ), intersectingTimes.map( otherPeakByTime(_) ) )    
   }*/
   
-  def toPeakelDataMessage(): PeakelDataMessage = {
-    new PeakelDataMessage( scanIds, elutionTimes, mzValues, intensityValues )
+  def toPeakelDataMatrix(): PeakelDataMatrix = {
+    new PeakelDataMatrix( scanInitialIds, elutionTimes, mzValues, intensityValues )
   }
   
 }
 
 class PeakelBuilder(
-  val scanIds: ArrayBuffer[Int] = new ArrayBuffer[Int](),
+  val scanInitialIds: ArrayBuffer[Int] = new ArrayBuffer[Int](),
   val elutionTimes: ArrayBuffer[Float] = new ArrayBuffer[Float](),
   val mzValues: ArrayBuffer[Double] = new ArrayBuffer[Double](),
   val intensityValues: ArrayBuffer[Float] = new ArrayBuffer[Float](),
@@ -318,7 +320,7 @@ class PeakelBuilder(
   @BeanProperty val rightHwhms: ArrayBuffer[Float] = new ArrayBuffer[Float]()
 ) extends IPeakelData {
   
-  def getScanIds(): Seq[Int] = scanIds
+  def getScanInitialIds(): Seq[Int] = scanInitialIds
   def getElutionTimes(): Seq[Float] = elutionTimes
   def getMzValues(): Seq[Double] = mzValues
   def getIntensityValues(): Seq[Float] = intensityValues
@@ -329,13 +331,13 @@ class PeakelBuilder(
     this += peaks
   }
   
-  def this( peakelDataMessage: PeakelDataMessage ) = {
+  def this( peakelDataMatrix: PeakelDataMatrix ) = {
     this()
     
-    this.scanIds ++= peakelDataMessage.scanIds
-    this.elutionTimes ++= peakelDataMessage.elutionTimes
-    this.mzValues ++= peakelDataMessage.mzValues
-    this.intensityValues ++= peakelDataMessage.intensityValues
+    this.scanInitialIds ++= peakelDataMatrix.scanInitialIds
+    this.elutionTimes ++= peakelDataMatrix.elutionTimes
+    this.mzValues ++= peakelDataMatrix.mzValues
+    this.intensityValues ++= peakelDataMatrix.intensityValues
   }
   
   def +=( peak: Peak ): PeakelBuilder = {
@@ -367,7 +369,7 @@ class PeakelBuilder(
   */
   
   def add( scanId: Int, elutionTime: Float, mz: Double, intensity: Float, leftHwhm: Float, rightHwhm: Float ): PeakelBuilder = {
-    scanIds += scanId
+    scanInitialIds += scanId
     elutionTimes += elutionTime
     mzValues += mz
     intensityValues += intensity
@@ -390,7 +392,7 @@ class PeakelBuilder(
     
     Peakel(
       id = id,
-      scanIds.toArray,
+      scanInitialIds.toArray,
       elutionTimes.toArray,
       mzValues.toArray,
       intensityValues.toArray,
@@ -417,23 +419,23 @@ class PeakelBuilder(
     val( lh, rh ) = ( this.leftHwhms, this.rightHwhms )
     if( lh == null || rh == null ) return null
 
-    this.scanIds.indices.toArray.map(i => lh(i) + rh(i) )
+    this.scanInitialIds.indices.toArray.map(i => lh(i) + rh(i) )
   }
   
   /** Restrict to is inclusive here **/
-  def restrictToScanIdRange( firstScanId: Int, lastScanId: Int ): Option[PeakelBuilder] = {
+  def restrictToScanInitialIdRange( firstScanInitialId: Int, lastScanInitialId: Int ): Option[PeakelBuilder] = {
     
-    val matchingScanIdsWithIdx = scanIds.zipWithIndex.filter { case (scanId,idx) =>
-      scanId >= firstScanId && scanId <= lastScanId
+    val matchingScanIdsWithIdx = scanInitialIds.zipWithIndex.filter { case (scanInitialId,idx) =>
+      scanInitialId >= firstScanInitialId && scanInitialId <= lastScanInitialId
     }
     if( matchingScanIdsWithIdx.length < 2 ) return None
     
     val firstIdx = matchingScanIdsWithIdx.head._2
     val lastBoundary = matchingScanIdsWithIdx.last._2 + 1
     
-    val scanIdCount = scanIds.length
+    val scanIdCount = scanInitialIds.length
     val newPeakelBuilder = new PeakelBuilder(
-      scanIds.slice(firstIdx, lastBoundary),
+      scanInitialIds.slice(firstIdx, lastBoundary),
       elutionTimes.slice(firstIdx, lastBoundary),
       mzValues.slice(firstIdx, lastBoundary),
       intensityValues.slice(firstIdx, lastBoundary),
@@ -451,12 +453,12 @@ trait IPeakelDataCursor {
   def peakelData: IPeakelData
   var peakIndex: Int
   
-  require( peakIndex >= -1 && peakIndex <= peakelData.getScanIds.length, "peakeIndex is out of bounds")
+  require( peakIndex >= -1 && peakIndex <= peakelData.getScanInitialIds.length, "peakeIndex is out of bounds")
     
   //def isOutOfBounds(): Boolean = peakIndex <= -1 || peakIndex >= peakel.lcContexts.length
   
   def next(): Boolean = {
-    if( peakIndex >= peakelData.getScanIds.length - 1 ) false
+    if( peakIndex >= peakelData.getScanInitialIds.length - 1 ) false
     else {
       peakIndex += 1
       true
@@ -480,16 +482,16 @@ trait IPeakelDataCursor {
     new Peak( getMz, getIntensity, 0f, 0f, lcContextByScanId(getScanId) )
   }
   
-  /*def toLcMsPeak(): LcMsPeak = {
-    new LcMsPeak( getScanId, getElutionTime, getMz, getIntensity, getLeftHwhm, getRightHwhm )
-  }*/
+  def toLcMsPeak(): LcMsPeak = {
+    new LcMsPeak( getScanId, getElutionTime, getMz, getIntensity )
+  }
 }
 
 case class PeakelCursor(
   peakelData: Peakel,
   var peakIndex: Int = - 1
 ) extends IPeakelDataCursor {  
-  def getScanId(): Int = peakelData.scanIds(peakIndex)
+  def getScanId(): Int = peakelData.scanInitialIds(peakIndex)
   def getElutionTime(): Float = peakelData.elutionTimes(peakIndex)
   def getMz(): Double = peakelData.mzValues(peakIndex)
   def getIntensity(): Float = peakelData.intensityValues(peakIndex)
@@ -499,16 +501,16 @@ case class PeakelBuilderCursor(
   peakelData: PeakelBuilder,
   var peakIndex: Int = - 1
 ) extends IPeakelDataCursor {  
-  def getScanId(): Int = peakelData.scanIds(peakIndex)
+  def getScanId(): Int = peakelData.scanInitialIds(peakIndex)
   def getElutionTime(): Float = peakelData.elutionTimes(peakIndex)
   def getMz(): Double = peakelData.mzValues(peakIndex)
   def getIntensity(): Float = peakelData.intensityValues(peakIndex)
 }
-case class PeakelDataMessageCursor(
-  peakelData: PeakelDataMessage,
+case class PeakelDataMatrixCursor(
+  peakelData: PeakelDataMatrix,
   var peakIndex: Int = - 1
 ) extends IPeakelDataCursor {  
-  def getScanId(): Int = peakelData.scanIds(peakIndex)
+  def getScanId(): Int = peakelData.scanInitialIds(peakIndex)
   def getElutionTime(): Float = peakelData.elutionTimes(peakIndex)
   def getMz(): Double = peakelData.mzValues(peakIndex)
   def getIntensity(): Float = peakelData.intensityValues(peakIndex)
@@ -516,9 +518,9 @@ case class PeakelDataMessageCursor(
 
 /** Class used for MessagePack serialization purpose **/
 @org.msgpack.annotation.Message
-case class PeakelDataMessage(
+case class PeakelDataMatrix(
   // MessagePack requires mutable fields
-  var scanIds: Array[Int],
+  var scanInitialIds: Array[Int],
   var elutionTimes: Array[Float],
   var mzValues: Array[Double],
   var intensityValues: Array[Float]
@@ -527,7 +529,7 @@ case class PeakelDataMessage(
   // Plain constructor needed for MessagePack
   def this() = this(Array(),Array(),Array(),Array())
   
-  def getScanIds(): Seq[Int] = scanIds
+  def getScanInitialIds(): Seq[Int] = scanInitialIds
   def getElutionTimes(): Seq[Float] = elutionTimes
   def getMzValues(): Seq[Double] = mzValues
   def getIntensityValues(): Seq[Float] = intensityValues

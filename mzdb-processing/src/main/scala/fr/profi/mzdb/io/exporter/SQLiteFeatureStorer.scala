@@ -3,18 +3,118 @@ package fr.profi.mzdb.io.exporter
 import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
 import java.io.File
+
 import scala.collection.mutable.ArrayBuffer
+
 import org.jfree.chart._
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.data._
 import org.jfree.data.xy._
+
 import com.almworks.sqlite4java.SQLiteConnection
+import com.typesafe.scalalogging.slf4j.Logging
+
+import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 import fr.profi.mzdb.algo.signal.filtering._
+import fr.profi.mzdb.io.reader.ScanHeaderReader
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
-import fr.profi.util.math.median
 import fr.profi.mzdb.utils.math.DerivativeAnalysis
+
+object SQLiteIsolationWindowStorer extends Logging {
+  
+  def storeIsolationWindows(mzDbReader: MzDbReader, dbLocation: File ) {
+
+    val connection = new SQLiteConnection(dbLocation)
+    connection.open(true) // allowsCreate = true
+    
+    connection.exec("PRAGMA temp_store=2;")
+    connection.exec("PRAGMA cache_size=8000;")
+  
+      // Create tables
+    connection.exec("CREATE TABLE isolation_window (" +
+      " scan_id INTEGER,\n" +
+      " time REAL,\n" +
+      " precursor_mz REAL,\n" +
+      " spectrum BLOB\n" +
+      ")"
+    )
+    
+    connection.exec("BEGIN TRANSACTION")
+    
+    // Prepare INSERT statement
+    val stmt = connection.prepare("INSERT INTO isolation_window VALUES (?, ?, ?, ?)",true)
+    
+		// Configure the ScanHeaderReader in order to load all precursor lists when reading spectra headers
+		ScanHeaderReader.loadPrecursorList = true
+    
+		val ms1ShByCycle = mzDbReader.getMs1ScanHeaders().map { sh => sh.getCycle() -> sh } toMap
+    val ms2ScanHeaders = mzDbReader.getMs2ScanHeaders().take(1000)
+    
+    for( sh <- ms2ScanHeaders ) {
+      
+      val ms1Sh = ms1ShByCycle(sh.getCycle)
+      val precMz = sh.getPrecursor.parseFirstSelectedIonMz
+      
+      val scanSlices = mzDbReader.getScanSlices(precMz - 2, precMz + 2, ms1Sh.getTime - 0.2, ms1Sh.getTime + 0.2, 1)
+      if( scanSlices.isEmpty ) {
+        logger.debug("no scan data loaded")
+      } else {
+        require( scanSlices.length == 1, "weird")
+        
+        val filteredData = scanSlices.head.getData().mzRangeFilter(precMz - 1,  precMz + 1)
+        
+        if( filteredData != null ) {
+          val dataPoints = filteredData.toPeaks(sh).map { peak =>
+            Array( (peak.getMz() - 0.00001) -> 0f, peak.getMz() -> peak.getIntensity(), (peak.getMz() + 0.00001) -> 0f)
+          } flatten
+    
+          val chartBytes = createSpectrumChart(dataPoints)
+          
+          var j = 0
+          j+=1; stmt.bind(j, sh.getId() )
+          j+=1; stmt.bind(j, sh.getTime() )
+          j+=1; stmt.bind(j, precMz )
+          j+=1; stmt.bind(j, chartBytes )
+          stmt.step()
+          stmt.reset()
+        }
+      }
+    }
+
+    connection.exec("COMMIT TRANSACTION")
+    connection.dispose()
+  }
+  
+  protected def createSpectrumChart( dataPoints: Array[(Double,Float)]): Array[Byte] = {
+    
+    val series = new XYSeries("SPECTRUM")
+    
+    dataPoints.foreach { dataPoint =>
+      series.add(dataPoint._1, dataPoint._2 )
+    }
+    
+    val xyDataset = new XYSeriesCollection(series)
+    val chart = ChartFactory.createXYLineChart(
+      "SPECTRUM", "m/z", "Intensity",
+      xyDataset, PlotOrientation.VERTICAL, true, true, false
+    )
+                
+    val bi = chartToImage(chart, 800, 600)
+    ChartUtilities.encodeAsPNG( bi )
+  }
+  
+  protected def chartToImage( chart: JFreeChart, width: Int, height: Int): BufferedImage = { 
+    val img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+    val g2 = img.createGraphics()
+    
+    chart.draw(g2, new Rectangle2D.Double(0, 0, width, height))
+    g2.dispose()
+    
+    img
+  }
+}
 
 object SQLitePeakelStorer {
   
@@ -132,7 +232,7 @@ object SQLitePeakelStorer {
       j+=1; stmt.bind(j, peakel.getMz() )
       j+=1; stmt.bind(j, peakel.getApexElutionTime() )
       j+=1; stmt.bind(j, peakel.getApexIntensity() )
-      j+=1; stmt.bind(j, peakel.getScanIds().length )
+      j+=1; stmt.bind(j, peakel.getScanInitialIds().length )
       j+=1; stmt.bind(j, oscillationFactor )
       j+=1; stmt.bind(j, chartBytes )
       j+=1; stmt.bind(j, smoothedChartBytes )

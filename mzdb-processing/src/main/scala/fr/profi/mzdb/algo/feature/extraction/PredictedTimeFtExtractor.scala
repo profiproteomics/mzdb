@@ -179,7 +179,7 @@ class PredictedTimeFtExtractor(
           if (peakels.isEmpty == false && peakels(0) != null) {
             val f = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
             // TODO: parameterize the min number of peakels count and LC contexts
-            if (f.getPeakelsCount > 0 && f.getFirstPeakel().scanIds.length > 5)
+            if (f.getPeakelsCount > 0 && f.getFirstPeakel().scanInitialIds.length > 5)
               ft = f
           }
         }
@@ -298,11 +298,11 @@ class PredictedTimeFtExtractor(
     )
 
     val detectedFts = new ArrayBuffer[Feature](peakelIndices.length)
-    val scanIds = maxPeakelBuilder.getScanIds()
+    val scanIds = maxPeakelBuilder.getScanInitialIds()
       
     for ( (minIdx, maxIdx) <- peakelIndices ) {
       
-      val restrictedPeakelBuilders = this.restrictPeakelBuildersToScanIdRange(peakelBuilders, scanIds(minIdx), scanIds(maxIdx))
+      val restrictedPeakelBuilders = this.restrictPeakelBuildersToScanInitialIdRange(peakelBuilders, scanIds(minIdx), scanIds(maxIdx))
 
       if (restrictedPeakelBuilders.isEmpty == false) {
         detectedFts += new Feature(

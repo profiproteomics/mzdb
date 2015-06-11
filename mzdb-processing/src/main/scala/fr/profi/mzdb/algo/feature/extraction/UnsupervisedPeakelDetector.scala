@@ -132,7 +132,7 @@ class UnsupervisedPeakelDetector(
             val apexIdx = peakel.apexIndex
       
             // Append peakel only if its apex is not at the extrema
-            if( apexIdx > 0 && apexIdx < peakel.scanIds.length - 1 ) {
+            if( apexIdx > 0 && apexIdx < peakel.scanInitialIds.length - 1 ) {
               peakelBuffer += peakelOpt.get
             }
           }
@@ -337,7 +337,7 @@ class UnsupervisedPeakelDetector(
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP3)
     
     // Check that apex is not the first or last peak
-    if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.scanIds.length - 1) ) {
+    if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.scanInitialIds.length - 1) ) {
       return None
     }
     

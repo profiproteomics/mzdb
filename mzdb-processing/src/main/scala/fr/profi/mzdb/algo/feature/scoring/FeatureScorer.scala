@@ -404,7 +404,7 @@ object FeatureScorer {
     //val timeIntensityPairs = peakel.getElutionTimeIntensityPairs
 
     var sum = 0f
-    peakel.scanIds.indices.sliding(2).withFilter(_.size == 2).foreach { indexPair =>
+    peakel.scanInitialIds.indices.sliding(2).withFilter(_.size == 2).foreach { indexPair =>
       val (idx1, idx2) = (indexPair(0), indexPair(1))
       val t1 = peakel.elutionTimes(idx1)
       val t2 = peakel.elutionTimes(idx2)
