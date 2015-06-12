@@ -48,8 +48,8 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 	private ISQLiteRecordExtraction<DataEncoding> _dataEncodingExtractor = _getDataEncodingExtractor();
 	
 	private ISQLiteRecordExtraction<DataEncoding> _getDataEncodingExtractor() throws SQLiteException {
+		
 		String modelVersion = mzDbReader.getModelVersion();
-		System.out.println(modelVersion);
 		
 		// Check if model version is newer than 0.6
 		if ( modelVersion.compareTo("0.6") > 0 ) {
@@ -215,7 +215,7 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Map<Integer, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
+	public Map<Long, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.dataEncodingByScanId != null) {
 			return this.entityCache.dataEncodingByScanId;
@@ -227,11 +227,11 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 			String queryStr = "SELECT id, data_encoding_id FROM spectrum";
 			SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecords();
 
-			HashMap<Integer, DataEncoding> dataEncodingByScanId = new HashMap<Integer, DataEncoding>();
+			HashMap<Long, DataEncoding> dataEncodingByScanId = new HashMap<Long, DataEncoding>();
 			while (records.hasNext()) {
 				SQLiteRecord record = records.next();
 
-				int scanId = record.columnInt(SpectrumTable.ID);
+				long scanId = record.columnLong(SpectrumTable.ID);
 				int scanDataEncodingId = record.columnInt(SpectrumTable.DATA_ENCODING_ID);
 				
 				DataEncoding dataEnc = dataEncodingById.get(scanDataEncodingId);
@@ -268,7 +268,7 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public DataEncoding getScanDataEncoding(int scanId) throws SQLiteException {
+	public DataEncoding getScanDataEncoding(long scanId) throws SQLiteException {
 
 		if (this.entityCache != null) {
 			return this.getDataEncodingByScanId().get(scanId);

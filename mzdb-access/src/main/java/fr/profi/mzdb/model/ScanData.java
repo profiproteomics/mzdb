@@ -192,9 +192,10 @@ public class ScanData {
 
 		final double mzDa = MsUtils.ppmToDa(mz, mzTolPPM);
 		final int binSearchIndex = Arrays.binarySearch(this.mzList, mz);
-		if (binSearchIndex >= 0) {
+		/*if (binSearchIndex >= 0) {
 			System.out.println("data found");
-		}
+		}*/
+		
 		int idx = binSearchIndex >= 0 ? binSearchIndex : -binSearchIndex - 1;
 		double prevVal = 0.0, nextVal = 0.0;
 		int newIdx = 0;

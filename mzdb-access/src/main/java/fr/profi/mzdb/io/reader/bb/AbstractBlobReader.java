@@ -39,8 +39,8 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	protected int[] _scanSliceStartPositions; // list of scan slice starting positions in the blob
 	protected int[] _peaksCounts; // number of peaks in each scan slice of the blob
 
-	protected Map<Integer, ScanHeader> _scanHeaderById;
-	protected Map<Integer, DataEncoding> _dataEncodingByScanId; // DataEncoding (32-64 bit, centroid/profile)
+	protected Map<Long, ScanHeader> _scanHeaderById;
+	protected Map<Long, DataEncoding> _dataEncodingByScanId; // DataEncoding (32-64 bit, centroid/profile)
 
 	/**
 	 * Abstract constructor
@@ -50,12 +50,12 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	 * @see DataEncoding
 	 */
 	protected AbstractBlobReader(
-		int firstScanId,
-		int lastScanId,
-		Map<Integer, ScanHeader> scanHeaderById,
-		Map<Integer, DataEncoding> dataEncodingByScanId
+		long firstScanId,
+		long lastScanId,
+		Map<Long, ScanHeader> scanHeaderById,
+		Map<Long, DataEncoding> dataEncodingByScanId
 	) {
-		this._scansCount = (lastScanId - firstScanId) + 1;
+		this._scansCount = (int)(lastScanId - firstScanId) + 1;
 
 		if( this._scansCount < 1 ) {
 			throw new IllegalArgumentException("lastScanId must be greater than firstScanId");

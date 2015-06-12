@@ -21,7 +21,7 @@ import fr.profi.mzdb.utils.misc.AbstractInMemoryIdGen;
 public abstract class AbstractTableModel extends AbstractInMemoryIdGen implements IParamContainer {
 
 	/** The id. */
-	protected int id;
+	protected long id;
 
 	/** The param tree. */
 	protected ParamTree paramTree = null;
@@ -45,7 +45,7 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * 
 	 * @return the id
 	 */
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 

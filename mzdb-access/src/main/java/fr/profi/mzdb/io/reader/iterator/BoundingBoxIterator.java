@@ -15,8 +15,8 @@ import com.almworks.sqlite4java.SQLiteStatement;
 public class BoundingBoxIterator extends StatementIterator<BoundingBox> {
 
 	protected final int msLevel;
-	protected final Map<Integer, ScanHeader> scanHeaderById;
-	protected final Map<Integer, DataEncoding> dataEncodingByScanId;
+	protected final Map<Long, ScanHeader> scanHeaderById;
+	protected final Map<Long, DataEncoding> dataEncodingByScanId;
 
 	public BoundingBoxIterator(
 		MzDbReader mzdb,

@@ -34,10 +34,10 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	 */
 	public SQLiteBlobReader(
 		SQLiteBlob blob,
-		int firstScanId,
-		int lastScanId,
-		Map<Integer, ScanHeader> scanHeaderById,
-		Map<Integer, DataEncoding> dataEncodingByScanId
+		long firstScanId,
+		long lastScanId,
+		Map<Long, ScanHeader> scanHeaderById,
+		Map<Long, DataEncoding> dataEncodingByScanId
 	) throws StreamCorruptedException {
 		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
 		

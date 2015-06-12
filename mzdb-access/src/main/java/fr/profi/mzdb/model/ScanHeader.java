@@ -24,7 +24,7 @@ import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 public class ScanHeader extends AbstractTableModel implements ILcContext {
 
 	/** The id. */
-	protected final int id;
+	protected final long id;
 
 	/** The initial id. */
 	protected final int initialId;
@@ -150,7 +150,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	 * 
 	 * @return the id
 	 */
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
@@ -249,7 +249,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	 * 
 	 * @see fr.profi.mzdb.model.ILcContext#getScanId()
 	 */
-	public int getScanId() {
+	public long getScanId() {
 		return this.id;
 	}
 

@@ -38,7 +38,7 @@ public class ScanSlice extends Scan {
 	 * 
 	 * @return the scan id
 	 */
-	public int getScanId() {
+	public long getScanId() {
 		return header.getId();
 	}
 

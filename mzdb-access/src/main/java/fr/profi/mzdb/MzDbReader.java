@@ -590,7 +590,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Map<Integer, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
+	public Map<Long, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
 		return this._dataEncodingReader.getDataEncodingByScanId();
 	}
 
@@ -603,7 +603,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public DataEncoding getScanDataEncoding(int scanId) throws SQLiteException {
+	public DataEncoding getScanDataEncoding(long scanId) throws SQLiteException {
 		return this._dataEncodingReader.getScanDataEncoding(scanId);
 	}
 
@@ -658,8 +658,8 @@ public class MzDbReader {
 
 		List<BoundingBox> bbs = new ArrayList<BoundingBox>();
 		// FIXME: getScanHeaderById
-		Map<Integer, ScanHeader> scanHeaderById = this.getMs1ScanHeaderById();
-		Map<Integer, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
+		Map<Long, ScanHeader> scanHeaderById = this.getMs1ScanHeaderById();
+		Map<Long, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
 
 		while (records.hasNext()) {
 			SQLiteRecord record = records.next();
@@ -724,9 +724,9 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public int getBoundingBoxFirstScanId(int scanId) throws SQLiteException {
+	public long getBoundingBoxFirstScanId(long scanId) throws SQLiteException {
 		String sqlString = "SELECT bb_first_spectrum_id FROM spectrum WHERE id = ?";
-		return new SQLiteQuery(connection, sqlString).bind(1, scanId).extractSingleInt();
+		return new SQLiteQuery(connection, sqlString).bind(1, scanId).extractSingleLong();
 	}
 
 	/**
@@ -797,7 +797,7 @@ public class MzDbReader {
 	 * @return the scan header by id
 	 * @throws SQLiteException the SQLiteException
 	 */
-	public Map<Integer, ScanHeader> getMs1ScanHeaderById() throws SQLiteException {
+	public Map<Long, ScanHeader> getMs1ScanHeaderById() throws SQLiteException {
 		return this._scanHeaderReader.getMs1ScanHeaderById();
 	}
 	
@@ -817,7 +817,7 @@ public class MzDbReader {
 	 * @return the scan header by id
 	 * @throws SQLiteException the SQLiteException
 	 */
-	public Map<Integer, ScanHeader> getMs2ScanHeaderById() throws SQLiteException {
+	public Map<Long, ScanHeader> getMs2ScanHeaderById() throws SQLiteException {
 		return this._scanHeaderReader.getMs2ScanHeaderById();
 	}
 	
@@ -845,13 +845,13 @@ public class MzDbReader {
 	 * @return the scan header by id
 	 * @throws SQLiteException the SQLiteException
 	 */
-	public Map<Integer, ScanHeader> getScanHeaderById() throws SQLiteException {
+	public Map<Long, ScanHeader> getScanHeaderById() throws SQLiteException {
 		
 		ScanHeader[] ms1ScanHeaders = this._scanHeaderReader.getMs1ScanHeaders();
 		ScanHeader[] ms2ScanHeaders = this._scanHeaderReader.getMs2ScanHeaders();
 
 		int scansCount = ms1ScanHeaders.length + ms2ScanHeaders.length;
-		Map<Integer, ScanHeader> scanHeaderById = new HashMap<Integer, ScanHeader>(scansCount);
+		Map<Long, ScanHeader> scanHeaderById = new HashMap<Long, ScanHeader>(scansCount);
 
 		for (ScanHeader ms1ScanHeader : ms1ScanHeaders)
 			scanHeaderById.put(ms1ScanHeader.getId(), ms1ScanHeader);
@@ -899,15 +899,15 @@ public class MzDbReader {
 	 *             the sQ lite exception
 	 * @throws StreamCorruptedException 
 	 */
-	public ScanData getScanData(int scanId) throws SQLiteException, StreamCorruptedException {
+	public ScanData getScanData(long scanId) throws SQLiteException, StreamCorruptedException {
 
 		// FIXME: getScanHeaderById
-		Map<Integer, ScanHeader> scanHeaderById = this.getMs1ScanHeaderById();
-		Map<Integer, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
+		Map<Long, ScanHeader> scanHeaderById = this.getMs1ScanHeaderById();
+		Map<Long, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
 
 		// retrieve first scan index of the specified scanId better
 		// than doing junction in sql query
-		int firstScanId = this.getBoundingBoxFirstScanId(scanId);
+		long firstScanId = this.getBoundingBoxFirstScanId(scanId);
 
 		String sqlString = "SELECT * FROM bounding_box WHERE bounding_box.first_spectrum_id = ?";
 		SQLiteRecordIterator records = new SQLiteQuery(connection, sqlString).bind(1, firstScanId)
@@ -1017,13 +1017,13 @@ public class MzDbReader {
 			.bind(4, _maxrt)
 			.getRecords();
 
-		Map<Integer, ScanHeader> scanHeaderById = null;
+		Map<Long, ScanHeader> scanHeaderById = null;
 		if( msLevel == 1 ) scanHeaderById = this.getMs1ScanHeaderById();
 		else if( msLevel == 2 ) scanHeaderById = this.getMs2ScanHeaderById();
 		else throw new IllegalArgumentException("unsupported MS level: " + msLevel);
 		
-		Map<Integer, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
-		Map<Integer, ArrayList<BoundingBox>> bbsByFirstScanId = new TreeMap<Integer, ArrayList<BoundingBox>>();
+		Map<Long, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
+		TreeMap<Long, ArrayList<BoundingBox>> bbsByFirstScanId = new TreeMap<Long, ArrayList<BoundingBox>>();
 
 		// retrieve bounding box
 		while (records.hasNext()) {
@@ -1038,8 +1038,8 @@ public class MzDbReader {
 
 			// Retrieve bounding box data
 			byte[] data = record.columnBlob(BoundingBoxTable.DATA);
-			int firstScanId = record.columnInt(BoundingBoxTable.FIRST_SPECTRUM_ID);
-			int lastScanId = record.columnInt(BoundingBoxTable.LAST_SPECTRUM_ID);
+			long firstScanId = record.columnLong(BoundingBoxTable.FIRST_SPECTRUM_ID);
+			long lastScanId = record.columnLong(BoundingBoxTable.LAST_SPECTRUM_ID);
 
 			// Build the Bounding Box
 			BoundingBox bb = BoundingBoxBuilder.buildBB(
