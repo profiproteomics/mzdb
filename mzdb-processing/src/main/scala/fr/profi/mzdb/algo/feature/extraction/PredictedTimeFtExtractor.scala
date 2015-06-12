@@ -35,8 +35,8 @@ import fr.profi.ms.algo.IsotopePatternInterpolator
  *  extraction with ms2DrivenExtractor
  */
 class PredictedTimeFtExtractor(
-  override val scanHeaderById: Map[Int, ScanHeader],
-  override val nfByScanId: Map[Int, Float],
+  override val scanHeaderById: Map[Long, ScanHeader],
+  override val nfByScanId: Map[Long, Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig

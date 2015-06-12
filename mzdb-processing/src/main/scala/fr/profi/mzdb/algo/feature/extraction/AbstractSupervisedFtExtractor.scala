@@ -150,8 +150,8 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
    */
   protected def restrictPeakelBuildersToScanInitialIdRange(
     indexedPeakelBuilders: Array[(PeakelBuilder, Int)],
-    firstScanId: Int,
-    lastScanId: Int
+    firstScanId: Long,
+    lastScanId: Long
   ): Array[(fr.profi.mzdb.model.PeakelBuilder, Int)] = {
     val restrictedIndexedPeakels = new ArrayBuffer[(PeakelBuilder,Int)]()
     

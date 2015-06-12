@@ -14,8 +14,8 @@ import fr.proline.api.progress._
 
 class FeatureExtractor(
   val mzDbReader: MzDbReader,
-  val scanHeaderById: Map[Int,ScanHeader],
-  val nfByScanId: Map[Int,Float],
+  val scanHeaderById: Map[Long,ScanHeader],
+  val nfByScanId: Map[Long,Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
 ) extends AbstractFeatureExtractor { //with ProgressComputing {
@@ -114,7 +114,7 @@ class FeatureExtractor(
     // Update MS2 scan ids of the feature
     for( foundFt <- ft ) {
 
-      val ms2ScanIds = new ArrayBuffer[Int]
+      val ms2ScanIds = new ArrayBuffer[Long]()
       
       // Retrieve the first peakel
       val firstPeakel = foundFt.getFirstPeakel()

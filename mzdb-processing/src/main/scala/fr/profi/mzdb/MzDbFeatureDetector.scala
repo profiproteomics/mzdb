@@ -103,7 +103,7 @@ class PeakelDetectorConsumer(
 case class PeakelDetectorQueueEntry(
   rsNumber: Int,
   pklTree: PeakListTree,
-  curPeaklistByScanId: Map[Int,PeakList]
+  curPeaklistByScanId: Map[Long,PeakList]
 )
 
 // Code inspired from: http://studio.cs.hut.fi/snippets/producer.html
@@ -257,7 +257,7 @@ class MzDbFeatureDetector(
   @BeanProperty var ftDetectorConfig: FeatureDetectorConfig = FeatureDetectorConfig()
 ) extends Logging {
   
-  val ms1ScanHeaderById = mzDbReader.getMs1ScanHeaders().map( sh => sh.getId.toInt -> sh ).toMap
+  val ms1ScanHeaderById = mzDbReader.getMs1ScanHeaders().map( sh => sh.getId.toLong -> sh ).toMap
   val ms2ScanHeaders = mzDbReader.getMs2ScanHeaders()
   //val ms2ScanHeaderById = ms2ScanHeaders.map( sh => sh.getId.toInt -> sh ).toMap
   val ms2ScanHeadersByCycle = ms2ScanHeaders.groupBy(_.getCycle.toInt)
@@ -265,7 +265,7 @@ class MzDbFeatureDetector(
   // TODO: factorize this code
   // BEGIN OF STOLEN FROM MzDbFeatureExtractor
   class RichRunSliceData(self: RunSliceData) {
-    def getPeakListByScanId(): Map[Int,PeakList] = {
+    def getPeakListByScanId(): Map[Long,PeakList] = {
       Map() ++ self.getScanSliceList.map { ss => ss.getScanId -> new PeakList(ss.getPeaks(),0.1) }
     }
   }
@@ -281,12 +281,12 @@ class MzDbFeatureDetector(
     
     val peakelDetector = new UnsupervisedPeakelDetector(
       ms1ScanHeaderById,
-      Map.empty[Int,Float],
+      Map.empty[Long,Float],
       ftDetectorConfig.mzTolPPM
     )
     
     // Define a peaklist map (first level = runSliceNumber, second level =scanId )
-    val pklByScanIdAndRsNumber = new HashMap[Int, Map[Int, PeakList]]()
+    val pklByScanIdAndRsNumber = new HashMap[Int, Map[Long, PeakList]]()
     
     // Create a queue to parallelize the feature detection process
     val nbProcessors = Runtime.getRuntime().availableProcessors()
@@ -362,7 +362,7 @@ class MzDbFeatureDetector(
         }
         
         // Group run slice peakLists into a single map (key = scan id)
-        val peakListsByScanId = new HashMap[Int,ArrayBuffer[PeakList]]()
+        val peakListsByScanId = new HashMap[Long,ArrayBuffer[PeakList]]()
         pklByScanIdAndRsNumber.values.foreach { pklByScanId =>
           pklByScanId.foreach { case (scanId, pkl) =>
             peakListsByScanId.getOrElseUpdate(scanId, new ArrayBuffer[PeakList]) += pkl

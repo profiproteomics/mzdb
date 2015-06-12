@@ -14,8 +14,8 @@ object Ms2DrivenFtExtractor {
 }
 
 class Ms2DrivenFtExtractor(
- val scanHeaderById: Map[Int,ScanHeader],
- val nfByScanId: Map[Int,Float],
+ val scanHeaderById: Map[Long,ScanHeader],
+ val nfByScanId: Map[Long,Float],
  val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
  val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()

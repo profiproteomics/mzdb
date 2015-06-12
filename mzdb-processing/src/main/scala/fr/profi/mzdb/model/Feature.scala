@@ -11,7 +11,7 @@ object Feature extends InMemoryIdGen {
 
   var nbPeakelsToIntegrate = 3
 
-  def getPeakelsScanIds(indexedPeakels: Seq[(Peakel,Int)]): Array[Int] = {
+  def getPeakelsScanIds(indexedPeakels: Seq[(Peakel,Int)]): Array[Long] = {
     indexedPeakels.toArray.flatMap(_._1.scanIds).distinct.sorted
   }
 
@@ -131,7 +131,7 @@ case class Feature(
   @BeanProperty charge: Int,
   @BeanProperty indexedPeakels: Array[(Peakel,Int)],
   @BeanProperty isPredicted: Boolean = false,
-  @BeanProperty var ms2ScanIds: Array[Int] = Array.empty[Int]
+  @BeanProperty var ms2ScanIds: Array[Long] = Array.empty[Long]
 ) extends ILcContext {
 
   def this(id: Int, mz: Double, charge: Int, isotopicPatterns: Seq[IsotopicPatternLike], isPredicted: Boolean ) = {
@@ -206,7 +206,7 @@ case class Feature(
   def getScanIds() = Feature.getPeakelsScanIds(indexedPeakels)
   
   // ILcContext java interface implementation
-  def getScanId() : Int = getApexScanId()
+  def getScanId(): Long = getApexScanId()
 
   /*def getIsotopicPattern(idx: Int): IsotopicPattern = {
     val ipPeaks = peakels.map { _.peaks(idx) }

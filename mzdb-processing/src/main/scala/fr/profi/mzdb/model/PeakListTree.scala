@@ -48,9 +48,9 @@ object PeakListTree {
   }  
 }
 
-case class PeakListTree( pklGroupByScanId: Map[Int,PeakListGroup], scanHeaderById: Map[Int,ScanHeader] ) {
+case class PeakListTree( pklGroupByScanId: Map[Long,PeakListGroup], scanHeaderById: Map[Long,ScanHeader] ) {
 
-  lazy val scanIds: Array[Int] = pklGroupByScanId.keys.toArray.sorted
+  lazy val scanIds: Array[Long] = pklGroupByScanId.keys.toArray.sorted
   
   class ScanHeaderMap() {
     
@@ -91,11 +91,11 @@ case class PeakListTree( pklGroupByScanId: Map[Int,PeakListGroup], scanHeaderByI
     this.scanIds.flatMap( pklGroupByScanId(_).getAllPeaks() )
   }
   
-  def getNearestPeak( scanId: Int, mzToExtract: Double, mzTolDa: Double ): Peak = {
+  def getNearestPeak( scanId: Long, mzToExtract: Double, mzTolDa: Double ): Peak = {
     pklGroupByScanId(scanId).getNearestPeak( mzToExtract, mzTolDa )
   }
   
-  def getPeaksInRange( scanId: Int, minMz: Double, maxMz: Double ): Array[Peak] = {
+  def getPeaksInRange( scanId: Long, minMz: Double, maxMz: Double ): Array[Peak] = {
     pklGroupByScanId(scanId).getPeaksInRange( minMz, maxMz )
   }
  

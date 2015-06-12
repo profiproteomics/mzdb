@@ -10,8 +10,8 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.ScanHeader
              
 class FullySupervisedFtExtractor(
-  val scanHeaderById: Map[Int,ScanHeader],
-  val nfByScanId: Map[Int,Float],
+  val scanHeaderById: Map[Long,ScanHeader],
+  val nfByScanId: Map[Long,Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig

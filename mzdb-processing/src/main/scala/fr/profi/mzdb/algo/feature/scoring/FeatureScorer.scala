@@ -206,7 +206,7 @@ object FeatureScorer {
 
   /** using the basic peakel finder.*/
   // a perfect shape would be only one maximum index
-  def calcSignalFluctuationByBasicPeakelFinder(f: Feature, lcContextByScanId: Map[Int,ILcContext] ): Float = {
+  def calcSignalFluctuationByBasicPeakelFinder(f: Feature, lcContextByScanId: Map[Long,ILcContext] ): Float = {
     var shape = 0f
 
     f.indexedPeakels.foreach { case (p,idx) => 
@@ -217,7 +217,7 @@ object FeatureScorer {
   }
 
   /**using the wavelet peakel finder*/
-  def calcSignalFluctuationByWaveletBasedPeakelFinder(f: Feature, lcContextByScanId: Map[Int,ILcContext]): Float = {
+  def calcSignalFluctuationByWaveletBasedPeakelFinder(f: Feature, lcContextByScanId: Map[Long,ILcContext]): Float = {
     var shape = 0f
 
     f.indexedPeakels.foreach { case (p,idx) => 

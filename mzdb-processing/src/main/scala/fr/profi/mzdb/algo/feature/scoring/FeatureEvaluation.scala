@@ -365,7 +365,7 @@ object FeatureEvaluator  {
     features: Seq[Feature],
     ftScoringConfig: FeatureScoringConfig,
     thresholdComputer: IFeatureThresholdsComputer,
-    lcContextByScanId: Map[Int,ILcContext]
+    lcContextByScanId: Map[Long,ILcContext]
   ): Seq[FeatureEvaluation] = {
     //fill data 
     val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig, lcContextByScanId)) toArray
@@ -377,7 +377,7 @@ object FeatureEvaluator  {
   def computeQualityVector(
     f: Feature,
     ftScoringConfig: FeatureScoringConfig = FeatureScoringConfig(),
-    lcContextByScanId: Map[Int,ILcContext]
+    lcContextByScanId: Map[Long,ILcContext]
   ) : FeatureQualityVector = {
     
     var (signalFluctuation, shape) = (0f, 0f)

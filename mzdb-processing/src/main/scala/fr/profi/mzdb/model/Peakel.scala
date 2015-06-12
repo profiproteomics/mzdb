@@ -48,7 +48,7 @@ import fr.profi.util.math.linearInterpolation
 
 trait IPeakelData {
   
-  def getScanIds(): Seq[Int]
+  def getScanIds(): Seq[Long]
   def getElutionTimes(): Seq[Float]
   def getMzValues(): Seq[Double]
   def getIntensityValues(): Seq[Float]
@@ -60,6 +60,7 @@ trait IPeakelData {
       case peakel: Peakel => new PeakelCursor(peakel)
       case peakelBuilder: PeakelBuilder => new PeakelBuilderCursor(peakelBuilder)
       case dataMessage: PeakelDataMatrix => new PeakelDataMatrixCursor(dataMessage)
+      case _ => throw new Exception("can't build a IPeakelDataCursor for this data type")
     }
   }
   
@@ -169,7 +170,7 @@ trait IPeakelData {
     }
   }
 
-  def toPeaks( lcContextByScanId: Map[Int,ILcContext] ): Array[Peak] = {
+  def toPeaks( lcContextByScanId: Map[Long,ILcContext] ): Array[Peak] = {
     
     val peakelCursor = this.getPeakelCursor()
     
@@ -202,7 +203,7 @@ object Peakel extends InMemoryIdGen
  */
 case class Peakel(
   @BeanProperty var id: Int = Peakel.generateNewId(),
-  scanIds: Array[Int],
+  scanIds: Array[Long],
   elutionTimes: Array[Float],
   mzValues: Array[Double],
   intensityValues: Array[Float],
@@ -214,7 +215,7 @@ case class Peakel(
   @BeanProperty rightHwhmCv: Float = 0f
 ) extends IPeakelData with ILcContext {
   
-  def getScanIds(): Seq[Int] = scanIds
+  def getScanIds(): Seq[Long] = scanIds
   def getElutionTimes(): Seq[Float] = elutionTimes
   def getMzValues(): Seq[Double] = mzValues
   def getIntensityValues(): Seq[Float] = intensityValues
@@ -271,7 +272,7 @@ case class Peakel(
   def getCursorAtApex(): PeakelCursor = PeakelCursor(this, apexIndex)
   
   // ILcContext java interface implementation 
-  def getScanId() : Int = getApexScanId()
+  def getScanId() : Long = getApexScanId()
   def getElutionTime(): Float = getApexElutionTime()
   
   // Access to data of a peak at a given index
@@ -312,7 +313,7 @@ case class Peakel(
 }
 
 class PeakelBuilder(
-  val scanIds: ArrayBuffer[Int] = new ArrayBuffer[Int](),
+  val scanIds: ArrayBuffer[Long] = new ArrayBuffer[Long](),
   val elutionTimes: ArrayBuffer[Float] = new ArrayBuffer[Float](),
   val mzValues: ArrayBuffer[Double] = new ArrayBuffer[Double](),
   val intensityValues: ArrayBuffer[Float] = new ArrayBuffer[Float](),
@@ -320,7 +321,7 @@ class PeakelBuilder(
   @BeanProperty val rightHwhms: ArrayBuffer[Float] = new ArrayBuffer[Float]()
 ) extends IPeakelData {
   
-  def getScanIds(): Seq[Int] = scanIds
+  def getScanIds(): Seq[Long] = scanIds
   def getElutionTimes(): Seq[Float] = elutionTimes
   def getMzValues(): Seq[Double] = mzValues
   def getIntensityValues(): Seq[Float] = intensityValues
@@ -368,7 +369,7 @@ class PeakelBuilder(
   }
   */
   
-  def add( scanId: Int, elutionTime: Float, mz: Double, intensity: Float, leftHwhm: Float, rightHwhm: Float ): PeakelBuilder = {
+  def add( scanId: Long, elutionTime: Float, mz: Double, intensity: Float, leftHwhm: Float, rightHwhm: Float ): PeakelBuilder = {
     scanIds += scanId
     elutionTimes += elutionTime
     mzValues += mz
@@ -423,7 +424,7 @@ class PeakelBuilder(
   }
   
   /** Restrict to is inclusive here **/
-  def restrictToScanIdRange( firstScanId: Int, lastScanId: Int ): Option[PeakelBuilder] = {
+  def restrictToScanIdRange( firstScanId: Long, lastScanId: Long ): Option[PeakelBuilder] = {
     
     val matchingScanIdsWithIdx = scanIds.zipWithIndex.filter { case (scanId,idx) =>
       scanId >= firstScanId && scanId <= lastScanId
@@ -473,12 +474,12 @@ trait IPeakelDataCursor {
   }
   
   //def getLcContext(): ILcContext = peakel.lcContexts(peakIndex)
-  def getScanId(): Int
+  def getScanId(): Long
   def getElutionTime(): Float
   def getMz(): Double
   def getIntensity(): Float
   
-  def toPeak( lcContextByScanId: Map[Int,ILcContext] ): Peak = {
+  def toPeak( lcContextByScanId: Map[Long,ILcContext] ): Peak = {
     new Peak( getMz, getIntensity, 0f, 0f, lcContextByScanId(getScanId) )
   }
   
@@ -491,7 +492,7 @@ case class PeakelCursor(
   peakelData: Peakel,
   var peakIndex: Int = - 1
 ) extends IPeakelDataCursor {  
-  def getScanId(): Int = peakelData.scanIds(peakIndex)
+  def getScanId(): Long = peakelData.scanIds(peakIndex)
   def getElutionTime(): Float = peakelData.elutionTimes(peakIndex)
   def getMz(): Double = peakelData.mzValues(peakIndex)
   def getIntensity(): Float = peakelData.intensityValues(peakIndex)
@@ -501,7 +502,7 @@ case class PeakelBuilderCursor(
   peakelData: PeakelBuilder,
   var peakIndex: Int = - 1
 ) extends IPeakelDataCursor {  
-  def getScanId(): Int = peakelData.scanIds(peakIndex)
+  def getScanId(): Long = peakelData.scanIds(peakIndex)
   def getElutionTime(): Float = peakelData.elutionTimes(peakIndex)
   def getMz(): Double = peakelData.mzValues(peakIndex)
   def getIntensity(): Float = peakelData.intensityValues(peakIndex)
@@ -510,7 +511,7 @@ case class PeakelDataMatrixCursor(
   peakelData: PeakelDataMatrix,
   var peakIndex: Int = - 1
 ) extends IPeakelDataCursor {  
-  def getScanId(): Int = peakelData.scanIds(peakIndex)
+  def getScanId(): Long = peakelData.scanIds(peakIndex)
   def getElutionTime(): Float = peakelData.elutionTimes(peakIndex)
   def getMz(): Double = peakelData.mzValues(peakIndex)
   def getIntensity(): Float = peakelData.intensityValues(peakIndex)
@@ -520,7 +521,7 @@ case class PeakelDataMatrixCursor(
 @org.msgpack.annotation.Message
 case class PeakelDataMatrix(
   // MessagePack requires mutable fields
-  var scanIds: Array[Int],
+  var scanIds: Array[Long],
   var elutionTimes: Array[Float],
   var mzValues: Array[Double],
   var intensityValues: Array[Float]
@@ -529,7 +530,7 @@ case class PeakelDataMatrix(
   // Plain constructor needed for MessagePack
   def this() = this(Array(),Array(),Array(),Array())
   
-  def getScanIds(): Seq[Int] = scanIds
+  def getScanIds(): Seq[Long] = scanIds
   def getElutionTimes(): Seq[Float] = elutionTimes
   def getMzValues(): Seq[Double] = mzValues
   def getIntensityValues(): Seq[Float] = intensityValues

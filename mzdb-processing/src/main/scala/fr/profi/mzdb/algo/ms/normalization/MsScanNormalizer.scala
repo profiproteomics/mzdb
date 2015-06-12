@@ -9,11 +9,11 @@ import fr.profi.mzdb.MzDbReader
  */
 object MsScanNormalizer {
   
-  def computeNfByScanId(mzDbReader: MzDbReader): Map[Int,Float] = {
+  def computeNfByScanId(mzDbReader: MzDbReader): Map[Long,Float] = {
     
     val cyclesCount = mzDbReader.getCyclesCount()
     val medians = new Array[Float]( cyclesCount )
-    val scanIds = new Array[Int]( cyclesCount )
+    val scanIds = new Array[Long]( cyclesCount )
     
     val msScanIter = mzDbReader.getMsScanIterator( 1 )
     while( msScanIter.hasNext ) {

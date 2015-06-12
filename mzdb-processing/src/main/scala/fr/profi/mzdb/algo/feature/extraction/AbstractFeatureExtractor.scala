@@ -12,13 +12,13 @@ import fr.profi.mzdb.model._
 abstract class AbstractFeatureExtractor extends Logging {
   
   /** Required parameters */
-  def scanHeaderById: Map[Int, ScanHeader]
-  def nfByScanId: Map[Int, Float]
+  def scanHeaderById: Map[Long, ScanHeader]
+  def nfByScanId: Map[Long, Float]
   
   /** Computed values */
   protected val scanHeaders = scanHeaderById.values.toArray.sortBy(_.getId)
   protected val ms1ScanHeaderByCycleNum = scanHeaders.withFilter(_.getMsLevel() == 1 ).map(sh => sh.getCycle -> sh).toMap
-  protected val ms1ScanIdByCycleNum: Map[Int, Int] = ms1ScanHeaderByCycleNum.map { case (cycle,sh) => cycle -> sh.getId }
+  protected val ms1ScanIdByCycleNum: Map[Int, Long] = ms1ScanHeaderByCycleNum.map { case (cycle,sh) => cycle -> sh.getId }
   
   private val TIME_INDEX_WIDTH = 15
   

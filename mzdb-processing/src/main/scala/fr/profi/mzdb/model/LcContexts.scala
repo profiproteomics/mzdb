@@ -21,7 +21,7 @@ case class ElutionTimeContext( @BeanProperty elutionTime: Float ) extends ILcCon
  * @author David Bouyssie
  *
  */
-case class ScanIdContext( @BeanProperty scanId: Int ) extends ILcContext {
+case class ScanIdContext( @BeanProperty scanId: Long ) extends ILcContext {
 
   /**
    * @see fr.profi.mzdb.model.ILcContext#getElutionTime()
@@ -32,7 +32,7 @@ case class ScanIdContext( @BeanProperty scanId: Int ) extends ILcContext {
 
 
 case class FullLcContext(
-  @BeanProperty scanId: Int,
+  @BeanProperty scanId: Long,
   @BeanProperty elutionTime: Float
 ) extends ILcContext 
 

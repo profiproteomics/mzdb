@@ -61,8 +61,8 @@ object UnsupervisedPeakelDetector {
  */
 // TODO: move to feature.detection package ???
 class UnsupervisedPeakelDetector(
-  val scanHeaderById: Map[Int,ScanHeader],
-  val nfByScanId: Map[Int,Float],
+  val scanHeaderById: Map[Long,ScanHeader],
+  val nfByScanId: Map[Long,Float],
   // TODO: create configs for signal extraction
   val mzTolPPM: Float,
   val maxConsecutiveGaps: Int = 3,

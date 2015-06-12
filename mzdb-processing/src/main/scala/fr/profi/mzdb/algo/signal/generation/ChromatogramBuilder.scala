@@ -25,7 +25,7 @@ class ChromatogramBuilder() {
   
   def result(): Array[(Float,Double)] = {
     
-    val lcContextByScanIdBuilder = Map.newBuilder[Int,ILcContext]
+    val lcContextByScanIdBuilder = Map.newBuilder[Long,ILcContext]
     for( peakel <- peakelBuffer ) {
       val peakelCursor = peakel.getNewCursor()
       while( peakelCursor.next() ) {

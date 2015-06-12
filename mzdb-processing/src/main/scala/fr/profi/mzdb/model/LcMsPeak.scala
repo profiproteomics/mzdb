@@ -6,7 +6,7 @@ import scala.beans.BeanProperty
 @org.msgpack.annotation.Message
 case class LcMsPeak(
   // MessagePack requires mutable fields
-  @BeanProperty var scanId: Int,
+  @BeanProperty var scanId: Long,
   @BeanProperty var elutionTime: Float,
   @BeanProperty var mz: Double,
   @BeanProperty var intensity: Float

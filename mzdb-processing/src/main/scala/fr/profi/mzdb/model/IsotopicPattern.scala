@@ -62,7 +62,7 @@ case class IsotopicPattern(
     p.setLcContext(scanHeader) 
   }
   
-  def normalizeIntensities( nfByScanId: Map[Int,Float] ) {
+  def normalizeIntensities( nfByScanId: Map[Long,Float] ) {
     val nf = nfByScanId(this.scanHeader.id)
     
     for( p <- peaks if p != null ) {

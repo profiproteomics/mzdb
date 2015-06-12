@@ -264,7 +264,7 @@ object RunCommand extends App with Logging {
           } else if (algo == "wavelet") {
             val wpf = new WaveletDetectorDuMethod(peaks)
             wpf.ridgeFilteringParams.minSNR = 0.0f
-            peakelIndexes = wpf.findPeakelsIndexes(asScanId = false)
+            peakelIndexes = wpf.findPeakelsIndexes()
           }
           // Retrieve the peakel corresponding to the feature apex
           val peakels = if (rtmin == 0f && rtmax == 0f) {

@@ -7,8 +7,8 @@ import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 
 class PredictedMzFtExtractor(
-  val scanHeaderById: Map[Int, ScanHeader],
-  val nfByScanId: Map[Int, Float],
+  val scanHeaderById: Map[Long, ScanHeader],
+  val nfByScanId: Map[Long, Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
@@ -27,7 +27,7 @@ class PredictedMzFtExtractor(
     //need the scanIds because they may not be filled in the LcContext of one peak (can have hole during extraction)
     //which is really bad/sad...
     val xic = new ArrayBuffer[Peak]
-    val xicScanIDs = new ArrayBuffer[Int]
+    val xicScanIDs = new ArrayBuffer[Long]
 
     //buid the xic with getNearestPeak for each scan
     for (id <- pklTree.scanIds) {

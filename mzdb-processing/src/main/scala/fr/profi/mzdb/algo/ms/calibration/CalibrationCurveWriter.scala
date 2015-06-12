@@ -15,7 +15,7 @@ object CalibrationCurveWriter {
 	private def compute(mzdb:MzDbReader, 
 	                    maxDeltaPpm : Double, 
 	                    intensityThresh:Double = 0.9, 
-	                    skipBeginningScans: Int = 0) : Pair[TreeMap[Int, Double], TreeMap[Int, Double]] ={
+	                    skipBeginningScans: Int = 0) : Pair[TreeMap[Long, Double], TreeMap[Long, Double]] ={
 	  
 	  
 	  var ms1Iter = mzdb.getMsScanIterator(1)
@@ -26,8 +26,8 @@ object CalibrationCurveWriter {
 	  
 	  
 	  
-	  var m445 = new TreeMap[Int, Double]
-	  var result = new TreeMap[Int, Double]
+	  var m445 = new TreeMap[Long, Double]
+	  var result = new TreeMap[Long, Double]
 	  
 	  var firstScan = if (ms1Iter.hasNext) ms1Iter.next() else throw new Throwable("not enough scans...")
 	  
@@ -107,7 +107,7 @@ object CalibrationCurveWriter {
 	    result.put(firstScan.getHeader().getId, deltaMass.sum / deltaMass.length)
 	  }//end iterator
 	  
-	  var output = new TreeMap[Int, Double]
+	  var output = new TreeMap[Long, Double]
 	  var sum = 0.0
 	  for (entry <- result.entrySet()) {
 	    sum += entry.getValue

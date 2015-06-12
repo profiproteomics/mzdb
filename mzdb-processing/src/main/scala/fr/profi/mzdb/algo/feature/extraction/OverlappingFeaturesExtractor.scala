@@ -37,8 +37,8 @@ object OverlappingFeaturesExtractor {
  * inherit from Ms2DrivenExtractor essentially to fetch parameters
  */
 class OverlappingFeaturesExtractor(
-  val scanHeaderById: Map[Int, ScanHeader],
-  val nfByScanId: Map[Int,Float] = Map(),
+  val scanHeaderById: Map[Long, ScanHeader],
+  val nfByScanId: Map[Long,Float] = Map(),
   val ftExtractor: AbstractSupervisedFtExtractor
 ) extends Logging {
   

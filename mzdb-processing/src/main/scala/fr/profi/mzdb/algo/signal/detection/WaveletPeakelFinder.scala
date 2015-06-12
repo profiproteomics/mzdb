@@ -439,11 +439,14 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
   /**
    * return the indexes of the peakel found
    */
-  def findPeakelsIndexes(asScanId:Boolean=false): Array[Pair[Int, Int]] = {
+  def findPeakelsIndexes(): Array[Pair[Int, Int]] = {
 
     val peakels = this.findCwtPeakels()
-    if (! asScanId)
-      return peakels.map(x => (x.minIdx, x.maxIdx))
+    peakels.map(x => (x.minIdx, x.maxIdx))
+  }
+  
+  def findPeakelsScanIds(asScanId:Boolean=false): Array[Pair[Long, Long]] = {
+    val peakels = this.findCwtPeakels()
     peakels.map(x=> (x.startLcContext.getScanId(), x.endLcContext.getScanId()))
   }
   

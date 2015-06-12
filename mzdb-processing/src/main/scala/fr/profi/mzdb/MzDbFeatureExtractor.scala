@@ -79,8 +79,8 @@ class MzDbFeatureExtractor(
   
 
   class RichRunSliceData(self: RunSliceData) {
-    def getPeakListByScanId(): Map[Int, PeakList] = {
-      val mapBuilder = Map.newBuilder[Int, PeakList]
+    def getPeakListByScanId(): Map[Long, PeakList] = {
+      val mapBuilder = Map.newBuilder[Long, PeakList]
       mapBuilder.sizeHint(self.getScanSliceList.length)
       
       for( ss <- self.getScanSliceList ) {
@@ -140,13 +140,13 @@ class MzDbFeatureExtractor(
     //progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
 
     // Retrieve scans mapped by their id
-    val scanHeaderById = collection.immutable.Map() ++ mzDbReader.getScanHeaderById.map { case (i, sh) => i.toInt -> sh }
+    val scanHeaderById = collection.immutable.Map() ++ mzDbReader.getScanHeaderById.map { case (i, sh) => i.toLong -> sh }
  
     // Compute MS scans normalization factors
     //val nfByScanId = MsScanNormalizer.computeNfByScanId(mzDbReader)
 
     // Define a peaklist map (first level = runSliceId, second level =scanId )
-    val pklByScanIdAndRsId = new HashMap[Int, Map[Int, PeakList]]()
+    val pklByScanIdAndRsId = new HashMap[Int, Map[Long, PeakList]]()
 
     // Define an array of features to be extracted
     val extractedFeatures = new ArrayBuffer[Feature](putativeFeatures.length)
@@ -220,7 +220,7 @@ class MzDbFeatureExtractor(
         // " ; putative features count=" +
         // runSlicePutativeFeatures.size() );
         
-        val emptyMap = new HashMap[Int,Map[Int,fr.profi.mzdb.model.PeakList]]()
+        val emptyMap = new HashMap[Int,Map[Long,fr.profi.mzdb.model.PeakList]]()
 
         // Retrieve previous run slice peaklist
         if (prevRSH.isDefined) {
@@ -244,7 +244,7 @@ class MzDbFeatureExtractor(
         //progressPlan(MZFT_STEP4_0).incrementAndGetCount(1)
         
         // Group run slice peakLists into a single map (key = scan id)
-        val peakListsByScanId = new HashMap[Int, ArrayBuffer[PeakList]]()
+        val peakListsByScanId = new HashMap[Long, ArrayBuffer[PeakList]]()
         pklByScanIdAndRsId.values.foreach {
           _.foreach {
             case (scanId, pkl) =>
