@@ -89,7 +89,7 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		while (byteIdx < size) {
 			
 			// Retrieve the scan id
-			int scanId = _getIntFromBlob(_blob, byteIdx);
+			long scanId = (long) _getIntFromBlob(_blob, byteIdx);
 			_scanSliceStartPositions[scanSliceIdx] = byteIdx;
 			
 			// Skip the scan id bytes
@@ -170,7 +170,7 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		this.checkScanIndexRange(idx);
 
 		int scanSliceStartPos = _scanSliceStartPositions[idx];
-		int scanId = this._getIntFromBlob(_blob, scanSliceStartPos);
+		long scanId = (long) this._getIntFromBlob(_blob, scanSliceStartPos);
 		
 		// Determine peak size in bytes
 		DataEncoding de = this._dataEncodingByScanId.get(scanId);

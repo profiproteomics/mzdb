@@ -95,7 +95,7 @@ public class StreamReader extends AbstractBlobReader {
 				_stream.read(peaksCountBytes);
 				int peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
 				
-				DataEncoding de = this._dataEncodingByScanId.get(lastScanId);
+				DataEncoding de = this._dataEncodingByScanId.get( (long) lastScanId);
 				this.checkDataEncodingIsNotNull(de, lastScanId);
 				
 				_stream.skip(peaksCount * de.getPeakStructSize());
@@ -157,7 +157,8 @@ public class StreamReader extends AbstractBlobReader {
 	public ScanSlice readScanSliceAt(int idx) {
 		
 		byte[] peaksBytes = null;
-		int scanId = 0, peaksCount = 0;
+		long scanId = 0;
+		int peaksCount = 0;
 		DataEncoding de = null;
 		
 		try {
@@ -165,7 +166,7 @@ public class StreamReader extends AbstractBlobReader {
 				
 				byte[] scanIdBytes = new byte[4];
 				_stream.read(scanIdBytes);
-				scanId = BytesUtils.bytesToInt(scanIdBytes, 0);
+				scanId = (long) BytesUtils.bytesToInt(scanIdBytes, 0);
 
 				byte[] peaksCountBytes = new byte[4];
 				_stream.read(peaksCountBytes);

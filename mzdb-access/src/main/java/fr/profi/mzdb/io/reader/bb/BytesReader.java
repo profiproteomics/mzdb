@@ -70,7 +70,7 @@ public class BytesReader extends AbstractBlobReader {
 		while (byteIdx < _blobSize) {
 			
 			// Retrieve the scan id
-			int scanId = _bbByteBuffer.getInt(byteIdx);	
+			long scanId = (long) _bbByteBuffer.getInt(byteIdx);	
 			_scanSliceStartPositions[scanSliceIdx] = byteIdx;
 
 			// Skip the scan id bytes
@@ -157,10 +157,10 @@ public class BytesReader extends AbstractBlobReader {
 		this.checkScanIndexRange(idx);
 
 		int scanSliceStartPos = _scanSliceStartPositions[idx];
-		int scanId = _bbByteBuffer.getInt(scanSliceStartPos);
+		long scanId = (long) _bbByteBuffer.getInt(scanSliceStartPos);
 		
 		// Determine peak size in bytes
-		DataEncoding de = this._dataEncodingByScanId.get(scanId);
+		DataEncoding de = this._dataEncodingByScanId.get( scanId);
 
 		// Determine peaks bytes length
 		int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
@@ -173,7 +173,7 @@ public class BytesReader extends AbstractBlobReader {
 
 		// Instantiate a new ScanData
 		return new ScanSlice(
-			_scanHeaderById.get(scanId),
+			_scanHeaderById.get( scanId),
 			scanSliceData
 		);
 	}

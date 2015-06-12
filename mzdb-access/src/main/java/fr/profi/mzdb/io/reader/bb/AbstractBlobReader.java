@@ -241,7 +241,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 		}
 	}
 	
-	protected void checkDataEncodingIsNotNull(DataEncoding de, int scanId) throws StreamCorruptedException {
+	protected void checkDataEncodingIsNotNull(DataEncoding de, long scanId) throws StreamCorruptedException {
 		if (de == null) {
 			throw new StreamCorruptedException("Scared that the mzdb file is corrupted, scan id is: " + scanId);
 			//logger.error("Scared that the mzdb file is corrupted, scan id is: " + scanId);
