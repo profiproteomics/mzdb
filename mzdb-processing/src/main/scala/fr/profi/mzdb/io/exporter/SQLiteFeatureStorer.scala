@@ -232,7 +232,7 @@ object SQLitePeakelStorer {
       j+=1; stmt.bind(j, peakel.getMz() )
       j+=1; stmt.bind(j, peakel.getApexElutionTime() )
       j+=1; stmt.bind(j, peakel.getApexIntensity() )
-      j+=1; stmt.bind(j, peakel.getScanInitialIds().length )
+      j+=1; stmt.bind(j, peakel.getScanIds().length )
       j+=1; stmt.bind(j, oscillationFactor )
       j+=1; stmt.bind(j, chartBytes )
       j+=1; stmt.bind(j, smoothedChartBytes )

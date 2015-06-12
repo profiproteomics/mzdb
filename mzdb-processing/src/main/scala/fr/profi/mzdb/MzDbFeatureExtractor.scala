@@ -139,7 +139,7 @@ class MzDbFeatureExtractor(
     
     //progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
 
-    // Retrieve scans mapped by their initial id
+    // Retrieve scans mapped by their id
     val scanHeaderById = collection.immutable.Map() ++ mzDbReader.getScanHeaderById.map { case (i, sh) => i.toInt -> sh }
  
     // Compute MS scans normalization factors
@@ -347,7 +347,7 @@ class MzDbFeatureExtractor(
     val featuresByApex = extractedFeatures.groupBy { ft =>
       val firstPeakel = ft.getFirstPeakel
       val apexIdx = firstPeakel.apexIndex
-      ( firstPeakel.scanInitialIds(apexIdx), firstPeakel.mzValues(apexIdx) )
+      ( firstPeakel.scanIds(apexIdx), firstPeakel.mzValues(apexIdx) )
     }//new HashMap[String, ArrayBuffer[Feature]]
 //    extractedFeatures.foreach{ f =>
 //      featuresByApex.getOrElseUpdate(f.peakels(0).getApex().toString(), new ArrayBuffer[Feature]()) += f

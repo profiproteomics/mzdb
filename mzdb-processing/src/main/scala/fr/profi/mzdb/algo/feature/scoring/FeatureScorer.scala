@@ -85,17 +85,17 @@ object FeatureScorer {
     val mzTolInDa = mz * mzTolInPpm / 1e6
     val overlappingMap = new ArrayBuffer[Tuple3[Peakel, Option[Peakel], Option[Peakel]]]()
     val peakel = f.getFirstPeakel() //monoistopic peakel
-    val refScanID = peakel.getApexScanInitialId
+    val refScanID = peakel.getApexScanId
     //get the best overlapping peakel in overlapping feature set
     var (leftOverlappingPeaks, rightOverlappingPeaks) = (Option.empty[Peakel], Option.empty[Peakel])
 
     f.overlapProperties.overlappingFeatures.foreach { ovlFeature =>
       ovlFeature.feature.indexedPeakels.foreach { case (p,idx) =>
         if ((p.getMz - mz) < mzTolInDa) {
-          if (p.getApexScanInitialId < refScanID) {
+          if (p.getApexScanId < refScanID) {
             leftOverlappingPeaks = Some(p)
           }
-          if (p.getApexScanInitialId > refScanID) {
+          if (p.getApexScanId > refScanID) {
             rightOverlappingPeaks = Some(p)
           }
         }
@@ -404,7 +404,7 @@ object FeatureScorer {
     //val timeIntensityPairs = peakel.getElutionTimeIntensityPairs
 
     var sum = 0f
-    peakel.scanInitialIds.indices.sliding(2).withFilter(_.size == 2).foreach { indexPair =>
+    peakel.scanIds.indices.sliding(2).withFilter(_.size == 2).foreach { indexPair =>
       val (idx1, idx2) = (indexPair(0), indexPair(1))
       val t1 = peakel.elutionTimes(idx1)
       val t2 = peakel.elutionTimes(idx2)

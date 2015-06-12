@@ -12,7 +12,7 @@ object Feature extends InMemoryIdGen {
   var nbPeakelsToIntegrate = 3
 
   def getPeakelsScanIds(indexedPeakels: Seq[(Peakel,Int)]): Array[Int] = {
-    indexedPeakels.toArray.flatMap(_._1.scanInitialIds).distinct.sorted
+    indexedPeakels.toArray.flatMap(_._1.scanIds).distinct.sorted
   }
 
   /*def calcScanHeaderRange(peakels: Seq[Peakel]): Pair[ScanHeader, ScanHeader] = {
@@ -191,7 +191,7 @@ case class Feature(
   }
   
   def getApexIndex() = getBasePeakel.apexIndex
-  def getApexScanInitialId() = getBasePeakel.getApexScanInitialId()
+  def getApexScanId() = getBasePeakel.getApexScanId()
   def getBasePeakel() = getPeakel(_basePeakelIndex)
   def getBasePeakelIndex() = _basePeakelIndex
   def getFirstPeakel() = indexedPeakels.head._1
@@ -206,8 +206,7 @@ case class Feature(
   def getScanIds() = Feature.getPeakelsScanIds(indexedPeakels)
   
   // ILcContext java interface implementation
-  // FIXME: incoherent scanId <-> initialId mapping
-  def getScanId() : Int = getApexScanInitialId()
+  def getScanId() : Int = getApexScanId()
 
   /*def getIsotopicPattern(idx: Int): IsotopicPattern = {
     val ipPeaks = peakels.map { _.peaks(idx) }
