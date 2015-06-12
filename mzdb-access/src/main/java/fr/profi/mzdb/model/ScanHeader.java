@@ -95,7 +95,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	 *            the precursor charge
 	 */
 	public ScanHeader(
-		int id,
+		long id,
 		int initialId,
 		int cycle,
 		float time,
@@ -107,7 +107,8 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 		float basePeakIntensity,
 		double precursorMz,
 		int precursorCharge,
-		int firstBBSpectrumId) {
+		int firstBBSpectrumId
+	) {
 		super(id, null);
 		this.id = id;
 		this.initialId = initialId;

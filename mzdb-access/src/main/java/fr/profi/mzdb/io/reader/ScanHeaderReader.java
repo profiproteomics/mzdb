@@ -114,7 +114,7 @@ public class ScanHeaderReader extends AbstractMzDbReaderHelper {
 			boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
 			
 			ScanHeader sh = new ScanHeader(
-				stmt.columnInt(ScanHeaderColIdx.id),
+				stmt.columnLong(ScanHeaderColIdx.id),
 				stmt.columnInt(ScanHeaderColIdx.initialId),
 				stmt.columnInt(ScanHeaderColIdx.cycleCol),
 				(float) stmt.columnDouble(ScanHeaderColIdx.time),

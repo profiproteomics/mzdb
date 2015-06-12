@@ -34,7 +34,7 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 * @param paramTree
 	 *            the param tree
 	 */
-	protected AbstractTableModel(int id, ParamTree paramTree) {
+	protected AbstractTableModel(long id, ParamTree paramTree) {
 		super();
 		this.id = id;
 		this.paramTree = paramTree;

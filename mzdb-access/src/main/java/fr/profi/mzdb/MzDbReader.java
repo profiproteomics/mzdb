@@ -871,7 +871,7 @@ public class MzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public ScanHeader getScanHeader(int id) throws SQLiteException {
+	public ScanHeader getScanHeader(long id) throws SQLiteException {
 		return this._scanHeaderReader.getScanHeader(id);
 	}
 
@@ -969,7 +969,7 @@ public class MzDbReader {
 	 *             the SQlite exception
 	 * @throws StreamCorruptedException 
 	 */
-	public Scan getScan(int scanId) throws SQLiteException, StreamCorruptedException {
+	public Scan getScan(long scanId) throws SQLiteException, StreamCorruptedException {
 		ScanHeader sh = this.getScanHeader(scanId);
 		ScanData sd = this.getScanData(scanId);
 		return new Scan(sh, sd);
