@@ -27,9 +27,9 @@ public interface IBlobReader {
 	/**
 	 * 
 	 * @param i index of scan starting at 1
-	 * @return int, the ID of the scan at the specified index in the blob
+	 * @return long, the ID of the scan at the specified index in the blob
 	 */
-	int getScanIdAt(int i);
+	long getScanIdAt(int i);
 
 	/**
 	 * 

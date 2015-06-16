@@ -156,7 +156,7 @@ public class Peak implements Cloneable, Comparable<Peak> {
      */
     @Override
     public String toString() {
-	return String.format("Peak@ %.4f,%.1f", this.mz, this.intensity);
+	return String.format("Peak@ %.4f;%.1f", this.mz, this.intensity);
     }
 
     /**

@@ -81,21 +81,21 @@ public class StreamReader extends AbstractBlobReader {
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public int getScanIdAt(int idx) {
+	public long getScanIdAt(int idx) {
 		
-		int lastScanId = 0;
+		long lastScanId = 0;
 		try {
 			for (int j = 0; j < idx; j++) {
 				
 				byte[] scanIdBytes = new byte[4];
 				_stream.read(scanIdBytes);
-				lastScanId = BytesUtils.bytesToInt(scanIdBytes, 0);
+				lastScanId = (long) BytesUtils.bytesToInt(scanIdBytes, 0);
 
 				byte[] peaksCountBytes = new byte[4];
 				_stream.read(peaksCountBytes);
 				int peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
 				
-				DataEncoding de = this._dataEncodingByScanId.get( (long) lastScanId);
+				DataEncoding de = this._dataEncodingByScanId.get( lastScanId);
 				this.checkDataEncodingIsNotNull(de, lastScanId);
 				
 				_stream.skip(peaksCount * de.getPeakStructSize());

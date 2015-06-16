@@ -117,10 +117,10 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public int getScanIdAt(int idx) {
+	public long getScanIdAt(int idx) {
 		this.checkScanIndexRange(idx);
 		
-		return _getIntFromBlob(_blob, idx);
+		return (long) _getIntFromBlob(_blob, idx);
 	}
 	
 	private int _getIntFromBlob( SQLiteBlob blob, int idx ) {

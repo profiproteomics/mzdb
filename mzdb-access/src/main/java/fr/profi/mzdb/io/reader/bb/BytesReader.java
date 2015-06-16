@@ -117,10 +117,10 @@ public class BytesReader extends AbstractBlobReader {
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public int getScanIdAt(int idx) {
+	public long getScanIdAt(int idx) {
 		this.checkScanIndexRange(idx);
 		
-		return _bbByteBuffer.getInt(_scanSliceStartPositions[idx]);
+		return (long) _bbByteBuffer.getInt(_scanSliceStartPositions[idx]);
 	}
 
 	/**
@@ -169,13 +169,11 @@ public class BytesReader extends AbstractBlobReader {
 		scanSliceStartPos += 8;
 
 		// Instantiate a new ScanData for the corresponding scan slice
-		ScanData scanSliceData = this.readScanSliceData(_bbByteBuffer, scanSliceStartPos, peaksBytesSize, de);
-
-		// Instantiate a new ScanData
-		return new ScanSlice(
-			_scanHeaderById.get( scanId),
-			scanSliceData
-		);
+		ScanData scanSliceData = this.readScanSliceData(_bbByteBuffer, scanSliceStartPos, peaksBytesSize, de);		
+		ScanHeader sh = _scanHeaderById.get( scanId );
+		
+		// Instantiate a new ScanSlice
+		return new ScanSlice(sh, scanSliceData);
 	}
 
 	/*
