@@ -426,7 +426,7 @@ object RunCommand extends App with Logging {
     val pfs = getPutativeFeatures()
     this.logger.info(s"Read #${pfs.length} putative features...")
 
-    val rsIter = mzDb.getRunSliceIterator(1)
+    val rsIter = mzDb.getLcMsRunSliceIterator()
     logger.info("got RS iterator")
 
     val rsdProv = new RunSliceDataProvider(rsIter)
