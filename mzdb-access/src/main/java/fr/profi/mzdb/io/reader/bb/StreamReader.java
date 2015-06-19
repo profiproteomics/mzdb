@@ -58,7 +58,8 @@ public class StreamReader extends AbstractBlobReader {
 	 * @see IBlobReader#getScansCount()
 	 */
 	public int getScansCount() {
-		return _scansCount;
+		// FIXME: this information should be added to the BB to optimize performances
+		return -1;
 	}
 
 	/**
@@ -85,7 +86,7 @@ public class StreamReader extends AbstractBlobReader {
 		
 		long lastScanId = 0;
 		try {
-			for (int j = 0; j < idx; j++) {
+			for (int j = 0; j <= idx; j++) {
 				
 				byte[] scanIdBytes = new byte[4];
 				_stream.read(scanIdBytes);
@@ -162,21 +163,30 @@ public class StreamReader extends AbstractBlobReader {
 		DataEncoding de = null;
 		
 		try {
-			for (int j = 0; j < idx; j++) {
+			for (int j = 0; j <= idx; j++) {
 				
 				byte[] scanIdBytes = new byte[4];
 				_stream.read(scanIdBytes);
 				scanId = (long) BytesUtils.bytesToInt(scanIdBytes, 0);
-
+				de = this._dataEncodingByScanId.get(scanId);
+				
 				byte[] peaksCountBytes = new byte[4];
 				_stream.read(peaksCountBytes);
 				peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
+				
+				int peaksBytesSize = peaksCount * de.getPeakStructSize();
+				
+				// If not on specified index
+				if( j < idx ) {
+					// skip the peaks
+					_stream.skip(peaksBytesSize);
+				} else {
+					// read peaks
+					byte[] pb = new byte[peaksBytesSize];
+					_stream.read(pb);
+					peaksBytes = pb;
+				}
 
-				de = this._dataEncodingByScanId.get(scanId);
-
-				byte[] pb = new byte[peaksCount * de.getPeakStructSize()];
-				_stream.read(pb);
-				peaksBytes = pb;
 			}
 			_stream.close();
 		} catch (IOException e) {
@@ -190,6 +200,11 @@ public class StreamReader extends AbstractBlobReader {
 		ScanData scanSliceData = this.readScanSliceData(ByteBuffer.wrap(peaksBytes), 0, peaksBytes.length, de);
 		
 		return new ScanSlice(_scanHeaderById.get(scanId), scanSliceData);
+	}
+	
+	// TODO: call this method from readScanSliceAt instead of calling readScanSliceAt from this methods
+	public ScanData readScanSliceDataAt(int idx) {
+		return readScanSliceAt(idx).getData();
 	}
 
 	/**

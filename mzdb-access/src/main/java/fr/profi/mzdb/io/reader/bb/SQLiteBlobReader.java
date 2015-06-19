@@ -2,6 +2,7 @@ package fr.profi.mzdb.io.reader.bb;
 
 import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteBlob;
@@ -80,24 +81,26 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	protected void _indexScanSlices() throws StreamCorruptedException {
 
 		int size = getBlobSize();
-		int scanSliceIdx = 1;
+		//int scanSliceIdx = 0;
 		int byteIdx = 0;
 		
-		this._scanSliceStartPositions = new int[_scansCount];
-		this._peaksCounts = new int[_scansCount];
+		ArrayList<Integer> scanSliceStartPositions = new ArrayList<Integer>();
+		ArrayList<Integer> peaksCounts = new ArrayList<Integer>();
 		
 		while (byteIdx < size) {
 			
 			// Retrieve the scan id
 			long scanId = (long) _getIntFromBlob(_blob, byteIdx);
-			_scanSliceStartPositions[scanSliceIdx] = byteIdx;
+			//_scanSliceStartPositions[scanSliceIdx] = byteIdx;
+			scanSliceStartPositions.add(byteIdx);
 			
 			// Skip the scan id bytes
 			byteIdx += 4;
 
 			// Retrieve the number of peaks
 			int peaksCount = _getIntFromBlob(_blob, byteIdx);
-			_peaksCounts[scanSliceIdx] = peaksCount;
+			//_peaksCounts[scanSliceIdx] = peaksCount;
+			peaksCounts.add(byteIdx);
 
 			// Skip the peaksCount bytes
 			byteIdx += 4;
@@ -108,10 +111,12 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 			
 			byteIdx += peaksCount * de.getPeakStructSize(); // skip nbPeaks * size of one peak
 			
-			scanSliceIdx++;
-		}
+			//scanSliceIdx++;
+		} // statement inside a while loop
 		
-		// statement inside a while loop
+		this._scansCount = scanSliceStartPositions.size();
+		this._scanSliceStartPositions = intListToInts(scanSliceStartPositions, _scansCount);
+		this._peaksCounts = intListToInts(peaksCounts, _scansCount);
 	}
 
 	/**
@@ -120,6 +125,10 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	public long getScanIdAt(int idx) {
 		this.checkScanIndexRange(idx);
 		
+		return _getScanIdAt(idx);
+	}
+	
+	private long _getScanIdAt(int idx) {
 		return (long) _getIntFromBlob(_blob, idx);
 	}
 	
@@ -161,16 +170,33 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		Peak[] peaks = peaksOfScanAt(idx);
 		return peaks[pos];
 	}*/
+	
+	/**
+	 * @see IBlobReader#readScanSliceAt(int)
+	 */
+	// TODO: factorize this code with the one from BytesReader
+	public ScanSlice readScanSliceAt(int idx) {
+		long scanId = _getScanIdAt(idx);
+		ScanData scanSliceData = this._readScanSliceDataAt(idx, scanId);
+		ScanHeader sh = _scanHeaderById.get( scanId );
+		
+		// Instantiate a new ScanSlice
+		return new ScanSlice(sh, scanSliceData);
+	}
+	
+	/**
+	 * @see IBlobReader#readScanSliceAt(int)
+	 */
+	// TODO: factorize this code with the one from BytesReader
+	public ScanData readScanSliceDataAt(int idx) {
+		return this._readScanSliceDataAt(idx, _getScanIdAt(idx) );
+	}
 
 	/**
 	 * @see IBlobReader#scanSliceOfScanAt(int)
 	 */
 	// TODO: factorize this code with the one from BytesReader
-	public ScanSlice readScanSliceAt(int idx) {
-		this.checkScanIndexRange(idx);
-
-		int scanSliceStartPos = _scanSliceStartPositions[idx];
-		long scanId = (long) this._getIntFromBlob(_blob, scanSliceStartPos);
+	private ScanData _readScanSliceDataAt(int idx, long scanId) {
 		
 		// Determine peak size in bytes
 		DataEncoding de = this._dataEncodingByScanId.get(scanId);
@@ -179,7 +205,7 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
 		
 		// Skip scan id and peaks count (two integers)
-		scanSliceStartPos += 8;
+		int scanSliceStartPos = _scanSliceStartPositions[idx] + 8;
 
 		byte[] peaksBytes = new byte[peaksBytesSize];
 
@@ -190,15 +216,9 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		}
 
 		// Instantiate a new ScanData for the corresponding scan slice
-		ScanData scanSliceData = this.readScanSliceData(
+		return this.readScanSliceData(
 			ByteBuffer.wrap(peaksBytes), scanSliceStartPos, peaksBytesSize, de
-		);
-
-		// Instantiate a new ScanData
-		return new ScanSlice(
-			_scanHeaderById.get(scanId),
-			scanSliceData
-		);		
+		);	
 	}
 
 	/**

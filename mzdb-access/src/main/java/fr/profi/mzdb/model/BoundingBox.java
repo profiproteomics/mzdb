@@ -161,19 +161,21 @@ public class BoundingBox implements Comparable<BoundingBox> {
 		HashSet<Long> scanIdSet = new HashSet<Long>();
 		
 		List<ScanSlice> scanSliceList = new ArrayList<ScanSlice>();
+		
 		for (ScanSlice scanSlice : _reader.readAllScanSlices(this._runSliceId)) {
 
 			long scanId = scanSlice.getHeader().getId();
-
-			// if( scanSlice.getData().getMzList().length > 0 ) {
-			if (scanIdSet.contains(scanId) == false) {
-				scanSliceList.add(scanSlice);
-				scanIdSet.add(scanId);
+			
+			if (scanIdSet.contains(scanId) == true) {
+				throw new IllegalArgumentException("duplicated scan id is: "+scanId);
 			}
+			
+			// if( scanSlice.getData().getMzList().length > 0 ) {
+			scanSliceList.add(scanSlice);
+			scanIdSet.add(scanId);
 		}
 
 		return scanSliceList.toArray(new ScanSlice[scanSliceList.size()]);
-		// return _reader.readAllScanSlices( this._runSliceId );
 	}
 
 	/**

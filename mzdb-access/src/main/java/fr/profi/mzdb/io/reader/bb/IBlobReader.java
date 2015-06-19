@@ -1,5 +1,6 @@
 package fr.profi.mzdb.io.reader.bb;
 
+import fr.profi.mzdb.model.ScanData;
 import fr.profi.mzdb.model.ScanSlice;
 
 //import fr.profi.mzdb.io.reader.bb.AbstractBlobReader.BlobData;
@@ -62,6 +63,14 @@ public interface IBlobReader {
 	 * @return ScanSlice of the specified scan
 	 */
 	ScanSlice readScanSliceAt(int idx);
+	
+	/**
+	 * 
+	 * @param idx
+	 *            index of specified scan
+	 * @return ScanData of the specified scan
+	 */
+	ScanData readScanSliceDataAt(int idx);
 
 	/**
 	 * 

@@ -5,6 +5,7 @@ package fr.profi.mzdb.io.reader.bb;
 
 import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -55,10 +56,10 @@ public abstract class AbstractBlobReader implements IBlobReader {
 		Map<Long, ScanHeader> scanHeaderById,
 		Map<Long, DataEncoding> dataEncodingByScanId
 	) {
-		this._scansCount = (int)(lastScanId - firstScanId) + 1;
+		//this._scansCount = (int)(lastScanId - firstScanId) + 1;
 
-		if( this._scansCount < 1 ) {
-			throw new IllegalArgumentException("lastScanId must be greater than firstScanId");
+		if( firstScanId > lastScanId ) {
+			throw new IllegalArgumentException("lastScanId must be greater or the same than firstScanId");
 		}
 		
 		this._scanHeaderById = scanHeaderById;
@@ -236,7 +237,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	}*/
 	
 	protected void checkScanIndexRange(int idx) {
-		if (idx < 0 || idx >= _scansCount) {
+		if (idx < 0 || idx >= this.getScansCount() ) {
 			throw new IndexOutOfBoundsException("scan index out of bounds (idx="+idx+"), index counting starts at 0");
 		}
 	}
@@ -250,18 +251,29 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	}
 	
 	/**
-	 * @see IBlobReader#asScanSlicesArray(int, int)
+	 * @see IBlobReader#readAllScanSlices(int)
 	 */
 	public ScanSlice[] readAllScanSlices(int runSliceId) {
-
-		ScanSlice[] sl = new ScanSlice[_scansCount];
-		for (int i = 0; i < _scansCount; i++) {
+		
+		int scansCount = this.getScansCount();
+		ScanSlice[] sl = new ScanSlice[scansCount];
+		
+		for (int i = 0; i < scansCount; i++) {
 			ScanSlice s = this.readScanSliceAt(i);
 			s.setRunSliceId(runSliceId);
 			sl[i] = s;
 		}
 		
 		return sl;
+	}
+	
+	// TODO: temp workaround (remove me when each BB is annotated with the number of spectra it contains)
+	protected int[] intListToInts(List<Integer> integers, int size) {
+	    int[] ret = new int[size];
+	    for (int i=0; i < ret.length; i++) {
+	        ret[i] = integers.get(i).intValue();
+	    }
+	    return ret;
 	}
 
 }
