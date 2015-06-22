@@ -901,12 +901,26 @@ public class MzDbReader {
 	 */
 	public ScanData getScanData(long scanId) throws SQLiteException, StreamCorruptedException {
 
-		// FIXME: getScanHeaderById
-		Map<Long, ScanHeader> scanHeaderById = this.getMs1ScanHeaderById();
+		Map<Long, ScanHeader> scanHeaderById = this.getScanHeaderById();
 		Map<Long, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
 
-		// retrieve first scan index of the specified scanId better
-		// than doing junction in sql query
+		/*
+		// FIXME: its a workaround for DIA data
+		int bbCount = new SQLiteQuery(connection, "SELECT count(*) FROM bounding_box WHERE bounding_box.first_spectrum_id = ?")
+			.bind(1, scanId)
+			.extractSingleInt();
+		
+		long firstScanId;
+		if( bbCount > 0 )
+			firstScanId = scanId;
+		else {
+			// Retrieve first scan index of the specified scanId 
+			// It's faster than doing a SQL JOIN
+			firstScanId = this.getBoundingBoxFirstScanId(scanId);
+		}
+		// END OF WORKAROUND
+		*/
+		
 		long firstScanId = this.getBoundingBoxFirstScanId(scanId);
 
 		String sqlString = "SELECT * FROM bounding_box WHERE bounding_box.first_spectrum_id = ?";
@@ -946,11 +960,19 @@ public class MzDbReader {
 		for (BoundingBox bb : bbS) {
 			
 			IBlobReader bbReader = bb.getReader();
+			
+			/*System.out.println("searching for " +scanId);
+			ScanSlice[] ssList = bbReader.readAllScanSlices(bb.getRunSliceId());
+			System.out.println("ssList.length: " +ssList.length);
+			for( ScanSlice ss: ssList ) {
+				System.out.println("has scan id=" +ss.getScanId());
+			}*/
 
+			// Retrieve only slices corresponding to the provided scan id
 			int nbScans = bb.getScansCount();
 			for (int scanIdx = 0; scanIdx < nbScans; scanIdx++) {
 				if (scanId == bbReader.getScanIdAt(scanIdx)) {
-					sd.addScanData(bbReader.readScanSliceAt(scanIdx).getData());
+					sd.addScanData(bbReader.readScanSliceDataAt(scanIdx));
 					break;
 				}
 			}
@@ -1069,7 +1091,6 @@ public class MzDbReader {
 		
 		ArrayList<ScanSlice> scanSlices = _getNeighbouringScanSlices(minMz, maxMz, minRt, maxRt, msLevel, parentMz);
 		
-		// System.out.println(scanSlices.length);
 		if (scanSlices.size() == 0) {
 			logger.warn("Empty scanSlices, too narrow request ?");
 			return new ScanSlice[0];
@@ -1077,21 +1098,19 @@ public class MzDbReader {
 		
 		ArrayList<ScanSlice> finalScanSlices = new ArrayList<ScanSlice>();
 		
-		scanSlices.get(0);
-		scanSlices.get(0).getData().getMaxMz();
-		scanSlices.get(0).getHeader().getElutionTime();
-		
+		// Skip scan slices before minRt
 		int i = 0;
 		while (i < scanSlices.size() && scanSlices.get(i).getHeader().getElutionTime() <= minRt) {
 			i++;
 		}
 		
+		// Skip scan slices after maxRt
 		while (i < scanSlices.size() && scanSlices.get(i).getHeader().getElutionTime() <= maxRt) {
 			
 			// Retrieve current scan slice
-			ScanSlice currentScanSlice = scanSlices.get(i);			
+			ScanSlice currentScanSlice = scanSlices.get(i);
 			i++;
-			// Filter m/z values to be sure we match the minmz/maxmz range
+			// Filter m/z values to be sure we match the minMz/maxMz range
 			ScanData filteredScanData = currentScanSlice.getData().mzRangeFilter(minMz, maxMz);
 			
 			if (filteredScanData == null) {
@@ -1214,6 +1233,7 @@ public class MzDbReader {
 			IBlobReader firstbbReader = firstbb.getReader();
 			int scanCount = firstbb.getScansCount();
 
+			// Transpose the BBs into multiple partialScanData (one for each spectrum)
 			for (int scanIdx = 0; scanIdx < scanCount; scanIdx++) {
 				
 				ScanData partialScanData = new ScanData(new double[0],new float[0], new float[0], new float[0]);
@@ -1224,11 +1244,12 @@ public class MzDbReader {
 				// TODO: remove me ??? => it has no meaning here
 				partialScan.setRunSliceId(firstbb.getRunSliceId());
 				
+				// Iterate over bounding boxes to retrieve the scanSlices corresponding to a given spectrum (using its scanIdx)
 				for (BoundingBox bb : bbs) {
 					IBlobReader bbReader = bb.getReader();
-					ScanSlice scanSlice = bbReader.readScanSliceAt(scanIdx);
-					if (scanSlice.getData().getMzList().length > 0) {
-						partialScanData.addScanData(scanSlice.getData());
+					ScanData scanSliceData = bbReader.readScanSliceDataAt(scanIdx);
+					if (scanSliceData.getMzList().length > 0) {
+						partialScanData.addScanData(scanSliceData);
 					}
 				}
 				
