@@ -106,24 +106,33 @@ public class Peak implements Cloneable, Comparable<Peak> {
 	return rightHwhm;
     }
 
-    /**
-     * Gets the lc context.
-     * 
-     * @return the lc context
-     */
-    public ILcContext getLcContext() {
-	return lcContext;
-    }
+	/**
+	 * Gets the lc context.
+	 * 
+	 * @return the lc context
+	 */
+	public ILcContext getLcContext() {
+		return lcContext;
+	}
 
-    /**
-     * Sets the lc context.
-     * 
-     * @param lcContext
-     *            the new lc context
-     */
-    public void setLcContext(ILcContext lcContext) {
-	this.lcContext = lcContext;
-    }
+	/**
+	 * Sets the lc context.
+	 * 
+	 * @param lcContext
+	 *            the new lc context
+	 */
+	public void setLcContext(ILcContext lcContext) {
+		this.lcContext = lcContext;
+	}
+	
+	/**
+	 * Gets the ScanHeader.
+	 * 
+	 * @return the ScanHeader
+	 */
+	public ScanHeader getScanHeader() throws ClassCastException {
+		return (ScanHeader) lcContext;
+	}
 
     public boolean isNormalized() {
 	return this._nf > 0;

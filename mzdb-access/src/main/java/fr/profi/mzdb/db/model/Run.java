@@ -1,5 +1,7 @@
 package fr.profi.mzdb.db.model;
 
+import java.time.Instant;
+
 import fr.profi.mzdb.db.model.params.ParamTree;
 
 // TODO: Auto-generated Javadoc
@@ -8,15 +10,15 @@ import fr.profi.mzdb.db.model.params.ParamTree;
  * 
  * @author David Bouyssie
  */
-public class SourceFile extends AbstractTableModel {
+public class Run extends AbstractTableModel {
 	
-	public static final String TABLE_NAME = "source_file";
+	public static final String TABLE_NAME = "run";
 
 	/** The name. */
 	protected String name;
 
 	/** The location. */
-	protected String location;
+	protected Instant startTimestamp;
 
 	/**
 	 * Instantiates a new source file.
@@ -25,15 +27,15 @@ public class SourceFile extends AbstractTableModel {
 	 *            the id
 	 * @param name
 	 *            the name
-	 * @param location
-	 *            the location
+	 * @param startTimestamp
+	 *            the startTimestamp
 	 * @param paramTree
 	 *            the param tree
 	 */
-	public SourceFile(int id, String name, String location, ParamTree paramTree) {
+	public Run(int id, String name, Instant startTimestamp, ParamTree paramTree) {
 		super(id, paramTree);
 		this.name = name;
-		this.location = location;
+		this.startTimestamp = startTimestamp;
 	}
 
 	/**
@@ -43,11 +45,11 @@ public class SourceFile extends AbstractTableModel {
 	 *            the id
 	 * @param name
 	 *            the name
-	 * @param location
-	 *            the location
+	 * @param startTimestamp
+	 *            the startTimestamp
 	 */
-	public SourceFile(int id, String name, String location) {
-		this(id, name, location, null);
+	public Run(int id, String name, Instant startTimestamp) {
+		this(id, name, startTimestamp, null);
 	}
 
 	/**
@@ -62,10 +64,10 @@ public class SourceFile extends AbstractTableModel {
 	/**
 	 * Gets the location.
 	 * 
-	 * @return the location
+	 * @return the startTimestamp
 	 */
-	public String getLocation() {
-		return location;
+	public Instant getStartTimestamp() {
+		return startTimestamp;
 	}
 
 }

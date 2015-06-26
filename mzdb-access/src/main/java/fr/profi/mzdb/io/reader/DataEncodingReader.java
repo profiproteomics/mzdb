@@ -1,5 +1,6 @@
 package fr.profi.mzdb.io.reader;
 
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,6 @@ import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.table.DataEncodingTable;
 import fr.profi.mzdb.db.table.SpectrumTable;
-import fr.profi.mzdb.model.ByteOrder;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.PeakEncoding;

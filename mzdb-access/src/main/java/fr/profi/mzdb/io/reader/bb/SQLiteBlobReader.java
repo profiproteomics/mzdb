@@ -2,7 +2,7 @@ package fr.profi.mzdb.io.reader.bb;
 
 import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteBlob;
@@ -43,7 +43,7 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
 		
 		this._blob = blob;
-		this._indexScanSlices();
+		this._indexScanSlices((int) (1 + lastScanId - firstScanId) );
 	}
 
 	/**
@@ -78,29 +78,29 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	 * @see AbstractBlobReader#_buildMapPositions()
 	 */
 	// TODO: factorize this code with the one from BytesReader
-	protected void _indexScanSlices() throws StreamCorruptedException {
+	protected void _indexScanSlices(int estimatedScansCount) throws StreamCorruptedException {
 
+		int[] scanSliceStartPositions = new int[estimatedScansCount];
+		int[] peaksCounts = new int[estimatedScansCount];
+		
 		int size = getBlobSize();
-		//int scanSliceIdx = 0;
+		int scanSliceIdx = 0;
 		int byteIdx = 0;
-		
-		ArrayList<Integer> scanSliceStartPositions = new ArrayList<Integer>();
-		ArrayList<Integer> peaksCounts = new ArrayList<Integer>();
-		
+
 		while (byteIdx < size) {
-			
+
 			// Retrieve the scan id
 			long scanId = (long) _getIntFromBlob(_blob, byteIdx);
-			//_scanSliceStartPositions[scanSliceIdx] = byteIdx;
-			scanSliceStartPositions.add(byteIdx);
-			
+			_scanSliceStartPositions[scanSliceIdx] = byteIdx;
+			// scanSliceStartPositions.add(byteIdx);
+
 			// Skip the scan id bytes
 			byteIdx += 4;
 
 			// Retrieve the number of peaks
 			int peaksCount = _getIntFromBlob(_blob, byteIdx);
-			//_peaksCounts[scanSliceIdx] = peaksCount;
-			peaksCounts.add(byteIdx);
+			_peaksCounts[scanSliceIdx] = peaksCount;
+			// peaksCounts.add(byteIdx);
 
 			// Skip the peaksCount bytes
 			byteIdx += 4;
@@ -108,15 +108,19 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 			// Retrieve the DataEncoding corresponding to this scan
 			DataEncoding de = this._dataEncodingByScanId.get(scanId);
 			this.checkDataEncodingIsNotNull(de, scanId);
-			
+
 			byteIdx += peaksCount * de.getPeakStructSize(); // skip nbPeaks * size of one peak
-			
-			//scanSliceIdx++;
+
+			scanSliceIdx++;
 		} // statement inside a while loop
-		
-		this._scansCount = scanSliceStartPositions.size();
-		this._scanSliceStartPositions = intListToInts(scanSliceStartPositions, _scansCount);
-		this._peaksCounts = intListToInts(peaksCounts, _scansCount);
+
+		this._scansCount = scanSliceIdx;
+		this._scanSliceStartPositions = Arrays.copyOf(scanSliceStartPositions, _scansCount);
+		this._peaksCounts = Arrays.copyOf(peaksCounts, _scansCount);
+
+		// this._scansCount = scanSliceStartPositions.size();
+		// this._scanSliceStartPositions = intListToInts(scanSliceStartPositions, _scansCount);
+		// this._peaksCounts = intListToInts(peaksCounts, _scansCount);
 	}
 
 	/**

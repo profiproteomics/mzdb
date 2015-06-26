@@ -13,7 +13,7 @@ public class Precursor {
   protected String spectrumRef;
   
   @XmlElement(name="isolationWindow")
-  protected IsolationWindow isolationWindow;
+  protected IsolationWindowParamTree isolationWindow;
   
   @XmlElement(name="selectedIonList")
   protected SelectedIonList selectedIonList;
@@ -25,7 +25,7 @@ public class Precursor {
       return spectrumRef;
   }
   
-  public IsolationWindow getIsolationWindow() {
+  public IsolationWindowParamTree getIsolationWindow() {
       return isolationWindow;
   }
   

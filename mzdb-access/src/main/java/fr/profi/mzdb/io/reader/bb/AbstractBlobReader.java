@@ -5,7 +5,6 @@ package fr.profi.mzdb.io.reader.bb;
 
 import java.io.StreamCorruptedException;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -268,12 +267,12 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	}
 	
 	// TODO: temp workaround (remove me when each BB is annotated with the number of spectra it contains)
-	protected int[] intListToInts(List<Integer> integers, int size) {
-	    int[] ret = new int[size];
-	    for (int i=0; i < ret.length; i++) {
-	        ret[i] = integers.get(i).intValue();
-	    }
-	    return ret;
-	}
+	/*protected int[] intListToInts(List<Integer> integers, int size) {
+		int[] ret = new int[size];
+		for (int i = 0; i < ret.length; i++) {
+			ret[i] = integers.get(i).intValue();
+		}
+		return ret;
+	}*/
 
 }

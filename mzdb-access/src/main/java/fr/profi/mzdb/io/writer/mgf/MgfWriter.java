@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.MzDbReader;
-import fr.profi.mzdb.db.model.params.IsolationWindow;
+import fr.profi.mzdb.db.model.params.IsolationWindowParamTree;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.CVParam;
@@ -189,7 +189,7 @@ public class MgfWriter {
 				scanHeader.getInitialId(),
 				scanHeader.getTime(),
 				scanHeader.getTime(),
-				mzDbReader.getSourceFileName()
+				mzDbReader.getFirstSourceFileName()
 			);
 		}
 		
@@ -483,7 +483,7 @@ public class MgfWriter {
 		throws StreamCorruptedException, SQLiteException {
 		
 		// do a XIC over isolation window
-		final IsolationWindow iw = precursor.getIsolationWindow();
+		final IsolationWindowParamTree iw = precursor.getIsolationWindow();
 		if( iw == null ) {
 			return null;
 		}
