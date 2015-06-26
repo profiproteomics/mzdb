@@ -334,7 +334,7 @@ public class MgfWriter {
 		
 		final ArrayList<Peak> peaks = new ArrayList<Peak>();
 		for (ScanSlice sl : scanSlices) {
-			Peak p = sl.getData().getNearestPeak(precMz, mzTolPPM);
+			Peak p = sl.getData().getNearestPeak(precMz, mzTolPPM, sl.getHeader());
 			if (p != null) {
 				p.setLcContext(sl.getHeader());
 				peaks.add(p);
@@ -398,7 +398,7 @@ public class MgfWriter {
 				nearestScanSlice = sl;
 		}
 
-		Peak curPeak = nearestScanSlice.getData().getNearestPeak(precMz, mzTolPPM);
+		Peak curPeak = nearestScanSlice.getData().getNearestPeak(precMz, mzTolPPM, nearestScanSlice.getHeader());
 		if (curPeak == null)
 			return precMz;
 
@@ -408,7 +408,7 @@ public class MgfWriter {
 
 			// avgIsoMassDiff = 1.0027
 			double prevPeakMz = precMz + (1.0027 * -1 / putativeZ);
-			Peak prevPeak = nearestScanSlice.getData().getNearestPeak(prevPeakMz, mzTolPPM);
+			Peak prevPeak = nearestScanSlice.getData().getNearestPeak(prevPeakMz, mzTolPPM, nearestScanSlice.getHeader());
 
 			if (prevPeak != null) {
 				prevPeak.setLcContext(nearestScanSlice.getHeader());
@@ -447,7 +447,7 @@ public class MgfWriter {
 						for (int interferenceZ = 1; interferenceZ <= 6; interferenceZ++) {
 							if (interferenceZ != putativeZ) {
 								interferencePeakMz = prevPeakExpMz + (1.0027 * +1 / interferenceZ);
-								Peak interferencePeak = nearestScanSlice.getData().getNearestPeak(interferencePeakMz, mzTolPPM);
+								Peak interferencePeak = nearestScanSlice.getData().getNearestPeak(interferencePeakMz, mzTolPPM, nearestScanSlice.getHeader());
 
 								// If there is no defined peak with higher intensity
 								if (interferencePeak != null && interferencePeak.getIntensity() > prevPeak.getIntensity()) {
