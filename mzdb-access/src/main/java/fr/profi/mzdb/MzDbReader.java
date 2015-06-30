@@ -589,9 +589,6 @@ public class MzDbReader {
 				scanHeaderById,
 				dataEncodingByScanId
 			);
-			
-			bb.setFirstScanId(firstScanId);
-			bb.setLastScanId(lastScanId);
 			bb.setRunSliceId(runSliceId);
 			
 			bbs.add(bb);
@@ -835,9 +832,6 @@ public class MzDbReader {
 				scanHeaderById,
 				dataEncodingByScanId
 			);
-
-			bb.setFirstScanId(firstScanId);
-			bb.setLastScanId(lastScanId);
 			bb.setRunSliceId(r.columnInt(BoundingBoxTable.RUN_SLICE_ID));
 
 			bbS.add(bb);
@@ -982,54 +976,6 @@ public class MzDbReader {
 		double parentMz
 	) throws SQLiteException, StreamCorruptedException {
 		
-		ArrayList<ScanSlice> scanSlices = _getNeighbouringScanSlices(minMz, maxMz, minRt, maxRt, msLevel, parentMz);
-		
-		if (scanSlices.size() == 0) {
-			logger.warn("Empty scanSlices, too narrow request ?");
-			return new ScanSlice[0];
-		}
-		
-		ArrayList<ScanSlice> finalScanSlices = new ArrayList<ScanSlice>(scanSlices.size());
-		
-		// Skip scan slices before minRt
-		int i = 0;
-		while (i < scanSlices.size() && scanSlices.get(i).getHeader().getElutionTime() <= minRt) {
-			i++;
-		}
-		
-		// Skip scan slices after maxRt
-		while (i < scanSlices.size() && scanSlices.get(i).getHeader().getElutionTime() <= maxRt) {
-			
-			// Retrieve current scan slice
-			ScanSlice currentScanSlice = scanSlices.get(i);
-			i++;
-			// Filter m/z values to be sure we match the minMz/maxMz range
-			ScanData filteredScanData = currentScanSlice.getData().mzRangeFilter(minMz, maxMz);
-			
-			if (filteredScanData == null) {
-				continue;
-			}
-			
-			ScanSlice finalScanSlice = new ScanSlice(currentScanSlice.getHeader(), filteredScanData);
-			
-			// TODO: remove me ??? => it has no meaning here
-			finalScanSlice.setRunSliceId(currentScanSlice.getRunSliceId());
-			
-			finalScanSlices.add(finalScanSlice);
-		}
-		
-		return finalScanSlices.toArray(new ScanSlice[finalScanSlices.size()]);
-	}
-	
-	private ArrayList<ScanSlice> _getNeighbouringScanSlices(
-		double minMz,
-		double maxMz,
-		double minRt,
-		double maxRt,
-		int msLevel,
-		double parentMz
-	) throws SQLiteException, StreamCorruptedException {
-
 		BBSizes sizes = getBBSizes();
 		double rtWidth = (msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn;
 		double mzHeight = (msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn;
@@ -1077,11 +1023,10 @@ public class MzDbReader {
 		else throw new IllegalArgumentException("unsupported MS level: " + msLevel);
 		
 		Map<Long, DataEncoding> dataEncodingByScanId = this.getDataEncodingByScanId();
-		TreeMap<Long, ArrayList<BoundingBox>> bbsByFirstScanId = new TreeMap<Long, ArrayList<BoundingBox>>();
-		
-		int estimatedScanSlicesCount = 0;
+		TreeMap<Long, ArrayList<ScanData>> scanDataListById = new TreeMap<Long, ArrayList<ScanData>>();
+		HashMap<Long,Integer> peaksCountByScanId = new HashMap<Long, Integer>();
 
-		// retrieve bounding box
+		// Iterate over bounding boxes
 		while (recordIter.hasNext()) {
 			
 			SQLiteRecord record = recordIter.next();
@@ -1089,16 +1034,13 @@ public class MzDbReader {
 			int bbId = record.columnInt(BoundingBoxTable.ID);
 
 			// TODO: remove me when the query is performed using msn_rtree
-			if (getBoundingBoxMsLevel(bbId) != msLevel)
-				continue;
+			//if (getBoundingBoxMsLevel(bbId) != msLevel)
+			//	continue;
 
 			// Retrieve bounding box data
 			byte[] data = record.columnBlob(BoundingBoxTable.DATA);
 			long firstScanId = record.columnLong(BoundingBoxTable.FIRST_SPECTRUM_ID);
 			long lastScanId = record.columnLong(BoundingBoxTable.LAST_SPECTRUM_ID);
-			
-      int estimatedScansCount = (int) (lastScanId - firstScanId);
-      estimatedScanSlicesCount += estimatedScansCount;
 
 			// Build the Bounding Box
 			BoundingBox bb = BoundingBoxBuilder.buildBB(
@@ -1109,56 +1051,85 @@ public class MzDbReader {
 				scanHeaderById,
 				dataEncodingByScanId
 			);
-			bb.setFirstScanId(firstScanId);
-			bb.setLastScanId(lastScanId);
-			bb.setRunSliceId(record.columnInt(BoundingBoxTable.RUN_SLICE_ID));
+			//bb.setRunSliceId(record.columnInt(BoundingBoxTable.RUN_SLICE_ID));
+			
+			IBlobReader bbReader = bb.getReader();
+			int bbScansCount = bbReader.getScansCount();
+			long[] bbScanIds = bbReader.getAllScanIds();
 
-			// Initialize map entry if it doesn't exist
-			if (bbsByFirstScanId.containsKey(firstScanId) == false) {
-			  bbsByFirstScanId.put(firstScanId, new ArrayList<BoundingBox>(estimatedScansCount));
-			}
-
-			bbsByFirstScanId.get(firstScanId).add(bb);
-		}
-
-		ArrayList<ScanSlice> partialScanSlices = new ArrayList<ScanSlice>(estimatedScanSlicesCount);
-
-		for (ArrayList<BoundingBox> bbs: bbsByFirstScanId.values()) {
-
-			if (bbs.size() == 0)
-				continue;
-
-			BoundingBox firstbb = bbs.get(0);
-			IBlobReader firstbbReader = firstbb.getReader();
-			int scanCount = firstbb.getScansCount();
-
-			// Transpose the BBs into multiple partialScanData (one for each spectrum)
-			for (int scanIdx = 0; scanIdx < scanCount; scanIdx++) {
+			// Iterate over each scan
+			for (int scanIdx = 0; scanIdx < bbScansCount; scanIdx++) {
 				
-				ScanData partialScanData = new ScanData(new double[0],new float[0], new float[0], new float[0]);
-				ScanSlice partialScan = new ScanSlice(
-					scanHeaderById.get(firstbbReader.getScanIdAt(scanIdx)),
-					partialScanData
-				);
-				// TODO: remove me ??? => it has no meaning here
-				partialScan.setRunSliceId(firstbb.getRunSliceId());
+				long scanId = bbScanIds[scanIdx];
+				ScanHeader sh = scanHeaderById.get(scanId);
+				float currentRt = sh.getElutionTime();
 				
-				// Iterate over bounding boxes to retrieve the scanSlices corresponding to a given spectrum (using its scanIdx)
-				for (BoundingBox bb : bbs) {
-					IBlobReader bbReader = bb.getReader();
-					ScanData scanSliceData = bbReader.readScanSliceDataAt(scanIdx);
-					if (scanSliceData.getMzList().length > 0) {
-						partialScanData.addScanData(scanSliceData);
+				// Filtering on time dimension
+				if( currentRt >= minRt && currentRt <= maxRt ) {
+					// Filtering on m/z dimension
+					ScanData scanSliceData = bbReader.readFilteredScanSliceDataAt(scanIdx, minMz, maxMz);
+					if (scanSliceData.isEmpty() == false) {
+						if( scanDataListById.containsKey(scanId) == false ) {
+							scanDataListById.put( scanId, new ArrayList<ScanData>() );
+							peaksCountByScanId.put( scanId, 0 );
+						}
+						scanDataListById.get(scanId).add(scanSliceData);
+						peaksCountByScanId.put( scanId, peaksCountByScanId.get(scanId) + scanSliceData.getPeaksCount() );
 					}
 				}
-				
-				partialScanSlices.add(partialScan);
 			}
 		}
 		
-		return partialScanSlices;
+		ScanSlice[] finalScanSlices = new ScanSlice[scanDataListById.size()];
+		
+		int scanIdx = 0;
+		for (Map.Entry<Long,ArrayList<ScanData>> entry : scanDataListById.entrySet() ) {
+			Long scanId = entry.getKey();
+			ArrayList<ScanData> scanDataList = entry.getValue();
+			int peaksCount = peaksCountByScanId.get(scanId);
+			
+			double[] finalMzList = new double[peaksCount];
+			float[] finalIntensityList = new float[peaksCount];
+			float[] finalLeftHwhmList = null; 
+			float[] finalRightHwhmList = null;
+			
+			ScanData firstScanData = scanDataList.get(0);
+			if (firstScanData.getLeftHwhmList() != null && firstScanData.getRightHwhmList() != null) {
+				finalLeftHwhmList = new float[peaksCount];
+				finalRightHwhmList = new float[peaksCount];
+			}
+			
+			// TODO: check that scanDataList is m/z sorted ???
+			int finalPeakIdx = 0;
+			for( ScanData scanData : scanDataList ) {
+				double[] mzList = scanData.getMzList();
+				float[] intensityList = scanData.getIntensityList();
+				float[] leftHwhmList = scanData.getLeftHwhmList();
+				float[] rightHwhmList = scanData.getRightHwhmList();
+				
+				// Add peaks of this ScanData to the final arrays
+				int scanDataPeaksCount = scanData.getPeaksCount();
+				for( int i = 0; i < scanDataPeaksCount; i++ ) {
+					finalMzList[finalPeakIdx] = mzList[i];
+					finalIntensityList[finalPeakIdx] = intensityList[i];
+					
+					if( finalLeftHwhmList != null && finalRightHwhmList != null ) {
+						finalLeftHwhmList[finalPeakIdx] = leftHwhmList[i];
+						finalRightHwhmList[finalPeakIdx] = rightHwhmList[i];
+					}
+				}
+				
+				finalPeakIdx++;
+			}
+			
+			ScanData finalScanData = new ScanData(finalMzList,finalIntensityList, finalLeftHwhmList, finalRightHwhmList);
+			finalScanSlices[scanIdx] = new ScanSlice(scanHeaderById.get(scanId), finalScanData);
+			
+			scanIdx++;
+		}
+		
+		return finalScanSlices;
 	}
-
 
 	/**
 	 * Gets the bounding box iterator.
@@ -1457,10 +1428,10 @@ public class MzDbReader {
 				ScanSlice sl = scanSlices[i];
 				ScanData slData = sl.getData();
 				
-				if (slData.getMzList().length == 0)
+				if (slData.isEmpty())
 					continue;
 				
-				Peak nearestPeak = sl.getData().getNearestPeak(searchedMz, mzTolPPM, sl.getHeader());
+				Peak nearestPeak = sl.getNearestPeak(searchedMz, mzTolPPM);
 				
 				if( nearestPeak == null ) {
 					logger.error("nearest peak is null but should not be: searchedMz="+ searchedMz+" minMz="+slData.getMzList()[0] + " tol="+mzTolPPM);

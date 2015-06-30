@@ -29,7 +29,12 @@ public class BoundingBoxBuilder {
 		Map<Long, ScanHeader> scanHeaderById,
 		Map<Long, DataEncoding> dataEncodingByScanId
 	) throws StreamCorruptedException {
-		return new BoundingBox(bbId, new BytesReader(bytes, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId));
+		
+		BoundingBox bb = new BoundingBox(bbId, new BytesReader(bytes, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId));
+		bb.setFirstScanId(firstScanId);
+		bb.setLastScanId(lastScanId);
+		
+		return bb;
 	}
 
 	public static BoundingBox buildBB(
@@ -40,7 +45,12 @@ public class BoundingBoxBuilder {
 		Map<Long, ScanHeader> scanHeaderById,
 		Map<Long, DataEncoding> dataEncodingByScanId
 	) throws StreamCorruptedException {
-		return new BoundingBox(bbId, new SQLiteBlobReader(blob, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		
+		BoundingBox bb =  new BoundingBox(bbId, new SQLiteBlobReader(blob, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		bb.setFirstScanId(firstScanId);
+		bb.setLastScanId(lastScanId);
+		
+		return bb;
 	}
 
 	public static BoundingBox buildBB(
@@ -51,7 +61,12 @@ public class BoundingBoxBuilder {
 		Map<Long, ScanHeader> scanHeaderById,
 		Map<Long, DataEncoding> dataEncodingByScanId
 	) {
-		return new BoundingBox(bbId, new StreamReader(stream, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		
+		BoundingBox bb = new BoundingBox(bbId, new StreamReader(stream, firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId) );
+		bb.setFirstScanId(firstScanId);
+		bb.setLastScanId(lastScanId);
+		
+		return bb;
 	}
 
 }

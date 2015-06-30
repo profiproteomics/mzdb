@@ -35,10 +35,7 @@ public class BoundingBoxIterator extends StatementIterator<BoundingBox> {
 		
 	}
 
-	public BoundingBox extractObject(SQLiteStatement stmt) throws SQLiteException, StreamCorruptedException { // process
-		// only
-		// one
-		// boundingbox
+	public BoundingBox extractObject(SQLiteStatement stmt) throws SQLiteException, StreamCorruptedException {
 
 		int bbId = stmt.columnInt(0);
 		byte[] bbBytes = stmt.columnBlob(1);
@@ -53,17 +50,10 @@ public class BoundingBoxIterator extends StatementIterator<BoundingBox> {
 			lastScanId,
 			this.scanHeaderById,
 			this.dataEncodingByScanId
-		);
-		
+		);		
 		bb.setRunSliceId(runSliceId);
-		bb.setFirstScanId(firstScanId);
-		bb.setLastScanId(lastScanId);
 		
 		return bb;
-		// ScanSlice[] sl = bb.asScanSlicesArray(scanId, runSliceId);//ScanId,
-		// RunSliceId
-
-		// return sl;
 	}
 
 }

@@ -1,6 +1,6 @@
 package fr.profi.mzdb.db.model;
 
-import java.time.Instant;
+import java.util.Date;
 
 import fr.profi.mzdb.db.model.params.ParamTree;
 
@@ -18,7 +18,8 @@ public class Run extends AbstractTableModel {
 	protected String name;
 
 	/** The location. */
-	protected Instant startTimestamp;
+	//protected Instant startTimestamp;
+	protected Date startTimestamp;
 
 	/**
 	 * Instantiates a new source file.
@@ -32,7 +33,8 @@ public class Run extends AbstractTableModel {
 	 * @param paramTree
 	 *            the param tree
 	 */
-	public Run(int id, String name, Instant startTimestamp, ParamTree paramTree) {
+	//public Run(int id, String name, Instant startTimestamp, ParamTree paramTree) {
+	public Run(int id, String name, Date startTimestamp, ParamTree paramTree) {
 		super(id, paramTree);
 		this.name = name;
 		this.startTimestamp = startTimestamp;
@@ -48,7 +50,8 @@ public class Run extends AbstractTableModel {
 	 * @param startTimestamp
 	 *            the startTimestamp
 	 */
-	public Run(int id, String name, Instant startTimestamp) {
+	//public Run(int id, String name, Instant startTimestamp) {
+	public Run(int id, String name, Date startTimestamp) {
 		this(id, name, startTimestamp, null);
 	}
 
@@ -66,7 +69,7 @@ public class Run extends AbstractTableModel {
 	 * 
 	 * @return the startTimestamp
 	 */
-	public Instant getStartTimestamp() {
+	public Date getStartTimestamp() {
 		return startTimestamp;
 	}
 

@@ -31,6 +31,8 @@ public interface IBlobReader {
 	 * @return long, the ID of the scan at the specified index in the blob
 	 */
 	long getScanIdAt(int i);
+	
+	long[] getAllScanIds();
 
 	/**
 	 * 
@@ -41,20 +43,10 @@ public interface IBlobReader {
 
 	/**
 	 * 
-	 * @param i index of the wanted scan
-	 * @return array of peak of the scan specified by the index
+	 * @param runSliceId needed to correctly annotate the ScanSlice
+	 * @return array of scanSlice representing the bounding box
 	 */
-	//TODO how to pass a lcContext here ?
-	//Peak[] peaksOfScanAt(int i);
-
-	/**
-	 * 
-	 * @param i index of the wanted scan
-	 * @param pos position of the peak to extract
-	 * @return peak of the specified scan at specified position
-	 */
-	//TODO how to pass a lcContext here ?
-	//Peak peakAt(int i, int pos);
+	ScanSlice[] readAllScanSlices(int runSliceId);
 
 	/**
 	 * 
@@ -71,12 +63,15 @@ public interface IBlobReader {
 	 * @return ScanData of the specified scan
 	 */
 	ScanData readScanSliceDataAt(int idx);
-
+	
 	/**
 	 * 
-	 * @param runSliceId needed to correctly annotate the ScanSlice
-	 * @return array of scanSlice representing the bounding box
+	 * @param idx
+	 *            index of specified scan
+	 * @return ScanData of the specified scan
 	 */
-	ScanSlice[] readAllScanSlices(int runSliceId);
+	ScanData readFilteredScanSliceDataAt(int idx, double minMz, double maxMz);
+
+
 
 }

@@ -1,10 +1,7 @@
-/*
- * Package fr.profi.mzdb.model
- * @author David Bouyssie
- */
 package fr.profi.mzdb.model;
 
 import java.util.Arrays;
+
 import org.apache.commons.lang3.ArrayUtils;
 
 import fr.profi.mzdb.utils.ms.MsUtils;
@@ -29,7 +26,7 @@ public class ScanData {
 	/** The right hwhm list. */
 	protected float[] rightHwhmList;
 
-	// private int currLength;
+	protected int peaksCount;
 
 	/**
 	 * Instantiates a new scan data.
@@ -45,6 +42,7 @@ public class ScanData {
 	 */
 	public ScanData(double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList) {
 		super();
+		this.peaksCount = mzList.length;
 		this.mzList = mzList;
 		this.intensityList = intensityList;
 		this.leftHwhmList = lHwhmList;
@@ -61,6 +59,15 @@ public class ScanData {
 	 */
 	public ScanData(double[] mzList, float[] intensityList) {
 		this(mzList, intensityList, null, null);
+	}
+	
+	/**
+	 * Gets the peaks count.
+	 * 
+	 * @return the peaks list
+	 */
+	public int getPeaksCount() {
+		return peaksCount;
 	}
 
 	/**
@@ -105,7 +112,6 @@ public class ScanData {
 	 * @return the peak[]
 	 */
 	public Peak[] toPeaks(ILcContext lcContext) {
-		int peaksCount = mzList.length;
 		Peak[] peaks = new Peak[peaksCount];
 
 		for (int i = 0; i < peaksCount; i++) {
@@ -135,7 +141,40 @@ public class ScanData {
 				this.leftHwhmList = ArrayUtils.addAll(this.leftHwhmList, scanData.leftHwhmList);
 				this.rightHwhmList = ArrayUtils.addAll(this.rightHwhmList, scanData.rightHwhmList);
 			}
+			this.peaksCount = this.mzList.length;
 		}
+	}
+
+	/**
+	 * Resize data arrays.
+	 * 
+	 * @param newLength
+	 *            the new length
+	 */
+	public void resizeDataArrays(int newLength) {
+		this.mzList = Arrays.copyOf(this.mzList, newLength);
+		this.intensityList = Arrays.copyOf(this.intensityList, newLength);
+
+		if (this.leftHwhmList != null && this.rightHwhmList != null) {
+			this.leftHwhmList = Arrays.copyOf(this.leftHwhmList, newLength);
+			this.rightHwhmList = Arrays.copyOf(this.rightHwhmList, newLength);
+		}
+		
+		this.peaksCount = newLength;
+	}
+	
+	/**
+	 * Gets the min mz.
+	 * 
+	 * @return the min mz
+	 */
+	public double getMinMz() {
+		// supposed and i hope it will always be true that mzList is sorted
+		// do not do any verification
+		if (peaksCount == 0) {
+			return 0;
+		}
+		return mzList[0];
 	}
 
 	/**
@@ -146,10 +185,10 @@ public class ScanData {
 	public double getMaxMz() {
 		// supposed and i hope it will always be true that mzList is sorted
 		// do not do any verification
-		if (mzList.length == 0) {
+		if (peaksCount == 0) {
 			return 0;
 		}
-		return mzList[mzList.length - 1];
+		return mzList[peaksCount - 1];
 	}
 
 	/**
@@ -158,9 +197,8 @@ public class ScanData {
 	 * @return true, if is empty
 	 */
 	public boolean isEmpty() {
-		return mzList.length == 0; // supposing intensityList and others have
-									// the
-		// same size;
+		// supposing intensityList and others have the same size
+		return peaksCount == 0; 
 	}
 
 	/**
@@ -183,15 +221,17 @@ public class ScanData {
 				return idx;
 		}
 	}
-
+	
 	/** assuming mzList is sorted */
-	public Peak getNearestPeak(double mz, double mzTolPPM) {
+	public Peak getNearestPeak(double mz, double mzTolPPM, ILcContext lcContext) {
 
-		if (this.mzList.length == 0)
+		if (peaksCount == 0)
 			return null;
+		
+		double[] myMzList = this.mzList;
 
 		final double mzDa = MsUtils.ppmToDa(mz, mzTolPPM);
-		final int binSearchIndex = Arrays.binarySearch(this.mzList, mz);
+		final int binSearchIndex = Arrays.binarySearch(myMzList, mz);
 		/*if (binSearchIndex >= 0) {
 			System.out.println("data found");
 		}*/
@@ -200,22 +240,22 @@ public class ScanData {
 		double prevVal = 0.0, nextVal = 0.0;
 		int newIdx = 0;
 
-		if (idx == this.mzList.length) {
-			prevVal = this.mzList[this.mzList.length - 1];
+		if (idx == peaksCount) {
+			prevVal = myMzList[peaksCount - 1];
 			if (Math.abs(mz - prevVal) > mzDa)
 				return null;
 			newIdx = idx - 1;
 		} else if (idx == 0) {
 			// System.out.println("idx == zero");
-			nextVal = this.mzList[idx];
+			nextVal = myMzList[idx];
 			if (Math.abs(mz - nextVal) > mzDa)
 				return null;
 			newIdx = idx;
 			// System.out.println(""+ this.mzList[idx] +", "+ mz);
 
 		} else {
-			nextVal = this.mzList[idx];
-			prevVal = this.mzList[idx - 1];
+			nextVal = myMzList[idx];
+			prevVal = myMzList[idx - 1];
 
 			final double diffNextVal = Math.abs(mz - nextVal);
 			final double diffPrevVal = Math.abs(mz - prevVal);
@@ -230,9 +270,14 @@ public class ScanData {
 				newIdx = idx - 1;
 			}
 		}
-		// System.out.println("" + this.mzList.length + ", " + newIdx + ", " +
-		// idx);
-		return new Peak(this.mzList[newIdx], this.intensityList[newIdx], this.leftHwhmList[newIdx], this.rightHwhmList[newIdx], null);
+		
+		return new Peak(
+			myMzList[newIdx],
+			this.intensityList[newIdx],
+			this.leftHwhmList[newIdx],
+			this.rightHwhmList[newIdx],
+			lcContext
+		);
 
 	}
 
@@ -240,7 +285,7 @@ public class ScanData {
 		int idx = Arrays.binarySearch(this.mzList, value);
 		idx = (idx < 0) ? ~idx : idx;
 		double min = Double.MAX_VALUE;
-		for (int k = Math.max(0, idx - 1); k <= Math.min(this.mzList.length - 1, idx + 1); k++) {
+		for (int k = Math.max(0, idx - 1); k <= Math.min(this.peaksCount - 1, idx + 1); k++) {
 			if (Math.abs(this.mzList[k] - value) < min) {
 				min = Math.abs(this.mzList[k] - value);
 				idx = k;
@@ -254,7 +299,7 @@ public class ScanData {
 		idx = (idx < 0) ? ~idx : idx;
 		double min = Double.MAX_VALUE;
 		int resultIdx = -1;
-		for (int k = Math.max(0, idx - 1); k <= Math.min(this.mzList.length - 1, idx + 1); k++) {
+		for (int k = Math.max(0, idx - 1); k <= Math.min(this.peaksCount - 1, idx + 1); k++) {
 			if (((1e6 * Math.abs(this.mzList[k] - value) / value) < ppmTol) && (Math.abs(this.mzList[k] - value) < min)) {
 				min = Math.abs(this.mzList[k] - value);
 				resultIdx = k;
@@ -278,7 +323,7 @@ public class ScanData {
 			mzMax = mzMin;
 			mzMin = tmp;
 		}
-		int nbPoints = this.mzList.length;
+		int nbPoints = peaksCount;
 
 		// Retrieve the index of nearest minimum value if it exists
 		int minBinSearchIndex = Arrays.binarySearch(this.mzList, mzMin);
@@ -305,22 +350,6 @@ public class ScanData {
 		}
 
 		return filteredScanData;
-	}
-
-	/**
-	 * Resize data arrays.
-	 * 
-	 * @param newLength
-	 *            the new length
-	 */
-	public void resizeDataArrays(int newLength) {
-		this.mzList = Arrays.copyOf(this.mzList, newLength);
-		this.intensityList = Arrays.copyOf(this.intensityList, newLength);
-
-		if (this.leftHwhmList != null && this.rightHwhmList != null) {
-			this.leftHwhmList = Arrays.copyOf(this.leftHwhmList, newLength);
-			this.rightHwhmList = Arrays.copyOf(this.rightHwhmList, newLength);
-		}
 	}
 
 }

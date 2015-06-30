@@ -36,11 +36,11 @@ public class BytesReader extends AbstractBlobReader {
 	 * @see DataEncoding
 	 */
 	public BytesReader(
-		byte[] bytes,
-		long firstScanId,
-		long lastScanId,
-		Map<Long, ScanHeader> scanHeaderById,
-		Map<Long, DataEncoding> dataEncodingByScanId
+		final byte[] bytes,
+		final long firstScanId,
+		final long lastScanId,
+		final Map<Long, ScanHeader> scanHeaderById,
+		final Map<Long, DataEncoding> dataEncodingByScanId
 	) throws StreamCorruptedException {
 		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
 		
@@ -61,36 +61,34 @@ public class BytesReader extends AbstractBlobReader {
 	 * @see AbstractBlobReader
 	 * @see AbstractBlobReader._buildMpaPositions()
 	 */
-	protected void _indexScanSlices(int estimatedScansCount) throws StreamCorruptedException {
+	protected void _indexScanSlices(final int estimatedScansCount) throws StreamCorruptedException {
 		
-		int[] scanSliceStartPositions = new int[estimatedScansCount];
-		int[] peaksCounts = new int[estimatedScansCount];
+		final int[] scanSliceStartPositions = new int[estimatedScansCount];
+		final int[] peaksCounts = new int[estimatedScansCount];
 		
 		int scanSliceIdx = 0;
 		int byteIdx = 0;
 		
 		while (byteIdx < _blobSize) {
 			
+			// Set the new position to access the byte buffer
+			_bbByteBuffer.position(byteIdx);
+			
 			// Retrieve the scan id
-			long scanId = (long) _bbByteBuffer.getInt(byteIdx);	
+			final long scanId = (long) _bbByteBuffer.getInt();
 			scanSliceStartPositions[scanSliceIdx] = byteIdx;
 			//System.out.println("scan id is: "+scanId);
-
-			// Skip the scan id bytes
-			byteIdx += 4;
-
+			
 			// Retrieve the number of peaks
-			int peaksCount = _bbByteBuffer.getInt(byteIdx); 
+			final int peaksCount = _bbByteBuffer.getInt(); 
 			peaksCounts[scanSliceIdx] = peaksCount;
 
-			// Skip the peaksCount bytes
-			byteIdx += 4;
-
 			// Retrieve the DataEncoding corresponding to this scan
-			DataEncoding de = this._dataEncodingByScanId.get(scanId);
+			final DataEncoding de = this._dataEncodingByScanId.get(scanId);
 			this.checkDataEncodingIsNotNull(de, scanId);
 			
-			byteIdx += peaksCount * de.getPeakStructSize(); // skip nbPeaks * size of one peak
+			// Skip the scan id, peaksCount and peaks (peaksCount * size of one peak)
+			byteIdx += 8 + (peaksCount * de.getPeakStructSize());
 			
 			scanSliceIdx++;
 			
@@ -123,12 +121,12 @@ public class BytesReader extends AbstractBlobReader {
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public long getScanIdAt(int idx) {
+	public long getScanIdAt(final int idx) {
 		this.checkScanIndexRange(idx);
 		return _getScanIdAt(idx);
 	}
 	
-	private long _getScanIdAt(int idx) {
+	private long _getScanIdAt(final int idx) {
 		return (long) _bbByteBuffer.getInt(_scanSliceStartPositions[idx]);
 	}
 
@@ -144,27 +142,11 @@ public class BytesReader extends AbstractBlobReader {
 	}*/
 
 	/**
-	 * @see IBlobReader#peakAt(int, int)
-	 */
-	/*public Peak peakAt(int idx, int pos) {
-		if (idx > _nbScans || idx < 1) {
-			throw new IndexOutOfBoundsException("peakAt: Index out of bound start counting at 1");
-		}
-		int nbPeaks = this.nbPeaksOfScanAt(idx);
-		if (pos > nbPeaks) {
-			throw new IndexOutOfBoundsException(
-					"peakAt: Index out of bound, peak wanted index superior at scan slice length");
-		}
-		Peak[] peaks = peaksOfScanAt(idx);
-		return peaks[pos];
-	}*/
-
-	/**
 	 * @see IBlobReader#readScanSliceAt(int)
 	 */
-	public ScanSlice readScanSliceAt(int idx) {
+	public ScanSlice readScanSliceAt(final int idx) {
 		long scanId = _getScanIdAt(idx);
-		ScanData scanSliceData = this._readScanSliceDataAt(idx, scanId);
+		ScanData scanSliceData = this._readFilteredScanSliceDataAt(idx, scanId, -1.0, -1.0 );
 		ScanHeader sh = _scanHeaderById.get( scanId );
 		
 		// Instantiate a new ScanSlice
@@ -174,23 +156,27 @@ public class BytesReader extends AbstractBlobReader {
 	/**
 	 * @see IBlobReader#readScanSliceAt(int)
 	 */
-	public ScanData readScanSliceDataAt(int idx) {
-		return this._readScanSliceDataAt(idx, _getScanIdAt(idx) );		
+	public ScanData readScanSliceDataAt(final int idx) {
+		return this._readFilteredScanSliceDataAt(idx, _getScanIdAt(idx), -1.0, -1.0 );		
 	}
 	
-	private ScanData _readScanSliceDataAt(int idx, long scanId) {
+	public ScanData readFilteredScanSliceDataAt(final int idx, final double minMz, final double maxMz) {
+		return this._readFilteredScanSliceDataAt(idx, _getScanIdAt(idx), minMz, maxMz );		
+	}
+	
+	private ScanData _readFilteredScanSliceDataAt(final int idx, final long scanId, final double minMz, final double maxMz) {
 		
 		// Determine peak size in bytes
-		DataEncoding de = this._dataEncodingByScanId.get(scanId);
+		final DataEncoding de = this._dataEncodingByScanId.get(scanId);
 
 		// Determine peaks bytes length
-		int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
+		final int peaksBytesSize = _peaksCounts[idx] * de.getPeakStructSize();
 		
 		// Skip scan id and peaks count (two integers)
-		int scanSliceStartPos = _scanSliceStartPositions[idx] + 8;
+		final int scanSliceStartPos = _scanSliceStartPositions[idx] + 8;
 
 		// Instantiate a new ScanData for the corresponding scan slice
-		return this.readScanSliceData(_bbByteBuffer, scanSliceStartPos, peaksBytesSize, de);		
+		return this.readScanSliceData(_bbByteBuffer, scanSliceStartPos, peaksBytesSize, de, minMz, maxMz);	
 	}
 
 }

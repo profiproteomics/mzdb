@@ -32,11 +32,11 @@ public class StreamReader extends AbstractBlobReader {
 	 * @see AbstractBlobReader#_dataEncodingByScanId
 	 */
 	public StreamReader(
-		InputStream inputStream,
-		long firstScanId,
-		long lastScanId,
-		Map<Long, ScanHeader> scanHeaderById,
-		Map<Long, DataEncoding> dataEncodingByScanId
+		final InputStream inputStream,
+		final long firstScanId,
+		final long lastScanId,
+		final Map<Long, ScanHeader> scanHeaderById,
+		final Map<Long, DataEncoding> dataEncodingByScanId
 	) {
 		super(firstScanId, lastScanId, scanHeaderById, dataEncodingByScanId);
 		
@@ -65,8 +65,8 @@ public class StreamReader extends AbstractBlobReader {
 	/**
 	 * @see IBlobReader#getBlobSize()
 	 */
-	public int getBlobSize() {
-		throw new UnsupportedOperationException("can't compute the size of a stream");
+	//public int getBlobSize() {
+	//	throw new UnsupportedOperationException("can't compute the size of a stream");
 		
 		/*int c = 0;
 		try {
@@ -77,26 +77,26 @@ public class StreamReader extends AbstractBlobReader {
 			e.printStackTrace();
 		}
 		return c;*/
-	}
+	//}
 
 	/**
 	 * @see IBlobReader#idOfScanAt(int)
 	 */
-	public long getScanIdAt(int idx) {
+	public long getScanIdAt(final int idx) {
 		
 		long lastScanId = 0;
 		try {
 			for (int j = 0; j <= idx; j++) {
 				
-				byte[] scanIdBytes = new byte[4];
+				final byte[] scanIdBytes = new byte[4];
 				_stream.read(scanIdBytes);
 				lastScanId = (long) BytesUtils.bytesToInt(scanIdBytes, 0);
 
-				byte[] peaksCountBytes = new byte[4];
+				final byte[] peaksCountBytes = new byte[4];
 				_stream.read(peaksCountBytes);
 				int peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
 				
-				DataEncoding de = this._dataEncodingByScanId.get( lastScanId);
+				final DataEncoding de = this._dataEncodingByScanId.get( lastScanId);
 				this.checkDataEncodingIsNotNull(de, lastScanId);
 				
 				_stream.skip(peaksCount * de.getPeakStructSize());
@@ -135,27 +135,18 @@ public class StreamReader extends AbstractBlobReader {
 		}
 		return lastNbPeaks;
 	}*/
+	
+	/**
+	 * @see IBlobReader#readScanSliceAt(int)
+	 */
+	public ScanSlice readScanSliceAt(final int idx) {
+		return this._readScanSliceAt(idx, -1.0, -1.0);
+	}
 
 	/**
-	 * @see IBlobReader#peakAt(int, int)
+	 * @see IBlobReader#readScanSliceAt(int)
 	 */
-	/*public Peak peakAt(int idx, int pos) {
-		if (idx > _nbScans || idx < 1) {
-			throw new IndexOutOfBoundsException("peakAt: Index out of bound start counting at 1");
-		}
-		int nbPeaks = this.nbPeaksOfScanAt(idx);
-		if (pos > nbPeaks) {
-			throw new IndexOutOfBoundsException(
-					"peakAt: Index out of bound, peak wanted index superior at scan slice length");
-		}
-		Peak[] peaks = peaksOfScanAt(idx);
-		return peaks[pos];
-	}*/
-
-	/**
-	 * @see IBlobReader#scanSliceOfScanAt(int)
-	 */
-	public ScanSlice readScanSliceAt(int idx) {
+	private ScanSlice _readScanSliceAt(final int idx, final double minMz, final double maxMz) {
 		
 		byte[] peaksBytes = null;
 		long scanId = 0;
@@ -165,16 +156,16 @@ public class StreamReader extends AbstractBlobReader {
 		try {
 			for (int j = 0; j <= idx; j++) {
 				
-				byte[] scanIdBytes = new byte[4];
+				final byte[] scanIdBytes = new byte[4];
 				_stream.read(scanIdBytes);
 				scanId = (long) BytesUtils.bytesToInt(scanIdBytes, 0);
 				de = this._dataEncodingByScanId.get(scanId);
 				
-				byte[] peaksCountBytes = new byte[4];
+				final byte[] peaksCountBytes = new byte[4];
 				_stream.read(peaksCountBytes);
 				peaksCount = BytesUtils.bytesToInt(peaksCountBytes, 0);
 				
-				int peaksBytesSize = peaksCount * de.getPeakStructSize();
+				final int peaksBytesSize = peaksCount * de.getPeakStructSize();
 				
 				// If not on specified index
 				if( j < idx ) {
@@ -182,7 +173,7 @@ public class StreamReader extends AbstractBlobReader {
 					_stream.skip(peaksBytesSize);
 				} else {
 					// read peaks
-					byte[] pb = new byte[peaksBytesSize];
+					final byte[] pb = new byte[peaksBytesSize];
 					_stream.read(pb);
 					peaksBytes = pb;
 				}
@@ -197,41 +188,18 @@ public class StreamReader extends AbstractBlobReader {
 			return null;
 		}
 
-		ScanData scanSliceData = this.readScanSliceData(ByteBuffer.wrap(peaksBytes), 0, peaksBytes.length, de);
+		final ScanData scanSliceData = this.readScanSliceData(ByteBuffer.wrap(peaksBytes), 0, peaksBytes.length, de, minMz, maxMz);
 		
 		return new ScanSlice(_scanHeaderById.get(scanId), scanSliceData);
 	}
 	
 	// TODO: call this method from readScanSliceAt instead of calling readScanSliceAt from this methods
-	public ScanData readScanSliceDataAt(int idx) {
+	public ScanData readScanSliceDataAt(final int idx) {
 		return readScanSliceAt(idx).getData();
 	}
-
-	/**
-	 * @see IBlobReader#asScanSlicesArray(int, int)
-	 */
-	/*public ScanSlice[] asScanSlicesArray(int firstScanId, int runSliceId) {
-		List<ScanSlice> sl = new ArrayList<ScanSlice>();
-		int i = 1;
-		while (true) {
-			ScanSlice s = this.scanSliceOfScanAt(i);
-			if (s == null) {
-				break;
-			}
-			s.setRunSliceId(runSliceId);
-			sl.add(s);
-			i++;
-		}
-		try {
-			_stream.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return sl.toArray(new ScanSlice[sl.size()]);
-	}*/
-
-	/*protected void _indexScanSlices() {
-
-	}*/
+	
+	public ScanData readFilteredScanSliceDataAt(final int idx, final double minMz, final double maxMz) {
+		return this._readScanSliceAt(idx, minMz, maxMz).getData();
+	}
 
 }
