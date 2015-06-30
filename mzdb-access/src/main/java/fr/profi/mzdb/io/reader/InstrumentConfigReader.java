@@ -17,7 +17,7 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
  * @author David Bouyssie
  */
 public class InstrumentConfigReader extends AbstractTableModelReader<InstrumentConfiguration> {
-
+	
 	/**
 	 * Instantiates a new instrument config reader.
 	 * 
@@ -28,20 +28,22 @@ public class InstrumentConfigReader extends AbstractTableModelReader<InstrumentC
 		super(connection);
 	}
 	
-	protected ISQLiteRecordExtraction<InstrumentConfiguration> recordExtractor = new ISQLiteRecordExtraction<InstrumentConfiguration>() {
-		public InstrumentConfiguration extract(SQLiteRecord r) throws SQLiteException {
-			
-			int id = r.columnInt(InstrumentConfigurationTable.ID);
-			String name = r.columnString(InstrumentConfigurationTable.NAME);
-			int softwareId = r.columnInt(InstrumentConfigurationTable.SOFTWARE_ID);
-			String paramTreeAsStr = r.columnString(InstrumentConfigurationTable.PARAM_TREE);
-			String insConfAsStr = r.columnString(InstrumentConfigurationTable.COMPONENT_LIST);
-			
-			return new InstrumentConfiguration(id, name, softwareId, ParamTreeParser
-					.parseParamTree(paramTreeAsStr), ParamTreeParser
-					.parseComponentList(insConfAsStr));
-		}
-	};
+	protected ISQLiteRecordExtraction<InstrumentConfiguration> buildRecordExtractor() {
+		return new ISQLiteRecordExtraction<InstrumentConfiguration>() {
+			public InstrumentConfiguration extract(SQLiteRecord r) throws SQLiteException {
+				
+				int id = r.columnInt(InstrumentConfigurationTable.ID);
+				String name = r.columnString(InstrumentConfigurationTable.NAME);
+				int softwareId = r.columnInt(InstrumentConfigurationTable.SOFTWARE_ID);
+				String paramTreeAsStr = r.columnString(InstrumentConfigurationTable.PARAM_TREE);
+				String insConfAsStr = r.columnString(InstrumentConfigurationTable.COMPONENT_LIST);
+				
+				return new InstrumentConfiguration(id, name, softwareId, ParamTreeParser
+						.parseParamTree(paramTreeAsStr), ParamTreeParser
+						.parseComponentList(insConfAsStr));
+			}
+		};
+	}
 
 	/**
 	 * Gets the instrument config.

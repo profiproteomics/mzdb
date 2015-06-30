@@ -150,6 +150,10 @@ public class MzDbReader {
 		// Instantiates some readers without internal cache
 		this._mzDbHeaderReader = new MzDbHeaderReader(connection);
 		this._instrumentConfigReader = new InstrumentConfigReader(connection);
+		this._runReader = new RunReader(connection);
+		this._sampleReader = new SampleReader(connection);
+		this._softwareListReader = new SoftwareReader(connection);
+		this._sourceFileReader = new SourceFileReader(connection);
 		
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingReader(this);

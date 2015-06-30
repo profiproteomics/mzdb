@@ -15,13 +15,15 @@ import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 public abstract class AbstractTableModelReader<T> {
 	
 	protected SQLiteConnection connection;
+	protected ISQLiteRecordExtraction<T> recordExtractor;
 	
 	protected AbstractTableModelReader(SQLiteConnection connection) {
 		super();
 		this.connection = connection;
+		this.recordExtractor = buildRecordExtractor();
 	}
 	
-	protected ISQLiteRecordExtraction<T> recordExtractor;
+	protected abstract ISQLiteRecordExtraction<T> buildRecordExtractor();
 	
 	protected T getRecord(String tableName, int id) throws SQLiteException {
 		return new SQLiteQuery(connection, "SELECT * FROM "+tableName+" WHERE id = ?").bind(1, id)

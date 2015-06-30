@@ -28,18 +28,20 @@ public class SourceFileReader extends AbstractTableModelReader<SourceFile> {
 		super(connection);
 	}
 
-	protected ISQLiteRecordExtraction<SourceFile> recordExtractor = new ISQLiteRecordExtraction<SourceFile>() {
+	protected ISQLiteRecordExtraction<SourceFile> buildRecordExtractor() {
+		return new ISQLiteRecordExtraction<SourceFile>() {
 
-		public SourceFile extract(SQLiteRecord r) throws SQLiteException {
+			public SourceFile extract(SQLiteRecord r) throws SQLiteException {
 
-			int id = r.columnInt(SourceFileTable.ID);
-			String name = r.columnString(SourceFileTable.NAME);
-			String location = r.columnString(SourceFileTable.LOCATION);
-			String paramTreeAsStr = r.columnString(SourceFileTable.PARAM_TREE);
+				int id = r.columnInt(SourceFileTable.ID);
+				String name = r.columnString(SourceFileTable.NAME);
+				String location = r.columnString(SourceFileTable.LOCATION);
+				String paramTreeAsStr = r.columnString(SourceFileTable.PARAM_TREE);
 
-			return new SourceFile(id, name, location, ParamTreeParser.parseParamTree(paramTreeAsStr));
-		}
-	};
+				return new SourceFile(id, name, location, ParamTreeParser.parseParamTree(paramTreeAsStr));
+			}
+		};
+	}
 
 	public SourceFile getSourceFile(int id) throws SQLiteException {
 		return getRecord(SourceFile.TABLE_NAME, id);

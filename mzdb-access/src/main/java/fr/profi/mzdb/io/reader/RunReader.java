@@ -38,26 +38,28 @@ public class RunReader extends AbstractTableModelReader<Run> {
 		super(connection);
 	}
 
-	protected ISQLiteRecordExtraction<Run> recordExtractor = new ISQLiteRecordExtraction<Run>() {
-
-		public Run extract(SQLiteRecord r) throws SQLiteException {
-
-			int id = r.columnInt(RunTable.ID);
-			String name = r.columnString(RunTable.NAME);
-			// FIXME: switch to Instant when Java 8 is supported
-			//Instant startTimestamp = Instant.parse( r.columnString(RunTable.START_TIMESTAMP));
-			String startTimestampAsStr = r.columnString(RunTable.START_TIMESTAMP);
-			Date startTimestamp = null;
-			try {
-				startTimestamp = DateUtils.parseDate(startTimestampAsStr, new String[]{ "yyyy-MM-dd'T'HH:mm:ss'Z'" });
-			} catch (ParseException e) {
-				logger.error("can't parse START_TIMESTAMP '"+startTimestampAsStr+"'in mzDB file: return current date");
+	protected ISQLiteRecordExtraction<Run> buildRecordExtractor() {
+		return new ISQLiteRecordExtraction<Run>() {
+	
+			public Run extract(SQLiteRecord r) throws SQLiteException {
+	
+				int id = r.columnInt(RunTable.ID);
+				String name = r.columnString(RunTable.NAME);
+				// FIXME: switch to Instant when Java 8 is supported
+				//Instant startTimestamp = Instant.parse( r.columnString(RunTable.START_TIMESTAMP));
+				String startTimestampAsStr = r.columnString(RunTable.START_TIMESTAMP);
+				Date startTimestamp = null;
+				try {
+					startTimestamp = DateUtils.parseDate(startTimestampAsStr, new String[]{ "yyyy-MM-dd'T'HH:mm:ss'Z'" });
+				} catch (ParseException e) {
+					logger.error("can't parse START_TIMESTAMP '"+startTimestampAsStr+"'in mzDB file: return current date");
+				}
+				String paramTreeAsStr = r.columnString(RunTable.PARAM_TREE);
+	
+				return new Run(id, name, startTimestamp, ParamTreeParser.parseParamTree(paramTreeAsStr));
 			}
-			String paramTreeAsStr = r.columnString(RunTable.PARAM_TREE);
-
-			return new Run(id, name, startTimestamp, ParamTreeParser.parseParamTree(paramTreeAsStr));
-		}
-	};
+		};
+	}
 
 	public Run getRun(int id) throws SQLiteException {
 		return getRecord(Run.TABLE_NAME, id);

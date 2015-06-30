@@ -27,18 +27,20 @@ public class SoftwareReader extends AbstractTableModelReader<Software> {
 		super(connection);
 	}
 	
-	protected ISQLiteRecordExtraction<Software> recordExtractor = new ISQLiteRecordExtraction<Software>() {
+	protected ISQLiteRecordExtraction<Software> buildRecordExtractor() {
+		return new ISQLiteRecordExtraction<Software>() {
 
-		public Software extract(SQLiteRecord r) throws SQLiteException {
+			public Software extract(SQLiteRecord r) throws SQLiteException {
 
-			int id = r.columnInt(SoftwareTable.ID);
-			String name = r.columnString(SoftwareTable.NAME);
-			String version = r.columnString(SoftwareTable.VERSION);
-			String paramTreeAsStr = r.columnString(SoftwareTable.PARAM_TREE);
+				int id = r.columnInt(SoftwareTable.ID);
+				String name = r.columnString(SoftwareTable.NAME);
+				String version = r.columnString(SoftwareTable.VERSION);
+				String paramTreeAsStr = r.columnString(SoftwareTable.PARAM_TREE);
 
-			return new Software(id, name, version, ParamTreeParser.parseParamTree(paramTreeAsStr));
-		}
-	};
+				return new Software(id, name, version, ParamTreeParser.parseParamTree(paramTreeAsStr));
+			}
+		};
+	}
 
 	/**
 	 * Gets the software.
