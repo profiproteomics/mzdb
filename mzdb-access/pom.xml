@@ -9,7 +9,7 @@
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-access</artifactId>
-  <version>0.2.1-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
 
   <description>The mzDB access Java library</description>
 
