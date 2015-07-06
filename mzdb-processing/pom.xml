@@ -10,7 +10,7 @@
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-processing</artifactId>
-  <version>0.2.1-SNAPSHOT</version>
+  <version>0.2.1</version>
 
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
@@ -21,7 +21,7 @@
   </properties>
 
 	<scm>
-	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/trunk</connection>
+	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/tags/0.2.1</connection>
 	</scm>
 
   <dependencies>
@@ -85,7 +85,7 @@
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>mzdb-access</artifactId>
-      <version>0.2.1-SNAPSHOT</version>
+      <version>0.2.1</version>
     </dependency>
 
     <!-- Command Line Interface -->
