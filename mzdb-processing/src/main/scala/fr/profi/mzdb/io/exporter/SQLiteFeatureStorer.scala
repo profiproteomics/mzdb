@@ -121,7 +121,7 @@ object SQLitePeakelStorer {
   val sgSmoother = new SavitzkyGolaySmoother( SavitzkyGolaySmoothingConfig())
   val psgSmoother = new PartialSavitzkyGolaySmoother( SavitzkyGolaySmoothingConfig(iterationCount = 1))
   val xicBinner = new XicBinner( XicBinnerConfig(5) )
-  
+  val peakelFinder = new SmartPeakelFinder()
   def storePeakels(peakels: Seq[Peakel], dbLocation: File ) {
     
     println("nb peakels:"+peakels.length)
@@ -190,7 +190,7 @@ object SQLitePeakelStorer {
       //val residualsChartBytes = createXicChart(residuals)
       */
       
-      val oscillationFactor = SmartPeakelFinder.calcOscillationFactor(xic)
+      val oscillationFactor = peakelFinder.calcOscillationFactor(xic)
       
       // Compute histogram of observed intensities
       /*val intensityHistoComputer = new fr.profi.util.stat.EntityHistogramComputer(xic, 
@@ -210,7 +210,7 @@ object SQLitePeakelStorer {
       //val binnedXic = xicBinner.binRtIntPairs(xic)
       //val binnedChartBytes = createXicChart(binnedXic)
       
-      val peakelsIndices = SmartPeakelFinder.findPeakelsIndices(xic)
+      val peakelsIndices = peakelFinder.findPeakelsIndices(xic)
       val mergedXic = if( peakelsIndices.isEmpty ) xic
       else {
         val mergedXicBuffer = new ArrayBuffer[(Float,Double)](xic.length)

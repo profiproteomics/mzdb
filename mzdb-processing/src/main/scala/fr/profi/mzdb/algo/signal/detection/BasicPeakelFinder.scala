@@ -10,9 +10,8 @@ import fr.profi.mzdb.model.Peak
  * @author David Bouyssie
  *
  */
-object BasicPeakelFinder extends IPeakelFinder {
+class BasicPeakelFinder(var sameSlopeCountThreshold:Int = 2)  extends IPeakelFinder {
   
-  var sameSlopeCountThreshold = 2
   
   def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[Tuple2[Int,Int]] = {
     
@@ -84,10 +83,7 @@ object BasicPeakelFinder extends IPeakelFinder {
     peakelIndices.toArray*/
   }
   
-  def findPeakelsIndicesFromSmoothedIntensities(
-    smoothedIntensities: Array[Double],
-    sameSlopeCountThresh: Int = BasicPeakelFinder.sameSlopeCountThreshold
-  ): ArrayBuffer[(Int,Int)] = {
+  def findPeakelsIndicesFromSmoothedIntensities( smoothedIntensities: Array[Double] ): ArrayBuffer[(Int,Int)] = {
     
     var peakIdx = 0
     var prevMinIdx = peakIdx
@@ -121,7 +117,7 @@ object BasicPeakelFinder extends IPeakelFinder {
         }
         
         if( curSlope != prevSlope ) {
-          if( sameSlopeCount >= sameSlopeCountThresh ) {
+          if( sameSlopeCount >= sameSlopeCountThreshold ) {
             if( prevSlope == 1 && afterMinimum ) {
               prevMaxValue = prevValue
               afterMaximum = true

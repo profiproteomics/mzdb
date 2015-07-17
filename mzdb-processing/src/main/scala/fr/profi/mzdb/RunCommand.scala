@@ -260,7 +260,8 @@ object RunCommand extends App with Logging {
         case (mz, peaks, (rtmin, rtmax)) =>
           var peakelIndexes: Array[(Int, Int)] = null
           if (algo == "basic") {
-            peakelIndexes = BasicPeakelFinder.findPeakelsIndices(peaks);
+            val basicPeakelFinder = new BasicPeakelFinder()
+            peakelIndexes = basicPeakelFinder.findPeakelsIndices(peaks);
           } else if (algo == "wavelet") {
             val wpf = new WaveletDetectorDuMethod(peaks)
             wpf.ridgeFilteringParams.minSNR = 0.0f

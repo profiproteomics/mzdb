@@ -11,10 +11,11 @@ import fr.profi.util.stat._
  * @author David Bouyssie
  *
  */
-object HistogramBasedPeakelFinder extends IPeakelFinder {
+class HistogramBasedPeakelFinder(var sameSlopeCountThreshold:Int = 2,
+  								 var expectedBinDataPointsCount:Int = 5) extends IPeakelFinder {
   
-  var sameSlopeCountThreshold = 2
-  var expectedBinDataPointsCount = 5
+ 
+  val basicPeakelFinder = new BasicPeakelFinder(sameSlopeCountThreshold)
   
   def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[(Int,Int)] = {
     
@@ -49,18 +50,11 @@ object HistogramBasedPeakelFinder extends IPeakelFinder {
     val smoothedIntensities = smoothedRtIntPairs.map(_._2)
     
     // Make left to right analysis
-    val leftToRightBinIndices = BasicPeakelFinder.findPeakelsIndicesFromSmoothedIntensities(
-      smoothedIntensities,
-      sameSlopeCountThresh = HistogramBasedPeakelFinder.sameSlopeCountThreshold
-    )
+    val leftToRightBinIndices = basicPeakelFinder.findPeakelsIndicesFromSmoothedIntensities(smoothedIntensities)
     
     // Make right to left analysis
     val maxBinIdx = nbBins - 1
-    val rightToLeftBinIndices = BasicPeakelFinder.findPeakelsIndicesFromSmoothedIntensities(
-      // Reverse intensities
-      smoothedIntensities.reverse,
-      sameSlopeCountThresh = HistogramBasedPeakelFinder.sameSlopeCountThreshold
-    ) map { rightToLeftBinIdx =>
+    val rightToLeftBinIndices = basicPeakelFinder.findPeakelsIndicesFromSmoothedIntensities(smoothedIntensities.reverse) map { rightToLeftBinIdx =>
       // Reverse bin indices
       ( maxBinIdx - rightToLeftBinIdx._2, maxBinIdx - rightToLeftBinIdx._1 )
     }

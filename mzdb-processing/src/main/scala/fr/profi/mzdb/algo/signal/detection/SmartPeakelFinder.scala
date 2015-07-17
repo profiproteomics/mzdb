@@ -6,104 +6,110 @@ import fr.profi.mzdb.model.IPeakelData
 import fr.profi.mzdb.model.Peak
 import fr.profi.util.stat._
 import fr.profi.mzdb.utils.math.DerivativeAnalysis
+import scala.beans.BeanProperty
+import com.typesafe.scalalogging.slf4j.Logging
 
 /**
  * @author David Bouyssie
  *
  */
 
-object SmartPeakelFinder extends IPeakelFinder {
-  
-  var minPeaksCount = 5
-  var miniMaxiDistanceThresh = 3
-  var useOscillationFactor = false
-  var maxOscillationFactor = 10
-  var usePartialSGSmoother = false
-  
+class SmartPeakelFinder(  var minPeaksCount: Int = 5,
+  var miniMaxiDistanceThresh: Int = 3,
+  var useOscillationFactor: Boolean = false,
+  var maxOscillationFactor: Int = 10,
+  var usePartialSGSmoother: Boolean = false,
+  var useBaselineRemover: Boolean = false) extends IPeakelFinder with Logging {
+
+
   // gapTolerance set to 1 means that ponctual intensity hole won't be removed
-  val baselineRemover = new BaselineRemover( gapTolerance = 1 )
-  
-  def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[(Int,Int)] = {
-    
+  val baselineRemover = new BaselineRemover(gapTolerance = 1)
+
+  def findPeakelsIndices(rtIntPairs: Array[(Float, Double)]): Array[(Int, Int)] = {
+
     // Check we have at least 5 peaks before the filtering
     val peaksCount = rtIntPairs.length
-    if( peaksCount < minPeaksCount ) return Array()
-    
+    if (peaksCount < minPeaksCount) return Array()
+
     // Compute the oscillation factor
     // If the oscillationFactor is high, the SavitskyGolay filter will not provide a good result
-    if( useOscillationFactor && (calcOscillationFactor(rtIntPairs) >= maxOscillationFactor) ) {
+    if (useOscillationFactor && (calcOscillationFactor(rtIntPairs) >= maxOscillationFactor)) {
       // TODO: should we apply the HistogramBasedPeakelFinder ???
-      
+
       // Then we only apply a baseline filter
       val noiseThreshold = baselineRemover.calcNoiseThreshold(rtIntPairs)
       return baselineRemover.findNoiseFreePeakGroupsIndices(rtIntPairs, noiseThreshold)
     }
-    
-    val psgSmoother = { 
+
+    val psgSmoother = {
       if (usePartialSGSmoother) {
         new PartialSavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 1))
       } else {
-    	val nbSmoothingPoints = { if (peaksCount <= 20) 5 else if (peaksCount <=50) 7 else 11}
-    	new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(nbPoints = nbSmoothingPoints, polyOrder = 2, iterationCount = 1))
+        val nbSmoothingPoints = { if (peaksCount <= 20) 5 else if (peaksCount <= 50) 7 else 11 }
+        new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(nbPoints = nbSmoothingPoints, polyOrder = 2, iterationCount = 1))
       }
     }
-    
+
     // Smooth intensities
     val smoothedRtIntPairs = psgSmoother.smoothTimeIntensityPairs(rtIntPairs)
     val smoothedIntensities = smoothedRtIntPairs.map(_._2)
-    
+
     // Look for significant minima and maxima in the smoothed signal
     val miniMaxi = DerivativeAnalysis.findSignificantMiniMaxi(
       smoothedIntensities,
       miniMaxiDistanceThresh,
-      0.66f
-    )
-    
+      0.66f)
+
     // Return empty array of no mini/maxi found
-    if( miniMaxi.isEmpty ) {
+    if (miniMaxi.isEmpty) {
       //println(smoothedIntensities.toArray)
       return Array()
     }
-    
+
     // Convert mini/maxi into peakel indices
     val tmpPeakelsIndices = miniMaxi.filter(_.isMaximum == false).sliding(2).map { buffer =>
       buffer(0).index -> buffer(1).index
     }
-    
+
     // Refine peakels using BaselineRemover algorithm
-    val refinedPeakelsIndices = tmpPeakelsIndices.map { tmpPeakelIndices =>
-      
-      // Retrieve peakel time/intensity pairs
-      val( firstIndex, lastIndex ) = tmpPeakelIndices
-      val peakelRtIntPairs = rtIntPairs.slice( firstIndex, lastIndex + 1 )
-      
-      // Compute the noise threshold
-      val noiseThreshold = baselineRemover.calcNoiseThreshold(peakelRtIntPairs)
-      
-      // Find peakels indices above noise threshold
-      val noiseFreePeakelsIndices = baselineRemover.findNoiseFreePeakGroupsIndices(peakelRtIntPairs, noiseThreshold)
-      
-      // Keep the biggest peak group above the noise threshold
-      if( noiseFreePeakelsIndices.isEmpty ) {
-        firstIndex -> lastIndex
-      } else {
-        val refinedFirstIndex = firstIndex + noiseFreePeakelsIndices.head._1
-        val refinedLastIndex = firstIndex + noiseFreePeakelsIndices.last._2
-        
-        refinedFirstIndex -> refinedLastIndex
+    val refinedPeakelsIndices = if (useBaselineRemover) {
+        tmpPeakelsIndices.map { tmpPeakelIndices =>
+
+        // Retrieve peakel time/intensity pairs
+        val (firstIndex, lastIndex) = tmpPeakelIndices
+        val peakelRtIntPairs = rtIntPairs.slice(firstIndex, lastIndex + 1)
+
+        // Compute the noise threshold
+        val noiseThreshold = baselineRemover.calcNoiseThreshold(peakelRtIntPairs)
+
+        // Find peakels indices above noise threshold
+        val noiseFreePeakelsIndices = baselineRemover.findNoiseFreePeakGroupsIndices(peakelRtIntPairs, noiseThreshold)
+
+        // Keep the biggest peak group above the noise threshold
+        // NON : j'ai plutot l'impression que l'on garde tous les points entre le 1er groupe au dessus du threshold 
+        // et le dernier groupe au dessus du threshold. Seuls les pieds a gauche et a droite sont coupes non ?
+        if (noiseFreePeakelsIndices.isEmpty) {
+          firstIndex -> lastIndex
+        } else {
+          val refinedFirstIndex = firstIndex + noiseFreePeakelsIndices.head._1
+          val refinedLastIndex = firstIndex + noiseFreePeakelsIndices.last._2
+
+          refinedFirstIndex -> refinedLastIndex
+        }
       }
+    } else {
+      tmpPeakelsIndices
     }
-    
     refinedPeakelsIndices.toArray
   }
-  
-  def calcOscillationFactor(rtIntPairs: Array[(Float,Double)]): Double = { 
+
+  def calcOscillationFactor(rtIntPairs: Array[(Float, Double)]): Double = {
     val intensities = rtIntPairs.map(_._2)
     sumDeltaIntensities(rtIntPairs) / (intensities.max - intensities.min)
   }
-  
-  def sumDeltaIntensities(rtIntPairs: Array[(Float,Double)]): Double = {        
-    rtIntPairs.sliding(2).foldLeft(0.0) { (sum,buffer) =>
+
+  def sumDeltaIntensities(rtIntPairs: Array[(Float, Double)]): Double = {
+    rtIntPairs.sliding(2).foldLeft(0.0) { (sum, buffer) =>
       sum + math.abs(buffer(1)._2 - buffer(0)._2)
     }
   }

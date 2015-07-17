@@ -21,6 +21,8 @@ object FeatureScorer {
   // Then compute the bounds using the box plot method
   // First results min = 5 ; max = 110
 
+  val basicPeakelFinder = new BasicPeakelFinder()
+  
   /**
    * ***************************************************************
    * CORRELATION
@@ -210,7 +212,7 @@ object FeatureScorer {
     var shape = 0f
 
     f.indexedPeakels.foreach { case (p,idx) => 
-      shape += BasicPeakelFinder.findPeakelsIndices(p.toPeaks(lcContextByScanId)).length
+      shape += basicPeakelFinder.findPeakelsIndices(p.toPeaks(lcContextByScanId)).length
     }
 
     shape / f.getPeakelsCount

@@ -10,6 +10,8 @@ import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.proline.api.progress._
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 
 object UnsupervisedPeakelDetector {
   
@@ -67,12 +69,14 @@ class UnsupervisedPeakelDetector(
   val mzTolPPM: Float,
   val maxConsecutiveGaps: Int = 3,
   val maxTimeWindow: Float = 1200f,
-  val minPercentageOfMaxInt: Float = 0.01f
+  val minPercentageOfMaxInt: Float = 0.01f,
+  val peakelFinder: IPeakelFinder = new SmartPeakelFinder()
 ) extends Logging {
   
   // TODO: add to config
   val minPeaksCount = 5
   val minPeakelAmplitude = 1.5f
+  
   
   /*val msLevel = 2
   
@@ -88,7 +92,7 @@ class UnsupervisedPeakelDetector(
   def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak] ): Array[Peakel] = {
     // Return if the number of peaks is too low
     if( intensityDescPeaks.length < 10 ) return Array()
-    
+        
     val usedPeakSet = new HashSet[Peak]()
         
     val nbPeaks = intensityDescPeaks.length
@@ -277,7 +281,7 @@ class UnsupervisedPeakelDetector(
     val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
     
     // Check if we have enough peaks for peakel detection
-    val peakelsIndices = SmartPeakelFinder.findPeakelsIndices(extractedPeaks)
+    val peakelsIndices = peakelFinder.findPeakelsIndices(extractedPeaks)
     
     // Retrieve the peakel corresponding to the feature apex
     // and memorize peak indices

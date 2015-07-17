@@ -13,6 +13,7 @@ import fr.profi.mzdb.model._
 
 object FeatureExtractionUtils {
 
+  
   /** Detects peakels */ 
   // TODO: keep me ???
   def findPeakelsIndices(
@@ -25,7 +26,8 @@ object FeatureExtractionUtils {
     var peakelIndices: Array[(Int, Int)] = null 
     
     if ( detectionAlgorithm == DetectionAlgorithm.BASIC ) {
-      peakelIndices = BasicPeakelFinder.findPeakelsIndices(peakel) 
+      val basicPeakelFinder= new BasicPeakelFinder()
+      peakelIndices = basicPeakelFinder.findPeakelsIndices(peakel) 
     } else {
       // TODO: implement the peakel based signature method
       val wpf = new WaveletPeakelFinderNeumann(peakel.toPeaks(lcContextByScanId) )

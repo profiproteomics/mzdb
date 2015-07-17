@@ -1,9 +1,7 @@
 package fr.profi.mzdb
 
 import java.util.Iterator
-
 import java.util.concurrent.Executors
-
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
@@ -13,9 +11,7 @@ import scala.collection.mutable.Queue
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.control.Breaks._
-
 import com.typesafe.scalalogging.slf4j.Logging
-
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.feature.extraction.UnsupervisedPeakelDetector
 import fr.profi.mzdb.model._
@@ -23,12 +19,40 @@ import fr.profi.mzdb.utils.misc.SetClusterer
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.profi.util.stat._
 import fr.proline.api.progress._
+import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
 
+
+abstract class PeakelFinderConfig
+
+case class SmartPeakelFinderConfig(minPeaksCount: Int = 5,
+  miniMaxiDistanceThresh: Int = 3,
+  useOscillationFactor: Boolean = false,
+  maxOscillationFactor: Int = 10,
+  usePartialSGSmoother: Boolean = false,
+  useBaselineRemover: Boolean = false) extends PeakelFinderConfig
+    
 case class FeatureDetectorConfig(
   msLevel: Int = 1,
   mzTolPPM: Float = 10,
-  minNbOverlappingIPs: Int=3
+  minNbOverlappingIPs: Int = 3,
+  peakelFinderConfig: PeakelFinderConfig = SmartPeakelFinderConfig()
 )
+
+object PeakelFinderBuilder {
+	def build(config: PeakelFinderConfig): IPeakelFinder = {
+	  config match {
+	    case smf: SmartPeakelFinderConfig => new SmartPeakelFinder(
+	        minPeaksCount = smf.minPeaksCount, 
+	        miniMaxiDistanceThresh = smf.miniMaxiDistanceThresh,
+	        useOscillationFactor = smf.useOscillationFactor,
+	        maxOscillationFactor = smf.maxOscillationFactor,
+	        usePartialSGSmoother = smf.usePartialSGSmoother,
+	        useBaselineRemover = smf.useBaselineRemover )
+	  }
+	}
+}
+
 
 class PeakelDetectorConsumer(
   val consumerNumber: Int,
@@ -279,10 +303,12 @@ class MzDbFeatureDetector(
     
     val msLevel = ftDetectorConfig.msLevel
     
+    
     val peakelDetector = new UnsupervisedPeakelDetector(
-      ms1ScanHeaderById,
-      Map.empty[Long,Float],
-      ftDetectorConfig.mzTolPPM
+      scanHeaderById = ms1ScanHeaderById,
+      nfByScanId = Map.empty[Long,Float],
+      mzTolPPM = ftDetectorConfig.mzTolPPM,
+      peakelFinder = PeakelFinderBuilder.build(ftDetectorConfig.peakelFinderConfig)
     )
     
     // Define a peaklist map (first level = runSliceNumber, second level =scanId )
