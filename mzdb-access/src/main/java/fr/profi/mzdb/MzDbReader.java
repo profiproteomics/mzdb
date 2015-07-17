@@ -740,15 +740,7 @@ public class MzDbReader {
 	 * @throws SQLiteException the SQLiteException
 	 */
 	public ScanHeader[] getScanHeaders() throws SQLiteException {
-		ScanHeader[] ms1ScanHeaders = this._scanHeaderReader.getMs1ScanHeaders();
-		ScanHeader[] ms2ScanHeaders = this._scanHeaderReader.getMs2ScanHeaders();
-		
-		ScanHeader[] scanHeaders = new ScanHeader[ ms1ScanHeaders.length + ms2ScanHeaders.length ];
-
-	    System.arraycopy( ms1ScanHeaders, 0, scanHeaders, 0, ms1ScanHeaders.length );
-	    System.arraycopy( ms2ScanHeaders, 0, scanHeaders, ms1ScanHeaders.length, ms2ScanHeaders.length );
-	    
-		return scanHeaders;
+		return this._scanHeaderReader.getScanHeaders();
 	}
 
 	/**
@@ -758,20 +750,7 @@ public class MzDbReader {
 	 * @throws SQLiteException the SQLiteException
 	 */
 	public Map<Long, ScanHeader> getScanHeaderById() throws SQLiteException {
-		
-		ScanHeader[] ms1ScanHeaders = this._scanHeaderReader.getMs1ScanHeaders();
-		ScanHeader[] ms2ScanHeaders = this._scanHeaderReader.getMs2ScanHeaders();
-
-		int scansCount = ms1ScanHeaders.length + ms2ScanHeaders.length;
-		Map<Long, ScanHeader> scanHeaderById = new HashMap<Long, ScanHeader>(scansCount);
-
-		for (ScanHeader ms1ScanHeader : ms1ScanHeaders)
-			scanHeaderById.put(ms1ScanHeader.getId(), ms1ScanHeader);
-		
-		for (ScanHeader ms2ScanHeader : ms2ScanHeaders)
-			scanHeaderById.put(ms2ScanHeader.getId(), ms2ScanHeader);
-		
-		return scanHeaderById;
+		return this._scanHeaderReader.getScanHeaderById();
 	}
 	
 	/**
