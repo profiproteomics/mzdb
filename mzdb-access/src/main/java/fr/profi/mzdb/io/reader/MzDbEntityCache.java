@@ -15,6 +15,10 @@ public class MzDbEntityCache {
 
 	protected ScanHeader[] ms1ScanHeaders = null;
 
+	protected Map<Long, ScanHeader> scanHeaderById = null;
+
+	protected ScanHeader[] scanHeaders = null;
+
 	protected Map<Long, ScanHeader> ms1ScanHeaderById = null;
 	
 	protected ScanHeader[] ms2ScanHeaders = null;
