@@ -3,10 +3,17 @@ package fr.profi.mzdb.model;
 /**
  * Enumeration representing the acquisition mode. It is stored as a cvParam in the run table. This list is
  * NOT exhaustive
+ *  - DDA voulant dire Data Dependant Acquisition
+ *  - DDA=IDA
+ *  - et DIA=SWATH
+ *  - DDA et DIA sont des termes du constructeur Thermo
+ *  - IDA et SWATH sont des termes du constructeurs AbSciex
+ *  - il se peut que d'autres constructeurs utilisent d'autres termes
+ *  - mais ce sont les deux constructeurs les plus répandus
  */
 public enum AcquisitionMode {
     DDA("DDA acquisition", "Data Dependant Acquisition (Thermo designation), Warning, "
-    	+ "in ABI this is called DIA (Data Information Dependant)"), SWATH("SWATH acquisition",
+    	+ "in ABI this is called IDA (Information Dependant Acquisition)"), SWATH("SWATH acquisition",
     	"ABI Swath acquisition or Thermo swath acquisition"), MRM("MRM acquisition",
     	"Multiple reaction monitoring"), SRM("SRM acquisition", "Single reaction monitoring"), UNKNOWN(
     	"UNKNOWN acquisition", "unknown acquisition mode");
