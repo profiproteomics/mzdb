@@ -50,8 +50,8 @@ public class MzDbReader {
 	public class BBSizes {
 		public double BB_MZ_HEIGHT_MS1;
 		public double BB_MZ_HEIGHT_MSn;
-		public double BB_RT_WIDTH_MS1;
-		public double BB_RT_WIDTH_MSn;
+		public float BB_RT_WIDTH_MS1;
+		public float BB_RT_WIDTH_MSn;
 	};
 	
 	final protected BBSizes bbSizes = new BBSizes();
@@ -307,10 +307,10 @@ public class MzDbReader {
 		bbSizes.BB_MZ_HEIGHT_MSn = Double.parseDouble(
 			mzDbHeader.getUserParam(paramNameGetter.getMsnBBMzWidthParamName()).getValue()
 		);
-		bbSizes.BB_RT_WIDTH_MS1 = Double.parseDouble(
+		bbSizes.BB_RT_WIDTH_MS1 = Float.parseFloat(
 			mzDbHeader.getUserParam(paramNameGetter.getMs1BBTimeWidthParamName()).getValue()
 		);
-		bbSizes.BB_RT_WIDTH_MSn = Double.parseDouble(
+		bbSizes.BB_RT_WIDTH_MSn = Float.parseFloat(
 			mzDbHeader.getUserParam(paramNameGetter.getMs1BBTimeWidthParamName()).getValue()
 		);
 	}
@@ -905,8 +905,8 @@ public class MzDbReader {
 	public ScanSlice[] getScanSlices(
 		double minMz,
 		double maxMz,
-		double minRt,
-		double maxRt,
+		float minRt,
+		float maxRt,
 		int msLevel
 	) throws SQLiteException, StreamCorruptedException {
 		return _getScanSlicesInRanges(minMz, maxMz, minRt, maxRt, msLevel, 0.0);
@@ -933,8 +933,8 @@ public class MzDbReader {
 	public ScanSlice[] getMsScanSlices(
 		double minMz,
 		double maxMz,
-		double minRt,
-		double maxRt
+		float minRt,
+		float maxRt
 	) throws SQLiteException, StreamCorruptedException {
 		return _getScanSlicesInRanges(minMz, maxMz, minRt, maxRt, 1, 0.0);
 	}
@@ -944,8 +944,8 @@ public class MzDbReader {
 		double parentMz,
 		double minMz,
 		double maxMz,
-		double minRt,
-		double maxRt
+		float minRt,
+		float maxRt
 	) throws SQLiteException, StreamCorruptedException {
 		return _getScanSlicesInRanges(minMz, maxMz, minRt, maxRt, 2, parentMz);
 	}
@@ -953,20 +953,20 @@ public class MzDbReader {
 	private ScanSlice[] _getScanSlicesInRanges(
 		double minMz,
 		double maxMz,
-		double minRt,
-		double maxRt,
+		float minRt,
+		float maxRt,
 		int msLevel,
 		double parentMz
 	) throws SQLiteException, StreamCorruptedException {
 		
 		BBSizes sizes = getBBSizes();
-		double rtWidth = (msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn;
-		double mzHeight = (msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn;
+		float rtWidth = ((msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn);
+		double mzHeight = ((msLevel == 1) ? sizes.BB_MZ_HEIGHT_MS1 : sizes.BB_MZ_HEIGHT_MSn);
 
-		double _maxRt = maxRt + rtWidth;
 		double _minMz = minMz - mzHeight;
-		double _minRt = minRt - rtWidth;
 		double _maxMz = maxMz + mzHeight;
+		float _minRt = minRt - rtWidth;
+		float _maxRt = maxRt + rtWidth;
 
 		// TODO: query using bounding_box_msn_rtree to use the min_ms_level information even for MS1 data ???
 		SQLiteQuery sqliteQuery;
@@ -1338,8 +1338,8 @@ public class MzDbReader {
 
 		final double minMz = mz - mzTolInDa;
 		final double maxMz = mz + mzTolInDa;
-		final double minRtForRtree = minRt >= 0 ? minRt : 0;
-		final double maxRtForRtree = maxRt > 0 ? maxRt : this.getLastTime();
+		final float minRtForRtree = minRt >= 0 ? minRt : 0;
+		final float maxRtForRtree = maxRt > 0 ? maxRt : this.getLastTime();
 
 		ScanSlice[] scanSlices = getMsScanSlices(minMz, maxMz, minRtForRtree, maxRtForRtree);
 		
@@ -1358,8 +1358,8 @@ public class MzDbReader {
 
 		final double minFragMz = fragmentMz - fragmentMzTolInDa;
 		final double maxFragMz = fragmentMz + fragmentMzTolInDa;
-		final double minRtForRtree = minRt >= 0 ? minRt : 0;
-		final double maxRtForRtree = maxRt > 0 ? maxRt : this.getLastTime();
+		final float minRtForRtree = minRt >= 0 ? minRt : 0;
+		final float maxRtForRtree = maxRt > 0 ? maxRt : this.getLastTime();
 
 		ScanSlice[] scanSlices = getMsnScanSlices(parentMz, minFragMz, maxFragMz, minRtForRtree, maxRtForRtree);
 		
@@ -1486,7 +1486,7 @@ public class MzDbReader {
 	 * @throws StreamCorruptedException 
 	 */
 	// TODO: rename into getMsPeaks
-	public Peak[] getPeaks(double minmz, double maxmz, double minrt, double maxrt, int msLevel)
+	public Peak[] getPeaks(double minmz, double maxmz, float minrt, float maxrt, int msLevel)
 			throws SQLiteException, StreamCorruptedException {
 		/*
 		 * use get ScanSlices function then return a peak array using simply the toPeaks function

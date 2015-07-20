@@ -72,10 +72,10 @@ public class MzDbAccess {
 		private Double maxMz = 0.0;
 
 		@Parameter(names = { "-t1", "--mintime" }, description = "minimum elution time")
-		private Double minTime = 0.0;
+		private Float minTime = 0.0f;
 
 		@Parameter(names = { "-t2", "--maxtime" }, description = "maximum elution time")
-		private Double maxTime = 0.0;
+		private Float maxTime = 0.0f;
 	}
 
 	public static class CreateMgfCommand {
@@ -160,8 +160,8 @@ public class MzDbAccess {
 		String dbPath = epc.mzdbFile;
 		double minMz = epc.minMz;
 		double maxMz = epc.maxMz;
-		double minTime = epc.minTime;
-		double maxTime = epc.maxTime;
+		float minTime = epc.minTime;
+		float maxTime = epc.maxTime;
 
 		System.out.println("Running mzDBaccess with following parameters :");
 		System.out.println("- min_mz=" + minMz);

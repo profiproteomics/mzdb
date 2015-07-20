@@ -500,10 +500,10 @@ public class MgfWriter {
 		final float upperMzOffset = Float.parseFloat(cvParams[2].getValue());
 		final double minmz = targetMz - lowerMzOffset;
 		final double maxmz = targetMz + upperMzOffset;
-		final double minrt = time - timeTol;
-		final double maxrt = time + timeTol;
+		final float minrt = time - timeTol;
+		final float maxrt = time + timeTol;
 		
-		return this.mzDbReader.getScanSlices(minmz, maxmz, minrt, maxrt, 1);	
+		return this.mzDbReader.getMsScanSlices(minmz, maxmz, minrt, maxrt);	
 	}
 
 
