@@ -1100,9 +1100,9 @@ public class MzDbReader {
 						finalLeftHwhmList[finalPeakIdx] = leftHwhmList[i];
 						finalRightHwhmList[finalPeakIdx] = rightHwhmList[i];
 					}
+					
+					finalPeakIdx++;
 				}
-				
-				finalPeakIdx++;
 			}
 			
 			ScanData finalScanData = new ScanData(finalMzList,finalIntensityList, finalLeftHwhmList, finalRightHwhmList);
