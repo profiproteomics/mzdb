@@ -10,7 +10,7 @@
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-processing</artifactId>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.3.0</version>
 
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
@@ -85,7 +85,7 @@
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>mzdb-access</artifactId>
-      <version>0.2.1</version>
+      <version>0.3.0</version>
     </dependency>
 
     <!-- Command Line Interface -->
