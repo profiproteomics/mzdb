@@ -107,7 +107,7 @@ public class ScanData {
 	}
 
 	/**
-	 * To peaks.
+	 * To peaks. A new peaks tab is instantiated at each call
 	 * 
 	 * @return the peak[]
 	 */

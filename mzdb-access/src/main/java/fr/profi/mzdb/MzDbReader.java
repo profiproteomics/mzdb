@@ -71,17 +71,6 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
  */
 public class MzDbReader {
 
-    /**
-     * class holding bounding box dimensions that retrieved from the param_tree of the mzdb table. We
-     * distinguish two sizes, one for ms1, the other one for all msn
-     */
-    public class BBSizes {
-	public double BB_MZ_HEIGHT_MS1;
-	public double BB_MZ_HEIGHT_MSn;
-	public float BB_RT_WIDTH_MS1;
-	public float BB_RT_WIDTH_MSn;
-    };
-
     final protected BBSizes bbSizes = new BBSizes();
 
     final Logger logger = LoggerFactory.getLogger(MzDbReader.class);
@@ -129,7 +118,7 @@ public class MzDbReader {
 
     /**
      * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
-     * 
+     *
      * @param dbLocation
      *            the db location
      * @param cacheEntities
@@ -202,7 +191,7 @@ public class MzDbReader {
 
     /**
      * Instantiates a new mzDB reader (secondary constructor).
-     * 
+     *
      * @param dbLocation
      *            the db location
      * @param cacheEntities
@@ -221,7 +210,7 @@ public class MzDbReader {
 
     /**
      * Instantiates a new mzDB reader (secondary constructor).
-     * 
+     *
      * @param dbPath
      *            the db path
      * @param cacheEntities
@@ -240,7 +229,7 @@ public class MzDbReader {
 
     /**
      * Gets the connection.
-     * 
+     *
      * @return the connection
      */
     public SQLiteConnection getConnection() {
@@ -256,7 +245,7 @@ public class MzDbReader {
 
     /**
      * Gets the entity cache.
-     * 
+     *
      * @return the entity cache
      */
     public MzDbEntityCache getEntityCache() {
@@ -272,7 +261,7 @@ public class MzDbReader {
     }
 
     /**
-     * 
+     *
      * @return
      * @throws SQLiteException
      */
@@ -282,7 +271,7 @@ public class MzDbReader {
     }
 
     /**
-     * 
+     *
      * @return
      * @throws SQLiteException
      */
@@ -297,7 +286,7 @@ public class MzDbReader {
     }
 
     /**
-     * 
+     *
      * @return
      * @throws SQLiteException
      */
@@ -317,7 +306,7 @@ public class MzDbReader {
     }
 
     /**
-     * 
+     *
      * @return
      * @throws SQLiteException
      */
@@ -343,7 +332,7 @@ public class MzDbReader {
 
     /**
      * Gets the last time.
-     * 
+     *
      * @return float the rt of the last scan
      * @throws SQLiteException
      *             the sQ lite exception
@@ -356,7 +345,7 @@ public class MzDbReader {
 
     /**
      * Gets the max ms level.
-     * 
+     *
      * @return the max ms level
      * @throws SQLiteException
      *             the sQ lite exception
@@ -367,7 +356,7 @@ public class MzDbReader {
 
     /**
      * Gets the mz range.
-     * 
+     *
      * @param msLevel
      *            the ms level
      * @return runSlice min mz and runSlice max mz
@@ -391,7 +380,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box count.
-     * 
+     *
      * @return int, the number of bounding box
      * @throws SQLiteException
      *             the sQ lite exception
@@ -402,7 +391,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box count.
-     * 
+     *
      * @param runSliceId
      *            the run slice id
      * @return the number of bounding box contained in the specified runSliceId
@@ -416,7 +405,7 @@ public class MzDbReader {
 
     /**
      * Gets the cycle count.
-     * 
+     *
      * @return the cycle count
      * @throws SQLiteException
      */
@@ -427,7 +416,7 @@ public class MzDbReader {
 
     /**
      * Gets the data encoding count.
-     * 
+     *
      * @return the data encoding count
      * @throws SQLiteException
      *             the sQ lite exception
@@ -438,7 +427,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan count.
-     * 
+     *
      * @return int the number of scans
      * @throws SQLiteException
      *             the sQ lite exception
@@ -449,7 +438,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan count.
-     * 
+     *
      * @return int the number of scans
      * @throws SQLiteException
      *             the sQ lite exception
@@ -461,7 +450,7 @@ public class MzDbReader {
 
     /**
      * Gets the run slice count.
-     * 
+     *
      * @return int the number of runSlice
      * @throws SQLiteException
      *             the sQ lite exception
@@ -472,7 +461,7 @@ public class MzDbReader {
 
     /**
      * Gets the table records count.
-     * 
+     *
      * @param tableName
      *            the table name
      * @return the int
@@ -486,13 +475,18 @@ public class MzDbReader {
 
     /**
      * ImmutablePair can not be wrapped into an array
-     * 
+     *
      * @return
      * @throws SQLiteException
      */
     public IsolationWindow[] getDIAIsolationWindows() throws SQLiteException {
 
-	if (this.diaIsolationWindows == null) {
+	if ((this.diaIsolationWindows == null)) {
+	    // FIXME: in version 0.9.8 bounding_box_msn_rtree table should be empty.
+	    // next lines is a workaround
+	    // if (this.getAcquisitionMode() != AcquisitionMode.SWATH) {
+	    // return new IsolationWindow[] {};
+	    // }
 	    final String sqlQuery = "SELECT DISTINCT min_parent_mz, "
 		    + "max_parent_mz FROM bounding_box_msn_rtree ORDER BY min_parent_mz";
 	    final SQLiteRecordIterator recordIt = new SQLiteQuery(this.connection, sqlQuery).getRecords();
@@ -514,7 +508,7 @@ public class MzDbReader {
 
     /**
      * Gets the data encoding.
-     * 
+     *
      * @param id
      *            the id
      * @return the data encoding
@@ -527,7 +521,7 @@ public class MzDbReader {
 
     /**
      * Gets the data encoding by scan id.
-     * 
+     *
      * @return the data encoding by scan id
      * @throws SQLiteException
      *             the sQ lite exception
@@ -538,7 +532,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan data encoding.
-     * 
+     *
      * @param scanId
      *            the scan id
      * @return the scan data encoding
@@ -551,7 +545,7 @@ public class MzDbReader {
 
     /**
      * Gets the run slices.
-     * 
+     *
      * @return array of runSlice instance without data associated
      * @throws SQLiteException
      *             the SQLite exception
@@ -562,7 +556,7 @@ public class MzDbReader {
 
     /**
      * Gets the run slice header by id.
-     * 
+     *
      * @param msLevel
      *            the ms level
      * @return the run slice header by id
@@ -575,7 +569,7 @@ public class MzDbReader {
 
     /**
      * Gets the run slice data.
-     * 
+     *
      * @param runSliceId
      *            the run slice id
      * @return the run slice data
@@ -636,7 +630,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box data.
-     * 
+     *
      * @param bbId
      *            the bb id
      * @return the bounding box data
@@ -650,7 +644,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box first scan index.
-     * 
+     *
      * @param scanId
      *            the scan id
      * @return the bounding box first scan index
@@ -664,7 +658,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box min mz.
-     * 
+     *
      * @param bbId
      *            the bb id
      * @return the bounding box min mz
@@ -678,7 +672,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box min time.
-     * 
+     *
      * @param bbId
      *            the bb id
      * @return the bounding box min time
@@ -692,7 +686,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box ms level.
-     * 
+     *
      * @param bbId
      *            the bb id
      * @return the bounding box ms level
@@ -717,7 +711,7 @@ public class MzDbReader {
 
     /**
      * Gets the MS1 scan headers.
-     * 
+     *
      * @return the scan headers
      * @throws SQLiteException
      *             the SQLiteException
@@ -728,7 +722,7 @@ public class MzDbReader {
 
     /**
      * Gets the MS1 scan header by id.
-     * 
+     *
      * @return the scan header by id
      * @throws SQLiteException
      *             the SQLiteException
@@ -739,7 +733,7 @@ public class MzDbReader {
 
     /**
      * Gets the MS2 scan headers.
-     * 
+     *
      * @return the scan headers
      * @throws SQLiteException
      *             the SQLiteException
@@ -750,7 +744,7 @@ public class MzDbReader {
 
     /**
      * Gets the MS2 scan header by id.
-     * 
+     *
      * @return the scan header by id
      * @throws SQLiteException
      *             the SQLiteException
@@ -761,7 +755,7 @@ public class MzDbReader {
 
     /**
      * Gets all scan headers.
-     * 
+     *
      * @return the scan headers
      * @throws SQLiteException
      *             the SQLiteException
@@ -772,7 +766,7 @@ public class MzDbReader {
 
     /**
      * Gets each scan header mapped by its id.
-     * 
+     *
      * @return the scan header by id
      * @throws SQLiteException
      *             the SQLiteException
@@ -783,7 +777,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan header.
-     * 
+     *
      * @param id
      *            the id
      * @return the scan header
@@ -796,7 +790,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan header for time.
-     * 
+     *
      * @param time
      *            the time
      * @param msLevel
@@ -810,7 +804,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan data.
-     * 
+     *
      * @param scanId
      *            the scan id
      * @return the scan data
@@ -877,7 +871,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan.
-     * 
+     *
      * @param scanId
      *            the scan id
      * @return the scan
@@ -893,7 +887,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan peaks.
-     * 
+     *
      * @param scanId
      *            the scan id
      * @return the scan peaks
@@ -907,7 +901,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan slices. Each returned scan slice corresponds to a single scan.
-     * 
+     *
      * @param minmz
      *            the minMz
      * @param maxmz
@@ -922,7 +916,7 @@ public class MzDbReader {
      * @throws SQLiteException
      *             the sQ lite exception
      * @throws StreamCorruptedException
-     * 
+     *
      * @Deprecated Use getMsScanSlices or getMsnScanSlices methods instead
      */
     @Deprecated
@@ -933,7 +927,7 @@ public class MzDbReader {
 
     /**
      * Gets the scan slices. Each returned scan slice corresponds to a single scan.
-     * 
+     *
      * @param minmz
      *            the minMz
      * @param maxmz
@@ -1111,7 +1105,7 @@ public class MzDbReader {
 
     /**
      * Gets the bounding box iterator.
-     * 
+     *
      * @param msLevel
      *            the ms level
      * @return the bounding box iterator
@@ -1132,7 +1126,7 @@ public class MzDbReader {
 
     /**
      * Gets the ms scan iterator.
-     * 
+     *
      * @param msLevel
      *            the ms level
      * @return the ms scan iterator
@@ -1146,7 +1140,7 @@ public class MzDbReader {
 
     /**
      * Gets a RunSlice iterator.
-     * 
+     *
      * @return the RunSlice iterator
      * @throws SQLiteException
      * @throws StreamCorruptedException
@@ -1164,7 +1158,7 @@ public class MzDbReader {
 
     /**
      * Gets a RunSlice iterator for a given m/z range
-     * 
+     *
      * @param minRunSliceMz
      * @param minRunSliceMz
      * @return the RunSlice iterator
@@ -1178,7 +1172,7 @@ public class MzDbReader {
 
     /**
      * Gets a DIA data RunSlice iterator
-     * 
+     *
      * @param minParentMz
      * @param maxParentMz
      * @return the RunSlice iterator
@@ -1199,7 +1193,7 @@ public class MzDbReader {
 
     /**
      * Gets a DIA data RunSlice iterator for a given m/z range
-     * 
+     *
      * @param msLevel
      * @param minParentMz
      * @param maxParentMz
@@ -1214,7 +1208,7 @@ public class MzDbReader {
 
     /**
      * Lazy loading of the acquisition mode, parameter
-     * 
+     *
      * @return
      * @throws SQLiteException
      */
@@ -1299,7 +1293,7 @@ public class MzDbReader {
 
     /**
      * Gets the xic.
-     * 
+     *
      * @param minMz
      *            the min mz
      * @param maxMz
@@ -1450,7 +1444,7 @@ public class MzDbReader {
 
     /**
      * Gets the peaks.
-     * 
+     *
      * @param minmz
      *            the minmz
      * @param maxmz
