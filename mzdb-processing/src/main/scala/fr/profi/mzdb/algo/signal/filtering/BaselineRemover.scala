@@ -3,14 +3,40 @@ package fr.profi.mzdb.algo.signal.filtering
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.math3.stat.StatUtils
 import fr.profi.mzdb.utils.math.DerivativeAnalysis
+import fr.profi.mzdb.model.Peak
 
 /**
  * @author David Bouyssie
  *
  */
-class BaselineRemover( gapTolerance: Int = 1 ) {
+class BaselineRemover( gapTolerance: Int = 1, minPeaksCount: Int = 3 ) {
   
   require( gapTolerance >= 1, "gapTolerance must be strictly positive")
+  
+  def removeBaseLine( peaks: Array[Peak], noiseThresholdOpt: Option[Double] = None ): Array[Peak] = {
+    require( peaks != null, "peaks is null")
+    
+    val rtIntPairs = peaks.map { peak =>
+      peak.getLcContext().getElutionTime() -> peak.getIntensity().toDouble
+    }
+    
+    val noiseThreshold = noiseThresholdOpt.getOrElse(calcNoiseThreshold(rtIntPairs))
+    
+    _removeBaseLine( peaks, rtIntPairs, noiseThreshold )
+  }
+  
+  private def _removeBaseLine( peaks: Array[Peak], rtIntPairs: Array[(Float,Double)], noiseThreshold: Double ): Array[Peak] = {
+    val noiseFreePeakGroupsIndices = findNoiseFreePeakGroupsIndices(rtIntPairs, noiseThreshold)
+    
+    val peaksAboveThreshold = new ArrayBuffer[Peak](peaks.length)
+    
+    for( noiseFreePeakGroupIndices <- noiseFreePeakGroupsIndices ) {
+      val( firstIndex, lastIndex ) = noiseFreePeakGroupIndices
+      peaksAboveThreshold ++= peaks.slice( firstIndex, lastIndex +1 )
+    }
+
+    peaksAboveThreshold.toArray
+  }
   
   def removeBaseLine( rtIntPairs: Array[(Float,Double)] ): Array[(Float,Double)] = {
     require( rtIntPairs != null, "rtIntPairs is null")
@@ -21,7 +47,7 @@ class BaselineRemover( gapTolerance: Int = 1 ) {
   def removeBaseLine( rtIntPairs: Array[(Float,Double)], noiseThreshold: Double ): Array[(Float,Double)] = {
     val noiseFreePeakGroupsIndices = findNoiseFreePeakGroupsIndices(rtIntPairs, noiseThreshold)
     
-    val rtIntPairsAboveThreshold = new ArrayBuffer[(Float,Double)]()
+    val rtIntPairsAboveThreshold = new ArrayBuffer[(Float,Double)](rtIntPairs.length)
     
     for( noiseFreePeakGroupIndices <- noiseFreePeakGroupsIndices ) {
       val( firstIndex, lastIndex ) = noiseFreePeakGroupIndices
@@ -63,7 +89,7 @@ class BaselineRemover( gapTolerance: Int = 1 ) {
     val rtIntPairsIndicesAboveThreshold = new ArrayBuffer[(Int,Int)]
     for(
       rtIntPairIndices <- groupedRtIntPairIndices;
-      if rtIntPairIndices.length >= 3
+      if rtIntPairIndices.length >= minPeaksCount
     ) {
       val firstIndex = rtIntPairIndices.head
       val lastIndex = rtIntPairIndices.last

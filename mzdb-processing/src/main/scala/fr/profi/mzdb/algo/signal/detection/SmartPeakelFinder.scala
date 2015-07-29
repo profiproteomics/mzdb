@@ -14,12 +14,16 @@ import com.typesafe.scalalogging.slf4j.Logging
  *
  */
 
-class SmartPeakelFinder(  var minPeaksCount: Int = 5,
+class SmartPeakelFinder(
+  var minPeaksCount: Int = 5,
   var miniMaxiDistanceThresh: Int = 3,
+  var maxIntensityRelThresh: Float = 0.66f,
   var useOscillationFactor: Boolean = false,
   var maxOscillationFactor: Int = 10,
   var usePartialSGSmoother: Boolean = false,
-  var useBaselineRemover: Boolean = false) extends IPeakelFinder with Logging {
+  var useBaselineRemover: Boolean = false,
+  var useSmoothing: Boolean = true
+) extends IPeakelFinder with Logging {
 
 
   // gapTolerance set to 1 means that ponctual intensity hole won't be removed
@@ -40,26 +44,32 @@ class SmartPeakelFinder(  var minPeaksCount: Int = 5,
       val noiseThreshold = baselineRemover.calcNoiseThreshold(rtIntPairs)
       return baselineRemover.findNoiseFreePeakGroupsIndices(rtIntPairs, noiseThreshold)
     }
-
-    val psgSmoother = {
-      if (usePartialSGSmoother) {
-        new PartialSavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 1))
-      } else {
-        val nbSmoothingPoints = { if (peaksCount <= 20) 5 else if (peaksCount <= 50) 7 else 11 }
-        new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(nbPoints = nbSmoothingPoints, polyOrder = 2, iterationCount = 1))
+    
+    // Smooth intensities
+    val smoothedRtIntPairs = if( useSmoothing == false ) rtIntPairs
+    else {
+      
+      val smoother = { 
+        if (usePartialSGSmoother) {
+          new PartialSavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 1))
+        } else {
+          val nbSmoothingPoints = { if (peaksCount <= 20) 5 else if (peaksCount <=50) 7 else 11}
+          new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(nbPoints = nbSmoothingPoints, polyOrder = 2, iterationCount = 1))
+        }
       }
+      
+      smoother.smoothTimeIntensityPairs(rtIntPairs)
     }
 
-    // Smooth intensities
-    val smoothedRtIntPairs = psgSmoother.smoothTimeIntensityPairs(rtIntPairs)
     val smoothedIntensities = smoothedRtIntPairs.map(_._2)
 
     // Look for significant minima and maxima in the smoothed signal
     val miniMaxi = DerivativeAnalysis.findSignificantMiniMaxi(
       smoothedIntensities,
       miniMaxiDistanceThresh,
-      0.66f)
-
+      maxIntensityRelThresh
+    )
+    
     // Return empty array of no mini/maxi found
     if (miniMaxi.isEmpty) {
       //println(smoothedIntensities.toArray)

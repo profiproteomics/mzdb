@@ -12,14 +12,19 @@ import fr.profi.mzdb.model.Peak
  */
 class BasicPeakelFinder(var sameSlopeCountThreshold:Int = 2)  extends IPeakelFinder {
   
+  var useSmoothing = true
   
   def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[Tuple2[Int,Int]] = {
     
     if( rtIntPairs.length < 5 )
       return Array()
     
-    val sgMoother = new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 3))
-    val smoothedRtIntPairs = sgMoother.smoothTimeIntensityPairs(rtIntPairs)
+    val smoothedRtIntPairs = if( useSmoothing == false ) rtIntPairs
+    else {
+      val sgMoother = new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 3))
+      sgMoother.smoothTimeIntensityPairs(rtIntPairs)
+    }
+
     findPeakelsIndicesFromSmoothedIntensities( smoothedRtIntPairs.map(_._2) ).toArray
       
     /*var peakDetectionBegin = false
