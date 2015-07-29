@@ -57,7 +57,7 @@ object SQLiteIsolationWindowStorer extends Logging {
       val ms1Sh = ms1ShByCycle(sh.getCycle)
       val precMz = sh.getPrecursor.parseFirstSelectedIonMz
       
-      val scanSlices = mzDbReader.getScanSlices(precMz - 2, precMz + 2, ms1Sh.getTime - 0.2, ms1Sh.getTime + 0.2, 1)
+      val scanSlices = mzDbReader.getScanSlices(precMz - 2, precMz + 2, ms1Sh.getTime - 0.2f, ms1Sh.getTime + 0.2f, 1)
       if( scanSlices.isEmpty ) {
         logger.debug("no scan data loaded")
       } else {
