@@ -356,62 +356,70 @@ class MzDbFeatureDetector(
         val rs = rsOpt.get
         val rsh = rs.getHeader
         val rsd = rs.getData
-        val curPeaklistByScanId = rsd.getPeakListByScanId
-         
-        // Retrieve run slices and their corresponding id
         val rsNumber = rsh.getNumber
         val nextRsNumber = rsNumber + 1
-        this.logger.debug("loading run slice "+rsNumber+"("+rsh.getBeginMz()+","+rsh.getEndMz()+")")
         
-        // Build the list of obsolete run slices
-        val rsNumbersToRemove = for(
-          processedRsNumber <- pklByScanIdAndRsNumber.keys
-          if processedRsNumber != rsNumber &&
-             processedRsNumber != prevRsNumber &&
-             processedRsNumber != nextRsNumber
-        ) yield processedRsNumber
-  
-        // Clean the peaklist map => remove obsolete run slices
-        rsNumbersToRemove.foreach { pklByScanIdAndRsNumber -= _ }
-  
-        // Add current run slice peakList to pklByScanIdAndRsNumber
-        if ( pklByScanIdAndRsNumber.contains(rsNumber) == false ) {
-          pklByScanIdAndRsNumber += ( rsNumber -> curPeaklistByScanId )
+        val peaksCountSum = rsd.getScanSliceList.view.map(_.getData.getPeaksCount).sum
+        if( peaksCountSum == 0 ) {
+          logger.warn(s"Run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz}) is empty")
         }
-  
-        // Add next run slice peaklist to pklByScanIdAndRsNumber
-        val nextRsOpt = if (rsIter.hasNext == false) None
         else {
-          val nextRs = rsIter.next
-          pklByScanIdAndRsNumber += ( nextRsNumber -> nextRs.getData.getPeakListByScanId )
-          Some(nextRs)
-        }
-        
-        // Group run slice peakLists into a single map (key = scan id)
-        val peakListsByScanId = new HashMap[Long,ArrayBuffer[PeakList]]()
-        pklByScanIdAndRsNumber.values.foreach { pklByScanId =>
-          pklByScanId.foreach { case (scanId, pkl) =>
-            peakListsByScanId.getOrElseUpdate(scanId, new ArrayBuffer[PeakList]) += pkl
+          
+          val curPeaklistByScanId = rsd.getPeakListByScanId
+          
+          // Retrieve run slices and their corresponding id
+          this.logger.debug(s"loading run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz})")
+          
+          // Build the list of obsolete run slices
+          val rsNumbersToRemove = for(
+            processedRsNumber <- pklByScanIdAndRsNumber.keys
+            if processedRsNumber != rsNumber &&
+               processedRsNumber != prevRsNumber &&
+               processedRsNumber != nextRsNumber
+          ) yield processedRsNumber
+    
+          // Clean the peaklist map => remove obsolete run slices
+          rsNumbersToRemove.foreach { pklByScanIdAndRsNumber -= _ }
+    
+          // Add current run slice peakList to pklByScanIdAndRsNumber
+          if ( pklByScanIdAndRsNumber.contains(rsNumber) == false ) {
+            pklByScanIdAndRsNumber += ( rsNumber -> curPeaklistByScanId )
           }
-        }
-        
-        // Use the map to instantiate a peakList tree which will be used for peak extraction
-        val pklGroupByScanId = peakListsByScanId.map { case (scanId, pkl) => scanId -> new PeakListGroup( pkl ) } toMap
-        val pklTree = new PeakListTree( pklGroupByScanId, ms1ScanHeaderById )
-               
-        // Enqueue loaded PeakListTree to send it to the consumer
-        // Note that the detectorQueue will wait if it is full
-        detectorQueue.enqueue(
-          PeakelDetectorQueueEntry(
-            rsNumber = rsNumber,
-            pklTree = pklTree,
-            curPeaklistByScanId = curPeaklistByScanId
+    
+          // Add next run slice peaklist to pklByScanIdAndRsNumber
+          val nextRsOpt = if (rsIter.hasNext == false) None
+          else {
+            val nextRs = rsIter.next
+            pklByScanIdAndRsNumber += ( nextRsNumber -> nextRs.getData.getPeakListByScanId )
+            Some(nextRs)
+          }
+          
+          // Group run slice peakLists into a single map (key = scan id)
+          val peakListsByScanId = new HashMap[Long,ArrayBuffer[PeakList]]()
+          pklByScanIdAndRsNumber.values.foreach { pklByScanId =>
+            pklByScanId.foreach { case (scanId, pkl) =>
+              peakListsByScanId.getOrElseUpdate(scanId, new ArrayBuffer[PeakList]) += pkl
+            }
+          }
+          
+          // Use the map to instantiate a peakList tree which will be used for peak extraction
+          val pklGroupByScanId = peakListsByScanId.map { case (scanId, pkl) => scanId -> new PeakListGroup( pkl ) } toMap
+          val pklTree = new PeakListTree( pklGroupByScanId, ms1ScanHeaderById )
+                 
+          // Enqueue loaded PeakListTree to send it to the consumer
+          // Note that the detectorQueue will wait if it is full
+          detectorQueue.enqueue(
+            PeakelDetectorQueueEntry(
+              rsNumber = rsNumber,
+              pklTree = pklTree,
+              curPeaklistByScanId = curPeaklistByScanId
+            )
           )
-        )
-        
-        // Update some vars
-        prevRsNumber = rsNumber
-        rsOpt = nextRsOpt
+          
+          // Update some vars
+          prevRsNumber = rsNumber
+          rsOpt = nextRsOpt
+        }
       }
       
       logger.debug( "End of run slices iteration !" )
