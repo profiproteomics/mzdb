@@ -362,6 +362,7 @@ class MzDbFeatureDetector(
         val peaksCountSum = rsd.getScanSliceList.view.map(_.getData.getPeaksCount).sum
         if( peaksCountSum == 0 ) {
           logger.warn(s"Run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz}) is empty")
+          rsOpt = Some(rsIter.next)
         }
         else {
           
