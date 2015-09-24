@@ -3,7 +3,7 @@ package fr.profi.mzdb
 import java.io.File
 import scala.io.Source
 import com.beust.jcommander.{ JCommander, MissingCommandException, Parameter, ParameterException, Parameters }
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
@@ -16,7 +16,7 @@ import fr.profi.mzdb.model._
  * @author David Bouyssie
  *
  */
-object RunCommand extends App with Logging {
+object RunCommand extends App with LazyLogging {
 
   // TODO: put in profi-scala-commons (shared with proline admin)
   trait JCommandReflection {

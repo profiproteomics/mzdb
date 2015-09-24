@@ -15,14 +15,14 @@ import org.jfree.chart.renderer.LookupPaintScale
 import org.jfree.chart.renderer.xy.XYBlockRenderer
 import org.jfree.data.xy.DefaultXYZDataset
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.utils.math.wavelet._
 
 
 /** Peak Width are ~= 2 * scale where scale is the maxima point on the ridge */
-abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDetectionMethod with Logging {
+abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDetectionMethod with LazyLogging {
   
   require(peaks != null && !peaks.isEmpty, "provided peaks array is empty or null")
   //var ydata: Array[Double] = null

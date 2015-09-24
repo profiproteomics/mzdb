@@ -1,7 +1,7 @@
 package fr.profi.mzdb
 
 import fr.profi.mzdb.model.Peak
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.model.Feature
 import scala.collection.mutable.ArrayBuffer
@@ -18,7 +18,7 @@ case class Spectrum(precursorMz: Double, precursorCharge: Int, elutionTime: Floa
 /**
  *  May provide additionnal configuration ?
  */
-class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends Logging { // for each
+class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for each
   
   val scanHeaderById = mzDbReader.getMs2ScanHeaderById.map { case (k,v) => k.toLong -> v } toMap
   val minNbPeaksInSpectrum = 3

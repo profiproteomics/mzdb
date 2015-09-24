@@ -1,6 +1,6 @@
 package fr.profi.mzdb.algo.signal.detection
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.utils.math.wavelet.Ridge

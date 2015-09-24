@@ -2,7 +2,7 @@ package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.model._
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.ms.model.TheoreticalIsotopePattern
@@ -40,7 +40,7 @@ class OverlappingFeaturesExtractor(
   val scanHeaderById: Map[Long, ScanHeader],
   val nfByScanId: Map[Long,Float] = Map(),
   val ftExtractor: AbstractSupervisedFtExtractor
-) extends Logging {
+) extends LazyLogging {
   
   val xtractConfig: FeatureExtractorConfig = ftExtractor.xtractConfig
   //val xtractAlgoConfig: ExtractionAlgorithmConfig = ftExtractor.xtractAlgoConfig

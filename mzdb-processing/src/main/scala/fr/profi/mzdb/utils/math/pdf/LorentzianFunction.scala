@@ -1,6 +1,6 @@
 package fr.profi.mzdb.utils.math.pdf
 
-import scala.reflect.BeanProperty
+import scala.beans.BeanProperty
 import org.apache.commons.math3.analysis.UnivariateFunction
 
 /**

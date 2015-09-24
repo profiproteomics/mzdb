@@ -12,7 +12,7 @@ import org.jfree.data._
 import org.jfree.data.xy._
 
 import com.almworks.sqlite4java.SQLiteConnection
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
@@ -22,7 +22,7 @@ import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.DerivativeAnalysis
 
-object SQLiteIsolationWindowStorer extends Logging {
+object SQLiteIsolationWindowStorer extends LazyLogging {
   
   def storeIsolationWindows(mzDbReader: MzDbReader, dbLocation: File ) {
 

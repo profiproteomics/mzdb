@@ -5,14 +5,14 @@ import org.junit.FixMethodOrder
 import org.junit.Test
 import org.junit.runners.MethodSorters
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 
 import fr.profi.chemistry.model.BiomoleculeAtomTable
 import fr.profi.chemistry.model.HumanAminoAcidTable
 import fr.profi.ms.algo._
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-class IsotopePatternTest extends Logging  {
+class IsotopePatternTest extends StrictLogging  {
 
   @Before
   @throws(classOf[Exception])

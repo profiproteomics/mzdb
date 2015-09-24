@@ -2,7 +2,7 @@ package fr.profi.mzdb.algo.feature.extraction
 
 import scala.util.control.Breaks._
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.PeakListTree
@@ -19,7 +19,7 @@ class Ms2DrivenFtExtractor(
  val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
  val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
-) extends AbstractSupervisedFtExtractor with Logging {
+) extends AbstractSupervisedFtExtractor with LazyLogging {
   
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 

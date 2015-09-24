@@ -5,7 +5,7 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.0.6</version>  <!-- Snapshot Trunk version -->
+    <version>0.1.0-SNAPSHOT</version>  <!-- Snapshot Trunk version -->
   </parent>
 
   <groupId>fr.profi</groupId>
@@ -26,6 +26,20 @@
 
   <dependencies>
 
+    <!-- ProFI commons Scala -->
+    <dependency>
+      <groupId>fr.proline.util</groupId>
+      <artifactId>ProFI-Commons-Scala</artifactId>
+      <version>0.3.0-SNAPSHOT</version>
+    </dependency>
+
+    <!-- mzdb-access -->
+    <dependency>
+      <groupId>fr.profi</groupId>
+      <artifactId>mzdb-access</artifactId>
+      <version>0.4.0-SNAPSHOT</version>
+    </dependency>
+
     <!-- Scala -->
     <dependency>
       <groupId>org.scala-lang</groupId>
@@ -41,23 +55,23 @@
     </dependency>
 
     <dependency>
-      <groupId>com.typesafe</groupId>
-      <artifactId>scalalogging-slf4j_2.10</artifactId>
-      <!-- Version inherited from ProFI-Pom ${scala.version} -->
+      <groupId>com.typesafe.scala-logging</groupId>
+      <artifactId>scala-logging_${scala.version}</artifactId>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
     <!-- Commons -->
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
-      <version>3.4.1</version>
+      <version>3.5</version>
     </dependency>
 
     <!-- Charting -->
     <dependency>
       <groupId>org.jfree</groupId>
       <artifactId>jfreechart</artifactId>
-      <version>1.0.17</version>
+      <version>1.0.19</version>
     </dependency>
 
     <!-- Smoothing (algorithmic) -->
@@ -81,25 +95,11 @@
       <version>0.6.11</version>
     </dependency>
 
-    <!-- mzdb-access -->
-    <dependency>
-      <groupId>fr.profi</groupId>
-      <artifactId>mzdb-access</artifactId>
-      <version>0.4.0-SNAPSHOT</version>
-    </dependency>
-
     <!-- Command Line Interface -->
     <dependency>
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
-      <version>1.47</version> <!-- Latest version checked on 21 january 2015 -->
-    </dependency>
-
-    <!-- ProFI commons Scala -->
-    <dependency>
-      <groupId>fr.proline.util</groupId>
-      <artifactId>ProFI-Commons-Scala</artifactId>
-      <version>0.1.0</version>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
     <!-- Test -->
@@ -133,64 +133,28 @@
 
   <build>
 
-    <!-- This plugin's configuration is used to store Eclipse m2e settings 
-      only. It has no influence on the Maven build itself. -->
-    <pluginManagement>
-      <plugins>
-        <!-- For Eclipse build -->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <versionRange>[2.8,)</versionRange>
-                    <goals>
-                      <goal>copy-dependencies</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <execute />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-
     <plugins>
 
-    <plugin>
+      <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <!-- Version inherited from ProFI-Pom -->
+        <!-- Version and configuration inherited from ProFI-Pom -->
+        
         <configuration>
-          <recompileMode>incremental</recompileMode>
-          <!-- <residentCompilerLimit>1</residentCompilerLimit> -->
-          <args>
-            <arg>-deprecation</arg>
-            <arg>-unchecked</arg>
-            <arg>-P:continuations:enable</arg>
-          </args>
-          <javacArgs>
-            <javacArg>-Xlint:unchecked</javacArg>
-            <javacArg>-Xlint:deprecation</javacArg>
-          </javacArgs>
-          <charset>UTF-8</charset>
-          <compilerPlugins>
-            <compilerPlugin>
-              <groupId>org.scala-lang.plugins</groupId>
-              <artifactId>continuations</artifactId>
-              <version>${scala-library.version}</version>
-            </compilerPlugin>
-          </compilerPlugins>
+          <launchers>
+            <launcher>
+              <id>RunCommand</id>
+              <mainClass>fr.profi.mzdb.RunCommand</mainClass>
+              <!-- args are optional <args> <arg>arg1</arg> </args> -->
+              <!-- jvmArgs are optional -->
+              <jvmArgs>
+                <jvmArg>-Xmx1024m</jvmArg>
+                <jvmArg>-Xms512m</jvmArg>
+                <jvmArg>-Duser.language=en</jvmArg>
+                <jvmArg>-Djava.library.path=./lib</jvmArg>
+              </jvmArgs>
+            </launcher>
+          </launchers>
         </configuration>
       </plugin>
 
@@ -230,14 +194,13 @@
                         
           </execution>
           
-		
         </executions>
       </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.18.1</version> <!-- Latest version checked on 21 january 2015 -->
+        <!-- Version inherited from ProFI-Pom -->
         <configuration>
           <systemProperties>
             <property>
@@ -245,28 +208,6 @@
               <value>${project.build.directory}/lib</value>
             </property>
           </systemProperties>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <!-- Version inherited from ProFI-Pom -->
-        <configuration>
-          <launchers>
-            <launcher>
-              <id>RunCommand</id>
-              <mainClass>fr.profi.mzdb.RunCommand</mainClass>
-              <!-- args are optional <args> <arg>arg1</arg> </args> -->
-              <!-- jvmArgs are optional -->
-              <jvmArgs>
-                <jvmArg>-Xmx1024m</jvmArg>
-                <jvmArg>-Xms512m</jvmArg>
-                <jvmArg>-Duser.language=en</jvmArg>
-                <jvmArg>-Djava.library.path=./lib</jvmArg>
-              </jvmArgs>
-            </launcher>
-          </launchers>
         </configuration>
       </plugin>
 

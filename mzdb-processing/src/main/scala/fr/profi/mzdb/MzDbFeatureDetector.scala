@@ -11,7 +11,7 @@ import scala.collection.mutable.Queue
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.control.Breaks._
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.feature.extraction.UnsupervisedPeakelDetector
 import fr.profi.mzdb.model._
@@ -59,7 +59,7 @@ class PeakelDetectorConsumer(
   val peakelDetector: UnsupervisedPeakelDetector,
   val detectorQueue: PeakelDetectorQueue,
   val peakelsBuffer: ArrayBuffer[Peakel]  
-)(implicit execCtx: ExecutionContextExecutor) extends Logging {
+)(implicit execCtx: ExecutionContextExecutor) extends LazyLogging {
   
   // Here is the PeakListTree consumer code written in a Future block
   val future = Future {
@@ -131,7 +131,7 @@ case class PeakelDetectorQueueEntry(
 )
 
 // Code inspired from: http://studio.cs.hut.fi/snippets/producer.html
-class PeakelDetectorQueue(maxSize: Int) extends Logging {
+class PeakelDetectorQueue(maxSize: Int) extends LazyLogging {
   
   private var isStopped = false
 
@@ -279,7 +279,7 @@ object MzDbFeatureDetector {
 class MzDbFeatureDetector(
   mzDbReader: MzDbReader,
   @BeanProperty var ftDetectorConfig: FeatureDetectorConfig = FeatureDetectorConfig()
-) extends Logging {
+) extends LazyLogging {
   
   val ms1ScanHeaderById = mzDbReader.getMs1ScanHeaders().map( sh => sh.getId.toLong -> sh ).toMap
   val ms2ScanHeaders = mzDbReader.getMs2ScanHeaders()

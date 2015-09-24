@@ -1,8 +1,8 @@
 package fr.profi.mzdb.utils.math.wavelet
 
+import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
-import scala.reflect.BeanProperty
 
 /**
  * class for modelize Ridge

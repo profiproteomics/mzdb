@@ -7,7 +7,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.algo.FeatureExtractor
 import fr.profi.mzdb.algo.ms.normalization.MsScanNormalizer
 import fr.profi.mzdb.io.reader.RunSliceDataProvider
@@ -26,7 +26,7 @@ class MzDbFeatureExtractor(
   maxNbPeaksInIP: Int = 3,
   minNbOverlappingIPs: Int = 3,
   xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 )
-) extends Logging { //with ProgressComputing {
+) extends LazyLogging { //with ProgressComputing {
   
 //  final case object MZFT_STEP0 extends IProgressStepIdentity {
 //    val stepDescription = "fake initialization step"

@@ -5,7 +5,7 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.TreeMap
 import scala.util.control.Breaks._
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.util.math.calcLineParams
 import fr.profi.util.ms.mozToMass
@@ -18,7 +18,7 @@ import fr.profi.chemistry.model.MolecularConstants
  * @author CB205360
  *
  */
-object IsotopePatternEstimator extends Logging {
+object IsotopePatternEstimator extends LazyLogging {
 
   final val avgIsoMassDiff = MolecularConstants.AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF
 

@@ -5,11 +5,11 @@ import scala.collection.mutable.HashMap
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 
 import fr.profi.mzdb.model._
 
-abstract class AbstractFeatureExtractor extends Logging {
+abstract class AbstractFeatureExtractor extends LazyLogging {
   
   /** Required parameters */
   def scanHeaderById: Map[Long, ScanHeader]

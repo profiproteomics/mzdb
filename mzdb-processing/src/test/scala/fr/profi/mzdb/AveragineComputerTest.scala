@@ -1,6 +1,6 @@
 package fr.profi.mzdb
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.BeforeClass
@@ -13,7 +13,7 @@ import fr.profi.mzdb.model.AveragineComputer
 import fr.profi.chemistry.model.HumanAminoAcidTable
 import fr.profi.chemistry.model.BiomoleculeAtomTable
 
-class AveragineComputerTest extends Logging  {
+class AveragineComputerTest extends StrictLogging  {
 
   @Before
   @throws(classOf[Exception])

@@ -4,7 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
@@ -71,7 +71,7 @@ class UnsupervisedPeakelDetector(
   val maxTimeWindow: Float = 1200f,
   val minPercentageOfMaxInt: Float = 0.01f,
   val peakelFinder: IPeakelFinder = new SmartPeakelFinder()
-) extends Logging {
+) extends LazyLogging {
   
   // TODO: add to config
   val minPeaksCount = 5

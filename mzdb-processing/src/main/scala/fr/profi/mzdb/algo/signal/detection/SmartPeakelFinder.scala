@@ -7,7 +7,7 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.util.stat._
 import fr.profi.mzdb.utils.math.DerivativeAnalysis
 import scala.beans.BeanProperty
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.LazyLogging
 
 /**
  * @author David Bouyssie
@@ -23,7 +23,7 @@ class SmartPeakelFinder(
   var usePartialSGSmoother: Boolean = false,
   var useBaselineRemover: Boolean = false,
   var useSmoothing: Boolean = true
-) extends IPeakelFinder with Logging {
+) extends IPeakelFinder with LazyLogging {
 
 
   // gapTolerance set to 1 means that ponctual intensity hole won't be removed

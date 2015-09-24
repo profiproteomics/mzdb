@@ -1,6 +1,6 @@
 package fr.profi.mzdb
 
-import com.typesafe.scalalogging.slf4j.Logging
+import com.typesafe.scalalogging.StrictLogging
 import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.BeforeClass
@@ -13,7 +13,7 @@ import fr.profi.mzdb.io.reader.RunSliceDataProvider
 import fr.profi.mzdb.model.PutativeFeature
 import org.msgpack.annotation.Ignore
 
-class MzDbFeatureDetectorTest extends Logging {
+class MzDbFeatureDetectorTest extends StrictLogging {
 
   var mzDb: MzDbReader = _
   
