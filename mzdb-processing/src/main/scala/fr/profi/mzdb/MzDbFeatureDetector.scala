@@ -78,10 +78,10 @@ class PeakelDetectorConsumer(
         
         val rsNumber = queueEntry.rsNumber
         val pklTree = queueEntry.pklTree
-        val curPeaklistByScanId = queueEntry.curPeaklistByScanId
+        val curPeaklistBySpectrumId = queueEntry.curPeaklistBySpectrumId
     
-        // Retrieve all peaks in curPeaklistByScanId
-        var curRsPeaks = curPeaklistByScanId.values.flatMap( _.getAllPeaks() ).toArray
+        // Retrieve all peaks in curPeaklistBySpectrumId
+        var curRsPeaks = curPeaklistBySpectrumId.values.flatMap( _.getAllPeaks() ).toArray
         
         this.logger.debug("unsupervised processing of run slice "+rsNumber)
         
@@ -127,7 +127,7 @@ class PeakelDetectorConsumer(
 case class PeakelDetectorQueueEntry(
   rsNumber: Int,
   pklTree: PeakListTree,
-  curPeaklistByScanId: Map[Long,PeakList]
+  curPeaklistBySpectrumId: Map[Long,PeakList]
 )
 
 // Code inspired from: http://studio.cs.hut.fi/snippets/producer.html
@@ -281,16 +281,16 @@ class MzDbFeatureDetector(
   @BeanProperty var ftDetectorConfig: FeatureDetectorConfig = FeatureDetectorConfig()
 ) extends LazyLogging {
   
-  val ms1ScanHeaderById = mzDbReader.getMs1ScanHeaders().map( sh => sh.getId.toLong -> sh ).toMap
-  val ms2ScanHeaders = mzDbReader.getMs2ScanHeaders()
-  //val ms2ScanHeaderById = ms2ScanHeaders.map( sh => sh.getId.toInt -> sh ).toMap
-  val ms2ScanHeadersByCycle = ms2ScanHeaders.groupBy(_.getCycle.toInt)
+  val ms1SpectrumHeaderById = mzDbReader.getMs1SpectrumHeaders().map( sh => sh.getId.toLong -> sh ).toMap
+  val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders()
+  //val ms2SpectrumHeaderById = ms2SpectrumHeaders.map( sh => sh.getId.toInt -> sh ).toMap
+  val ms2SpectrumHeadersByCycle = ms2SpectrumHeaders.groupBy(_.getCycle.toInt)
  
   // TODO: factorize this code
   // BEGIN OF STOLEN FROM MzDbFeatureExtractor
   class RichRunSliceData(self: RunSliceData) {
-    def getPeakListByScanId(): Map[Long,PeakList] = {
-      Map() ++ self.getScanSliceList.map { ss => ss.getScanId -> new PeakList(ss.getPeaks(),0.1) }
+    def getPeakListBySpectrumId(): Map[Long,PeakList] = {
+      Map() ++ self.getSpectrumSliceList.map { ss => ss.getSpectrumId -> new PeakList(ss.toPeaks(),0.1) }
     }
   }
   implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
@@ -305,14 +305,14 @@ class MzDbFeatureDetector(
     
     
     val peakelDetector = new UnsupervisedPeakelDetector(
-      scanHeaderById = ms1ScanHeaderById,
-      nfByScanId = Map.empty[Long,Float],
+      spectrumHeaderById = ms1SpectrumHeaderById,
+      nfBySpectrumId = Map.empty[Long,Float],
       mzTolPPM = ftDetectorConfig.mzTolPPM,
       peakelFinder = PeakelFinderBuilder.build(ftDetectorConfig.peakelFinderConfig)
     )
     
-    // Define a peaklist map (first level = runSliceNumber, second level =scanId )
-    val pklByScanIdAndRsNumber = new HashMap[Int, Map[Long, PeakList]]()
+    // Define a peaklist map (first level = runSliceNumber, second level =spectrumId )
+    val pklBySpectrumIdAndRsNumber = new HashMap[Int, Map[Long, PeakList]]()
     
     // Create a queue to parallelize the feature detection process
     val nbProcessors = Runtime.getRuntime().availableProcessors()
@@ -351,7 +351,7 @@ class MzDbFeatureDetector(
       
       // Iterate over run slice headers
       // This loops acts as a producer for the detectorQueue
-      while( (rsIter.hasNext || rsOpt.isDefined ) && detectorQueue.hasExceptions() == false ) { // && pklByScanIdAndRsNumber.size < 3
+      while( (rsIter.hasNext || rsOpt.isDefined ) && detectorQueue.hasExceptions() == false ) { // && pklBySpectrumIdAndRsNumber.size < 3
         
         val rs = rsOpt.get
         val rsh = rs.getHeader
@@ -359,53 +359,52 @@ class MzDbFeatureDetector(
         val rsNumber = rsh.getNumber
         val nextRsNumber = rsNumber + 1
         
-        val peaksCountSum = rsd.getScanSliceList.view.map(_.getData.getPeaksCount).sum
+        val peaksCountSum = rsd.getSpectrumSliceList.view.map(_.getData.getPeaksCount).sum
         if( peaksCountSum == 0 ) {
           logger.warn(s"Run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz}) is empty")
-          rsOpt = Some(rsIter.next)
         }
         else {
           
-          val curPeaklistByScanId = rsd.getPeakListByScanId
-          
+          val curPeaklistBySpectrumId = rsd.getPeakListBySpectrumId
+         
           // Retrieve run slices and their corresponding id
           this.logger.debug(s"loading run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz})")
           
           // Build the list of obsolete run slices
           val rsNumbersToRemove = for(
-            processedRsNumber <- pklByScanIdAndRsNumber.keys
+            processedRsNumber <- pklBySpectrumIdAndRsNumber.keys
             if processedRsNumber != rsNumber &&
                processedRsNumber != prevRsNumber &&
                processedRsNumber != nextRsNumber
           ) yield processedRsNumber
     
           // Clean the peaklist map => remove obsolete run slices
-          rsNumbersToRemove.foreach { pklByScanIdAndRsNumber -= _ }
+          rsNumbersToRemove.foreach { pklBySpectrumIdAndRsNumber -= _ }
     
-          // Add current run slice peakList to pklByScanIdAndRsNumber
-          if ( pklByScanIdAndRsNumber.contains(rsNumber) == false ) {
-            pklByScanIdAndRsNumber += ( rsNumber -> curPeaklistByScanId )
+          // Add current run slice peakList to pklBySpectrumIdAndRsNumber
+          if ( pklBySpectrumIdAndRsNumber.contains(rsNumber) == false ) {
+            pklBySpectrumIdAndRsNumber += ( rsNumber -> curPeaklistBySpectrumId )
           }
     
-          // Add next run slice peaklist to pklByScanIdAndRsNumber
+          // Add next run slice peaklist to pklBySpectrumIdAndRsNumber
           val nextRsOpt = if (rsIter.hasNext == false) None
           else {
             val nextRs = rsIter.next
-            pklByScanIdAndRsNumber += ( nextRsNumber -> nextRs.getData.getPeakListByScanId )
+            pklBySpectrumIdAndRsNumber += ( nextRsNumber -> nextRs.getData.getPeakListBySpectrumId )
             Some(nextRs)
           }
           
-          // Group run slice peakLists into a single map (key = scan id)
-          val peakListsByScanId = new HashMap[Long,ArrayBuffer[PeakList]]()
-          pklByScanIdAndRsNumber.values.foreach { pklByScanId =>
-            pklByScanId.foreach { case (scanId, pkl) =>
-              peakListsByScanId.getOrElseUpdate(scanId, new ArrayBuffer[PeakList]) += pkl
+          // Group run slice peakLists into a single map (key = spectrum id)
+          val peakListsBySpectrumId = new HashMap[Long,ArrayBuffer[PeakList]]()
+          pklBySpectrumIdAndRsNumber.values.foreach { pklBySpectrumId =>
+            pklBySpectrumId.foreach { case (spectrumId, pkl) =>
+              peakListsBySpectrumId.getOrElseUpdate(spectrumId, new ArrayBuffer[PeakList]) += pkl
             }
           }
           
           // Use the map to instantiate a peakList tree which will be used for peak extraction
-          val pklGroupByScanId = peakListsByScanId.map { case (scanId, pkl) => scanId -> new PeakListGroup( pkl ) } toMap
-          val pklTree = new PeakListTree( pklGroupByScanId, ms1ScanHeaderById )
+          val pklGroupBySpectrumId = peakListsBySpectrumId.map { case (spectrumId, pkl) => spectrumId -> new PeakListGroup( pkl ) } toMap
+          val pklTree = new PeakListTree( pklGroupBySpectrumId, ms1SpectrumHeaderById )
                  
           // Enqueue loaded PeakListTree to send it to the consumer
           // Note that the detectorQueue will wait if it is full
@@ -413,13 +412,14 @@ class MzDbFeatureDetector(
             PeakelDetectorQueueEntry(
               rsNumber = rsNumber,
               pklTree = pklTree,
-              curPeaklistByScanId = curPeaklistByScanId
+              curPeaklistBySpectrumId = curPeaklistBySpectrumId
             )
           )
           
           // Update some vars
           prevRsNumber = rsNumber
           rsOpt = nextRsOpt
+          
         }
       }
       
@@ -496,24 +496,24 @@ class MzDbFeatureDetector(
 
     val detectedFeatures = this._deisotopePeakelsV2(filteredPeakels)
     
-    // Link MS2 scans to features
+    // Link MS2 spectra to features
     for( ft <- detectedFeatures ) {
       
-      // Find MS2 scans concurrent with the detected feature
-      val putativeMs2Scans = new ArrayBuffer[ScanHeader]
+      // Find MS2 spectra concurrent with the detected feature
+      val putativeMs2Spectra = new ArrayBuffer[SpectrumHeader]
       for(
-        scanId <- ft.getScanIds;
-        sh = ms1ScanHeaderById(scanId);
-        ms2ScanHeaders <- ms2ScanHeadersByCycle.get(sh.getCycle)
+        spectrumId <- ft.getSpectrumIds;
+        sh = ms1SpectrumHeaderById(spectrumId);
+        ms2SpectrumHeaders <- ms2SpectrumHeadersByCycle.get(sh.getCycle)
       ) {
-        putativeMs2Scans ++= ms2ScanHeaders
+        putativeMs2Spectra ++= ms2SpectrumHeaders
       }
       
       // Compute the m/z tolerance in Daltons
       val mzTolDa = MsUtils.ppmToDa( ft.mz, ftDetectorConfig.mzTolPPM )
     
-      // Keep only MS2 scans having a precursor m/z close to the feature one
-      ft.ms2ScanIds = putativeMs2Scans.distinct
+      // Keep only MS2 spectra having a precursor m/z close to the feature one
+      ft.ms2SpectrumIds = putativeMs2Spectra.distinct
         .withFilter( sh => sh.getPrecursorCharge == ft.charge )
         .withFilter( sh => math.abs(sh.getPrecursorMz - ft.mz) <= mzTolDa )
         .map(_.getId)

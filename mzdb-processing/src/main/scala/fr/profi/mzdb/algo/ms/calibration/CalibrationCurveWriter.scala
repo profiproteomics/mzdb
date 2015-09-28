@@ -10,18 +10,18 @@ import java.io.File
 
 object CalibrationCurveWriter {
 	
-    
-	
-	private def compute(mzdb:MzDbReader, 
-	                    maxDeltaPpm : Double, 
-	                    intensityThresh:Double = 0.9, 
-	                    skipBeginningScans: Int = 0) : Pair[TreeMap[Long, Double], TreeMap[Long, Double]] ={
+	private def compute(
+	  mzdb:MzDbReader, 
+    maxDeltaPpm : Double, 
+    intensityThresh:Double = 0.9, 
+    skipBeginningSpectra: Int = 0
+  ): Pair[TreeMap[Long, Double], TreeMap[Long, Double]] ={
 	  
 	  
-	  var ms1Iter = mzdb.getMsScanIterator(1)
-	  for (i <- 0 until skipBeginningScans) {
+	  var ms1Iter = mzdb.getSpectrumIterator(1)
+	  for (i <- 0 until skipBeginningSpectra) {
 	     if (ms1Iter.hasNext) ms1Iter.next
-	     else throw new Throwable("reach last scan while trying to skip beginning scans")
+	     else throw new Throwable("reach last spectrum while trying to skip beginning spectra")
 	  }
 	  
 	  
@@ -29,13 +29,13 @@ object CalibrationCurveWriter {
 	  var m445 = new TreeMap[Long, Double]
 	  var result = new TreeMap[Long, Double]
 	  
-	  var firstScan = if (ms1Iter.hasNext) ms1Iter.next() else throw new Throwable("not enough scans...")
+	  var firstSpectrum = if (ms1Iter.hasNext) ms1Iter.next() else throw new Throwable("not enough spectra...")
 	  
 	  while (ms1Iter.hasNext) {
 		  
-	    var secondScan = ms1Iter.next
+	    var secondSpectrum = ms1Iter.next
 	    
-	    var mergedSpectrum = firstScan.getPeaks().map{ x=> new ClassedPeakScala(x.getMz, x.getIntensity(), 1) } ++ secondScan.getPeaks().map{ x=> new ClassedPeakScala(x.getMz, x.getIntensity(), 2) }
+	    var mergedSpectrum = firstSpectrum.toPeaks().map{ x=> new ClassedPeakScala(x.getMz, x.getIntensity(), 1) } ++ secondSpectrum.toPeaks().map{ x=> new ClassedPeakScala(x.getMz, x.getIntensity(), 2) }
 	    
 	    //eliminate noise little peaks using quantile approach, other techniques ?
 	    //val sortedIntensities = mergedSpectrum.map (_.getIntensity).toSeq.sortWith(_<_)
@@ -101,10 +101,10 @@ object CalibrationCurveWriter {
 			i+=1
 		}//end first while
 	    
-	    var peak445 = new PeakList(firstScan.getPeaks(), 100.0).getNearestPeak(445.12, 445.12 * maxDeltaPpm / 1e6)
-	    if (peak445 != null) m445.put(firstScan.getHeader().getId(), peak445.getMz)
+	    var peak445 = new PeakList(firstSpectrum.toPeaks(), 100.0).getNearestPeak(445.12, 445.12 * maxDeltaPpm / 1e6)
+	    if (peak445 != null) m445.put(firstSpectrum.getHeader().getId(), peak445.getMz)
 	    
-	    result.put(firstScan.getHeader().getId, deltaMass.sum / deltaMass.length)
+	    result.put(firstSpectrum.getHeader().getId, deltaMass.sum / deltaMass.length)
 	  }//end iterator
 	  
 	  var output = new TreeMap[Long, Double]

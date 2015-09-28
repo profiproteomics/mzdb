@@ -1,46 +1,46 @@
 package fr.profi.mzdb.algo.ms.normalization
 
-import fr.profi.mzdb.model.ScanHeader
+import fr.profi.mzdb.model.SpectrumHeader
 import fr.profi.mzdb.MzDbReader
 
 /**
  * @author David Bouyssie
  *
  */
-object MsScanNormalizer {
+object MsSpectrumNormalizer {
   
-  def computeNfByScanId(mzDbReader: MzDbReader): Map[Long,Float] = {
+  def computeNfBySpectrumId(mzDbReader: MzDbReader): Map[Long,Float] = {
     
     val cyclesCount = mzDbReader.getCyclesCount()
     val medians = new Array[Float]( cyclesCount )
-    val scanIds = new Array[Long]( cyclesCount )
+    val spectrumIds = new Array[Long]( cyclesCount )
     
-    val msScanIter = mzDbReader.getMsScanIterator( 1 )
-    while( msScanIter.hasNext ) {
-      val scan = msScanIter.next
+    val msSpectrumIter = mzDbReader.getSpectrumIterator( 1 )
+    while( msSpectrumIter.hasNext ) {
+      val spectrum = msSpectrumIter.next
       
-      val intensities = scan.getPeaks().map { _.getIntensity }
+      val intensities = spectrum.toPeaks().map { _.getIntensity }
       val medInt = median(intensities)
       
-      val sh = scan.getHeader
+      val sh = spectrum.getHeader
       val idx = sh.getCycle - 1
-      scanIds(idx) = sh.getId
+      spectrumIds(idx) = sh.getId
       medians(idx) = medInt.toFloat
     }
     
     val nfs = computeNFs(medians)
     
-    Map() ++ (scanIds zip nfs) map { case(id,nf) => (id -> nf) }
+    Map() ++ (spectrumIds zip nfs) map { case(id,nf) => (id -> nf) }
   }
 
   def computeNFs( sic: Array[Float] ) = {
     
-    val nbScans = sic.length
+    val nbSpectra = sic.length
     
     val smoothedValues = smoothValues(sic,1)
-    val nfs = new Array[Float](nbScans)
+    val nfs = new Array[Float](nbSpectra)
     
-    for( idx <- 0 until nbScans ) {
+    for( idx <- 0 until nbSpectra ) {
       val intensity = sic(idx)
       val corIntensity = smoothedValues(idx)
       nfs(idx) = corIntensity/intensity

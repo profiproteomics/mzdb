@@ -10,18 +10,18 @@ import scala.beans.BeanProperty
 case class ElutionTimeContext( @BeanProperty elutionTime: Float ) extends ILcContext {
 
   /**
-   * @see fr.profi.mzdb.model.ILcContext#getScanId()
+   * @see fr.profi.mzdb.model.ILcContext#getSpectrumId()
    */
-  def getScanId = 0
+  def getSpectrumId = 0
 
 }
 
 /**
- * The Class ScanContext.
+ * The Class SpectrumContext.
  * @author David Bouyssie
  *
  */
-case class ScanIdContext( @BeanProperty scanId: Long ) extends ILcContext {
+case class SpectrumIdContext( @BeanProperty spectrumId: Long ) extends ILcContext {
 
   /**
    * @see fr.profi.mzdb.model.ILcContext#getElutionTime()
@@ -32,7 +32,7 @@ case class ScanIdContext( @BeanProperty scanId: Long ) extends ILcContext {
 
 
 case class FullLcContext(
-  @BeanProperty scanId: Long,
+  @BeanProperty spectrumId: Long,
   @BeanProperty elutionTime: Float
 ) extends ILcContext 
 

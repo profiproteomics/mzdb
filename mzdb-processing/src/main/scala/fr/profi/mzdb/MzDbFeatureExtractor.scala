@@ -9,8 +9,8 @@ import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.algo.FeatureExtractor
-import fr.profi.mzdb.algo.ms.normalization.MsScanNormalizer
-import fr.profi.mzdb.io.reader.RunSliceDataProvider
+import fr.profi.mzdb.algo.ms.normalization.MsSpectrumNormalizer
+import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model._
 import fr.proline.api.progress._
 import scala.collection.mutable.HashSet
@@ -79,13 +79,13 @@ class MzDbFeatureExtractor(
   
 
   class RichRunSliceData(self: RunSliceData) {
-    def getPeakListByScanId(): Map[Long, PeakList] = {
+    def getPeakListBySpectrumId(): Map[Long, PeakList] = {
       val mapBuilder = Map.newBuilder[Long, PeakList]
-      mapBuilder.sizeHint(self.getScanSliceList.length)
+      mapBuilder.sizeHint(self.getSpectrumSliceList.length)
       
-      for( ss <- self.getScanSliceList ) {
+      for( ss <- self.getSpectrumSliceList ) {
         // FIXME: remove the hardcoded 0.1 index value
-        mapBuilder += ss.getScanId() -> new PeakList( ss.getPeaks() )
+        mapBuilder += ss.getSpectrumId() -> new PeakList( ss.toPeaks() )
       }
       
       mapBuilder.result
@@ -139,14 +139,14 @@ class MzDbFeatureExtractor(
     
     //progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
 
-    // Retrieve scans mapped by their id
-    val scanHeaderById = collection.immutable.Map() ++ mzDbReader.getScanHeaderById.map { case (i, sh) => i.toLong -> sh }
+    // Retrieve spectra mapped by their id
+    val spectrumHeaderById = collection.immutable.Map() ++ mzDbReader.getSpectrumHeaderById.map { case (i, sh) => i.toLong -> sh }
  
-    // Compute MS scans normalization factors
-    //val nfByScanId = MsScanNormalizer.computeNfByScanId(mzDbReader)
+    // Compute MS spectra normalization factors
+    //val nfBySpectrumId = MsSpectrumNormalizer.computeNfBySpectrumId(mzDbReader)
 
-    // Define a peaklist map (first level = runSliceId, second level =scanId )
-    val pklByScanIdAndRsId = new HashMap[Int, Map[Long, PeakList]]()
+    // Define a peaklist map (first level = runSliceId, second level =spectrumId )
+    val pklBySpectrumIdAndRsId = new HashMap[Int, Map[Long, PeakList]]()
 
     // Define an array of features to be extracted
     val extractedFeatures = new ArrayBuffer[Feature](putativeFeatures.length)
@@ -154,8 +154,8 @@ class MzDbFeatureExtractor(
     // Instantiate a feature extractor
     val ftExtractor = new FeatureExtractor(
       mzDbReader,
-      scanHeaderById,
-      null, //nfByScanId,  
+      spectrumHeaderById,
+      null, //nfBySpectrumId,  
       xtractConfig
     )
     
@@ -200,14 +200,14 @@ class MzDbFeatureExtractor(
 
       // Build the list of obsolete run slices
       val runSlicesToRemove = for (
-        processedRsId <- pklByScanIdAndRsId.keys 
+        processedRsId <- pklBySpectrumIdAndRsId.keys 
         if processedRsId != rsNum &&
           processedRsId != prevRsNumber &&
           processedRsId != nextRsNumber
       ) yield processedRsId
 
       // Clean the peaklist map => remove obsolete run slices
-      runSlicesToRemove.foreach { pklByScanIdAndRsId -= _ }
+      runSlicesToRemove.foreach { pklBySpectrumIdAndRsId -= _ }
       //progressPlan(MZFT_STEP3).incrementAndGetCount(1)
 
       
@@ -224,41 +224,41 @@ class MzDbFeatureExtractor(
 
         // Retrieve previous run slice peaklist
         if (prevRSH.isDefined) {
-          if (pklByScanIdAndRsId.contains(prevRsNumber) == false) {
-            pklByScanIdAndRsId += (prevRsNumber -> this._getRSD(rsdProvider, prevRsNumber).getPeakListByScanId)
+          if (pklBySpectrumIdAndRsId.contains(prevRsNumber) == false) {
+            pklBySpectrumIdAndRsId += (prevRsNumber -> this._getRSD(rsdProvider, prevRsNumber).getPeakListBySpectrumId)
           }
         }
 
         // Retrieve current run slice peakList
-        if (pklByScanIdAndRsId.contains(rsNum) == false) {
-          pklByScanIdAndRsId += (rsNum -> this._getRSD(rsdProvider, rsNum).getPeakListByScanId)
+        if (pklBySpectrumIdAndRsId.contains(rsNum) == false) {
+          pklBySpectrumIdAndRsId += (rsNum -> this._getRSD(rsdProvider, rsNum).getPeakListBySpectrumId)
         }
 
         // Retrieve current next slice peaklist
         if (nextRSH.isDefined) {
-          if (pklByScanIdAndRsId.contains(nextRsNumber) == false) {
-            pklByScanIdAndRsId += (nextRsNumber -> this._getRSD(rsdProvider, nextRsNumber).getPeakListByScanId)
+          if (pklBySpectrumIdAndRsId.contains(nextRsNumber) == false) {
+            pklBySpectrumIdAndRsId += (nextRsNumber -> this._getRSD(rsdProvider, nextRsNumber).getPeakListBySpectrumId)
           }
         }
 
         //progressPlan(MZFT_STEP4_0).incrementAndGetCount(1)
         
-        // Group run slice peakLists into a single map (key = scan id)
-        val peakListsByScanId = new HashMap[Long, ArrayBuffer[PeakList]]()
-        pklByScanIdAndRsId.values.foreach {
+        // Group run slice peakLists into a single map (key = spectrum id)
+        val peakListsBySpectrumId = new HashMap[Long, ArrayBuffer[PeakList]]()
+        pklBySpectrumIdAndRsId.values.foreach {
           _.foreach {
-            case (scanId, pkl) =>
-              peakListsByScanId.getOrElseUpdate(scanId, new ArrayBuffer[PeakList]) += pkl
+            case (spectrumId, pkl) =>
+              peakListsBySpectrumId.getOrElseUpdate(spectrumId, new ArrayBuffer[PeakList]) += pkl
           }
         }
         //progressPlan(MZFT_STEP4_1).incrementAndGetCount(1)
 
         // Use the map to instantiate a peakList tree which will be used for peak extraction
-        val pklGroupByScanId = Map() ++ peakListsByScanId.map { kv => kv._1 -> new PeakListGroup(kv._2) }
+        val pklGroupBySpectrumId = Map() ++ peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup(kv._2) }
         //progressPlan(MZFT_STEP4_2).setAsCompleted()
         
-        val ms1ScanHeaderById = scanHeaderById.filter(_._2.getMsLevel() == 1)
-        val pklTree = new PeakListTree(pklGroupByScanId,ms1ScanHeaderById)
+        val ms1SpectrumHeaderById = spectrumHeaderById.filter(_._2.getMsLevel() == 1)
+        val pklTree = new PeakListTree(pklGroupBySpectrumId,ms1SpectrumHeaderById)
          
         //progressPlan(MZFT_STEP4_3).incrementAndGetCount(1)
         
@@ -340,14 +340,14 @@ class MzDbFeatureExtractor(
 //      
 //      ftSetByPeak(firstPeakelApex)
       
-      //val apexKey = ipApex.scanHeader.getId + "%" + ipApex.peaks(0).getMz + "%" + ipApex.peaks(0).getIntensity      
+      //val apexKey = ipApex.spectrumHeader.getId + "%" + ipApex.peaks(0).getMz + "%" + ipApex.peaks(0).getIntensity      
       
 //    }
     
     val featuresByApex = extractedFeatures.groupBy { ft =>
       val firstPeakel = ft.getFirstPeakel
       val apexIdx = firstPeakel.apexIndex
-      ( firstPeakel.scanIds(apexIdx), firstPeakel.mzValues(apexIdx) )
+      ( firstPeakel.spectrumIds(apexIdx), firstPeakel.mzValues(apexIdx) )
     }//new HashMap[String, ArrayBuffer[Feature]]
 //    extractedFeatures.foreach{ f =>
 //      featuresByApex.getOrElseUpdate(f.peakels(0).getApex().toString(), new ArrayBuffer[Feature]()) += f

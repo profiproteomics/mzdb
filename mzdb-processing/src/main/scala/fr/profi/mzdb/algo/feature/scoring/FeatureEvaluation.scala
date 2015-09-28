@@ -7,7 +7,7 @@ import fr.profi.mzdb.model.ILcContext
  * Metric to evaluate a feature quality
  */
 case class FeatureQualityVector (
-  ms1Count: Int, // duration in nb scans 
+  ms1Count: Int, // duration in nb spectra 
   mzPrecision: Float, //standard deviation in moz 
   shape: Float, // could also be called fitting RMSD 
   
@@ -24,7 +24,7 @@ case class FeatureQualityVector (
   //peakelsVelocity: Float, // FAKE
   //peakelsAmplitude: Float, // kind of SNR ? FAKE TO ME
   
-  peakelsApexDeviation: Float, //mean of the deviation in scan between peakel apexes
+  peakelsApexDeviation: Float, //mean of the deviation in spectrum between peakel apexes
   
   overlappingPeakelsCorrelation: Float, // correlation with detected overlapping peakels
   overlappingFactor: Float // overlapping factor, metric to quantify how much a feature is affected by an overlapping peakel/feature 
@@ -365,10 +365,10 @@ object FeatureEvaluator  {
     features: Seq[Feature],
     ftScoringConfig: FeatureScoringConfig,
     thresholdComputer: IFeatureThresholdsComputer,
-    lcContextByScanId: Map[Long,ILcContext]
+    lcContextBySpectrumId: Map[Long,ILcContext]
   ): Seq[FeatureEvaluation] = {
     //fill data 
-    val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig, lcContextByScanId)) toArray
+    val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig, lcContextBySpectrumId)) toArray
     val qualThresholds = thresholdComputer.getThresholds(fq) 
     /* just one toArray does not work ? FIXME: */
     fq.zip(features).par.map{ case (fq, f) => evaluateQualityVector(f, fq, qualThresholds) }.toArray.toSeq
@@ -377,13 +377,13 @@ object FeatureEvaluator  {
   def computeQualityVector(
     f: Feature,
     ftScoringConfig: FeatureScoringConfig = FeatureScoringConfig(),
-    lcContextByScanId: Map[Long,ILcContext]
+    lcContextBySpectrumId: Map[Long,ILcContext]
   ) : FeatureQualityVector = {
     
     var (signalFluctuation, shape) = (0f, 0f)
     ftScoringConfig.methods("signalFluctuation") match {
-      case "BasicPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByBasicPeakelFinder(f,lcContextByScanId)
-      case "WaveletBasedPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByWaveletBasedPeakelFinder(f,lcContextByScanId)
+      case "BasicPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByBasicPeakelFinder(f,lcContextBySpectrumId)
+      case "WaveletBasedPeakelFinder" => signalFluctuation = FeatureScorer.calcSignalFluctuationByWaveletBasedPeakelFinder(f,lcContextBySpectrumId)
       case _ => throw new Exception("Error when assigning a  shape to a feature")
     }
     

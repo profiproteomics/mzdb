@@ -9,7 +9,7 @@ import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 import fr.profi.mzdb.io.exporter.SQLiteFeatureStorer
-import fr.profi.mzdb.io.reader.RunSliceDataProvider
+import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model._
 
 /**
@@ -196,9 +196,9 @@ object RunCommand extends App with LazyLogging {
       lazy val intensity: Float = apex.getIntensity()
       lazy val time: Float = apex.getLcContext().getElutionTime()
 
-      def getApexFullScanIntensity(mzDb: MzDbReader): Float = {
-        val scan = mzDb.getScan(apex.getLcContext().getScanId())
-        scan.getHeader().getTIC()
+      def getApexFullSpectrumIntensity(mzDb: MzDbReader): Float = {
+        val spectrum = mzDb.getSpectrum(apex.getLcContext().getSpectrumId())
+        spectrum.getHeader().getTIC()
       }
 
     }
@@ -246,7 +246,7 @@ object RunCommand extends App with LazyLogging {
         case (mz, rtmin, rtmax) =>
           val mzTolInDa = mzTolInPPM * mz / 1e6
           val (minMz, maxMz) = (mz - mzTolInDa, mz + mzTolInDa)
-          val peaks = mzDb.getXIC(minMz, maxMz, 1, MzDbReader.XicMethod.MAX)
+          val peaks = mzDb.getMsXicInMzRange(minMz, maxMz, XicMethod.MAX)
           this.logger.info(s"XIC for mass ${mz} contains #${peaks.length} peaks")
           (mz, peaks, (rtmin, rtmax))
       }
@@ -353,17 +353,17 @@ object RunCommand extends App with LazyLogging {
           val mz = pep._1
           if (pep._2.isDefined) {
             val peak = pep._2.get
-            val (expMz, time, dur, area, int, msScanInt) = (
+            val (expMz, time, dur, area, int, msSpectrumInt) = (
               peak.mz,
               peak.time / 60,
               peak.duration / 60,
               peak.area,
               peak.intensity,
-              peak.getApexFullScanIntensity(mzDb)
+              peak.getApexFullSpectrumIntensity(mzDb)
             )
-            xicsBuilder += List(mzdbFilePath, mz, expMz, time, dur, area, int, msScanInt).mkString("\t")
+            xicsBuilder += List(mzdbFilePath, mz, expMz, time, dur, area, int, msSpectrumInt).mkString("\t")
 
-            //writer.println(List(mzdbFilePath, mz,expMz,time,dur,area,int,msScanInt).mkString("\t"))
+            //writer.println(List(mzdbFilePath, mz,expMz,time,dur,area,int,msSpectrumInt).mkString("\t"))
             logger.info("found peptide ion of intensity |" + int + "| and duration |" + dur + "| at |" + time + "|")
           } else logger.warn("can't find peptide ion of m/z=" + mz)
         }
@@ -475,12 +475,12 @@ object RunCommand extends App with LazyLogging {
 
     val mzDb = new MzDbReader(mzdbFilePath, true)
     val outStream = new PrintWriter(new FileOutputStream(outputFilePath))
-    val scanSlices = mzDb.getScanSlices(mzmin, mzmax, rtmin, rtmax, 1) // always in mslevel 1 by default
+    val spectrumSlices = mzDb.getMsSpectrumSlices(mzmin, mzmax, rtmin, rtmax) // always in mslevel 1 by default
 
     outStream.println(List("moz", "time", "intensity").mkString("\t"))
 
-    scanSlices.foreach(scanSlice =>
-      scanSlice.getPeaks().foreach(peak =>
+    spectrumSlices.foreach(spectrumSlice =>
+      spectrumSlice.toPeaks().foreach(peak =>
         outStream.println(List(peak.getMz(), peak.getLcContext().getElutionTime(), peak.getIntensity()).mkString("\t"))
       )
     )
@@ -504,20 +504,20 @@ object RunCommand extends App with LazyLogging {
 
     val mzDb = new MzDbReader(mzdbFilePath, true)
     val outStream = new PrintWriter(new FileOutputStream(outputFilePath))
-    val scanSlices = mzDb.getScanSlices(mzmin, mzmax, rtmin, rtmax, 1) // always in mslevel 1 by default
-    val flattenedPeaksMz = scanSlices.map(_.getPeaks).flatten.map(_.getMz).sortBy(x => x)
+    val spectrumSlices = mzDb.getMsSpectrumSlices(mzmin, mzmax, rtmin, rtmax)
+    val flattenedPeaksMz = spectrumSlices.map(_.toPeaks).flatten.map(_.getMz).sortBy(x => x)
     val (minmz, maxmz) = (flattenedPeaksMz.head, flattenedPeaksMz.last)
 
     val binner = new EntityHistogramComputer(flattenedPeaksMz, (x: Double) => x)
     val mzBins = binner.calcHistogram(nbBins)
 
     val mzList = mzBins.map { case (bin, values) => bin.center } toArray
-    val rtList = scanSlices.map(_.getHeader().getElutionTime()) toArray
-    val intList = Array.ofDim[Float](scanSlices.length, mzBins.length)
+    val rtList = spectrumSlices.map(_.getHeader().getElutionTime()) toArray
+    val intList = Array.ofDim[Float](spectrumSlices.length, mzBins.length)
 
     var i = 0
-    scanSlices.foreach { scanSlice =>
-      val binner_ = new EntityHistogramComputer(scanSlice.getPeaks, (x: Peak) => x.getMz())
+    spectrumSlices.foreach { spectrumSlice =>
+      val binner_ = new EntityHistogramComputer(spectrumSlice.toPeaks, (x: Peak) => x.getMz())
       val bins = binner_.calcHistogram(nbBins, range = Some(Pair(minmz, maxmz)))
       var j = 0
       bins.foreach {

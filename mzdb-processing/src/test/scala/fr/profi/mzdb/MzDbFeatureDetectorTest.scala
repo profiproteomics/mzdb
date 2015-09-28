@@ -9,7 +9,8 @@ import org.junit.Before
 import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.io.reader.RunSliceDataProvider
+import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
+import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model.PutativeFeature
 import org.msgpack.annotation.Ignore
 
@@ -36,7 +37,7 @@ class MzDbFeatureDetectorTest extends StrictLogging {
           )
         )
         
-        val runSliceIterator = new LcMsRunSliceIterator(mzDb, 450, 452)
+        val runSliceIterator = new LcMsRunSliceIterator(mzDb, mzDb.getConnection(), 450, 452)
         val detectedPeakels = mzdbFtDetector.detectPeakels(runSliceIterator)
         logger.info("# of peakels detected : "+detectedPeakels.length)
         for( peakel <- detectedPeakels ) {
@@ -59,17 +60,17 @@ class MzDbFeatureDetectorTest extends StrictLogging {
 
       val mzdbFtX = new MzDbFeatureExtractor(mzDb, 5, 5, ftXtractConfig)
 
-      this.logger.info("retrieving scan headers...")
-      val scanHeaders = mzDb.getScanHeaders()
-      val ms2ScanHeaders = scanHeaders.filter(_.getMsLevel() == 2)
-      val pfs = new ArrayBuffer[PutativeFeature](ms2ScanHeaders.length)
+      this.logger.info("retrieving spectrum headers...")
+      val spectrumHeaders = mzDb.getSpectrumHeaders()
+      val ms2SpectrumHeaders = spectrumHeaders.filter(_.getMsLevel() == 2)
+      val pfs = new ArrayBuffer[PutativeFeature](ms2SpectrumHeaders.length)
 
-      this.logger.debug("building a single putative features from MS2 scan events...")
+      this.logger.debug("building a single putative features from MS2 spectrum events...")
       pfs += new PutativeFeature(
             id = PutativeFeature.generateNewId,
-            mz = ms2ScanHeaders(10).getPrecursorMz,
-            charge = ms2ScanHeaders(10).getPrecursorCharge,
-            scanId = ms2ScanHeaders(10).getId,
+            mz = ms2SpectrumHeaders(10).getPrecursorMz,
+            charge = ms2SpectrumHeaders(10).getPrecursorCharge,
+            spectrumId = ms2SpectrumHeaders(10).getId,
             evidenceMsLevel = 2
           )
       

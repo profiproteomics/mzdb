@@ -12,80 +12,80 @@ import fr.profi.mzdb.model._
 abstract class AbstractFeatureExtractor extends LazyLogging {
   
   /** Required parameters */
-  def scanHeaderById: Map[Long, ScanHeader]
-  def nfByScanId: Map[Long, Float]
+  def spectrumHeaderById: Map[Long, SpectrumHeader]
+  def nfBySpectrumId: Map[Long, Float]
   
   /** Computed values */
-  protected val scanHeaders = scanHeaderById.values.toArray.sortBy(_.getId)
-  protected val ms1ScanHeaderByCycleNum = scanHeaders.withFilter(_.getMsLevel() == 1 ).map(sh => sh.getCycle -> sh).toMap
-  protected val ms1ScanIdByCycleNum: Map[Int, Long] = ms1ScanHeaderByCycleNum.map { case (cycle,sh) => cycle -> sh.getId }
+  protected val spectrumHeaders = spectrumHeaderById.values.toArray.sortBy(_.getId)
+  protected val ms1SpectrumHeaderByCycleNum = spectrumHeaders.withFilter(_.getMsLevel() == 1 ).map(sh => sh.getCycle -> sh).toMap
+  protected val ms1SpectrumIdByCycleNum: Map[Int, Long] = ms1SpectrumHeaderByCycleNum.map { case (cycle,sh) => cycle -> sh.getId }
   
   private val TIME_INDEX_WIDTH = 15
   
-  /*private val scanIdsByTimeIndex: HashMap[Int, ArrayBuffer[Int]] = {
+  /*private val spectrumIdsByTimeIndex: HashMap[Int, ArrayBuffer[Int]] = {
 
-    val _tmpScanIdsMap = new HashMap[Int, ArrayBuffer[Int]]()
+    val _tmpSpectrumIdsMap = new HashMap[Int, ArrayBuffer[Int]]()
 
-    for ((scanId, scanH) <- scanHeaderById) {
-      val timeIndex = (scanH.getTime / TIME_INDEX_WIDTH).toInt
-      _tmpScanIdsMap.getOrElseUpdate(timeIndex, new ArrayBuffer[Int]()) += scanH.getId
+    for ((spectrumId, spectrumH) <- spectrumHeaderById) {
+      val timeIndex = (spectrumH.getTime / TIME_INDEX_WIDTH).toInt
+      _tmpSpectrumIdsMap.getOrElseUpdate(timeIndex, new ArrayBuffer[Int]()) += spectrumH.getId
     }
 
-    _tmpScanIdsMap
+    _tmpSpectrumIdsMap
   }*/
   
-  private val scanHeadersByTimeIndex: HashMap[Int, ArrayBuffer[ScanHeader]] = {
+  private val spectrumHeadersByTimeIndex: HashMap[Int, ArrayBuffer[SpectrumHeader]] = {
 
-    val _tmpScanHeaderMap = new HashMap[Int, ArrayBuffer[ScanHeader]]()
+    val _tmpSpectrumHeaderMap = new HashMap[Int, ArrayBuffer[SpectrumHeader]]()
 
-    for ( scanH <- scanHeaders ) {
-      val timeIndex = (scanH.getTime / TIME_INDEX_WIDTH).toInt
-      _tmpScanHeaderMap.getOrElseUpdate(timeIndex, new ArrayBuffer[ScanHeader]()) += scanH
+    for ( spectrumH <- spectrumHeaders ) {
+      val timeIndex = (spectrumH.getTime / TIME_INDEX_WIDTH).toInt
+      _tmpSpectrumHeaderMap.getOrElseUpdate(timeIndex, new ArrayBuffer[SpectrumHeader]()) += spectrumH
     }
 
-    _tmpScanHeaderMap
+    _tmpSpectrumHeaderMap
   }
   
-  protected def getScanHeaderForTime(time: Float, msLevel: Int): Option[ScanHeader] = {
+  protected def getSpectrumHeaderForTime(time: Float, msLevel: Int): Option[SpectrumHeader] = {
 
     val timeIndex = (time / TIME_INDEX_WIDTH).toInt
 
-    var nearestSH: ScanHeader = null
+    var nearestSH: SpectrumHeader = null
 
     val timeIndexes = (timeIndex - 1 to timeIndex + 1).toArray
-    val matchingScanHeadersOpts = timeIndexes.map( scanHeadersByTimeIndex.get(_) )
+    val matchingSpectrumHeadersOpts = timeIndexes.map( spectrumHeadersByTimeIndex.get(_) )
     
     for(
-      matchingScanHeadersOpt <- matchingScanHeadersOpts;
-      matchingScanHeaders <- matchingScanHeadersOpt;
-      scanH <- matchingScanHeaders
-      if scanH.getMsLevel() == msLevel
+      matchingSpectrumHeadersOpt <- matchingSpectrumHeadersOpts;
+      matchingSpectrumHeaders <- matchingSpectrumHeadersOpt;
+      spectrumH <- matchingSpectrumHeaders
+      if spectrumH.getMsLevel() == msLevel
     ) {
-      if ( nearestSH == null || (scanH.getTime() - time).abs < (nearestSH.getTime() - time).abs) {
-        nearestSH = scanH
+      if ( nearestSH == null || (spectrumH.getTime() - time).abs < (nearestSH.getTime() - time).abs) {
+        nearestSH = spectrumH
       }
     }
     
     Option(nearestSH)
   }
   
-  /*protected def getScanHeaderForTime(time: Float, msLevel: Int): Option[ScanHeader] = {
+  /*protected def getSpectrumHeaderForTime(time: Float, msLevel: Int): Option[SpectrumHeader] = {
 
     val timeIndex = (time / TIME_INDEX_WIDTH).toInt
 
-    var nearestSH: ScanHeader = null
-    val scanIdsByTimeIndex = this.scanIdsByTimeIndex
+    var nearestSH: SpectrumHeader = null
+    val spectrumIdsByTimeIndex = this.spectrumIdsByTimeIndex
 
     for (index <- timeIndex - 1 to timeIndex + 1) {
   
       for (
-        tmpScanIdOpt <- scanIdsByTimeIndex.get(index);
-        tmpScanId <- tmpScanIdOpt;
-        scanH <- scanHeaderById.get(tmpScanId)
-        if scanH.getMsLevel() == msLevel
+        tmpSpectrumIdOpt <- spectrumIdsByTimeIndex.get(index);
+        tmpSpectrumId <- tmpSpectrumIdOpt;
+        spectrumH <- spectrumHeaderById.get(tmpSpectrumId)
+        if spectrumH.getMsLevel() == msLevel
       ) {
-        if ( nearestSH == null || (scanH.getTime() - time).abs < (nearestSH.getTime() - time).abs) {
-          nearestSH = scanH
+        if ( nearestSH == null || (spectrumH.getTime() - time).abs < (nearestSH.getTime() - time).abs) {
+          nearestSH = spectrumH
         }
       }
     }

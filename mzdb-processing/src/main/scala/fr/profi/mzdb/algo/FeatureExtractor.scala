@@ -7,15 +7,15 @@ import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.PeakList
 import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.ScanHeader
+import fr.profi.mzdb.model.SpectrumHeader
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.proline.api.progress._
 
 class FeatureExtractor(
   val mzDbReader: MzDbReader,
-  val scanHeaderById: Map[Long,ScanHeader],
-  val nfByScanId: Map[Long,Float],
+  val spectrumHeaderById: Map[Long,SpectrumHeader],
+  val nfBySpectrumId: Map[Long,Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
 ) extends AbstractFeatureExtractor { //with ProgressComputing {
@@ -33,26 +33,26 @@ class FeatureExtractor(
   )
  
   protected lazy val fullySupervisedFtExtractor = new FullySupervisedFtExtractor(
-    scanHeaderById,
-    nfByScanId,
+    spectrumHeaderById,
+    nfBySpectrumId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
   )
   protected lazy val ms2DrivenFtExtractor = new Ms2DrivenFtExtractor(
-    scanHeaderById,
-    nfByScanId,
+    spectrumHeaderById,
+    nfBySpectrumId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
    )
   protected lazy val predictedTimeFtExtractor = new PredictedTimeFtExtractor(
-    scanHeaderById,
-    nfByScanId,
+    spectrumHeaderById,
+    nfBySpectrumId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
   )
   protected lazy val predictedMzFtExtractor = new PredictedMzFtExtractor(
-    scanHeaderById,
-    nfByScanId,
+    spectrumHeaderById,
+    nfBySpectrumId,
     xtractConfig = xtractConfig,
     overlapXtractConfig = overlapXtractConfig
   )
@@ -89,10 +89,10 @@ class FeatureExtractor(
     var ft = Option.empty[Feature]
     if( putativeFt.isPredicted == false ) { // we know that signal is there
       
-      if( putativeFt.firstScanId > 0 && putativeFt.lastScanId > 0 ) { // have a full feature knowledge
+      if( putativeFt.firstSpectrumId > 0 && putativeFt.lastSpectrumId > 0 ) { // have a full feature knowledge
         ft = this.fullySupervisedFtExtractor.extractFeature(putativeFt, pklTree )
 
-      }  else if( putativeFt.scanId > 0 ) { // only know feature m/z and a related MS scan event
+      }  else if( putativeFt.spectrumId > 0 ) { // only know feature m/z and a related MS spectrum event
         ft = this.ms2DrivenFtExtractor.extractFeature(putativeFt, pklTree )
         
       }
@@ -108,13 +108,13 @@ class FeatureExtractor(
     }
     
     
-    val ftsByMs2ScanId = new HashMap[Long,ArrayBuffer[Feature]]
-    ftsByMs2ScanId.sizeHint(scanHeaderById.size)
+    val ftsByMs2SpectrumId = new HashMap[Long,ArrayBuffer[Feature]]
+    ftsByMs2SpectrumId.sizeHint(spectrumHeaderById.size)
     
-    // Update MS2 scan ids of the feature
+    // Update MS2 spectrum ids of the feature
     for( foundFt <- ft ) {
 
-      val ms2ScanIds = new ArrayBuffer[Long]()
+      val ms2SpectrumIds = new ArrayBuffer[Long]()
       
       // Retrieve the first peakel
       val firstPeakel = foundFt.getFirstPeakel()
@@ -123,50 +123,50 @@ class FeatureExtractor(
       val peakCursor = firstPeakel.getNewCursor()
       while( peakCursor.next() ) {
         
-        val thisScanId = peakCursor.getScanId()
+        val thisSpectrumId = peakCursor.getSpectrumId()
         val peakMz = peakCursor.getMz
         
-        // Retrieve the cycles surrounding the next MS2 scans
-        val scanHeader = scanHeaderById(thisScanId)
-        val thisCycleNum = scanHeaderById(thisScanId).getCycle
+        // Retrieve the cycles surrounding the next MS2 spectra
+        val spectrumHeader = spectrumHeaderById(thisSpectrumId)
+        val thisCycleNum = spectrumHeaderById(thisSpectrumId).getCycle
         val nextCycleNum = thisCycleNum + 1
 
         // Do the job only if next cycle can be found
-        if( ms1ScanHeaderByCycleNum.contains(nextCycleNum) ) {
-          val nextCycleScanId = ms1ScanHeaderByCycleNum(nextCycleNum).getId
+        if( ms1SpectrumHeaderByCycleNum.contains(nextCycleNum) ) {
+          val nextCycleSpectrumId = ms1SpectrumHeaderByCycleNum(nextCycleNum).getId
           
-          // Iterate over MS2 scans
-          for( scanId <- thisScanId + 1 until nextCycleScanId ) {
-            val scanH = this.scanHeaderById(scanId)
+          // Iterate over MS2 spectra
+          for( spectrumId <- thisSpectrumId + 1 until nextCycleSpectrumId ) {
+            val spectrumH = this.spectrumHeaderById(spectrumId)
             
             // TODO: log charge conflicts
-            if( scanH.getMsLevel == 2 && scanH.getPrecursorCharge() == foundFt.charge ) {
-              // Compute m/z difference between the current peak and MS2 scan precursor m/z
-              val mzDiffPPM = MsUtils.DaToPPM(peakMz, (scanH.getPrecursorMz - peakMz).abs )
+            if( spectrumH.getMsLevel == 2 && spectrumH.getPrecursorCharge() == foundFt.charge ) {
+              // Compute m/z difference between the current peak and MS2 spectrum precursor m/z
+              val mzDiffPPM = MsUtils.DaToPPM(peakMz, (spectrumH.getPrecursorMz - peakMz).abs )
               if( mzDiffPPM < mzTolPPM ) {
-                ms2ScanIds += scanId
+                ms2SpectrumIds += spectrumId
               }
             }
           }
         }
       }
       
-      foundFt.ms2ScanIds = ms2ScanIds.toArray
+      foundFt.ms2SpectrumIds = ms2SpectrumIds.toArray
       
-      ms2ScanIds.foreach(ftsByMs2ScanId.getOrElseUpdate(_, new ArrayBuffer[Feature]) += foundFt)
+      ms2SpectrumIds.foreach(ftsByMs2SpectrumId.getOrElseUpdate(_, new ArrayBuffer[Feature]) += foundFt)
     }
 
-    def _getIntensitySumOfSurroundingPeak(ms2scanID: Long, f: Feature): Float = {
+    def _getIntensitySumOfSurroundingPeak(ms2spectrumID: Long, f: Feature): Float = {
       var( intensityBeforeMs2, intensityAfterMs2 ) = (0f,0f)
       val peakCursor = f.getFirstPeakel().getNewCursor()
       
       while( peakCursor.next() ) {
         
         val intensity = peakCursor.getIntensity
-        val scanId = peakCursor.getScanId
+        val spectrumId = peakCursor.getSpectrumId
 
-        if( scanId < ms2scanID ) intensityBeforeMs2 = intensity
-        else if( scanId > ms2scanID ) intensityAfterMs2 = intensity
+        if( spectrumId < ms2spectrumID ) intensityBeforeMs2 = intensity
+        else if( spectrumId > ms2spectrumID ) intensityAfterMs2 = intensity
       }
       
       intensityBeforeMs2 + intensityAfterMs2
@@ -174,14 +174,14 @@ class FeatureExtractor(
     
     // TODO: filter out ms2 events linked to multiple features
     // Keep only a single link with the feature having two peaks surrounding the MS2 event with the highest intensity
-    ftsByMs2ScanId.foreach{ case (ms2ScanId, features) =>
+    ftsByMs2SpectrumId.foreach{ case (ms2SpectrumId, features) =>
       if (features.size > 1) {
-         val surrPeaksIntByFt = features.map{f => f -> _getIntensitySumOfSurroundingPeak(ms2ScanId, f)} toMap
+         val surrPeaksIntByFt = features.map{f => f -> _getIntensitySumOfSurroundingPeak(ms2SpectrumId, f)} toMap
          val winningFt = surrPeaksIntByFt.maxBy(_._2)
          for (f <- features if f != winningFt) {
-           val scanIds = f.ms2ScanIds.toBuffer
-           scanIds -= ms2ScanId.toInt
-           f.ms2ScanIds = scanIds toArray
+           val spectrumIds = f.ms2SpectrumIds.toBuffer
+           spectrumIds -= ms2SpectrumId.toInt
+           f.ms2SpectrumIds = spectrumIds toArray
          }
       }
     }

@@ -21,12 +21,12 @@ case class PutativeFeature(
     IsotopePatternInterpolator.getTheoreticalPattern(mz, charge)
   }
 
-  @BeanProperty var scanId: Long = 0
+  @BeanProperty var spectrumId: Long = 0
   @BeanProperty var elutionTime: Float = 0
   @BeanProperty var elutionStartTime: Float = 0
   @BeanProperty var elutionStopTime: Float = 0
-  @BeanProperty var firstScanId: Long = 0
-  @BeanProperty var lastScanId: Long = 0
+  @BeanProperty var firstSpectrumId: Long = 0
+  @BeanProperty var lastSpectrumId: Long = 0
   @BeanProperty var evidenceMsLevel: Int = 0 // TODO: comment this attribute
   @BeanProperty var isPredicted: Boolean = false
   @BeanProperty var peakelsCount: Int = 0
@@ -34,16 +34,16 @@ case class PutativeFeature(
   var areas : Array[Float] = null
   var mozs : Array[Double] = null
   
-  def this( id: Int, mz: Double, charge: Int, firstScanId: Long, lastScanId: Long, evidenceMsLevel: Int ) = {
+  def this( id: Int, mz: Double, charge: Int, firstSpectrumId: Long, lastSpectrumId: Long, evidenceMsLevel: Int ) = {
     this( id, mz, charge )
-    this.firstScanId = firstScanId
-    this.lastScanId = lastScanId
+    this.firstSpectrumId = firstSpectrumId
+    this.lastSpectrumId = lastSpectrumId
     this.evidenceMsLevel = evidenceMsLevel
   }
   
-  def this( id: Int, mz: Double, charge: Int, scanId: Long, evidenceMsLevel: Int ) = {
+  def this( id: Int, mz: Double, charge: Int, spectrumId: Long, evidenceMsLevel: Int ) = {
     this( id, mz, charge )
-    this.scanId = scanId
+    this.spectrumId = spectrumId
     this.evidenceMsLevel = evidenceMsLevel
   }
   

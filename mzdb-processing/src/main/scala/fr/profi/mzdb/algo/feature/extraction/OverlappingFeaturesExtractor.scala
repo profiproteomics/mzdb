@@ -37,8 +37,8 @@ object OverlappingFeaturesExtractor {
  * inherit from Ms2DrivenExtractor essentially to fetch parameters
  */
 class OverlappingFeaturesExtractor(
-  val scanHeaderById: Map[Long, ScanHeader],
-  val nfByScanId: Map[Long,Float] = Map(),
+  val spectrumHeaderById: Map[Long, SpectrumHeader],
+  val nfBySpectrumId: Map[Long,Float] = Map(),
   val ftExtractor: AbstractSupervisedFtExtractor
 ) extends LazyLogging {
   
@@ -99,11 +99,11 @@ class OverlappingFeaturesExtractor(
     // retrive first peakel
     val firstFtPeakel = ft.getFirstPeakel()
     val firstFtMz = firstFtPeakel.getMz
-    //getting the maxScanId, the idea is to use extractIsotopicPattern and use only first peakel
-    val maxScanId = firstFtPeakel.getApexScanId()
+    //getting the maxSpectrumId, the idea is to use extractIsotopicPattern and use only first peakel
+    val maxSpectrumId = firstFtPeakel.getApexSpectrumId()
 
-    // if we do not have a defined scanId, we stop
-    require(maxScanId != 0)
+    // if we do not have a defined spectrumId, we stop
+    require(maxSpectrumId != 0)
 
     //val threshMzMin = ft.mz  - ( (ft.mz * this.mzTolPPM ) / 1e6 )
 //    val maxMz = if (this.overlapXtractConfig.extractAllOvlFts) ft.mz + (1.0027 / ft.charge) * ft.peakelsCount else ft.mz
@@ -130,7 +130,7 @@ class OverlappingFeaturesExtractor(
           //if ( allPeakelMass.contains( (mzToExtract * 1000).toInt ) == false ) {
 
           //build fictive putative feature
-          val putativeFt = new PutativeFeature(-1, mzToExtract, z, maxScanId, evidenceMsLevel = 1)
+          val putativeFt = new PutativeFeature(-1, mzToExtract, z, maxSpectrumId, evidenceMsLevel = 1)
           
           // Extract feature, can eventually skip the refine extraction to gain time
           val ftXtractAlgoConfig = ftExtractor.peakelDetectionConfig.copy( detectionAlgorithm=DetectionAlgorithm.BASIC, refineDetection=true) 
@@ -249,8 +249,8 @@ class OverlappingFeaturesExtractor(
 //          val previousOvlFtPeakel = ovlFt.peakels(previousOvlFtIndex)
 
         val apexDistanceInCycle = math.abs(
-          this.scanHeaderById(prevOvlFtPeakel.getApexScanId).getCycle -
-          this.scanHeaderById(monoFtPeakel.getApexScanId).getCycle
+          this.spectrumHeaderById(prevOvlFtPeakel.getApexSpectrumId).getCycle -
+          this.spectrumHeaderById(monoFtPeakel.getApexSpectrumId).getCycle
         )
 
         val correlation = FeatureScorer.calcPeakelCorrelation(prevOvlFtPeakel, monoFtPeakel).toFloat

@@ -7,8 +7,8 @@ import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 
 class PredictedMzFtExtractor(
-  val scanHeaderById: Map[Long, ScanHeader],
-  val nfByScanId: Map[Long, Float],
+  val spectrumHeaderById: Map[Long, SpectrumHeader],
+  val nfBySpectrumId: Map[Long, Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
@@ -24,17 +24,17 @@ class PredictedMzFtExtractor(
     val mzTolDa = MsUtils.ppmToDa(moz, mzTolPPM)
 
     //less memory usage than map
-    //need the scanIds because they may not be filled in the LcContext of one peak (can have hole during extraction)
+    //need the spectrumIds because they may not be filled in the LcContext of one peak (can have hole during extraction)
     //which is really bad/sad...
     val xic = new ArrayBuffer[Peak]
-    val xicScanIDs = new ArrayBuffer[Long]
+    val xicSpectrumIDs = new ArrayBuffer[Long]
 
-    //buid the xic with getNearestPeak for each scan
-    for (id <- pklTree.scanIds) {
+    //buid the xic with getNearestPeak for each spectrum
+    for (id <- pklTree.spectrumIds) {
       val p = pklTree.getNearestPeak(id, moz, mzTolDa)
       if (p != null) {
         xic += p
-        xicScanIDs += id
+        xicSpectrumIDs += id
       }
     }
 
@@ -55,8 +55,8 @@ class PredictedMzFtExtractor(
     var c = 0
     for (i <- highestPeakel.minIdx to highestPeakel.maxIdx) {
       val peak = xic(i)
-      val scanID = xicScanIDs(i)
-      val ipOpt = pklTree.extractIsotopicPattern(scanHeaderById(scanID), theoIP, mzTolPPM)
+      val spectrumID = xicSpectrumIDs(i)
+      val ipOpt = pklTree.extractIsotopicPattern(spectrumHeaderById(spectrumID), theoIP, mzTolPPM)
       isotopicPatterns(c) = ipOpt
     }
 

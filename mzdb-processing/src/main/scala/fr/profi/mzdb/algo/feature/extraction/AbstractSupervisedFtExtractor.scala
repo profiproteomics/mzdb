@@ -18,7 +18,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
   
   val overlappingFeaturesExtractor = new OverlappingFeaturesExtractor(
-    this.scanHeaderById,
+    this.spectrumHeaderById,
     Map(),
     this
   )
@@ -34,19 +34,19 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
   ): Option[Feature] = {
     
     //unpack some config parameters
-    val minConsecutiveScans = ftXtractConfig.minConsecutiveScans
+    val minConsecutiveSpectra = ftXtractConfig.minConsecutiveSpectra
     
-    // Retrieve the scan header corresponding to the starting scan id
-    val scanHeaderOpt = this.scanHeaderById.get(putativeFt.scanId)
+    // Retrieve the spectrum header corresponding to the starting spectrum id
+    val spectrumHeaderOpt = this.spectrumHeaderById.get(putativeFt.spectrumId)
 
-    val scanHeader = scanHeaderOpt.get
-    val ftTime = scanHeader.getElutionTime()
+    val spectrumHeader = spectrumHeaderOpt.get
+    val ftTime = spectrumHeader.getElutionTime()
 
     val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.theoreticalMaxPeakelIndex
 
-    // Extract isotopic patterns around the starting scan, by default extract a maxNbPeaks given by the averagine
+    // Extract isotopic patterns around the starting spectrum, by default extract a maxNbPeaks given by the averagine
     // ips never null
-    val ips = this.extractIsotopicPatterns(putativeFt, maxTheoreticalPeakelIndex, pklTree, scanHeader, xtractConfig) 
+    val ips = this.extractIsotopicPatterns(putativeFt, maxTheoreticalPeakelIndex, pklTree, spectrumHeader, xtractConfig) 
 
     if (ips.isEmpty)
       return Option.empty[Feature]
@@ -67,7 +67,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     val maxPeakelBuilder = indexedPeakelBuilders(maxPeakelIndex)._1
 
     // Check definedPeaks length > 3 and peaks length >= 5
-    if ( maxPeakelBuilder.hasEnoughPeaks(minConsecutiveScans) == false )
+    if ( maxPeakelBuilder.hasEnoughPeaks(minConsecutiveSpectra) == false )
       return Option.empty[Feature]
 
     //-------- REFINE PEAKEL OPTIONAL STEP --------
@@ -79,7 +79,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
         maxPeakelBuilder,
         ftXtractAlgoConfig.detectionAlgorithm,
         ftXtractAlgoConfig.minSNR,
-        scanHeaderById
+        spectrumHeaderById
       )
       val elutionTimes = maxPeakelBuilder.elutionTimes
       
@@ -119,12 +119,12 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       // TODO: check what was the purpose of this
       //val ipsIndexes = (peaks.indexOf(definedPeaks(matchingPeakIdx._1)), peaks.indexOf(definedPeaks(matchingPeakIdx._2)))
 
-      val maxPeakelScanIds = maxPeakelBuilder.getScanIds()
+      val maxPeakelSpectrumIds = maxPeakelBuilder.getSpectrumIds()
       
       val(firstPeakelIdx, lastPeakelIdx) = matchingPeakelIdxPair
-      val(firstScanId, lastScanId) = (maxPeakelScanIds(firstPeakelIdx), maxPeakelScanIds(lastPeakelIdx) )
+      val(firstSpectrumId, lastSpectrumId) = (maxPeakelSpectrumIds(firstPeakelIdx), maxPeakelSpectrumIds(lastPeakelIdx) )
       
-      this.restrictPeakelBuildersToScanInitialIdRange(indexedPeakelBuilders, firstScanId, lastScanId)
+      this.restrictPeakelBuildersToSpectrumInitialIdRange(indexedPeakelBuilders, firstSpectrumId, lastSpectrumId)
     }
     
     if( newIndexedPeakelBuilders.isEmpty )
@@ -148,17 +148,17 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
    * @param maxLcContext maximum LC context used to restrict the length of peakels
    * @retrun a new Feature or null if there are no peaks in the provided index range
    */
-  protected def restrictPeakelBuildersToScanInitialIdRange(
+  protected def restrictPeakelBuildersToSpectrumInitialIdRange(
     indexedPeakelBuilders: Array[(PeakelBuilder, Int)],
-    firstScanId: Long,
-    lastScanId: Long
+    firstSpectrumId: Long,
+    lastSpectrumId: Long
   ): Array[(fr.profi.mzdb.model.PeakelBuilder, Int)] = {
     val restrictedIndexedPeakels = new ArrayBuffer[(PeakelBuilder,Int)]()
     
     breakable {
       for ( (peakelBuilder,idx) <- indexedPeakelBuilders) {
         
-        val slicedPeakelOpt = peakelBuilder.restrictToScanIdRange(firstScanId, lastScanId)
+        val slicedPeakelOpt = peakelBuilder.restrictToSpectrumIdRange(firstSpectrumId, lastSpectrumId)
         
         if ( slicedPeakelOpt.isDefined )
           restrictedIndexedPeakels += slicedPeakelOpt.get -> idx
@@ -179,7 +179,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     putativeFt: PutativeFeature, 
     maxTheoreticalPeakelIndex: Int, 
     pklTree: PeakListTree, 
-    startingScanHeader: ScanHeader, 
+    startingSpectrumHeader: SpectrumHeader, 
     extractionConf : FeatureExtractorConfig
   ): Array[IsotopicPattern] = {
       
@@ -190,8 +190,8 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     
     val ips = new ListBuffer[IsotopicPattern]()
 
-    val cycleNum = startingScanHeader.getCycle
-    var apexTime = startingScanHeader.getTime
+    val cycleNum = startingSpectrumHeader.getCycle
+    var apexTime = startingSpectrumHeader.getTime
 
     val theoIP = putativeFt.theoreticalIP
 
@@ -227,20 +227,20 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
           // Determine current cycle number
           val curCycleNum = cycleNum + cycleShift
 
-          // Try to retrieve the scan id
-          var curScanHOpt = Option.empty[ScanHeader]
-          if (this.ms1ScanIdByCycleNum.contains(curCycleNum)) {
-            // Retrieve the wanted scan header
-            curScanHOpt = this.scanHeaderById.get(this.ms1ScanIdByCycleNum(curCycleNum))
+          // Try to retrieve the spectrum id
+          var curSpectrumHOpt = Option.empty[SpectrumHeader]
+          if (this.ms1SpectrumIdByCycleNum.contains(curCycleNum)) {
+            // Retrieve the wanted spectrum header
+            curSpectrumHOpt = this.spectrumHeaderById.get(this.ms1SpectrumIdByCycleNum(curCycleNum))
           }
 
-          if (curScanHOpt.isEmpty) {
-            //if wrong scanID
+          if (curSpectrumHOpt.isEmpty) {
+            //if wrong spectrumID
             timeOverRange = true
             break
           } else {
-            val curScanH = curScanHOpt.get
-            val curTime = curScanH.getTime
+            val curSpectrumH = curSpectrumHOpt.get
+            val curTime = curSpectrumH.getTime
 
             // check if total time does not exceed the provided threshold
             if (maxTimeWindow > 0 && math.abs(curTime - apexTime) > maxTimeWindow / 2) {
@@ -251,7 +251,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
             //FIXME: Warning called is maxNbPeaksInIp = null !
             //Note:we extract at least until maxTheoreticalPeakelIndex to get not only the monoisotopic peak but further peakels (in case of high
             //mass). The idea is not to miss the highest elution peak
-            val ipOpt = pklTree.extractIsotopicPattern(curScanH, theoIP, mzTolPPM, extractionConf.maxNbPeaksInIP, maxTheoreticalPeakelIndex)
+            val ipOpt = pklTree.extractIsotopicPattern(curSpectrumH, theoIP, mzTolPPM, extractionConf.maxNbPeaksInIP, maxTheoreticalPeakelIndex)
 
             // Check if an isotopic pattern has been found
             if (ipOpt.isDefined) {
@@ -350,13 +350,13 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     breakable {
       for (curCycleNum <- firstCycle to lastCycle) {
 
-        if (this.ms1ScanIdByCycleNum.contains(curCycleNum) == false)
+        if (this.ms1SpectrumIdByCycleNum.contains(curCycleNum) == false)
           break
 
-        val curScanId = this.ms1ScanIdByCycleNum(curCycleNum)
-        val curScanH = this.scanHeaderById(curScanId)
+        val curSpectrumId = this.ms1SpectrumIdByCycleNum(curCycleNum)
+        val curSpectrumH = this.spectrumHeaderById(curSpectrumId)
 
-        val ip = pklTree.extractIsotopicPattern(curScanH, putativeFt.theoreticalIP, mzTolPPM, maxNbPeaksInIP = Some(2))
+        val ip = pklTree.extractIsotopicPattern(curSpectrumH, putativeFt.theoreticalIP, mzTolPPM, maxNbPeaksInIP = Some(2))
 
         if (ip.isDefined && ip.get.peaks.length >= minNbPeaks) {
           intensitySum += ip.get.intensity

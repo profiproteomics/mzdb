@@ -34,7 +34,7 @@ object MzTSVFeatureWriter {
   def writeFeatures( features: Seq[Feature], out: PrintWriter ) {
     
     // Write the header
-    val colNames = List( "id","apex_scan","first_scan", "last_scan","elution_time","charge","moz","intensity_sum","area",
+    val colNames = List( "id","apex_spectrum","first_spectrum", "last_spectrum","elution_time","charge","moz","intensity_sum","area",
                          "quality_score","peakels_ratios","peakels_count","ms1_count","ms2_count","apex_ip","isotopic_patterns",
                          "overlap_factor","overlap_correlation","overlapping_feature" )
     
@@ -75,9 +75,9 @@ object MzTSVFeatureWriter {
         
         val olpFtJSONObject = new HashMap[String,Any]()
         olpFtJSONObject.put("id", bestOlpFt.id )
-        olpFtJSONObject.put("apex_scan", bestOlpFt.getApexScanId )
-        olpFtJSONObject.put("first_scan", bestOlpFt.getScanIds.head )
-        olpFtJSONObject.put("last_scan", bestOlpFt.getScanIds.last )
+        olpFtJSONObject.put("apex_spectrum", bestOlpFt.getApexSpectrumId )
+        olpFtJSONObject.put("first_spectrum", bestOlpFt.getSpectrumIds.head )
+        olpFtJSONObject.put("last_spectrum", bestOlpFt.getSpectrumIds.last )
         olpFtJSONObject.put("elution_time",bestOlpFt.getElutionTime)
         olpFtJSONObject.put("charge",bestOlpFt.charge)
         olpFtJSONObject.put("moz", "%.8f".formatLocal(locale, bestOlpFt.mz) )
@@ -109,9 +109,9 @@ object MzTSVFeatureWriter {
       
       val ftValues = List(
         ft.id,
-        ft.getApexScanId,
-        ft.getScanIds.head,
-        ft.getScanIds.last,
+        ft.getApexSpectrumId,
+        ft.getSpectrumIds.head,
+        ft.getSpectrumIds.last,
         ft.getElutionTime,
         ft.charge,
         "%.8f".formatLocal(locale,ft.mz),

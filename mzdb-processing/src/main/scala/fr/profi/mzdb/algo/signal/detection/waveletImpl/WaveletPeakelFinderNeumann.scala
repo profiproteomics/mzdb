@@ -14,20 +14,20 @@ import fr.profi.mzdb.utils.math.wavelet.Ridge
 class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
   
   def setCwtParametersParams() = {
-    val scanTimeDiff = peaks.map(_.getLcContext().getElutionTime())
+    val spectrumTimeDiff = peaks.map(_.getLcContext().getElutionTime())
                              .sliding(2).withFilter(_.length == 2)
                              .map{ x=>x(1) - x(0)}
                              .toArray
-    val scanTimeDiffSum = scanTimeDiff.sum
+    val spectrumTimeDiffSum = spectrumTimeDiff.sum
     
-    if (scanTimeDiffSum == 0)
+    if (spectrumTimeDiffSum == 0)
       throw new IllegalArgumentException("Error trying to compute scales")
     
-    val scanTimeDiffMean = scanTimeDiffSum / scanTimeDiff.length;
+    val spectrumTimeDiffMean = spectrumTimeDiffSum / spectrumTimeDiff.length;
    
     //NOTE: also the default in centwave paper
-    this.minScale = math.round( ( 20 / scanTimeDiffMean ) / 2f ) 
-    this.maxScale=  math.round( ( 110 / scanTimeDiffMean ) / 2f ) 
+    this.minScale = math.round( ( 20 / spectrumTimeDiffMean ) / 2f ) 
+    this.maxScale=  math.round( ( 110 / spectrumTimeDiffMean ) / 2f ) 
     
     /*baseline and noise estimation, based on CentWave*/
     val toBeTrimmed = math.round(0.1 * ydata.length) toInt

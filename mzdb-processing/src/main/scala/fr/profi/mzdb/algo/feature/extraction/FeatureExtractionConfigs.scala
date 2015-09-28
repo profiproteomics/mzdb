@@ -33,8 +33,8 @@ case class FeatureExtractorConfig(
   //var ms2DrivenXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.BASIC),
   //var predictedTimeXtractConfig: ExtractionAlgorithmConfig = ExtractionAlgorithmConfig(detectionAlgorithm = DetectionAlgorithm.WAVELET),
   
-  // minimum scan duration to consider the detected feature (PredictedTime)
-  var minConsecutiveScans: Int = 5,
+  // minimum spectrum duration to consider the detected feature (PredictedTime)
+  var minConsecutiveSpectra: Int = 5,
   
   // maxConsectuvive gaps ( empty or null isotopic pattern) allowed in peak detection
   var maxConsecutiveGaps: Int = 1,

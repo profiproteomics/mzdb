@@ -17,7 +17,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 import fr.profi.mzdb.algo.signal.filtering._
-import fr.profi.mzdb.io.reader.ScanHeaderReader
+import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.DerivativeAnalysis
@@ -34,7 +34,7 @@ object SQLiteIsolationWindowStorer extends LazyLogging {
   
       // Create tables
     connection.exec("CREATE TABLE isolation_window (" +
-      " scan_id INTEGER,\n" +
+      " spectrum_id INTEGER,\n" +
       " time REAL,\n" +
       " precursor_mz REAL,\n" +
       " spectrum BLOB\n" +
@@ -46,24 +46,24 @@ object SQLiteIsolationWindowStorer extends LazyLogging {
     // Prepare INSERT statement
     val stmt = connection.prepare("INSERT INTO isolation_window VALUES (?, ?, ?, ?)",true)
     
-		// Configure the ScanHeaderReader in order to load all precursor lists when reading spectra headers
-		ScanHeaderReader.loadPrecursorList = true
+		// Configure the SpectrumHeaderReader in order to load all precursor lists when reading spectra headers
+		SpectrumHeaderReader.loadPrecursorList = true
     
-		val ms1ShByCycle = mzDbReader.getMs1ScanHeaders().map { sh => sh.getCycle() -> sh } toMap
-    val ms2ScanHeaders = mzDbReader.getMs2ScanHeaders().take(1000)
+		val ms1ShByCycle = mzDbReader.getMs1SpectrumHeaders().map { sh => sh.getCycle() -> sh } toMap
+    val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders().take(1000)
     
-    for( sh <- ms2ScanHeaders ) {
+    for( sh <- ms2SpectrumHeaders ) {
       
       val ms1Sh = ms1ShByCycle(sh.getCycle)
       val precMz = sh.getPrecursor.parseFirstSelectedIonMz
       
-      val scanSlices = mzDbReader.getScanSlices(precMz - 2, precMz + 2, ms1Sh.getTime - 0.2f, ms1Sh.getTime + 0.2f, 1)
-      if( scanSlices.isEmpty ) {
-        logger.debug("no scan data loaded")
+      val spectrumSlices = mzDbReader.getMsSpectrumSlices(precMz - 2, precMz + 2, ms1Sh.getTime - 0.2f, ms1Sh.getTime + 0.2f)
+      if( spectrumSlices.isEmpty ) {
+        logger.debug("no spectrum data loaded")
       } else {
-        require( scanSlices.length == 1, "weird")
+        require( spectrumSlices.length == 1, "weird")
         
-        val filteredData = scanSlices.head.getData().mzRangeFilter(precMz - 1,  precMz + 1)
+        val filteredData = spectrumSlices.head.getData().mzRangeFilter(precMz - 1,  precMz + 1)
         
         if( filteredData != null ) {
           val dataPoints = filteredData.toPeaks(sh).map { peak =>
@@ -232,7 +232,7 @@ object SQLitePeakelStorer {
       j+=1; stmt.bind(j, peakel.getMz() )
       j+=1; stmt.bind(j, peakel.getApexElutionTime() )
       j+=1; stmt.bind(j, peakel.getApexIntensity() )
-      j+=1; stmt.bind(j, peakel.getScanIds().length )
+      j+=1; stmt.bind(j, peakel.getSpectrumIds().length )
       j+=1; stmt.bind(j, oscillationFactor )
       j+=1; stmt.bind(j, chartBytes )
       j+=1; stmt.bind(j, smoothedChartBytes )

@@ -7,11 +7,11 @@ import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.IsotopicPattern
 import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.ScanHeader
+import fr.profi.mzdb.model.SpectrumHeader
              
 class FullySupervisedFtExtractor(
-  val scanHeaderById: Map[Long,ScanHeader],
-  val nfByScanId: Map[Long,Float],
+  val spectrumHeaderById: Map[Long,SpectrumHeader],
+  val nfBySpectrumId: Map[Long,Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
@@ -19,21 +19,21 @@ class FullySupervisedFtExtractor(
 
   def extractFeature( putativeFt: PutativeFeature, pklTree: PeakListTree) : Option[Feature] = {
     
-    // Retrieve a list of sorted scan ids
+    // Retrieve a list of sorted spectrum ids
     // TODO: check if cycles are a better option
-    val sortedScanIds = putativeFt.firstScanId to putativeFt.lastScanId
+    val sortedSpectrumIds = putativeFt.firstSpectrumId to putativeFt.lastSpectrumId
     
     val theoIP = putativeFt.theoreticalIP
-    val ips = new ArrayBuffer[IsotopicPattern]( sortedScanIds.length )
+    val ips = new ArrayBuffer[IsotopicPattern]( sortedSpectrumIds.length )
       
-    // Iterate over scan ids sorted in an ascendant way
-    for( scanId <- sortedScanIds ) {
+    // Iterate over spectrum ids sorted in an ascendant way
+    for( spectrumId <- sortedSpectrumIds ) {
       
-      // Try to retrive the scan header
-      for( curScanH <- this.scanHeaderById.get(scanId) ) {
-        //println(curScanH.msLevel);
+      // Try to retrive the spectrum header
+      for( curSpectrumH <- this.spectrumHeaderById.get(spectrumId) ) {
+        //println(curSpectrumH.msLevel);
         
-        val ipOpt = pklTree.extractIsotopicPattern( curScanH, theoIP, xtractConfig.mzTolPPM )
+        val ipOpt = pklTree.extractIsotopicPattern( curSpectrumH, theoIP, xtractConfig.mzTolPPM )
         
         // Check if an isotopic pattern has been found
         if( ipOpt != None  ) {

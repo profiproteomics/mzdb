@@ -48,22 +48,22 @@ case class IsotopicPattern(
   @BeanProperty var intensity: Float,
   @BeanProperty charge: Int,
   @BeanProperty peaks: Array[Peak],
-  @transient @BeanProperty var scanHeader: ScanHeader,
+  @transient @BeanProperty var spectrumHeader: SpectrumHeader,
   @BeanProperty var overlappingIps: Array[OverlappingIsotopicPattern] = null,
   @BeanProperty var qualityScore: Float = 0f
 ) extends IsotopicPatternLike {
   
   require(peaks.count(_ != null) > 0, "no defined peak provided")
   
-  lazy val scanInitialId = scanHeader.getInitialId
+  lazy val spectrumInitialId = spectrumHeader.getInitialId
   
   // Update the LC context of corresponding peaks
   for( p <- peaks  if p != null ) { 
-    p.setLcContext(scanHeader) 
+    p.setLcContext(spectrumHeader) 
   }
   
-  def normalizeIntensities( nfByScanId: Map[Long,Float] ) {
-    val nf = nfByScanId(this.scanHeader.id)
+  def normalizeIntensities( nfBySpectrumId: Map[Long,Float] ) {
+    val nf = nfBySpectrumId(this.spectrumHeader.id)
     
     for( p <- peaks if p != null ) {
       if( p.isNormalized == false)

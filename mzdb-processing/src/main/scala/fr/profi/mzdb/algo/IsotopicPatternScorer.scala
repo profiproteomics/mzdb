@@ -1,6 +1,6 @@
 package fr.profi.mzdb.algo
 
-import fr.profi.mzdb.model.ScanData
+import fr.profi.mzdb.model.SpectrumData
 import scala.collection.immutable.TreeMap
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import scala.collection.immutable.SortedMap
@@ -21,20 +21,20 @@ object IsotopicPatternScorer {
   * Tries to explain a peak at the specified mz value by testing different isotopic pattern explanations. 
   * 
   * 
- * @param scan : the MS data (mz, intensities) signal around the peak to explain
+ * @param spectrum : the MS data (mz, intensities) signal around the peak to explain
  * @param mz : the mz of the peak that must be explained 
  * @param ppmTol
  * @return : a list of isotopic patterns tested, ordered by score (better = higher score first).
  */
-def calclIsotopicPatternHypotheses(scan : ScanData, mz: Double, ppmTol : Double): Array[(Double, TheoreticalIsotopePattern)] = {
+def calclIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : Double): Array[(Double, TheoreticalIsotopePattern)] = {
      var result = ArrayBuffer[(Double, TheoreticalIsotopePattern)]()
-     //val matchingPeakIdx = scan.getNearestPeakIndex(mz)
+     //val matchingPeakIdx = spectrum.getNearestPeakIndex(mz)
      for (charge <- 1 to 5) {
-         val (score, theoreticalIP) = getIPHypothesis(scan, mz, charge, ppmTol)
+         val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, charge, ppmTol)
          result += (score -> theoreticalIP)
          for (j <- 1 to theoreticalIP.theoreticalMaxPeakelIndex+1) {
             val alternativeMoz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
-            val (score, theoreticalIP) = getIPHypothesis(scan, alternativeMoz, charge, ppmTol)
+            val (score, theoreticalIP) = getIPHypothesis(spectrum, alternativeMoz, charge, ppmTol)
             result += (score -> theoreticalIP)
          }
       }
@@ -51,30 +51,30 @@ def calclIsotopicPatternHypotheses(scan : ScanData, mz: Double, ppmTol : Double)
   * observed intensities. In case a theoretical peak is not found in the MS data a penality is applied to the difference.
   * The penality is less important as the rank of the isotopic peak is high.   
   * 
- * @param scan : the MS data (mz, intensities) signal around the peak to explain
+ * @param spectrum : the MS data (mz, intensities) signal around the peak to explain
  * @param mz : the mz of the peak that must be explained 
  * @param charge : the isotopic pattern charge state
  * @param ppmTol
  * @return : the score and the theoretical isotopic pattern.
  */
-def getIPHypothesis(scan : ScanData, mz : Double, charge : Int, ppmTol : Double) : (Double, TheoreticalIsotopePattern) = {
+def getIPHypothesis(spectrum : SpectrumData, mz : Double, charge : Int, ppmTol : Double) : (Double, TheoreticalIsotopePattern) = {
 	  var score = 0.0
       val pattern = IsotopePatternEstimator.getTheoreticalPattern(mz, charge)
       var ipMoz = mz
-      val isotopeAbundance = scan.getIntensityList()(scan.getNearestPeakIndex(ipMoz))
+      val isotopeAbundance = spectrum.getIntensityList()(spectrum.getNearestPeakIndex(ipMoz))
       val normAbundance = pattern.mzAbundancePairs(0)._2
       var rank = 0
       var matches = 0
       for (rank <- 0 until pattern.mzAbundancePairs.length) {
          ipMoz = if (rank == 0) ipMoz else ipMoz + IsotopePatternEstimator.avgIsoMassDiff/charge
          val ipAbundance = (pattern.mzAbundancePairs(rank)._2) * isotopeAbundance / normAbundance
-         var nearestPeakIdx =  scan.getNearestPeakIndex(ipMoz)
+         var nearestPeakIdx =  spectrum.getNearestPeakIndex(ipMoz)
          val penality = Math.min(100.0, 0.0001 * Math.pow(10, rank*2));
          val abundance = { 
-           if ((1e6 * Math.abs(scan.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
-               ipMoz = scan.getMzList()(nearestPeakIdx)
+           if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
+               ipMoz = spectrum.getMzList()(nearestPeakIdx)
                matches += 1
-        	   scan.getIntensityList()(nearestPeakIdx) 
+        	   spectrum.getIntensityList()(nearestPeakIdx) 
            } else {
              ipAbundance/100.0f 
            }
@@ -92,7 +92,7 @@ def getIPHypothesis(scan : ScanData, mz : Double, charge : Int, ppmTol : Double)
 //  * observed intensities. In case a theoretical peak is not found in the MS data a penality is applied to the difference.
 //  * The penality is less important as the rank of the isotopic peak is high.   
 //  * 
-// * @param scan : the MS data (mz, intensities) signal around the peak to explain
+// * @param spectrum : the MS data (mz, intensities) signal around the peak to explain
 // * @param mz : the mz of the peak that must be explained 
 // * @param charge : the isotopic pattern charge state
 // * @param matchingPeakIdx : the index of the peak to explain in the MS data array
@@ -100,10 +100,10 @@ def getIPHypothesis(scan : ScanData, mz : Double, charge : Int, ppmTol : Double)
 // * @param ppmTol
 // * @return : the score and the theoretical isotopic pattern.
 // */
-//def getIPHypothesis(scan : ScanData, mz : Double, charge : Int, matchingPeakIdx : Int, matchingIsotopeIdx : Int, ppmTol : Double) : (Double, TheoreticalIsotopePattern) = {
+//def getIPHypothesis(spectrum : SpectrumData, mz : Double, charge : Int, matchingPeakIdx : Int, matchingIsotopeIdx : Int, ppmTol : Double) : (Double, TheoreticalIsotopePattern) = {
 //	  var score = 0.0
 //      val pattern = IsotopePatternEstimator.getTheoreticalPattern(mz, charge)
-//      val isotopeAbundance = scan.getIntensityList()(matchingPeakIdx)
+//      val isotopeAbundance = spectrum.getIntensityList()(matchingPeakIdx)
 //      val normAbundance = pattern.mzAbundancePairs(matchingIsotopeIdx)._2
 //      var ipMoz = pattern.monoMz
 //      var rank = 0
@@ -111,13 +111,13 @@ def getIPHypothesis(scan : ScanData, mz : Double, charge : Int, ppmTol : Double)
 //      for (rank <- 0 until pattern.mzAbundancePairs.length) {
 //         ipMoz = if (rank == 0) ipMoz else ipMoz + IsotopePatternEstimator.avgIsoMassDiff/charge
 //         val ipAbundance = (pattern.mzAbundancePairs(rank)._2) * isotopeAbundance / normAbundance
-//         var nearestPeakIdx =  scan.getNearestPeakIndex(ipMoz)
+//         var nearestPeakIdx =  spectrum.getNearestPeakIndex(ipMoz)
 //         val penality = Math.min(100.0, 0.0001 * Math.pow(10, rank*2));
 //         val abundance = { 
-//           if ((1e6 * Math.abs(scan.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
-//               ipMoz = scan.getMzList()(nearestPeakIdx)
+//           if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
+//               ipMoz = spectrum.getMzList()(nearestPeakIdx)
 //               matches += 1
-//        	   scan.getIntensityList()(nearestPeakIdx) 
+//        	   spectrum.getIntensityList()(nearestPeakIdx) 
 //           } else {
 //             penality 
 //           }

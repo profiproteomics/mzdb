@@ -7,15 +7,15 @@ import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
-import fr.profi.mzdb.model.ScanHeader
+import fr.profi.mzdb.model.SpectrumHeader
 
 object Ms2DrivenFtExtractor {
   var wrong: Int = 0
 }
 
 class Ms2DrivenFtExtractor(
- val scanHeaderById: Map[Long,ScanHeader],
- val nfByScanId: Map[Long,Float],
+ val spectrumHeaderById: Map[Long,SpectrumHeader],
+ val nfBySpectrumId: Map[Long,Float],
  val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
  val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
@@ -23,7 +23,7 @@ class Ms2DrivenFtExtractor(
   
   override def extractFeature(putativeFt: PutativeFeature, pklTree: PeakListTree): Option[Feature] = {
 
-    // Retrieve the scan header corresponding to the starting scan id
+    // Retrieve the spectrum header corresponding to the starting spectrum id
     val ftAsopt = this.searchAndExtractFeature(putativeFt, pklTree)
     
     //Actually never seen error with our parameters monisotopes detection, remove it
@@ -46,9 +46,9 @@ class Ms2DrivenFtExtractor(
     ftAsopt
   }
   
-  protected def refinePrecursorMz(mz: Double, pklTree: PeakListTree, scanId: Int): Option[Double] = {
+  protected def refinePrecursorMz(mz: Double, pklTree: PeakListTree, spectrumId: Int): Option[Double] = {
 
-    val nearestPeak = pklTree.getNearestPeak(scanId, mz, this.xtractConfig.mzTolPPM)
+    val nearestPeak = pklTree.getNearestPeak(spectrumId, mz, this.xtractConfig.mzTolPPM)
 
     var newMz = Option.empty[Double]
     if (nearestPeak != null) {

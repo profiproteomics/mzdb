@@ -11,8 +11,8 @@ object PeakListTree {
   
   val avgIsotopeMassDiff = MolecularConstants.AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF
   
-  def groupPeaklists( peakListsByScanId: Map[Int, Seq[PeakList]] ): Map[Int,PeakListGroup] = {    
-    Map() ++ peakListsByScanId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }
+  def groupPeaklists( peakListsBySpectrumId: Map[Int, Seq[PeakList]] ): Map[Int,PeakListGroup] = {    
+    Map() ++ peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }
   }
 
   def extractIsotopicPattern(
@@ -48,63 +48,63 @@ object PeakListTree {
   }  
 }
 
-case class PeakListTree( pklGroupByScanId: Map[Long,PeakListGroup], scanHeaderById: Map[Long,ScanHeader] ) {
+case class PeakListTree( pklGroupBySpectrumId: Map[Long,PeakListGroup], spectrumHeaderById: Map[Long,SpectrumHeader] ) {
 
-  lazy val scanIds: Array[Long] = pklGroupByScanId.keys.toArray.sorted
+  lazy val spectrumIds: Array[Long] = pklGroupBySpectrumId.keys.toArray.sorted
   
-  class ScanHeaderMap() {
+  class SpectrumHeaderMap() {
     
-    private val shCount = scanIds.length
+    private val shCount = spectrumIds.length
       
-    private val shMapBuilder = collection.immutable.Map.newBuilder[ScanHeader,Int]
-    private val pklTreeScanHeaders = new Array[ScanHeader](shCount)
+    private val shMapBuilder = collection.immutable.Map.newBuilder[SpectrumHeader,Int]
+    private val pklTreeSpectrumHeaders = new Array[SpectrumHeader](shCount)
     
-    scanIds.zipWithIndex.foreach { case (sId,idx) =>
-      val sh = scanHeaderById(sId)
+    spectrumIds.zipWithIndex.foreach { case (sId,idx) =>
+      val sh = spectrumHeaderById(sId)
       shMapBuilder += (sh -> idx)
-      pklTreeScanHeaders(idx) = sh
+      pklTreeSpectrumHeaders(idx) = sh
     }
     
     private val pklTreeShMap = shMapBuilder.result()
     
-    def getScanHeader( shIdx: Int ): Option[ScanHeader] = {
+    def getSpectrumHeader( shIdx: Int ): Option[SpectrumHeader] = {
       if( shIdx < 0 || shIdx >= shCount ) None
-      else Some( pklTreeScanHeaders(shIdx) )
+      else Some( pklTreeSpectrumHeaders(shIdx) )
     }
     
-    def getScanHeaderIndex( scanHeader: ScanHeader ): Int = pklTreeShMap(scanHeader)
+    def getSpectrumHeaderIndex( spectrumHeader: SpectrumHeader ): Int = pklTreeShMap(spectrumHeader)
   }
   
-  lazy val scanHeaderMap = new ScanHeaderMap()
+  lazy val spectrumHeaderMap = new SpectrumHeaderMap()
 
     // TODO: end of move to peaklist tree or create a dedicated class ???
   
-  /*def this( peakListsByScanId: Map[Int, Seq[PeakList]] ) = {
-    this( PeakListTree.groupPeaklists(peakListsByScanId) )
+  /*def this( peakListsBySpectrumId: Map[Int, Seq[PeakList]] ) = {
+    this( PeakListTree.groupPeaklists(peakListsBySpectrumId) )
   }*/
   
   /**
    * Returns all peaks contained in the PeakListTree.
-   * @return an array containing all peakLists peaks (assumed to be sorted by scan then m/z).
+   * @return an array containing all peakLists peaks (assumed to be sorted by spectrum then m/z).
    */
   def getAllPeaks(): Array[Peak] = {
-    this.scanIds.flatMap( pklGroupByScanId(_).getAllPeaks() )
+    this.spectrumIds.flatMap( pklGroupBySpectrumId(_).getAllPeaks() )
   }
   
-  def getNearestPeak( scanId: Long, mzToExtract: Double, mzTolDa: Double ): Peak = {
-    pklGroupByScanId(scanId).getNearestPeak( mzToExtract, mzTolDa )
+  def getNearestPeak( spectrumId: Long, mzToExtract: Double, mzTolDa: Double ): Peak = {
+    pklGroupBySpectrumId(spectrumId).getNearestPeak( mzToExtract, mzTolDa )
   }
   
-  def getPeaksInRange( scanId: Long, minMz: Double, maxMz: Double ): Array[Peak] = {
-    pklGroupByScanId(scanId).getPeaksInRange( minMz, maxMz )
+  def getPeaksInRange( spectrumId: Long, minMz: Double, maxMz: Double ): Array[Peak] = {
+    pklGroupBySpectrumId(spectrumId).getPeaksInRange( minMz, maxMz )
   }
  
   def getXic(mz:Double, mzTolPPM: Double) : Array[Peak] = {
-    this.scanIds.map( pklGroupByScanId(_).getNearestPeak(mz, mz * mzTolPPM / 1e6))
+    this.spectrumIds.map( pklGroupBySpectrumId(_).getNearestPeak(mz, mz * mzTolPPM / 1e6))
   }
   
   protected def extractIsotopicPattern(
-    scanHeader: ScanHeader, 
+    spectrumHeader: SpectrumHeader, 
     theoreticalIP: TheoreticalIsotopePattern,
     mzTolPPM: Float,
     maxNbPeaksInIP: Option[Int],
@@ -115,8 +115,8 @@ case class PeakListTree( pklGroupByScanId: Map[Long,PeakListGroup], scanHeaderBy
     val mz = theoreticalIP.monoMz
     val charge = theoreticalIP.charge
     val maxNbPeaks = if (maxNbPeaksInIP.isDefined) maxNbPeaksInIP.get else theoreticalIP.abundances.filter(_ >= 5).length
-    val scanId = scanHeader.id
-    val pklGroupAsOpt = pklGroupByScanId.get(scanId)
+    val spectrumId = spectrumHeader.id
+    val pklGroupAsOpt = pklGroupBySpectrumId.get(spectrumId)
     
     if( charge < 1 || pklGroupAsOpt == None )
       return Option.empty[IsotopicPatternLike]
@@ -133,20 +133,20 @@ case class PeakListTree( pklGroupByScanId: Map[Long,PeakListGroup], scanHeaderBy
     
     val ipMz = if (ipPeaks.head != null) ipPeaks.head.mz else mz
     if( overlapShiftOpt.isEmpty )
-      Some( new IsotopicPattern( ipMz, ipIntensity, charge, ipPeaks, scanHeader, null, 0f ) )
+      Some( new IsotopicPattern( ipMz, ipIntensity, charge, ipPeaks, spectrumHeader, null, 0f ) )
     else
       Some( new OverlappingIsotopicPattern( ipMz, ipIntensity, charge, ipPeaks, overlapShiftOpt.get ) )
   }
   
   def extractIsotopicPattern(
-    scanHeader: ScanHeader,
+    spectrumHeader: SpectrumHeader,
     theoreticalIP: TheoreticalIsotopePattern,
     mzTolPPM: Float,
     maxNbPeaksInIP: Option[Int] = null,
     maxTheoreticalPeakelIndex: Int= 0
   ): Option[IsotopicPattern] = {
     this.extractIsotopicPattern(
-      scanHeader,
+      spectrumHeader,
       theoreticalIP,
       mzTolPPM,
       maxNbPeaksInIP,
@@ -156,7 +156,7 @@ case class PeakListTree( pklGroupByScanId: Map[Long,PeakListGroup], scanHeaderBy
   }
   
   def extractOverlappingIsotopicPattern(
-    scanHeader: ScanHeader, 
+    spectrumHeader: SpectrumHeader, 
     theoreticalIP: TheoreticalIsotopePattern,
     mzTolPPM: Float,
     nbPeaksToSum: Option[Int] = null,
@@ -164,7 +164,7 @@ case class PeakListTree( pklGroupByScanId: Map[Long,PeakListGroup], scanHeaderBy
     maxTheoreticalPeakelIndex:Int = 0
   ): Option[OverlappingIsotopicPattern] = {
     this.extractIsotopicPattern(
-      scanHeader,
+      spectrumHeader,
       theoreticalIP,
       mzTolPPM,
       nbPeaksToSum,

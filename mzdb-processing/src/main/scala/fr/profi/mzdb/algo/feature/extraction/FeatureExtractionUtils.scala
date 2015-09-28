@@ -20,7 +20,7 @@ object FeatureExtractionUtils {
     peakel: IPeakelData,
     detectionAlgorithm: DetectionAlgorithm.Value, 
     minSNR: Float = 1.0f,
-    lcContextByScanId: Map[Long,ILcContext]
+    lcContextBySpectrumId: Map[Long,ILcContext]
   ): Array[Pair[Int, Int]] = {
     
     var peakelIndices: Array[(Int, Int)] = null 
@@ -30,7 +30,7 @@ object FeatureExtractionUtils {
       peakelIndices = basicPeakelFinder.findPeakelsIndices(peakel) 
     } else {
       // TODO: implement the peakel based signature method
-      val wpf = new WaveletPeakelFinderNeumann(peakel.toPeaks(lcContextByScanId) )
+      val wpf = new WaveletPeakelFinderNeumann(peakel.toPeaks(lcContextBySpectrumId) )
       wpf.ridgeFilteringParams.minSNR = minSNR
       peakelIndices = wpf.findPeakelsIndexes()
     }

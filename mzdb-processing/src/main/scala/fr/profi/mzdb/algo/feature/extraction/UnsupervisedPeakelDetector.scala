@@ -63,8 +63,8 @@ object UnsupervisedPeakelDetector {
  */
 // TODO: move to feature.detection package ???
 class UnsupervisedPeakelDetector(
-  val scanHeaderById: Map[Long,ScanHeader],
-  val nfByScanId: Map[Long,Float],
+  val spectrumHeaderById: Map[Long,SpectrumHeader],
+  val nfBySpectrumId: Map[Long,Float],
   // TODO: create configs for signal extraction
   val mzTolPPM: Float,
   val maxConsecutiveGaps: Int = 3,
@@ -80,7 +80,7 @@ class UnsupervisedPeakelDetector(
   
   /*val msLevel = 2
   
-  val ms1ScanIdByCycleNum = scanHeaderById.values
+  val ms1SpectrumIdByCycleNum = spectrumHeaderById.values
     .withFilter( _.getMsLevel == this.msLevel )
     .map( sh => sh.getCycle -> sh.getId )
     .toMap*/
@@ -124,11 +124,11 @@ class UnsupervisedPeakelDetector(
           break
         } else if( usedPeakSet.contains(peak) == false ) {
           
-          // Retrieve corresponding scan header
-          val scanHeader = this.scanHeaderById(peak.getLcContext.getScanId)
+          // Retrieve corresponding spectrum header
+          val spectrumHeader = this.spectrumHeaderById(peak.getLcContext.getSpectrumId)
           
           // Initiate a peakel extraction using this starting point
-          val peakelOpt = this.extractPeakel(pklTree, usedPeakSet, scanHeader, peak)
+          val peakelOpt = this.extractPeakel(pklTree, usedPeakSet, spectrumHeader, peak)
           
           // Check if we found one peakel
           if( peakelOpt.isDefined ) {
@@ -136,7 +136,7 @@ class UnsupervisedPeakelDetector(
             val apexIdx = peakel.apexIndex
       
             // Append peakel only if its apex is not at the extrema
-            if( apexIdx > 0 && apexIdx < peakel.scanIds.length - 1 ) {
+            if( apexIdx > 0 && apexIdx < peakel.spectrumIds.length - 1 ) {
               peakelBuffer += peakelOpt.get
             }
           }
@@ -150,7 +150,7 @@ class UnsupervisedPeakelDetector(
   protected def extractPeakel(
     pklTree: PeakListTree,
     usedPeakSet: HashSet[Peak],
-    apexScanHeader: ScanHeader,
+    apexSpectrumHeader: SpectrumHeader,
     apexPeak: Peak
   ): Option[Peakel] = {
     
@@ -158,14 +158,14 @@ class UnsupervisedPeakelDetector(
     //val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newExtractionProgressPlan() )
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP1)
     
-    // Retrieve the scan header map
-    val pklTreeShMap = pklTree.scanHeaderMap
+    // Retrieve the spectrum header map
+    val pklTreeShMap = pklTree.spectrumHeaderMap
     
     // Define some values
     val apexMz = apexPeak.getMz
     val apexIntensity = apexPeak.getIntensity
-    val apexTime = apexScanHeader.getTime
-    val apexShPklTreeIdx = pklTreeShMap.getScanHeaderIndex(apexScanHeader) //apexScanHeader.getCycle    
+    val apexTime = apexSpectrumHeader.getTime
+    val apexShPklTreeIdx = pklTreeShMap.getSpectrumHeaderIndex(apexSpectrumHeader) //apexSpectrumHeader.getCycle    
     
     // Compute the m/z tolerance in Daltons
     val mzTolDa = MsUtils.ppmToDa( apexMz, mzTolPPM )
@@ -178,7 +178,7 @@ class UnsupervisedPeakelDetector(
     // Create a buffer for peaks
     val peaksBuffer = new ListBuffer[Peak]()
     
-//          logger.debug("Extract Peakel from apex mz=" + apexMz + ", intensity=" +apexIntensity + ", scanId="+apexScanHeader.getInitialId())
+//          logger.debug("Extract Peakel from apex mz=" + apexMz + ", intensity=" +apexIntensity + ", spectrumId="+apexSpectrumHeader.getInitialId())
 
     
     // Loop until left and right directions have been analyzed
@@ -193,23 +193,23 @@ class UnsupervisedPeakelDetector(
       breakable {
         while( consecutiveGapCount <= maxConsecutiveGaps && !timeOverRange ) {
           
-          // Decrease scan header index shift if LEFT direction
+          // Decrease spectrum header index shift if LEFT direction
           if( isRightDirection == false ) shIdxShift -= 1
           
-          // Determine current scan header index
+          // Determine current spectrum header index
           //val curCycleNum = cycleNum + cycleShift
           val curShIdx = apexShPklTreeIdx + shIdxShift
           
-          // Try to retrieve the scan id
-          var curScanHOpt = pklTreeShMap.getScanHeader(curShIdx)
+          // Try to retrieve the spectrum id
+          var curSpectrumHOpt = pklTreeShMap.getSpectrumHeader(curShIdx)
           
-          if( curScanHOpt.isEmpty ) {//if wrong scanID
+          if( curSpectrumHOpt.isEmpty ) {//if wrong spectrumID
             timeOverRange = true
             break
           } else {
-            val curScanH = curScanHOpt.get
-            val curScanId = curScanH.getId
-            val curTime = curScanH.getTime
+            val curSpectrumH = curSpectrumHOpt.get
+            val curSpectrumId = curSpectrumH.getId
+            val curTime = curSpectrumH.getTime
               
             // TODO: check if total time does not exceed the provided threshold
             if( this.maxTimeWindow > 0 && (curTime - apexTime).abs > this.maxTimeWindow / 2 ) {
@@ -217,8 +217,8 @@ class UnsupervisedPeakelDetector(
               break
             }
             
-            // Try to retrieve a peaklist group for the current scan header
-            val pklGroupOpt = pklTree.pklGroupByScanId.get(curScanId)
+            // Try to retrieve a peaklist group for the current spectrum header
+            val pklGroupOpt = pklTree.pklGroupBySpectrumId.get(curSpectrumId)
             require( pklGroupOpt.isDefined, "pklGroupOpt is empty" )
             
             val pklGroup = pklGroupOpt.get
@@ -257,7 +257,7 @@ class UnsupervisedPeakelDetector(
               consecutiveGapCount += 1
             }
   
-            // Increase scan header index shift if right direction
+            // Increase spectrum header index shift if right direction
             if( isRightDirection) shIdxShift += 1
             
           } // END OF ELSE
@@ -277,8 +277,8 @@ class UnsupervisedPeakelDetector(
       return None
     }
       
-    // Sort peaks by ascending scan id
-    val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getScanId())
+    // Sort peaks by ascending spectrum id
+    val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getSpectrumId())
     
     // Check if we have enough peaks for peakel detection
     val peakelsIndices = peakelFinder.findPeakelsIndices(extractedPeaks)
@@ -325,7 +325,7 @@ class UnsupervisedPeakelDetector(
     
     if( matchingPeakelIdxOpt.isEmpty ) {
       /*this.logger.warn(
-        s"no peakel detected for peak with m/z=${apexMz} and scan id=${apexScanHeader.getId}"
+        s"no peakel detected for peak with m/z=${apexMz} and spectrum id=${apexSpectrumHeader.getId}"
       )*/
       return None
     }
@@ -341,7 +341,7 @@ class UnsupervisedPeakelDetector(
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP3)
     
     // Check that apex is not the first or last peak
-    if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.scanIds.length - 1) ) {
+    if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.spectrumIds.length - 1) ) {
       return None
     }
     

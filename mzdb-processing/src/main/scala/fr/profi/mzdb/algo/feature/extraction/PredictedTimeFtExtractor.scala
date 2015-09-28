@@ -31,12 +31,12 @@ import fr.profi.ms.algo.IsotopePatternInterpolator
  *          then
  *  compute rmsd, keep the path with the best average rmsd
  *          then
- *  return the apex scanId of the best monoisotopic peakel, then perform
+ *  return the apex spectrumId of the best monoisotopic peakel, then perform
  *  extraction with ms2DrivenExtractor
  */
 class PredictedTimeFtExtractor(
-  override val scanHeaderById: Map[Long, ScanHeader],
-  override val nfByScanId: Map[Long, Float],
+  override val spectrumHeaderById: Map[Long, SpectrumHeader],
+  override val nfBySpectrumId: Map[Long, Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig
@@ -95,26 +95,26 @@ class PredictedTimeFtExtractor(
     val pftTime = putativeFt.elutionTime
     val predictedTimeTol = this.xtractConfig.predictedTimeTol
 
-    // Get the scanHeaders
-    val curScanHOpt = this.getScanHeaderForTime(pftTime, 1)
-    val leftMostScanH = this.getScanHeaderForTime(pftTime - predictedTimeTol, 1).getOrElse(this.scanHeaders.head)
-    val rightMostScanH = this.getScanHeaderForTime(pftTime + predictedTimeTol, 1).getOrElse(this.scanHeaders.last)
+    // Get the spectrumHeaders
+    val curSpectrumHOpt = this.getSpectrumHeaderForTime(pftTime, 1)
+    val leftMostSpectrumH = this.getSpectrumHeaderForTime(pftTime - predictedTimeTol, 1).getOrElse(this.spectrumHeaders.head)
+    val rightMostSpectrumH = this.getSpectrumHeaderForTime(pftTime + predictedTimeTol, 1).getOrElse(this.spectrumHeaders.last)
     //progressPlan( STEP0b ).incrementAndGetCount(1)
 
-    // Checks scanHeaders
-    if (leftMostScanH.getId == rightMostScanH.getId)
+    // Checks spectrumHeaders
+    if (leftMostSpectrumH.getId == rightMostSpectrumH.getId)
       return Option.empty[Feature]
 
-    val cycles = ( leftMostScanH.getCycle() to rightMostScanH.getCycle() ).toArray
-    val selectedScanIds = cycles.map( c => this.ms1ScanHeaderByCycleNum(c).getId )
+    val cycles = ( leftMostSpectrumH.getCycle() to rightMostSpectrumH.getCycle() ).toArray
+    val selectedSpectrumIds = cycles.map( c => this.ms1SpectrumHeaderByCycleNum(c).getId )
 
     val maxTheoreticalPeakelIndex = putativeFt.theoreticalIP.theoreticalMaxPeakelIndex
     
     //progressPlan( STEP1 ).incrementAndGetCount(1)
     
-    val ips = selectedScanIds.map { id =>
+    val ips = selectedSpectrumIds.map { id =>
       pklTree.extractIsotopicPattern(
-        this.scanHeaderById(id),
+        this.spectrumHeaderById(id),
         putativeFt.theoreticalIP,
         xtractConfig.mzTolPPM,
         xtractConfig.maxNbPeaksInIP,
@@ -179,7 +179,7 @@ class PredictedTimeFtExtractor(
           if (peakels.isEmpty == false && peakels(0) != null) {
             val f = new Feature(putativeFt.id, putativeFt.mz, putativeFt.charge, peakels)
             // TODO: parameterize the min number of peakels count and LC contexts
-            if (f.getPeakelsCount > 0 && f.getFirstPeakel().scanIds.length > 5)
+            if (f.getPeakelsCount > 0 && f.getFirstPeakel().spectrumIds.length > 5)
               ft = f
           }
         }
@@ -239,7 +239,7 @@ class PredictedTimeFtExtractor(
 // ---filter the feature based duration...deprecated
 //    val durationFilteredFts = if (minDuration != 0f && maxDuration != 0f) {
 //      features.filter { f =>
-//        val duration = f.scanHeaders.last.getElutionTime - f.scanHeaders.head.getElutionTime
+//        val duration = f.spectrumHeaders.last.getElutionTime - f.spectrumHeaders.head.getElutionTime
 //        duration >= minDuration - (minDuration * 0.5) && duration <= maxDuration + (maxDuration * 0.5)
 //      }
 //    } else nonAmbiguousFeatures
@@ -283,8 +283,8 @@ class PredictedTimeFtExtractor(
     val peakelIndex = if (maxPeakelIndex < peakelBuilders.length) maxPeakelIndex else 0
     val maxPeakelBuilder = peakelBuilders(peakelIndex)._1
 
-    // Ensure peakel duration  is at least 5 scans
-    if (maxPeakelBuilder.hasEnoughPeaks(this.xtractConfig.minConsecutiveScans) == false)
+    // Ensure peakel duration  is at least 5 spectra
+    if (maxPeakelBuilder.hasEnoughPeaks(this.xtractConfig.minConsecutiveSpectra) == false)
       return Array.empty[Feature]
 
     // Launch peak detection
@@ -294,15 +294,15 @@ class PredictedTimeFtExtractor(
       maxPeakelBuilder,
       peakelDetectionConfig.detectionAlgorithm,
       peakelDetectionConfig.minSNR,
-      scanHeaderById
+      spectrumHeaderById
     )
 
     val detectedFts = new ArrayBuffer[Feature](peakelIndices.length)
-    val scanIds = maxPeakelBuilder.getScanIds()
+    val spectrumIds = maxPeakelBuilder.getSpectrumIds()
       
     for ( (minIdx, maxIdx) <- peakelIndices ) {
       
-      val restrictedPeakelBuilders = this.restrictPeakelBuildersToScanInitialIdRange(peakelBuilders, scanIds(minIdx), scanIds(maxIdx))
+      val restrictedPeakelBuilders = this.restrictPeakelBuildersToSpectrumInitialIdRange(peakelBuilders, spectrumIds(minIdx), spectrumIds(maxIdx))
 
       if (restrictedPeakelBuilders.isEmpty == false) {
         detectedFts += new Feature(
@@ -340,8 +340,8 @@ class PredictedTimeFtExtractor(
     val peakelIndex = if (maxPeakelIndex < tmpFt.getPeakelsCount) maxPeakelIndex else 0
     val maxIntensityPeakel = tmpFt.getPeakel(peakelIndex)
 
-    // ensure peakel duration  is at least 5 scans
-    if (maxIntensityPeakel.hasEnoughPeaks(xtractConfig.minConsecutiveScans) == false)
+    // ensure peakel duration  is at least 5 spectra
+    if (maxIntensityPeakel.hasEnoughPeaks(xtractConfig.minConsecutiveSpectra) == false)
       return Array.empty[(Int, Int)]
     
     //val (peaks, definedPeaks) = (maxIntensityPeakel.peaks, maxIntensityPeakel.definedPeaks)
@@ -351,23 +351,23 @@ class PredictedTimeFtExtractor(
       maxIntensityPeakel,
       peakelDetectionConfig.detectionAlgorithm,
       peakelDetectionConfig.minSNR,
-      scanHeaderById
+      spectrumHeaderById
     )
     
     peakelIndexes
   }
   
-  //protected def getScanId(peak: Peak) = peak.getLcContext().getScanId()
+  //protected def getSpectrumId(peak: Peak) = peak.getLcContext().getSpectrumId()
 
   /**
    *
    */
-  /*def _forcePeakelExtraction(minMaxScanIds: Pair[Int, Int], peaks: Array[Peak]): Peakel = {
+  /*def _forcePeakelExtraction(minMaxSpectrumIds: Pair[Int, Int], peaks: Array[Peak]): Peakel = {
     //can be more accurate if we knew the putativeFt duration ?
 
     new Peakel(0, peaks.filter { p =>
-      val scanId = p.getLcContext().getScanId()
-      minMaxScanIds._1 <= scanId && minMaxScanIds._2 >= scanId
+      val spectrumId = p.getLcContext().getSpectrumId()
+      minMaxSpectrumIds._1 <= spectrumId && minMaxSpectrumIds._2 >= spectrumId
     })
   }*/
   

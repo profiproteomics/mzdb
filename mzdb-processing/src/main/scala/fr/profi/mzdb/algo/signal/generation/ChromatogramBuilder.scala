@@ -25,21 +25,21 @@ class ChromatogramBuilder() {
   
   def result(): Array[(Float,Double)] = {
     
-    val lcContextByScanIdBuilder = Map.newBuilder[Long,ILcContext]
+    val lcContextBySpectrumIdBuilder = Map.newBuilder[Long,ILcContext]
     for( peakel <- peakelBuffer ) {
       val peakelCursor = peakel.getNewCursor()
       while( peakelCursor.next() ) {
-        val scanId = peakelCursor.getScanId()
+        val spectrumId = peakelCursor.getSpectrumId()
         val time = peakelCursor.getElutionTime()
-        lcContextByScanIdBuilder += scanId -> FullLcContext(scanId,time)
+        lcContextBySpectrumIdBuilder += spectrumId -> FullLcContext(spectrumId,time)
       }
     }
     
-    val lcContextByScanId = lcContextByScanIdBuilder.result()
-    val allPeaks = for( peakel <- peakelBuffer; peak <- peakel.toPeaks(lcContextByScanId) ) yield peak
-    val peaksByScanId = allPeaks.groupBy(_.getLcContext().getScanId() )
+    val lcContextBySpectrumId = lcContextBySpectrumIdBuilder.result()
+    val allPeaks = for( peakel <- peakelBuffer; peak <- peakel.toPeaks(lcContextBySpectrumId) ) yield peak
+    val peaksBySpectrumId = allPeaks.groupBy(_.getLcContext().getSpectrumId() )
     
-    val mergedPeaks = for( (scanId, peaks) <- peaksByScanId ) yield {
+    val mergedPeaks = for( (spectrumId, peaks) <- peaksBySpectrumId ) yield {
       val peaksCount = peaks.length
       if( peaksCount == 1 ) peaks.head
       else {        

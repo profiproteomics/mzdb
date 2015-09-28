@@ -20,7 +20,7 @@ case class Spectrum(precursorMz: Double, precursorCharge: Int, elutionTime: Floa
  */
 class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for each
   
-  val scanHeaderById = mzDbReader.getMs2ScanHeaderById.map { case (k,v) => k.toLong -> v } toMap
+  val spectrumHeaderById = mzDbReader.getMs2SpectrumHeaderById.map { case (k,v) => k.toLong -> v } toMap
   val minNbPeaksInSpectrum = 3
 
   def demultiplexMSnData(): Array[Spectrum] = {
@@ -88,7 +88,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
     
     // Clusterize peakels having an apex separated by a given time value (10 secs)    
     val histoComputer = new EntityHistogramComputer[Product with Serializable with ILcContext]( allLcEntities, { entity  =>
-      //peakel.apexScanContext.getElutionTime
+      //peakel.apexSpectrumContext.getElutionTime
       //entity.getElutionTime
       peakelTimeByLcEntity(entity)
     })
@@ -126,7 +126,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
               precursorMz = ft.mz,
               precursorCharge = ft.charge,
               elutionTime = meanTime.toFloat,
-              peaks = msnPeakels.toArray.map(_.getCursorAtApex().toPeak(scanHeaderById) ).sortBy(_.getMz)
+              peaks = msnPeakels.toArray.map(_.getCursorAtApex().toPeak(spectrumHeaderById) ).sortBy(_.getMz)
             )
           }
         }
