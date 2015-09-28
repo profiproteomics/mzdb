@@ -1,17 +1,19 @@
-package fr.profi.mzdb.io.reader;
+package fr.profi.mzdb.io.reader.cache;
 
 import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.table.DataEncodingTable;
 import fr.profi.mzdb.db.table.SpectrumTable;
+import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.PeakEncoding;
@@ -22,37 +24,50 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
 
 // TODO: Auto-generated Javadoc
 /**
- * The Class DataEncodingReader.
- * 
- * @author David Bouyssie
+ * The Class AbstractDataEncodingReader.
+ *
+ * @author bouyssie
  */
-public class DataEncodingReader extends AbstractMzDbReaderHelper {
-
-	/**
-	 * Instantiates a new data encoding reader.
-	 * 
-	 * @param mzDbReader
-	 *            the mz db reader
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public DataEncodingReader(MzDbReader mzDbReader) throws SQLiteException {
-		super(mzDbReader);
-	}
-
-	// Define some variable for scan header extraction
+public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContainer {
+	
+	// Define some variable for spectrum header extraction
 	/** The _data encoding query str. */
 	private static String _dataEncodingQueryStr = "SELECT * FROM data_encoding";
-
-	/** The _data encoding extractor. */
-	private ISQLiteRecordExtraction<DataEncoding> _dataEncodingExtractor = _getDataEncodingExtractor();
 	
+	/** The model version. */
+	private String _modelVersion;
+	
+	/** The _data encoding extractor. */
+	private ISQLiteRecordExtraction<DataEncoding> _dataEncodingExtractor;
+
+	/**
+	 * Instantiates a new abstract data encoding reader.
+	 *
+	 * @param mzDbReader
+	 *            the mz db reader
+	 * @param modelVersion
+	 *            the model version
+	 * @throws SQLiteException
+	 *             the SQ lite exception
+	 */
+	public AbstractDataEncodingReader(AbstractMzDbReader mzDbReader, String modelVersion) throws SQLiteException {
+		super(mzDbReader);
+		
+		this._modelVersion = modelVersion;
+		this._dataEncodingExtractor = _getDataEncodingExtractor();
+	}
+	
+	/**
+	 * _get data encoding extractor.
+	 *
+	 * @return the ISQ lite record extraction
+	 * @throws SQLiteException
+	 *             the SQ lite exception
+	 */
 	private ISQLiteRecordExtraction<DataEncoding> _getDataEncodingExtractor() throws SQLiteException {
 		
-		String modelVersion = mzDbReader.getModelVersion();
-		
 		// Check if model version is newer than 0.6
-		if ( modelVersion.compareTo("0.6") > 0 ) {
+		if ( _modelVersion.compareTo("0.6") > 0 ) {
 			return new ISQLiteRecordExtraction<DataEncoding>() {
 
 				public DataEncoding extract(SQLiteRecord record) throws SQLiteException {
@@ -148,17 +163,19 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 
 	/**
 	 * Gets the data encoding.
-	 * 
+	 *
 	 * @param dataEncodingId
 	 *            the data encoding id
+	 * @param connection
+	 *            the connection
 	 * @return the data encoding
 	 * @throws SQLiteException
-	 *             the sQ lite exception
+	 *             the SQ lite exception
 	 */
-	public DataEncoding getDataEncoding(int dataEncodingId) throws SQLiteException {
+	protected DataEncoding getDataEncoding(int dataEncodingId, SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null) {
-			return this.getDataEncodingById().get(dataEncodingId);
+			return this.getDataEncodingById(connection).get(dataEncodingId);
 		} else {
 			// Retrieve data encoding record
 			String queryStr = _dataEncodingQueryStr + " WHERE id = ?";
@@ -171,30 +188,35 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 
 	/**
 	 * Gets the data encodings.
-	 * 
+	 *
+	 * @param connection
+	 *            the connection
 	 * @return the data encodings
 	 * @throws SQLiteException
-	 *             the sQ lite exception
+	 *             the SQ lite exception
 	 */
-	public DataEncoding[] getDataEncodings() throws SQLiteException {
-		DataEncoding[] dataEncodings = new DataEncoding[this.mzDbReader.getDataEncodingsCount()];
-		return new SQLiteQuery(connection, _dataEncodingQueryStr)
-			.extractRecords(this._dataEncodingExtractor, dataEncodings);
+	protected DataEncoding[] getDataEncodings(SQLiteConnection connection) throws SQLiteException {
+		List<DataEncoding> dataEncodings = new SQLiteQuery(connection, _dataEncodingQueryStr)
+				.extractRecordList(this._dataEncodingExtractor);
+		
+		return dataEncodings.toArray(new DataEncoding[dataEncodings.size()]);
 	}
 
 	/**
 	 * Gets the data encoding by id.
-	 * 
+	 *
+	 * @param connection
+	 *            the connection
 	 * @return the data encoding by id
 	 * @throws SQLiteException
-	 *             the sQ lite exception
+	 *             the SQ lite exception
 	 */
-	public Map<Integer, DataEncoding> getDataEncodingById() throws SQLiteException {
+	protected Map<Integer, DataEncoding> getDataEncodingById(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.dataEncodingById != null) {
 			return this.entityCache.dataEncodingById;
 		} else {
-			DataEncoding[] dataEncodings = this.getDataEncodings();
+			DataEncoding[] dataEncodings = this.getDataEncodings(connection);
 			HashMap<Integer, DataEncoding> dataEncodingById = new HashMap<Integer, DataEncoding>(
 					dataEncodings.length);
 
@@ -209,32 +231,34 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 	}
 
 	/**
-	 * Gets the data encoding by scan id.
-	 * 
-	 * @return the data encoding by scan id
+	 * Gets the data encoding by spectrum id.
+	 *
+	 * @param connection
+	 *            the connection
+	 * @return the data encoding by spectrum id
 	 * @throws SQLiteException
-	 *             the sQ lite exception
+	 *             the SQ lite exception
 	 */
-	public Map<Long, DataEncoding> getDataEncodingByScanId() throws SQLiteException {
+	protected Map<Long, DataEncoding> getDataEncodingBySpectrumId(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.dataEncodingByScanId != null) {
-			return this.entityCache.dataEncodingByScanId;
+		if (this.entityCache != null && this.entityCache.dataEncodingBySpectrumId != null) {
+			return this.entityCache.dataEncodingBySpectrumId;
 		} else {
 
-			Map<Integer, DataEncoding> dataEncodingById = this.getDataEncodingById();
+			Map<Integer, DataEncoding> dataEncodingById = this.getDataEncodingById(connection);
 
-			// Retrieve encoding PK for the given scan id
+			// Retrieve encoding PK for the given spectrum id
 			String queryStr = "SELECT id, data_encoding_id FROM spectrum";
-			SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecords();
+			SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecordIterator();
 
-			HashMap<Long, DataEncoding> dataEncodingByScanId = new HashMap<Long, DataEncoding>();
+			HashMap<Long, DataEncoding> dataEncodingBySpectrumId = new HashMap<Long, DataEncoding>();
 			while (records.hasNext()) {
 				SQLiteRecord record = records.next();
 
-				long scanId = record.columnLong(SpectrumTable.ID);
-				int scanDataEncodingId = record.columnInt(SpectrumTable.DATA_ENCODING_ID);
+				long spectrumId = record.columnLong(SpectrumTable.ID);
+				int spectrumDataEncodingId = record.columnInt(SpectrumTable.DATA_ENCODING_ID);
 				
-				DataEncoding dataEnc = dataEncodingById.get(scanDataEncodingId);
+				DataEncoding dataEnc = dataEncodingById.get(spectrumDataEncodingId);
 
 				/*
 				// Looking for the appropriate peak encoding
@@ -247,35 +271,37 @@ public class DataEncodingReader extends AbstractMzDbReaderHelper {
 				// Setting new peak encoding was set to null before
 				dataEnc.setPeakEncoding(pe);*/
 
-				dataEncodingByScanId.put(scanId, dataEnc);
+				dataEncodingBySpectrumId.put(spectrumId, dataEnc);
 			}
 
 			if (this.entityCache != null) {
-				this.entityCache.dataEncodingByScanId = dataEncodingByScanId;
+				this.entityCache.dataEncodingBySpectrumId = dataEncodingBySpectrumId;
 			}
 
-			return dataEncodingByScanId;
+			return dataEncodingBySpectrumId;
 		}
 
 	}
 
 	/**
-	 * Gets the scan data encoding.
-	 * 
-	 * @param scanId
-	 *            the scan id
-	 * @return the scan data encoding
+	 * Gets the spectrum data encoding.
+	 *
+	 * @param spectrumId
+	 *            the spectrum id
+	 * @param connection
+	 *            the connection
+	 * @return the spectrum data encoding
 	 * @throws SQLiteException
-	 *             the sQ lite exception
+	 *             the SQ lite exception
 	 */
-	public DataEncoding getScanDataEncoding(long scanId) throws SQLiteException {
+	protected DataEncoding getSpectrumDataEncoding(long spectrumId, SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null) {
-			return this.getDataEncodingByScanId().get(scanId);
+			return this.getDataEncodingBySpectrumId(connection).get(spectrumId);
 		} else {
-			// Retrieve encoding PK for the given scan id
-			String queryStr = "SELECT data_encoding_id FROM spectrum WHERE id = " + scanId;
-			return this.getDataEncoding(new SQLiteQuery(connection, queryStr).extractSingleInt());
+			// Retrieve encoding PK for the given spectrum id
+			String queryStr = "SELECT data_encoding_id FROM spectrum WHERE id = " + spectrumId;
+			return this.getDataEncoding(new SQLiteQuery(connection, queryStr).extractSingleInt(), connection);
 		}
 
 	}

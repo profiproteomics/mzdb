@@ -8,11 +8,11 @@ import fr.profi.mzdb.utils.ms.MsUtils;
 
 // TODO: Auto-generated Javadoc
 /**
- * The Class ScanData.
+ * The Class SpectrumData.
  * 
  * @author David Bouyssie
  */
-public class ScanData {
+public class SpectrumData {
 
 	/** The mz list. */
 	protected double[] mzList;
@@ -29,7 +29,7 @@ public class ScanData {
 	protected int peaksCount;
 
 	/**
-	 * Instantiates a new scan data.
+	 * Instantiates a new spectrum data.
 	 * 
 	 * @param mzList
 	 *            the mz list
@@ -40,7 +40,7 @@ public class ScanData {
 	 * @param rHwhmList
 	 *            the r hwhm list
 	 */
-	public ScanData(double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList) {
+	public SpectrumData(double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList) {
 		super();
 		this.peaksCount = mzList.length;
 		this.mzList = mzList;
@@ -50,14 +50,14 @@ public class ScanData {
 	}
 
 	/**
-	 * Instantiates a new scan data.
+	 * Instantiates a new spectrum data.
 	 * 
 	 * @param mzList
 	 *            the mz list
 	 * @param intensityList
 	 *            the intensity list
 	 */
-	public ScanData(double[] mzList, float[] intensityList) {
+	public SpectrumData(double[] mzList, float[] intensityList) {
 		this(mzList, intensityList, null, null);
 	}
 	
@@ -128,18 +128,19 @@ public class ScanData {
 	}
 
 	/**
-	 * Adds the scan data.
+	 * Adds the spectrum data.
 	 * 
-	 * @param scanData
-	 *            the scan data
+	 * @param spectrumData
+	 *            the spectrum data
 	 */
-	public void addScanData(ScanData scanData) {
-		if (scanData != null) {
-			this.mzList = ArrayUtils.addAll(this.mzList, scanData.mzList);
-			this.intensityList = ArrayUtils.addAll(this.intensityList, scanData.intensityList);
-			if (scanData.leftHwhmList != null && scanData.rightHwhmList != null) {
-				this.leftHwhmList = ArrayUtils.addAll(this.leftHwhmList, scanData.leftHwhmList);
-				this.rightHwhmList = ArrayUtils.addAll(this.rightHwhmList, scanData.rightHwhmList);
+	// TODO: create a SpectrumDataBuilder instead anddon't use apache ArrayUtils
+	public void addSpectrumData(SpectrumData spectrumData) {
+		if (spectrumData != null) {
+			this.mzList = ArrayUtils.addAll(this.mzList, spectrumData.mzList);
+			this.intensityList = ArrayUtils.addAll(this.intensityList, spectrumData.intensityList);
+			if (spectrumData.leftHwhmList != null && spectrumData.rightHwhmList != null) {
+				this.leftHwhmList = ArrayUtils.addAll(this.leftHwhmList, spectrumData.leftHwhmList);
+				this.rightHwhmList = ArrayUtils.addAll(this.rightHwhmList, spectrumData.rightHwhmList);
 			}
 			this.peaksCount = this.mzList.length;
 		}
@@ -315,9 +316,9 @@ public class ScanData {
 	 *            the mz min
 	 * @param mzMax
 	 *            the mz max
-	 * @return the scan data
+	 * @return the spectrum data
 	 */
-	public ScanData mzRangeFilter(double mzMin, double mzMax) {
+	public SpectrumData mzRangeFilter(double mzMin, double mzMax) {
 		if (mzMin > mzMax) {
 			double tmp = mzMax;
 			mzMax = mzMin;
@@ -328,7 +329,7 @@ public class ScanData {
 		// Retrieve the index of nearest minimum value if it exists
 		int minBinSearchIndex = Arrays.binarySearch(this.mzList, mzMin);
 		int firstIdx = this._binSearchIndexToNearestIndex(minBinSearchIndex);
-		// If out of bounds => return empty scan data
+		// If out of bounds => return empty spectrum data
 		if (firstIdx == nbPoints)
 			return null;
 		// If first index => set the first value index as the array first index
@@ -338,18 +339,18 @@ public class ScanData {
 		// Retrieve the index of nearest maximum value if it exists
 		int maxBinSearchIndex = Arrays.binarySearch(this.mzList, firstIdx, nbPoints, mzMax);
 		int lastIdx = this._binSearchIndexToNearestIndex(maxBinSearchIndex);
-		// If first index => return empty scan data
+		// If first index => return empty spectrum data
 		if (lastIdx == -1)
 			return null;
 
-		ScanData filteredScanData = new ScanData(Arrays.copyOfRange(mzList, firstIdx, lastIdx), Arrays.copyOfRange(intensityList, firstIdx, lastIdx));
+		SpectrumData filteredSpectrumData = new SpectrumData(Arrays.copyOfRange(mzList, firstIdx, lastIdx), Arrays.copyOfRange(intensityList, firstIdx, lastIdx));
 
 		if (this.leftHwhmList != null) {
-			filteredScanData.leftHwhmList = Arrays.copyOfRange(this.leftHwhmList, firstIdx, lastIdx);
-			filteredScanData.rightHwhmList = Arrays.copyOfRange(this.rightHwhmList, firstIdx, lastIdx);
+			filteredSpectrumData.leftHwhmList = Arrays.copyOfRange(this.leftHwhmList, firstIdx, lastIdx);
+			filteredSpectrumData.rightHwhmList = Arrays.copyOfRange(this.rightHwhmList, firstIdx, lastIdx);
 		}
 
-		return filteredScanData;
+		return filteredSpectrumData;
 	}
 
 }

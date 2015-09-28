@@ -5,22 +5,18 @@ import java.io.StreamCorruptedException;
 import java.util.Iterator;
 import java.util.List;
 
+import com.almworks.sqlite4java.SQLiteException;
+
 import org.junit.Assert;
 import org.junit.Test;
-
-import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.db.model.Run;
 import fr.profi.mzdb.db.model.Sample;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
-import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
-import fr.profi.mzdb.model.AcquisitionMode;
-import fr.profi.mzdb.model.IsolationWindow;
-import fr.profi.mzdb.model.Scan;
-import fr.profi.mzdb.model.ScanData;
-import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
+import fr.profi.mzdb.model.*;
 
 public class MzDbReaderTest {
 
@@ -29,7 +25,7 @@ public class MzDbReaderTest {
     private static final int expectedBBCount_OVEMB150205_12 = 3406;
     private static final int expectedCycleCount_OVEMB150205_12 = 158;
     private static final int expectedRunSliceCount_OVEMB150205_12 = 161;
-    private static final int expectedScanCount_OVEMB150205_12 = 1193;
+    private static final int expectedSpectrumCount_OVEMB150205_12 = 1193;
     private static final int expectedDataEncodingCount_OVEMB150205_12 = 3;
     private static final int expectedMaxMSLevel_OVEMB150205_12 = 2;
     private static final int expectedCvParamsCount_OVEMB150205_12__0_9_7 = 0;
@@ -44,7 +40,7 @@ public class MzDbReaderTest {
     private static final float maxMz_OVEMB150205_12 = 600f;
     private static final float minRt_OVEMB150205_12 = 100f;
     private static final float maxRt_OVEMB150205_12 = 200f;
-    private static final int expectedScanSlicesCount_OVEMB150205_12 = 63;
+    private static final int expectedSpectrumSlicesCount_OVEMB150205_12 = 63;
     private static final double expectedSumIntensities_OVEMB150205_12__0_9_7 = 2.543672190435547E9;
     private static final double expectedSumIntensities_OVEMB150205_12__0_9_8 = 2.5717392830078125E9;
     private static final double expectedSumMz_OVEMB150205_12__0_9_7 = 3.868285366432487E7;
@@ -133,13 +129,13 @@ public class MzDbReaderTest {
 	}
 	System.out.print(".");
 
-	// Scan count
+	// Spectrum count
 	try {
-	    int scanCount = mzDb.getScansCount();
-	    Assert.assertEquals("ScanCount " + filename + " invalid", expectedScanCount_OVEMB150205_12,
-		    scanCount);
+	    int spectrumCount = mzDb.getSpectraCount();
+	    Assert.assertEquals("SpectrumCount " + filename + " invalid", expectedSpectrumCount_OVEMB150205_12,
+		    spectrumCount);
 	} catch (SQLiteException e) {
-	    Assert.fail("ScanCount exception " + e.getMessage() + " for " + filename);
+	    Assert.fail("SpectrumCount exception " + e.getMessage() + " for " + filename);
 	}
 	System.out.print(".");
 
@@ -210,30 +206,30 @@ public class MzDbReaderTest {
 	System.out.print(".");
 
 	try {
-	    ScanSlice[] scanSlices = mzDb.getScanSlices(minMz_OVEMB150205_12, maxMz_OVEMB150205_12,
-		    minRt_OVEMB150205_12, maxRt_OVEMB150205_12, 1);
-	    Assert.assertNotNull(scanSlices);
-	    Assert.assertEquals(expectedScanSlicesCount_OVEMB150205_12, scanSlices.length);
+	    SpectrumSlice[] spectrumSlices = mzDb.getMsSpectrumSlices(minMz_OVEMB150205_12, maxMz_OVEMB150205_12,
+		    minRt_OVEMB150205_12, maxRt_OVEMB150205_12);
+	    Assert.assertNotNull(spectrumSlices);
+	    Assert.assertEquals(expectedSpectrumSlicesCount_OVEMB150205_12, spectrumSlices.length);
 	    int nbIntensities = 0;
 	    int nbPeaks = 0;
 	    double sumIntensities = 0;
 	    double sumMz = 0;
-	    for (ScanSlice scanSlice : scanSlices) {
-		for (double intensity : scanSlice.getData().getIntensityList()) {
+	    for (SpectrumSlice spectrumSlice : spectrumSlices) {
+		for (double intensity : spectrumSlice.getData().getIntensityList()) {
 		    sumIntensities += intensity;
 		}
-		for (double mz : scanSlice.getData().getMzList()) {
+		for (double mz : spectrumSlice.getData().getMzList()) {
 		    sumMz += mz;
 		}
-		nbIntensities += scanSlice.getData().getIntensityList().length;
-		nbIntensities += scanSlice.getData().getPeaksCount();
+		nbIntensities += spectrumSlice.getData().getIntensityList().length;
+		nbIntensities += spectrumSlice.getData().getPeaksCount();
 	    }
 	    Assert.assertEquals(expectedSumIntensities, sumIntensities, 1);
 	    Assert.assertEquals(expectedSumMz, sumMz, 1E-2);
 	    Assert.assertEquals(expectedNbIntensities, nbIntensities);
 	    Assert.assertEquals(expectedNbPeaks, nbPeaks);
 	} catch (StreamCorruptedException | SQLiteException e1) {
-	    Assert.fail("scan slices extraction throws exception " + e1.getMessage());
+	    Assert.fail("spectrum slices extraction throws exception " + e1.getMessage());
 	}
 	// read Isolation Window
 	try {
@@ -255,19 +251,19 @@ public class MzDbReaderTest {
 	    Assert.assertEquals("UPS1 5fmol R1", samples.get(0).getName());
 
 	    try {
-		Iterator<Scan> iterator = new MsScanIterator(mzDb, 1);
-		int scanIndex = 0;
+		Iterator<Spectrum> iterator = new SpectrumIterator(mzDb, mzDb.getConnection(), 1);
+		int spectrumIndex = 0;
 		while (iterator.hasNext()) {
-		    Scan scan = iterator.next();
-		    ScanData data = scan.getData();
+		    Spectrum spectrum = iterator.next();
+		    SpectrumData data = spectrum.getData();
 		    int s = data.getIntensityList().length;
 		    Assert.assertEquals(s, data.getIntensityList().length);
 		    Assert.assertEquals(s, data.getMzList().length);
 		    Assert.assertEquals(s, data.getLeftHwhmList().length);
 		    Assert.assertEquals(s, data.getRightHwhmList().length);
-		    scanIndex++;
+		    spectrumIndex++;
 		}
-		Assert.assertEquals(expectedCycleCount_OVEMB150205_12, scanIndex);
+		Assert.assertEquals(expectedCycleCount_OVEMB150205_12, spectrumIndex);
 	    } catch (StreamCorruptedException e) {
 		e.printStackTrace();
 	    }

@@ -6,22 +6,22 @@ package fr.profi.mzdb.model;
 
 import java.util.Comparator;
 
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.AbstractTableModel;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.ScanList;
-import fr.profi.mzdb.io.reader.ParamTreeParser;
+import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 
 // TODO: Auto-generated Javadoc
 /**
- * The Class ScanHeader.
+ * The Class SpectrumHeader.
  * 
  * @author David Bouyssie
  */
-public class ScanHeader extends AbstractTableModel implements ILcContext {
+public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
 	/** The id. */
 	protected final long id;
@@ -62,14 +62,14 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	/** The bounding box first spectrum id. */
 	protected final int bbFirstSpectrumId;
 
-	/** The scan list. */
+	/** The spectrum list. */
 	protected ScanList scanList = null;
 
 	/** The precursor: contains selected ions list */
 	protected Precursor precursor = null;
 
 	/**
-	 * Instantiates a new scan header.
+	 * Instantiates a new spectrum header.
 	 * 
 	 * @param id
 	 *            the id
@@ -94,7 +94,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	 * @param precursorCharge
 	 *            the precursor charge
 	 */
-	public ScanHeader(
+	public SpectrumHeader(
 		long id,
 		int initialId,
 		int cycle,
@@ -126,7 +126,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	}
 
 	/**
-	 * Instantiates a new scan header.
+	 * Instantiates a new spectrum header.
 	 * 
 	 * @param id
 	 *            the id
@@ -142,7 +142,7 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	 *            the peaks count
 	 */
 	/*
-	 * public ScanHeader(int id, int initialId, int cycle, float time, int msLevel, int peaksCount) { this(
+	 * public SpectrumHeader(int id, int initialId, int cycle, float time, int msLevel, int peaksCount) { this(
 	 * id, initialId, cycle, time, msLevel, peaksCount, false, 0, 0, 0, 0); }
 	 */
 
@@ -248,9 +248,9 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see fr.profi.mzdb.model.ILcContext#getScanId()
+	 * @see fr.profi.mzdb.model.ILcContext#getSpectrumId()
 	 */
-	public long getScanId() {
+	public long getSpectrumId() {
 		return this.id;
 	}
 
@@ -284,9 +284,9 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	}
 
 	/** The rt comp. */
-	public static Comparator<ScanHeader> rtComp = new Comparator<ScanHeader>() {
+	public static Comparator<SpectrumHeader> rtComp = new Comparator<SpectrumHeader>() {
 		// @Override
-		public int compare(ScanHeader o1, ScanHeader o2) {
+		public int compare(SpectrumHeader o1, SpectrumHeader o2) {
 			if (o1.time < o2.time)
 				return -1;
 			else if (Math.abs(o1.time - o2.time) < 1e-6)
@@ -300,12 +300,12 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 		return tic;
 	}
 
-	public static void loadParamTrees(ScanHeader[] scanHeaders, MzDbReader mzDbReader) {
+	public static void loadParamTrees(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection) {
 		// TODO: load all param_trees in a single SQL query
-		for (ScanHeader header : scanHeaders) {
+		for (SpectrumHeader header : spectrumHeaders) {
 			if (!header.hasParamTree())
 				try {
-					header.loadParamTree(mzDbReader);
+					header.loadParamTree(mzDbConnection);
 				} catch (SQLiteException e) {
 					e.printStackTrace();
 				}
@@ -313,28 +313,28 @@ public class ScanHeader extends AbstractTableModel implements ILcContext {
 	}
 
 	@Override
-	public void loadParamTree(MzDbReader mzDbReader) throws SQLiteException {
+	public void loadParamTree(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (!this.hasParamTree()) {
 			String sqlString = "SELECT param_tree FROM spectrum WHERE id = ?";
-			String paramTreeAsStr = new SQLiteQuery(mzDbReader.getConnection(), sqlString).bind(1,
+			String paramTreeAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
 				this.getId()).extractSingleString();
 			this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
 		}
 	}
 
-	public void loadScanList(MzDbReader mzDbReader) throws SQLiteException {
+	public void loadScanList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (scanList == null) {
 			String sqlString = "SELECT scan_list FROM spectrum WHERE id = ?";
-			String scanListAsStr = new SQLiteQuery(mzDbReader.getConnection(), sqlString).bind(1,
+			String scanListAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
 				this.getId()).extractSingleString();
 			this.scanList = ParamTreeParser.parseScanList(scanListAsStr);
 		}
 	}
 
-	public void loadPrecursorList(MzDbReader mzDbReader) throws SQLiteException {
+	public void loadPrecursorList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (precursor == null) {
 			String sqlString = "SELECT precursor_list FROM spectrum WHERE id = ?";
-			String precursorListAsStr = new SQLiteQuery(mzDbReader.getConnection(), sqlString).bind(1,
+			String precursorListAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
 				this.getId()).extractSingleString();
 			this.precursor = ParamTreeParser.parsePrecursor(precursorListAsStr);
 		}

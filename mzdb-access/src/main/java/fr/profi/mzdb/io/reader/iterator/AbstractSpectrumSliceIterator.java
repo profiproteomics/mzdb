@@ -6,26 +6,35 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
-public abstract class AbstractScanSliceIterator {
+public abstract class AbstractSpectrumSliceIterator {
 
-	protected final MzDbReader mzDbReader;
+	protected final AbstractMzDbReader mzDbReader;
 	protected final SQLiteStatement statement;
 	protected final BoundingBoxIterator boundingBoxIterator;
 	protected BoundingBox firstBB;
-	protected final int msLevel;
 	
-	public AbstractScanSliceIterator(MzDbReader mzDbReader, String sqlQuery, int msLevel, ISQLiteStatementConsumer stmtBinder ) 
-			throws SQLiteException, StreamCorruptedException {
-		
-		// Retrieve SQLite connection
-		SQLiteConnection conn = mzDbReader.getConnection();
+	public AbstractSpectrumSliceIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection, String sqlQuery ) throws SQLiteException, StreamCorruptedException {
 		
 		// Create a new statement (will be automatically closed by the StatementIterator)
-		SQLiteStatement stmt = conn.prepare(sqlQuery, true); // true = cached enabled
+		SQLiteStatement stmt = connection.prepare(sqlQuery, true); // true = cached enabled
+
+		// Set some fields
+		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt);		
+		this.mzDbReader = mzDbReader;
+		this.statement = stmt;
+
+		initBB();
+	}
+	
+	public AbstractSpectrumSliceIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection, String sqlQuery, int msLevel, ISQLiteStatementConsumer stmtBinder ) 
+			throws SQLiteException, StreamCorruptedException {
+		
+		// Create a new statement (will be automatically closed by the StatementIterator)
+		SQLiteStatement stmt = connection.prepare(sqlQuery, true); // true = cached enabled
 		
 		// Call the statement binder
 		stmtBinder.accept(stmt);
@@ -34,7 +43,6 @@ public abstract class AbstractScanSliceIterator {
 		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt, msLevel);		
 		this.mzDbReader = mzDbReader;
 		this.statement = stmt;
-		this.msLevel = msLevel;
 
 		initBB();
 	}

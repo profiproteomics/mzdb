@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.reader;
+package fr.profi.mzdb.io.reader.table;
 
 import java.util.List;
 

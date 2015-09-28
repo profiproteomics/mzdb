@@ -1,6 +1,3 @@
-/**
- *
- */
 package fr.profi.mzdb.utils.concurrent;
 
 /**

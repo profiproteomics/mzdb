@@ -1,44 +1,42 @@
-/**
- * 
- */
-package fr.profi.mzdb.io.reader;
+package fr.profi.mzdb.io.reader.cache;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.db.table.RunSliceTable;
 import fr.profi.mzdb.model.RunSliceHeader;
 import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
 import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
 
 // TODO: Auto-generated Javadoc
 /**
- * The Class RunSliceHeaderReader.
- * 
- * @author David Bouyssie
+ * The Class AbstractRunSliceHeaderReader.
+ *
+ * @author bouyssie
  */
-public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
+public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContainer {
 
 	/**
-	 * Instantiates a new run slice header reader.
-	 * 
+	 * Instantiates a new abstract run slice header reader.
+	 *
 	 * @param mzDbReader
 	 *            the mz db reader
 	 */
-	public RunSliceHeaderReader(MzDbReader mzDbReader) {
+	public AbstractRunSliceHeaderReader(AbstractMzDbReader mzDbReader) {
 		super(mzDbReader);
 	}
 
 	/**
 	 * The Class RunSliceHeaderExtractor.
-	 * 
-	 * @author David Bouyssie
+	 *
+	 * @author bouyssie
 	 */
 	private class RunSliceHeaderExtractor implements ISQLiteRecordExtraction<RunSliceHeader> {
 
@@ -52,19 +50,19 @@ public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
 		 * 
 		 * }
 		 */
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction#extract(fr.profi.mzdb
-		 * .utils.sqlite.SQLiteRecord)
+		
+		/* (non-Javadoc)
+		 * @see fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction#extract(fr.profi.mzdb.utils.sqlite.SQLiteRecord)
 		 */
 		public RunSliceHeader extract(SQLiteRecord record) throws SQLiteException {
 			// return this.extract( record, record.columnInt(RunSliceTable.NUMBER) );
 
-			return new RunSliceHeader(record.columnInt(RunSliceTable.ID),
-					record.columnInt(RunSliceTable.MS_LEVEL), record.columnInt(RunSliceTable.NUMBER),
-					record.columnDouble(RunSliceTable.BEGIN_MZ), record.columnDouble(RunSliceTable.END_MZ),
+			return new RunSliceHeader(
+					record.columnInt(RunSliceTable.ID),
+					record.columnInt(RunSliceTable.MS_LEVEL),
+					record.columnInt(RunSliceTable.NUMBER),
+					record.columnDouble(RunSliceTable.BEGIN_MZ),
+					record.columnDouble(RunSliceTable.END_MZ),
 					record.columnInt(RunSliceTable.RUN_ID));
 		}
 
@@ -75,28 +73,23 @@ public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
 
 	/**
 	 * Gets the run slices.
-	 * 
+	 *
+	 * @param connection
+	 *            the connection
 	 * @return array of runSlice instance without data associated
 	 * @throws SQLiteException
 	 *             the SQLite exception
 	 */
-	public RunSliceHeader[] getRunSliceHeaders() throws SQLiteException {
+	protected RunSliceHeader[] getRunSliceHeaders(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.runSliceHeaders != null) {
 			return this.entityCache.runSliceHeaders;
 		} else {
 
-			ArrayList<RunSliceHeader> rshList = new ArrayList<RunSliceHeader>();
-
 			// Retrieve the corresponding run slices
 			String queryStr = "SELECT * FROM run_slice";
-			SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecords();
-
-			while (records.hasNext()) {
-				SQLiteRecord record = records.next();
-				rshList.add(_runSliceHeaderExtractor.extract(record));
-			}
-
+			List<RunSliceHeader> rshList = new SQLiteQuery(connection, queryStr).extractRecordList(_runSliceHeaderExtractor);
+			
 			RunSliceHeader[] runSliceHeaders = rshList.toArray(new RunSliceHeader[rshList.size()]);
 
 			if (this.entityCache != null)
@@ -109,14 +102,16 @@ public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
 
 	/**
 	 * Gets the run slices.
-	 * 
+	 *
 	 * @param msLevel
 	 *            the ms level
+	 * @param connection
+	 *            the connection
 	 * @return array of runSlice instance without data associated
 	 * @throws SQLiteException
 	 *             the SQLite exception
 	 */
-	public RunSliceHeader[] getRunSliceHeaders(int msLevel) throws SQLiteException {
+	protected RunSliceHeader[] getRunSliceHeaders(int msLevel, SQLiteConnection connection) throws SQLiteException {
 
 		ArrayList<RunSliceHeader> rshList = new ArrayList<RunSliceHeader>();
 
@@ -130,14 +125,9 @@ public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
 
 			// Retrieve the corresponding run slices
 			String queryStr = "SELECT * FROM run_slice WHERE ms_level=? ORDER BY begin_mz "; // number
-			SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).bind(1, msLevel)
-					.getRecords();
-
-			while (records.hasNext()) {
-				SQLiteRecord record = records.next();
-				rshList.add(_runSliceHeaderExtractor.extract(record));
-			}
-
+			
+			SQLiteQuery query = new SQLiteQuery(connection, queryStr).bind(1, msLevel);
+			rshList = (ArrayList<RunSliceHeader>) query.extractRecordList(_runSliceHeaderExtractor);
 		}
 
 		return rshList.toArray(new RunSliceHeader[rshList.size()]);
@@ -164,34 +154,37 @@ public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
 
 	/**
 	 * Gets the run slice by id.
-	 * 
+	 *
 	 * @param msLevel
 	 *            the ms level
+	 * @param connection
+	 *            the connection
 	 * @return the run slice by id
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel) throws SQLiteException {
+	protected HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel, SQLiteConnection connection) throws SQLiteException {
 
-		RunSliceHeader[] runSliceHeaders = this.getRunSliceHeaders(msLevel);
+		RunSliceHeader[] runSliceHeaders = this.getRunSliceHeaders(msLevel, connection);
 		return this._getRunSliceHeaderById(runSliceHeaders);
 	}
 
 	/**
 	 * Gets the run slice header by id.
-	 * 
+	 *
+	 * @param connection
+	 *            the connection
 	 * @return the run slice header by id
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Map<Integer, RunSliceHeader> getRunSliceHeaderById() throws SQLiteException {
+	protected Map<Integer, RunSliceHeader> getRunSliceHeaderById(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.runSliceHeaderById != null) {
 			return this.entityCache.runSliceHeaderById;
 		} else {
 
-			HashMap<Integer, RunSliceHeader> runSliceHeaderById = this._getRunSliceHeaderById(this
-					.getRunSliceHeaders());
+			HashMap<Integer, RunSliceHeader> runSliceHeaderById = this._getRunSliceHeaderById(this.getRunSliceHeaders(connection));
 
 			if (this.entityCache != null)
 				this.entityCache.runSliceHeaderById = runSliceHeaderById;
@@ -202,68 +195,78 @@ public class RunSliceHeaderReader extends AbstractMzDbReaderHelper {
 
 	/**
 	 * Gets the run slice header.
-	 * 
+	 *
 	 * @param id
 	 *            the id
+	 * @param connection
+	 *            the connection
 	 * @return the run slice header
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public RunSliceHeader getRunSliceHeader(int id) throws SQLiteException {
+	protected RunSliceHeader getRunSliceHeader(int id, SQLiteConnection connection) throws SQLiteException {
 		if (this.entityCache != null) {
-			return this.getRunSliceHeaderById().get(id);
+			return this.getRunSliceHeaderById(connection).get(id);
 		} else {
 			String queryStr = "SELECT * FROM run_slice WHERE id = ?";
-			return new SQLiteQuery(connection, queryStr).bind(1, id).extractRecord(
-					this._runSliceHeaderExtractor);
+			return new SQLiteQuery(connection, queryStr).bind(1, id).extractRecord(this._runSliceHeaderExtractor);
 		}
 	}
 
 	/**
 	 * Gets the run slice for mz.
-	 * 
+	 *
 	 * @param mz
 	 *            the mz
 	 * @param msLevel
 	 *            the ms level
+	 * @param connection
+	 *            the connection
 	 * @return the run slice for mz
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public RunSliceHeader getRunSliceForMz(double mz, int msLevel) throws SQLiteException {
+	protected RunSliceHeader getRunSliceForMz(double mz, int msLevel, SQLiteConnection connection) throws SQLiteException {
 
 		// Retrieve the corresponding run slices
 		String queryStr = "SELECT * FROM run_slice WHERE ms_level = ? AND begin_mz <= ? AND end_mz > ?";
-		return new SQLiteQuery(connection, queryStr).bind(1, msLevel).bind(2, mz).bind(3, mz)
+		return new SQLiteQuery(connection, queryStr)
+				.bind(1, msLevel)
+				.bind(2, mz)
+				.bind(3, mz)
 				.extractRecord(_runSliceHeaderExtractor);
 	}
 
 	/**
 	 * Gets the run slice ids for mz range.
-	 * 
+	 *
 	 * @param minMz
 	 *            the min mz
 	 * @param maxMz
 	 *            the max mz
 	 * @param msLevel
 	 *            the ms level
+	 * @param connection
+	 *            the connection
 	 * @return the run slice ids for mz range
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public int[] getRunSliceIdsForMzRange(double minMz, double maxMz, int msLevel) throws SQLiteException {
+	protected int[] getRunSliceIdsForMzRange(double minMz, double maxMz, int msLevel, SQLiteConnection connection) throws SQLiteException {
 
-		RunSliceHeader firstRunSlice = this.getRunSliceForMz(minMz, msLevel);
-		RunSliceHeader lastRunSlice = this.getRunSliceForMz(maxMz, msLevel);
-		double mzHeight = (msLevel == 1) ? mzDbReader.getBBSizes().BB_MZ_HEIGHT_MS1
-				: mzDbReader.getBBSizes().BB_MZ_HEIGHT_MSn;
+		RunSliceHeader firstRunSlice = this.getRunSliceForMz(minMz, msLevel, connection);
+		RunSliceHeader lastRunSlice = this.getRunSliceForMz(maxMz, msLevel, connection);
+		double mzHeight = (msLevel == 1) ? mzDbReader.getBBSizes().BB_MZ_HEIGHT_MS1 : mzDbReader.getBBSizes().BB_MZ_HEIGHT_MSn;
 
 		int bufferLength = 1 + (int) ((maxMz - minMz) / mzHeight);
 
 		String queryStr = "SELECT id FROM run_slice WHERE ms_level = ? AND begin_mz >= ? AND end_mz <= ?";
 
-		return new SQLiteQuery(connection, queryStr).bind(1, msLevel).bind(2, firstRunSlice.getBeginMz())
-				.bind(3, lastRunSlice.getEndMz()).extractInts(bufferLength);
+		return new SQLiteQuery(connection, queryStr)
+				.bind(1, msLevel)
+				.bind(2, firstRunSlice.getBeginMz())
+				.bind(3, lastRunSlice.getEndMz())
+				.extractInts(bufferLength);
 	}
 
 }

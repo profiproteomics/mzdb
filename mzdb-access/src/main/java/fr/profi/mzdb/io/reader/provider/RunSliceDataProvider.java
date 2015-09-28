@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.reader;
+package fr.profi.mzdb.io.reader.provider;
 
 import java.io.StreamCorruptedException;
 import java.util.Iterator;

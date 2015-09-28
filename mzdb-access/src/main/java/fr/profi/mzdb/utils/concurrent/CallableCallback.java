@@ -1,6 +1,3 @@
-/**
- *
- */
 package fr.profi.mzdb.utils.concurrent;
 
 import java.util.concurrent.Callable;
@@ -11,30 +8,30 @@ import java.util.concurrent.Callable;
  */
 public class CallableCallback<V> implements Callable<V> {
 
-    private final Callable<V> callable;
-    private final Callback<V> callback;
+	private final Callable<V> callable;
+	private final Callback<V> callback;
 
-    /**
-     * @param callback
-     */
-    public CallableCallback(Callable<V> callable, Callback<V> callback) {
-	super();
-	this.callable = callable;
-	this.callback = callback;
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see java.util.concurrent.Callable#call()
-     */
-    @Override
-    public V call() throws Exception {
-	V result = this.callable.call();
-	if (this.callback != null) {
-	    this.callback.onCompletion(result);
+	/**
+	 * @param callback
+	 */
+	public CallableCallback(Callable<V> callable, Callback<V> callback) {
+		super();
+		this.callable = callable;
+		this.callback = callback;
 	}
-	return result;
-    }
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see java.util.concurrent.Callable#call()
+	 */
+	@Override
+	public V call() throws Exception {
+		V result = this.callable.call();
+		if (this.callback != null) {
+			this.callback.onCompletion(result);
+		}
+		return result;
+	}
 
 }

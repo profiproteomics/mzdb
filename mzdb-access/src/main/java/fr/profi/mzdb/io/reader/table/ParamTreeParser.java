@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.reader;
+package fr.profi.mzdb.io.reader.table;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;

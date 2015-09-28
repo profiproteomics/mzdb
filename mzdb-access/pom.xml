@@ -36,6 +36,13 @@
       <artifactId>commons-lang3</artifactId>
       <!-- Version inherited from ProFI-Pom -->
     </dependency>
+    
+    <!-- Reactive streams -->
+    <dependency>
+      <groupId>io.reactivex</groupId>
+      <artifactId>rxjava</artifactId>
+      <version>1.0.13</version>
+    </dependency>
 
     <!-- SQLite Jar then native libraries -->
     <dependency>
@@ -77,6 +84,7 @@
       <!-- Version inherited from ProFI-Pom -->
       <scope>test</scope>
     </dependency>
+    
   </dependencies>
 
   <build>

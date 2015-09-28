@@ -6,22 +6,22 @@ package fr.profi.mzdb.model;
 
 // TODO: Auto-generated Javadoc
 /**
- * The Class ScanSlice.
+ * The Class SpectrumSlice.
  * 
  * @author David Bouyssie
  */
-public class ScanSlice extends Scan {
+public class SpectrumSlice extends Spectrum {
 
-	// ScanData {
+	// SpectrumData {
 
 	/** The run slice id. */
 	protected int runSliceId;
 
 	/**
-	 * Instantiates a new scan slice.
+	 * Instantiates a new spectrum slice.
 	 * 
-	 * @param scanId
-	 *            the scan id
+	 * @param spectrumId
+	 *            the spectrum id
 	 * @param runSliceId
 	 *            the run slice id
 	 * @param mzList
@@ -29,24 +29,24 @@ public class ScanSlice extends Scan {
 	 * @param intensityList
 	 *            the intensity list
 	 */
-	public ScanSlice(ScanHeader header, ScanData scanData) {
-		super(header, scanData);
+	public SpectrumSlice(SpectrumHeader header, SpectrumData spectrumData) {
+		super(header, spectrumData);
 		
     if( header == null ) {
-      throw new IllegalArgumentException("a ScanHeader must be provided");
+      throw new IllegalArgumentException("a SpectrumHeader must be provided");
     }
     
-    if( scanData == null ) {
-      throw new IllegalArgumentException("a ScanData must be provided");
+    if( spectrumData == null ) {
+      throw new IllegalArgumentException("a SpectrumData must be provided");
     }
 	}
 
 	/**
-	 * Gets the scan id.
+	 * Gets the spectrum id.
 	 * 
-	 * @return the scan id
+	 * @return the spectrum id
 	 */
-	public long getScanId() {
+	public long getSpectrumId() {
 		return header.getId();
 	}
 

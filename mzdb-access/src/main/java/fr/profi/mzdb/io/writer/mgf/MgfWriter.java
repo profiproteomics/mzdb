@@ -26,16 +26,15 @@ import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.table.SpectrumTable;
-import fr.profi.mzdb.io.reader.ScanHeaderReader;
-import fr.profi.mzdb.io.reader.iterator.MsScanIterator;
+import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader;
+import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
 import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.PeakEncoding;
-import fr.profi.mzdb.model.Scan;
-import fr.profi.mzdb.model.ScanData;
-import fr.profi.mzdb.model.ScanHeader;
-import fr.profi.mzdb.model.ScanSlice;
+import fr.profi.mzdb.model.Spectrum;
+import fr.profi.mzdb.model.SpectrumData;
+import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.model.SpectrumSlice;
 import fr.profi.mzdb.utils.ms.MsUtils;
 import fr.profi.mzdb.utils.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
@@ -58,7 +57,7 @@ public class MgfWriter {
 
 	private MzDbReader mzDbReader;
 
-	private Map<Integer, String> titleByScanId = new HashMap<Integer, String>();
+	private Map<Integer, String> titleBySpectrumId = new HashMap<Integer, String>();
 
 	/**
 	 * 
@@ -73,12 +72,12 @@ public class MgfWriter {
 		// Create reader
 		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
 
-		this._fillTitleByScanId();
-		this.logger.info("Number of loaded spectra titles: " + this.titleByScanId.size());
+		this._fillTitleBySpectrumId();
+		this.logger.info("Number of loaded spectra titles: " + this.titleBySpectrumId.size());
 
 	}
 
-	private void _fillTitleByScanId() throws SQLiteException {
+	private void _fillTitleBySpectrumId() throws SQLiteException {
 
 		/** inner class for treating sql resulting records */
 		final class TitleByIdFiller implements ISQLiteRecordOperation {
@@ -96,7 +95,7 @@ public class MgfWriter {
 			}
 		} // end inner class
 
-		TitleByIdFiller f = new TitleByIdFiller(this.titleByScanId);
+		TitleByIdFiller f = new TitleByIdFiller(this.titleBySpectrumId);
 		
 		new SQLiteQuery(this.mzDbReader.getConnection(), titleQuery).forEachRecord(f);
 	}
@@ -117,23 +116,23 @@ public class MgfWriter {
 		// Reset precNotFound static var
 		MgfWriter.precNotFound = 0;
 		
-		// Configure the ScanHeaderReader in order to load all precursor lists when reading spectra headers
-		ScanHeaderReader.loadPrecursorList = true;
+		// Configure the SpectrumHeaderReader in order to load all precursor lists when reading spectra headers
+		SpectrumHeaderReader.loadPrecursorList = true;
 
-		// Iterate over MS2 scan
-		final Iterator<Scan> scanIterator = new MsScanIterator(this.mzDbReader, 2);
+		// Iterate over MS2 spectrum
+		final Iterator<Spectrum> spectrumIterator = new SpectrumIterator(mzDbReader, mzDbReader.getConnection(), 2);
 		final PrintWriter mgfWriter = new PrintWriter(new BufferedWriter(new FileWriter(mgfFile)));
-		final Map<Long, DataEncoding> dataEncodingByScanId = this.mzDbReader.getDataEncodingByScanId();
+		final Map<Long, DataEncoding> dataEncodingBySpectrumId = this.mzDbReader.getDataEncodingBySpectrumId();
 
 		int spectraCount = 0;
-		while (scanIterator.hasNext()) {
+		while (spectrumIterator.hasNext()) {
 			
-			Scan s = scanIterator.next();
-			long scanId = s.getHeader().getId();
-			DataEncoding dataEnc = dataEncodingByScanId.get(scanId);
+			Spectrum s = spectrumIterator.next();
+			long spectrumId = s.getHeader().getId();
+			DataEncoding dataEnc = dataEncodingBySpectrumId.get(spectrumId);
 			String spectrumAsStr = this.stringifySpectrum(s, dataEnc, precComp, mzTolPPM, intensityCutoff, exportProlineTitle);
 			
-			//this.logger.debug("Writing spectrum with ID="+scanId);
+			//this.logger.debug("Writing spectrum with ID="+spectrumId);
 
 			// Write the spectrum			
 			mgfWriter.println(spectrumAsStr);
@@ -152,7 +151,7 @@ public class MgfWriter {
 	
 	/**
 	 * 
-	 * @param scan
+	 * @param spectrum
 	 * @param dataEnc
 	 * @param precComp
 	 * @param intensityCutoff
@@ -161,7 +160,7 @@ public class MgfWriter {
 	 * @throws StreamCorruptedException 
 	 */
 	protected String stringifySpectrum(
-		Scan scan,
+		Spectrum spectrum,
 		DataEncoding dataEnc,
 		PrecursorMzComputation precComp,
 		float mzTolPPM,
@@ -178,27 +177,27 @@ public class MgfWriter {
 		}
 
 		// Unpack data
-		final ScanHeader scanHeader = scan.getHeader();
+		final SpectrumHeader spectrumHeader = spectrum.getHeader();
 		String title;
-		if( exportProlineTitle == false ) title = this.titleByScanId.get(scanHeader.getScanId());
+		if( exportProlineTitle == false ) title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
 		else {
-			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.02f;last_time:%.02f;raw_file_name:%s;",
-				scanHeader.getCycle(),
-				scanHeader.getCycle(),
-				scanHeader.getInitialId(),
-				scanHeader.getInitialId(),
-				scanHeader.getTime(),
-				scanHeader.getTime(),
+			title = String.format("first_cycle:%d;last_cycle:%d;first_spectrum:%d;last_spectrum:%d;first_time:%.02f;last_time:%.02f;raw_file_name:%s;",
+				spectrumHeader.getCycle(),
+				spectrumHeader.getCycle(),
+				spectrumHeader.getInitialId(),
+				spectrumHeader.getInitialId(),
+				spectrumHeader.getTime(),
+				spectrumHeader.getTime(),
 				mzDbReader.getFirstSourceFileName()
 			);
 		}
 		
-		final float time = scanHeader.getElutionTime();
-		double precMz = scanHeader.getPrecursorMz(); // main precursor m/z
+		final float time = spectrumHeader.getElutionTime();
+		double precMz = spectrumHeader.getPrecursorMz(); // main precursor m/z
 
 		if (precComp == PrecursorMzComputation.SELECTED_ION_MZ) {
 			try {
-				Precursor precursor = scanHeader.getPrecursor();
+				Precursor precursor = spectrumHeader.getPrecursor();
 				precMz = precursor.parseFirstSelectedIonMz();
 			} catch (Exception e) {
 				this.logger.error("Selected ion m/z value not found: fall back to default", e);
@@ -206,7 +205,7 @@ public class MgfWriter {
 		} else if (precComp == PrecursorMzComputation.REFINED) {
 			
 			try {
-				Precursor precursor = scanHeader.getPrecursor();
+				Precursor precursor = spectrumHeader.getPrecursor();
 				precMz = precursor.parseFirstSelectedIonMz();
 				precMz = this.refinePrecMz(precursor, precMz, mzTolPPM, time, 5);
 			} catch (Exception e) {
@@ -223,9 +222,9 @@ public class MgfWriter {
 
 		} else if (precComp == PrecursorMzComputation.REFINED_THERMO) {
 			try {
-				// TODO: use ScanHeaderReader.loadScanList instead (better perf)
-				scanHeader.loadScanList(this.mzDbReader);
-				UserParam precMzParam = scanHeader.getScanList().getScans().get(0)
+				// TODO: use SpectrumHeaderReader.loadSpectrumList instead (better perf)
+				spectrumHeader.loadScanList(this.mzDbReader.getConnection());
+				UserParam precMzParam = spectrumHeader.getScanList().getScans().get(0)
 						.getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
 
 				precMz = Double.parseDouble(precMzParam.getValue());
@@ -235,9 +234,9 @@ public class MgfWriter {
 		} else if (precComp == PrecursorMzComputation.EXTRACTED) {
 			
 			try {
-				Precursor precursor = scanHeader.getPrecursor();
+				Precursor precursor = spectrumHeader.getPrecursor();
 				precMz = precursor.parseFirstSelectedIonMz();
-				precMz = this.extractPrecMz(precursor, precMz, mzTolPPM, scanHeader, 5);
+				precMz = this.extractPrecMz(precursor, precMz, mzTolPPM, spectrumHeader, 5);
 			} catch (Exception e) {
 				this.logger.error("Extracted precursor m/z computation failed: fall back to default", e);
 			}
@@ -252,21 +251,21 @@ public class MgfWriter {
 
 		}/* else if (precComp == PrecursorMzComputation.REFINED_MZDB) {
 			try {
-				precMz = Double.parseDouble(scanHeader.getUserParam(
+				precMz = Double.parseDouble(spectrumHeader.getUserParam(
 						PrecursorMzComputation.REFINED_MZDB.getUserParamName()).getValue());
 			} catch (NullPointerException e) {
 				this.logger.trace("Refined mdb user param name not found: fall back to default");
 			}
 		}*/
 
-		final int charge = scanHeader.getPrecursorCharge();
-		final MgfHeader mgfScanHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
+		final int charge = spectrumHeader.getPrecursorCharge();
+		final MgfHeader mgfSpectrumHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
 
 		StringBuilder spectrumStringBuilder = new StringBuilder();
-		mgfScanHeader.appendToStringBuilder(spectrumStringBuilder);
+		mgfSpectrumHeader.appendToStringBuilder(spectrumStringBuilder);
 
-		// Scan Data
-		final ScanData data = scan.getData();
+		// Spectrum Data
+		final SpectrumData data = spectrum.getData();
 		final double[] mzs = data.getMzList();
 		final float[] ints = data.getIntensityList();
 		final float[] leftHwhms = data.getLeftHwhmList();
@@ -327,13 +326,13 @@ public class MgfWriter {
 			throws StreamCorruptedException, SQLiteException {
 		
 		// Do a XIC in the isolation window and around the provided time
-		final ScanSlice[] scanSlices = this._getScanSlicesInIsolationWindow(precursor, time, timeTol);
-		if( scanSlices == null ) {
+		final SpectrumSlice[] spectrumSlices = this._getSpectrumSlicesInIsolationWindow(precursor, time, timeTol);
+		if( spectrumSlices == null ) {
 			return precMz;
 		}
 		
 		final ArrayList<Peak> peaks = new ArrayList<Peak>();
-		for (ScanSlice sl : scanSlices) {
+		for (SpectrumSlice sl : spectrumSlices) {
 			Peak p = sl.getNearestPeak(precMz, mzTolPPM);
 			if (p != null) {
 				p.setLcContext(sl.getHeader());
@@ -376,29 +375,28 @@ public class MgfWriter {
 	 */
 	// TODO: it should be nice to perform this operation in mzdb-processing
 	// This requires that the MgfWriter is be moved to this package
-	protected double extractPrecMz(Precursor precursor, double precMz, double mzTolPPM, ScanHeader scanHeader, float timeTol)
+	protected double extractPrecMz(Precursor precursor, double precMz, double mzTolPPM, SpectrumHeader spectrumHeader, float timeTol)
 			throws StreamCorruptedException, SQLiteException {
 		
-		long sid = scanHeader.getId();
-		float time = scanHeader.getTime();
+		long sid = spectrumHeader.getId();
+		float time = spectrumHeader.getTime();
 
 		// Do a XIC in the isolation window and around the provided time
 		// FIXME: isolation window is not available for AbSciex files yet
-		// final ScanSlice[] scanSlices = this._getScanSlicesInIsolationWindow(precursor, time, timeTol);
-		final ScanSlice[] scanSlices = this.mzDbReader.getScanSlices(precMz - 1, precMz + 1, time - timeTol,
-			time + timeTol, 1);
+		// final SpectrumSlice[] spectrumSlices = this._getSpectrumSlicesInIsolationWindow(precursor, time, timeTol);
+		final SpectrumSlice[] spectrumSlices = this.mzDbReader.getMsSpectrumSlices(precMz - 1, precMz + 1, time - timeTol, time + timeTol);
 
-		// TODO: perform the operation on all loaded scan slices ???
-		ScanSlice nearestScanSlice = null;
-		for (ScanSlice sl : scanSlices) {
-			if (nearestScanSlice == null)
-				nearestScanSlice = sl;
-			else if (Math.abs(sl.getHeader().getElutionTime() - time) < Math.abs(nearestScanSlice.getHeader()
+		// TODO: perform the operation on all loaded spectrum slices ???
+		SpectrumSlice nearestSpectrumSlice = null;
+		for (SpectrumSlice sl : spectrumSlices) {
+			if (nearestSpectrumSlice == null)
+				nearestSpectrumSlice = sl;
+			else if (Math.abs(sl.getHeader().getElutionTime() - time) < Math.abs(nearestSpectrumSlice.getHeader()
 					.getElutionTime() - time))
-				nearestScanSlice = sl;
+				nearestSpectrumSlice = sl;
 		}
 
-		Peak curPeak = nearestScanSlice.getNearestPeak(precMz, mzTolPPM);
+		Peak curPeak = nearestSpectrumSlice.getNearestPeak(precMz, mzTolPPM);
 		if (curPeak == null)
 			return precMz;
 
@@ -408,10 +406,10 @@ public class MgfWriter {
 
 			// avgIsoMassDiff = 1.0027
 			double prevPeakMz = precMz + (1.0027 * -1 / putativeZ);
-			Peak prevPeak = nearestScanSlice.getNearestPeak(prevPeakMz, mzTolPPM);
+			Peak prevPeak = nearestSpectrumSlice.getNearestPeak(prevPeakMz, mzTolPPM);
 
 			if (prevPeak != null) {
-				prevPeak.setLcContext(nearestScanSlice.getHeader());
+				prevPeak.setLcContext(nearestSpectrumSlice.getHeader());
 
 				double prevPeakExpMz = prevPeak.getMz();
 				double approxZ = 1 / Math.abs(precMz - prevPeakExpMz);
@@ -447,7 +445,7 @@ public class MgfWriter {
 						for (int interferenceZ = 1; interferenceZ <= 6; interferenceZ++) {
 							if (interferenceZ != putativeZ) {
 								interferencePeakMz = prevPeakExpMz + (1.0027 * +1 / interferenceZ);
-								Peak interferencePeak = nearestScanSlice.getNearestPeak(interferencePeakMz, mzTolPPM);
+								Peak interferencePeak = nearestSpectrumSlice.getNearestPeak(interferencePeakMz, mzTolPPM);
 
 								// If there is no defined peak with higher intensity
 								if (interferencePeak != null && interferencePeak.getIntensity() > prevPeak.getIntensity()) {
@@ -458,11 +456,11 @@ public class MgfWriter {
 						}
 
 						if (foundInterferencePeak == false) {
-							logger.debug("Found better m/z value for precMz=" + precMz + " at scan id=" + sid
+							logger.debug("Found better m/z value for precMz=" + precMz + " at spectrum id=" + sid
 									+ " with int ratio=" + intRatio + " and z=" + putativeZ + " : "+ prevPeakExpMz);
 							previousPeaks.add(prevPeak);
 						} else {
-							logger.debug("Found interference m/z value for precMz=" + precMz + " at scan id="+ sid + " : " + interferencePeakMz);
+							logger.debug("Found interference m/z value for precMz=" + precMz + " at spectrum id="+ sid + " : " + interferencePeakMz);
 						}
 					}
 				}
@@ -479,7 +477,7 @@ public class MgfWriter {
 		return mostIntensePrevPeak.getMz();
 	}
 	
-	private ScanSlice[] _getScanSlicesInIsolationWindow(Precursor precursor, float time, float timeTol)
+	private SpectrumSlice[] _getSpectrumSlicesInIsolationWindow(Precursor precursor, float time, float timeTol)
 		throws StreamCorruptedException, SQLiteException {
 		
 		// do a XIC over isolation window
@@ -503,7 +501,7 @@ public class MgfWriter {
 		final float minrt = time - timeTol;
 		final float maxrt = time + timeTol;
 		
-		return this.mzDbReader.getMsScanSlices(minmz, maxmz, minrt, maxrt);	
+		return this.mzDbReader.getMsSpectrumSlices(minmz, maxmz, minrt, maxrt);	
 	}
 
 

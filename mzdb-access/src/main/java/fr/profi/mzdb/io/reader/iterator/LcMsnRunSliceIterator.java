@@ -3,10 +3,11 @@ package fr.profi.mzdb.io.reader.iterator;
 import java.io.StreamCorruptedException;
 import java.util.Iterator;
 
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.model.RunSlice;
 import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
@@ -33,7 +34,8 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 			+ "ORDER BY run_slice.begin_mz";
 
 	public LcMsnRunSliceIterator(
-		MzDbReader mzDbReader,
+		AbstractMzDbReader mzDbReader,
+		SQLiteConnection connection,
 		final double minParentMz,
 		final double maxParentMz
 	) throws SQLiteException, StreamCorruptedException {
@@ -47,7 +49,7 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		
 		// Set msLevel to 2
 		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, allRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
+		super(mzDbReader, connection, allRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
 			public void accept(SQLiteStatement stmt) throws SQLiteException {
 				stmt.bind(1, 2); // Bind the msLevel
 				stmt.bind(2, minParentMz); // Bind the minParentMz
@@ -57,7 +59,8 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 	}
 
 	public LcMsnRunSliceIterator(
-		MzDbReader mzDbReader,
+		AbstractMzDbReader mzDbReader,
+		SQLiteConnection connection,
 		final double minParentMz,
 		final double maxParentMz,
 		final double minRunSliceMz,
@@ -76,7 +79,7 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		
 		// Set msLevel to 2
 		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, runSlicesSubsetSqlQuery, 2, new ISQLiteStatementConsumer() {
+		super(mzDbReader, connection, runSlicesSubsetSqlQuery, 2, new ISQLiteStatementConsumer() {
 			public void accept(SQLiteStatement stmt) throws SQLiteException {
 				stmt.bind(1, 2); // Bind the msLevel
 				stmt.bind(2, minParentMz); // Bind the minParentMz

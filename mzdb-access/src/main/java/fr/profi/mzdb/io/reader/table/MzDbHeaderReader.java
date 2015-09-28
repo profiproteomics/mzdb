@@ -1,11 +1,10 @@
-package fr.profi.mzdb.io.reader;
+package fr.profi.mzdb.io.reader.table;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.db.model.MzDbHeader;
 import fr.profi.mzdb.db.model.params.ParamTree;
-
 import fr.profi.mzdb.db.table.MzdbTable;
 import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
@@ -17,31 +16,19 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
  * 
  * @author David Bouyssie
  */
-public class MzDbHeaderReader {
-
-	/** The connection. */
-	protected SQLiteConnection connection = null;
+public class MzDbHeaderReader extends AbstractTableModelReader<MzDbHeader> {
 
 	/**
-	 * Instantiates a new mz db header reader.
+	 * Instantiates a new mzDB header reader.
 	 * 
-	 * @param connection
-	 *            the connection
+	 * @param connection the SQLite connection
 	 */
 	public MzDbHeaderReader(SQLiteConnection connection) {
-		super();
-		this.connection = connection;
+		super(connection);
 	}
-
-	/**
-	 * Gets the mz db header.
-	 * 
-	 * @return the mz db header
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public MzDbHeader getMzDbHeader() throws SQLiteException {
-		return new SQLiteQuery(connection, "SELECT * FROM mzdb").extractRecord(new ISQLiteRecordExtraction<MzDbHeader>() {
+	
+	protected ISQLiteRecordExtraction<MzDbHeader> buildRecordExtractor() {
+		return new ISQLiteRecordExtraction<MzDbHeader>() {
 
 			public MzDbHeader extract(SQLiteRecord r) throws SQLiteException {
 
@@ -52,7 +39,17 @@ public class MzDbHeaderReader {
 
 				return new MzDbHeader(version, creationTimestamp, paramTree);
 			}
-		});
+		};
+	}
+
+	/**
+	 * Gets the mz db header.
+	 * 
+	 * @return the mz db header
+	 * @throws SQLiteException the SQLite exception
+	 */
+	public MzDbHeader getMzDbHeader() throws SQLiteException {
+		return new SQLiteQuery(connection, "SELECT * FROM " + MzdbTable.tableName).extractRecord(recordExtractor);
 	}
 
 }

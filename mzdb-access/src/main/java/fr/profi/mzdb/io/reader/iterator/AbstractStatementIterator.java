@@ -9,13 +9,13 @@ import org.slf4j.LoggerFactory;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.AbstractMzDbReader;
 
-public abstract class StatementIterator<E> implements Iterator<E>, IStatementExtractor<E> {
+public abstract class AbstractStatementIterator<E> implements Iterator<E>, IStatementExtractor<E> {
 	
-	protected final Logger logger = LoggerFactory.getLogger(StatementIterator.class);
+	protected final Logger logger = LoggerFactory.getLogger(AbstractStatementIterator.class);
 
-	protected final MzDbReader mzDbReader;
+	protected final AbstractMzDbReader mzDbReader;
 	protected final SQLiteStatement statement;
 	protected boolean isStatementClosed = false;
 	protected E nextElem = null;
@@ -24,9 +24,9 @@ public abstract class StatementIterator<E> implements Iterator<E>, IStatementExt
 	 * public boolean isStatementClosed() { return isStatementClosed; }
 	 */
 
-	public StatementIterator(MzDbReader mzdb, SQLiteStatement stmt) throws SQLiteException, StreamCorruptedException {
+	public AbstractStatementIterator(AbstractMzDbReader mzDbReader, SQLiteStatement stmt) throws SQLiteException, StreamCorruptedException {
 		super();
-		this.mzDbReader = mzdb;
+		this.mzDbReader = mzDbReader;
 		this.statement = stmt;
 
 		nextElem = null;

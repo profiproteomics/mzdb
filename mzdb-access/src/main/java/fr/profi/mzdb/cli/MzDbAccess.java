@@ -19,7 +19,7 @@ import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.io.writer.mgf.MgfWriter;
 import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputation;
 import fr.profi.mzdb.model.Peak;
-import fr.profi.mzdb.model.ScanHeader;
+import fr.profi.mzdb.model.SpectrumHeader;
 
 /***
  * This class allows to access to a mzDB file and to make some range queries on it. A list of putative
@@ -186,7 +186,7 @@ public class MzDbAccess {
 
 		// Retrieve peaks
 		try {
-			Peak[] peaks = mzDbInstance.getPeaks(minMz, maxMz, minTime, maxTime, 1);
+			Peak[] peaks = mzDbInstance.getMsPeaksInMzRtRanges(minMz, maxMz, minTime, maxTime);
 			if (peaks != null) {
 				for (Peak peak : peaks) {
 					println(peak.getMz() + "\t" + peak.getIntensity() + "\t" + peak.getLeftHwhm() + "\t"
@@ -218,13 +218,13 @@ public class MzDbAccess {
 		MzDbReader mzDbReader = null;
 		try {
 			mzDbReader = new MzDbReader(cmd.mzdbFile, true);
-			ScanHeader[] ms2ScanHeaders = mzDbReader.getMs2ScanHeaders();
+			SpectrumHeader[] ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders();
 
-			for (ScanHeader ms2ScanHeader: ms2ScanHeaders) {
-				ms2ScanHeader.loadScanList(mzDbReader);
-				ms2ScanHeader.getParamTree(mzDbReader);
+			for (SpectrumHeader ms2SpectrumHeader: ms2SpectrumHeaders) {
+				ms2SpectrumHeader.loadScanList(mzDbReader.getConnection());
+				ms2SpectrumHeader.getParamTree(mzDbReader.getConnection());
 
-				UserParam precMzParam = ms2ScanHeader.getScanList().getScans().get(0)
+				UserParam precMzParam = ms2SpectrumHeader.getScanList().getScans().get(0)
 						.getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
 
 				// <userParam name="[Thermo Trailer Extra]Monoisotopic M/Z:" value="815.21484375"
