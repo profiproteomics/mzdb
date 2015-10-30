@@ -33,7 +33,8 @@ public class MzDbReaderTest {
     private static final float expectedLastRTTime_OVEMB150205_12 = 240.8635f;
     private static final String expectedModelVersion_OVEMB150205_12_0_9_7 = "0.6";
     private static final String expectedModelVersion_OVEMB150205_12_0_9_8 = "0.7";
-    private static final AcquisitionMode expectedAcquisitionMode_OVEMB150205_12 = AcquisitionMode.UNKNOWN;
+    private static final AcquisitionMode expectedAcquisitionMode_OVEMB150205_12__0_9_7 = AcquisitionMode.UNKNOWN;
+    private static final AcquisitionMode expectedAcquisitionMode_OVEMB150205_12__0_9_8 = AcquisitionMode.DDA;
     private static final IsolationWindow[] expectedDiaIsolationWindows_OVEMB150205_12 = {};
 
     private static final float minMz_OVEMB150205_12 = 400f;
@@ -61,7 +62,7 @@ public class MzDbReaderTest {
 	this.readerTest(this.filename__0_9_7, expectedModelVersion_OVEMB150205_12_0_9_7,
 		expectedSumIntensities_OVEMB150205_12__0_9_7, expectedSumMz_OVEMB150205_12__0_9_7,
 		expectedNbIntensities_OVEMB150205_12__0_9_7, expectedNbPeaks_OVEMB150205_12__0_9_7,
-		expectedCvParamsCount_OVEMB150205_12__0_9_7);
+		expectedCvParamsCount_OVEMB150205_12__0_9_7, expectedAcquisitionMode_OVEMB150205_12__0_9_7);
 	System.out.println(" OK");
     }
 
@@ -73,12 +74,12 @@ public class MzDbReaderTest {
 	this.readerTest(this.filename__0_9_8, expectedModelVersion_OVEMB150205_12_0_9_8,
 		expectedSumIntensities_OVEMB150205_12__0_9_8, expectedSumMz_OVEMB150205_12__0_9_8,
 		expectedNbIntensities_OVEMB150205_12__0_9_8, expectedNbPeaks_OVEMB150205_12__0_9_8,
-		expectedCvParamsCount_OVEMB150205_12__0_9_8);
+		expectedCvParamsCount_OVEMB150205_12__0_9_8, expectedAcquisitionMode_OVEMB150205_12__0_9_8);
 	System.out.println(" OK");
     }
 
     public void readerTest(String filename, String expectedModelVersion, double expectedSumIntensities,
-	    double expectedSumMz, int expectedNbIntensities, int expectedNbPeaks, int expectedCvParamsCount) {
+	    double expectedSumMz, int expectedNbIntensities, int expectedNbPeaks, int expectedCvParamsCount, AcquisitionMode expectedAcquisitionMode) {
 	MzDbReader mzDb = null;
 
 	System.out.print("Non Regression test reading mzDB file " + filename + ": ");
@@ -182,7 +183,7 @@ public class MzDbReaderTest {
 	try {
 	    AcquisitionMode acquisitionMode = mzDb.getAcquisitionMode();
 	    Assert.assertEquals("AcquisitionMode " + filename + " invalid",
-		    expectedAcquisitionMode_OVEMB150205_12, acquisitionMode);
+	    		expectedAcquisitionMode, acquisitionMode);
 	} catch (SQLiteException e) {
 	    Assert.fail("version exception " + e.getMessage() + " for " + filename);
 	}

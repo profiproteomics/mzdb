@@ -1,5 +1,7 @@
 package fr.profi.mzdb.model;
 
+import java.util.Iterator;
+
 /**
  * Enumeration representing the acquisition mode. It is stored as a cvParam in the run table. This list is
  * NOT exhaustive
@@ -34,4 +36,15 @@ public enum AcquisitionMode {
     public String toString() {
         return this.code;
     }
+    
+    public static AcquisitionMode getAcquisitionMode(String code){
+    	AcquisitionMode[] acqModes = AcquisitionMode.values();
+    	for (AcquisitionMode acquisitionMode : acqModes) {
+    		if (acquisitionMode.code.equals(code)){
+				return acquisitionMode;
+			}
+		}
+    	return AcquisitionMode.UNKNOWN;
+    }
+    
 }

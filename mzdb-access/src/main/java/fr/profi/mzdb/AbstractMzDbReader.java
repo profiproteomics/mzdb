@@ -843,7 +843,7 @@ public abstract class AbstractMzDbReader {
 			try {
 				final CVParam cvParam = runTree.getCVParam(CVEntry.ACQUISITION_PARAMETER);
 				final String value = cvParam.getValue();
-				this.acquisitionMode = AcquisitionMode.valueOf(value);
+				this.acquisitionMode = AcquisitionMode.getAcquisitionMode(value);
 			} catch (Exception e) {
 				this.acquisitionMode = AcquisitionMode.UNKNOWN;
 			}
