@@ -1,11 +1,11 @@
 package fr.profi.ms.algo
 
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import fr.profi.chemistry.model._
 import fr.profi.ms.model._
 import fr.profi.util.MathUtils
-
 
 /**
  * @author David Bouyssie
@@ -133,6 +133,7 @@ object IsotopeDistributionComputer {
     computedCombinationByFormula.values.toArray
   }
   
+  @tailrec
   private def _computeIsotopicVariantCombinations(
     computedCombinationByFormula: HashMap[String,IsotopeCombination],
     atomIsotopes: Array[AtomIsotopicVariant],
