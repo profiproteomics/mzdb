@@ -37,7 +37,7 @@ class IsotopePatternTest extends StrictLogging  {
       atomTable.getAtom("O") -> 1000,
       atomTable.getAtom("N") -> 1000,
       atomTable.getAtom("P") -> 10,
-      atomTable.getAtom("S") -> 20,
+      atomTable.getAtom("S") -> 3,
       atomTable.getAtom("Se") -> 1
     )
     
@@ -47,7 +47,7 @@ class IsotopePatternTest extends StrictLogging  {
     
     val t0 = System.currentTimeMillis()
     var i = 0
-    while( i < 1000 ) {
+    while( i < 100 ) {
       
       // Compute the isotope distribution
       val theoDistrib = computer.computeIsotopeDistribution(averagine, 1, combinations, 0.01f )
