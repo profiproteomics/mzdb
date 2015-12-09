@@ -156,71 +156,79 @@ object IsotopeDistributionComputer {
         
         this._createNewIsotopeCombinations(
           computedCombinationByFormula,
-          combination,
+          Seq(combination),
           atomIsotopes,
           curTargetedAtomCount,
           minProba
-        )        
+        )
       }
     }
     
     this._computeIsotopicVariantCombinations(computedCombinationByFormula,atomIsotopes,curTargetedAtomCount,maxAtomCount,minProba)
   }
   
+  @tailrec
   private def _createNewIsotopeCombinations(
     computedCombinationByFormula: HashMap[String,IsotopeCombination],
-    lastCombination: IsotopeCombination,
+    lastCombinations: Seq[IsotopeCombination],
     atomIsotopes: Array[AtomIsotopicVariant],
     targetedAtomCount: Int,
     minProba: Float
   ) {
-    val atomCount = lastCombination.atomCount
-    if( atomCount >= targetedAtomCount ) return
-    
-    // Retrieve previous abundance map
-    val lastAbundanceMap = lastCombination.abundanceMap
-    
-    for( atomIsotope <- atomIsotopes ) {
-      
-      // Clone the abundance map and initialize the current variant counter if needed
-      val newAbundanceMap = new HashMap[AtomIsotopicVariant,Float]()
-      newAbundanceMap ++= lastAbundanceMap
-      newAbundanceMap.getOrElseUpdate(atomIsotope, 0)
-      
-      // Increment the abundance of the current isotopic variant
-      newAbundanceMap(atomIsotope) += 1
-      
-      val formula = new AtomIsotopeComposition(newAbundanceMap).toFormula()
-      if( computedCombinationByFormula.contains(formula) == false ) {
-        
-        // Get the current count for this variant and for the total number of atoms
-        val newIsotopeCount = newAbundanceMap(atomIsotope)
-        val newAtomCount = atomCount + 1
-        
-        // Compute the new probability for this combination
-        val newProba = lastCombination.probability * atomIsotope.isotope.abundance * newAtomCount / newIsotopeCount
-        
-        // Return if probability is too low
-        if( newProba >= minProba ) {
+    if( lastCombinations.isEmpty ) return
 
-          val newCombination = IsotopeCombination( newAbundanceMap.toMap, newProba )
-          
-          this.synchronized {
-            computedCombinationByFormula += formula -> newCombination
+    val newCombinationsBuffers = new ArrayBuffer[IsotopeCombination](atomIsotopes.length)
+
+    for (lastCombination <- lastCombinations) {
+      val atomCount = lastCombination.atomCount
+      if (atomCount < targetedAtomCount) {
+  
+        // Retrieve previous abundance map
+        val lastAbundanceMap = lastCombination.abundanceMap
+  
+        for (atomIsotope <- atomIsotopes) {
+  
+          // Clone the abundance map and initialize the current variant counter if needed
+          val newAbundanceMap = new HashMap[AtomIsotopicVariant, Float]()
+          newAbundanceMap ++= lastAbundanceMap
+          newAbundanceMap.getOrElseUpdate(atomIsotope, 0)
+  
+          // Increment the abundance of the current isotopic variant
+          newAbundanceMap(atomIsotope) += 1
+  
+          val formula = new AtomIsotopeComposition(newAbundanceMap).toFormula()
+          if (computedCombinationByFormula.contains(formula) == false) {
+  
+            // Get the current count for this variant and for the total number of atoms
+            val newIsotopeCount = newAbundanceMap(atomIsotope)
+            val newAtomCount = atomCount + 1
+  
+            // Compute the new probability for this combination
+            val newProba = lastCombination.probability * atomIsotope.isotope.abundance * newAtomCount / newIsotopeCount
+  
+            // Return if probability is too low
+            if (newProba >= minProba) {
+  
+              val newCombination = IsotopeCombination(newAbundanceMap.toMap, newProba)
+  
+              this.synchronized {
+                computedCombinationByFormula += formula -> newCombination
+              }
+  
+              newCombinationsBuffers += newCombination
+            }
           }
-          
-          this._createNewIsotopeCombinations(
-            computedCombinationByFormula,
-            newCombination,
-            atomIsotopes,
-            targetedAtomCount,
-            minProba
-          )
         }
       }
     }
-    
-    ()
+
+    this._createNewIsotopeCombinations(
+      computedCombinationByFormula,
+      newCombinationsBuffers,
+      atomIsotopes,
+      targetedAtomCount,
+      minProba
+    )
   }
   
   
