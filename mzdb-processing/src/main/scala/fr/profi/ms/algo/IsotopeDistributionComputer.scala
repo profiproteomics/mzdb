@@ -37,6 +37,8 @@ object IsotopeDistributionComputer {
       minProba
     )
     
+    require(computedCombinations.isEmpty == false, "can't find an appropriate isotope combination")
+    
     IsotopeDistribution(computedCombinations.toArray,charge)
   }
   
@@ -67,29 +69,40 @@ object IsotopeDistributionComputer {
       s"provided computedCombinations has no entry for atom ${curAtom.symbol} with abundance ${curAtomCount}"
     )
     
-    for( isotopeCombination <- matchingIsotopeCombinationsOpt.get ) {
+    val matchingIsotopeCombinations = matchingIsotopeCombinationsOpt.get
+    if( matchingIsotopeCombinations.isEmpty ) {
+      throw new Exception(s"can't find a combination for #$curAtomCount atom of $curAtom")
+    }
+    
+    // Filter matching isotope combinations to keep only those having a high probability
+    val lastProb = lastCombination.probability
+    val filteredIsotopesCombinations = matchingIsotopeCombinations.filter(_.probability * lastProb >= minProba)
+    val finalIsotopesCombinations = if( filteredIsotopesCombinations.isEmpty ) {
+      Array( matchingIsotopeCombinations.maxBy(_.probability) )
+    } else {
+      matchingIsotopeCombinations
+    }
+    
+    for( isotopeCombination <- finalIsotopesCombinations ) {
       
       val newProbability = lastCombination.probability * isotopeCombination.probability
+        
+      // Merge last composition with the one of the current isotope combination
+      val newAbundanceMap = lastCombination.getCloneOfMutableAbundanceMap()
+      AbundanceMapOps.addAbundanceMap(newAbundanceMap, isotopeCombination.abundanceMap)
       
-      if( newProbability >= minProba ) {
-        
-        // Merge last composition with the one of the current isotope combination
-        val newAbundanceMap = lastCombination.getCloneOfMutableAbundanceMap()
-        AbundanceMapOps.addAbundanceMap(newAbundanceMap, isotopeCombination.abundanceMap)
-        
-        // Instantiate a new isotope combination corresponding to the merged composition
-        val newCombination = IsotopeCombination( newAbundanceMap.toMap, newProbability )
-        
-        this._combineIsotopeCombinations(
-          computedCombinations,
-          newCombination,
-          compoundAtomCountByAtom,
-          isotopeCombinationMap,
-          remainingAtoms,
-          minProba
-        )
-      }
-    }
+      // Instantiate a new isotope combination corresponding to the merged composition
+      val newCombination = IsotopeCombination( newAbundanceMap.toMap, newProbability )
+      
+      this._combineIsotopeCombinations(
+        computedCombinations,
+        newCombination,
+        compoundAtomCountByAtom,
+        isotopeCombinationMap,
+        remainingAtoms,
+        minProba
+      )
+    } 
     
     ()
   }

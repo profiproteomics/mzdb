@@ -1,12 +1,11 @@
 package fr.profi.mzdb
 
+import scala.collection.mutable.HashMap
 import org.junit.Before
 import org.junit.FixMethodOrder
 import org.junit.Test
 import org.junit.runners.MethodSorters
-
 import com.typesafe.scalalogging.StrictLogging
-
 import fr.profi.chemistry.model.BiomoleculeAtomTable
 import fr.profi.chemistry.model.HumanAminoAcidTable
 import fr.profi.ms.algo._
@@ -14,21 +13,30 @@ import fr.profi.ms.algo._
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class IsotopePatternTest extends StrictLogging  {
 
-  @Before
+  val aaComp = new fr.profi.chemistry.model.AminoAcidComposition(
+    "HELICUPTER",
+    HumanAminoAcidTable
+  )
+  val atomComp = aaComp.getAtomComposition(BiomoleculeAtomTable)
+  
+  val monoMass = aaComp.getMonoMass()
+  val atomMonoMass = atomComp.getMonoMass()
+  // FIXME: monoMass should equal atomMonoMass
+  
+  /*@Before
   @throws(classOf[Exception])
   def setUp() = {
     
-  }
+  }*/
   
   @Test
   def a_patternComputer() = {
     
-    val aaTable = HumanAminoAcidTable
     val atomTable = BiomoleculeAtomTable
     
     // Compute the averagine atom composition
-    val averagineComputer = new fr.profi.chemistry.algo.AveragineComputer(aaTable, atomTable)
-    val averagine = averagineComputer.computeAveragine(2600.0, adjustAbundances = true)._1
+    //val averagineComputer = new fr.profi.chemistry.algo.AveragineComputer(aaTable, atomTable)
+    //val averagine = averagineComputer.computeAveragine(2600.0, adjustAbundances = true)._1
     
     // Create a map defining the maximum number of atoms
     val maxAtomCountByAtom = Map(
@@ -50,7 +58,7 @@ class IsotopePatternTest extends StrictLogging  {
     while( i < 100 ) {
       
       // Compute the isotope distribution
-      val theoDistrib = computer.computeIsotopeDistribution(averagine, 1, combinations, 0.01f )
+      val theoDistrib = computer.computeIsotopeDistribution(atomComp, 1, combinations, 0.01f )
       val theoPattern = theoDistrib.theoIsotopePattern
       
       if( i == 0 ) {
@@ -70,11 +78,11 @@ class IsotopePatternTest extends StrictLogging  {
     
     val interpolator = IsotopePatternInterpolator
     
-    val t0 = System.currentTimeMillis()    
+    val t0 = System.currentTimeMillis()
     var i = 0
     while( i < 1000 ) {
       
-      val theoPattern = interpolator.getTheoreticalPattern(2600.0, 1)
+      val theoPattern = interpolator.getTheoreticalPattern(atomMonoMass, 1)
       
       if( i == 0 ) {
         theoPattern.mzAbundancePairs.foreach { p =>
@@ -97,7 +105,7 @@ class IsotopePatternTest extends StrictLogging  {
     var i = 0
     while( i < 1000 ) {
       
-      val theoPattern = estimator.getTheoreticalPattern(2600.0, 1)
+      val theoPattern = estimator.getTheoreticalPattern(atomMonoMass, 1)
       
       if( i == 0 ) {
         theoPattern.mzAbundancePairs.foreach { p =>

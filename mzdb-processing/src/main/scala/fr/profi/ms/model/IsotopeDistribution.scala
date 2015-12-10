@@ -7,6 +7,8 @@ import fr.profi.chemistry.model.MolecularConstants
  *
  */
 case class IsotopeDistribution( isotopeCombinations: Array[IsotopeCombination], charge: Int ) {
+  require( isotopeCombinations != null, "isotopeCombinations is null" )
+  require( isotopeCombinations.isEmpty == false, "isotopeCombinations is empty" )
   
   val isotopicVariantsByNucleonCount = isotopeCombinations.groupBy( _.nucleonCount )
   

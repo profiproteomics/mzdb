@@ -93,7 +93,7 @@ trait AminoAcidTableLike extends IMolecularTable[AminoAcidResidue] {
     averageAtomComp
   }
   
-  def getAbundanceRangeByAtom( atomTable: AtomTableLike ): Map[Atom,Pair[Float,Float]] = {
+  def getAbundanceRangeByAtom( atomTable: AtomTableLike ): Map[Atom,(Float,Float)] = {
     
     val tmpAbRangeByAtom = new HashMap[Atom,Pair[Float,Float]]
     val atoms = atomTable.atoms
