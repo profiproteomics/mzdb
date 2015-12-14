@@ -17,7 +17,7 @@ import com.beust.jcommander.Parameter;
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.io.writer.mgf.MgfWriter;
-import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputation;
+import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputationEnum;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.SpectrumHeader;
 
@@ -90,7 +90,7 @@ public class MzDbAccess {
 		private String outputFile = "";
 
 		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, extracted, refined, refined_thermo'", required = false)
-		private PrecursorMzComputation precMzComputation = PrecursorMzComputation.MAIN_PRECURSOR_MZ;
+		private PrecursorMzComputationEnum precMzComputation = PrecursorMzComputationEnum.MAIN_PRECURSOR_MZ;
 		
 		@Parameter(names = { "-mztol", "--mz_tol_ppm" }, description = "m/z tolerance used for precursor m/z value definition", required = false)
 		private float mzTolPPM = 20;
