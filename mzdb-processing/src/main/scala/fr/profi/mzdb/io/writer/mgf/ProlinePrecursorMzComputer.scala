@@ -20,13 +20,13 @@ class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends D
     val time = spectrumHeader.getElutionTime()
     val precursor = spectrumHeader.getPrecursor()
     var precMz = precursor.parseFirstSelectedIonMz()
-    precMz = this.refinePrecMz(reader, precursor, precMz, mzTolPPM, time, 5);
-    
+    val altPrecMz = this.refinePrecMz(reader, precursor, precMz, mzTolPPM, time, 5);
+    if (altPrecMz != null) { precMz = altPrecMz }
     val bestPattern = getBestIsotopicPatternMatch(spectrumHeader, precMz, time)
     if (bestPattern.isDefined) {
       lastPrediction = (spectrumHeader, bestPattern.get)
       if (math.abs(precMz - bestPattern.get.monoMz) > 1e-3)
-        logger.info(s"change predicted precursorMz from $precMz to ${bestPattern.get.monoMz}")
+        logger.info(s"scan ${spectrumHeader.getInitialId} : change predicted precursorMz from $precMz to ${bestPattern.get.monoMz}")
       bestPattern.get.monoMz
     } else {
       logger.info("no prediction : returns precursorMz")
@@ -45,9 +45,12 @@ class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends D
 
   override def getPrecursorCharge(spectrumHeader: SpectrumHeader): Int = {
     val charge = spectrumHeader.getPrecursorCharge
-    if ((charge <= 0) && (lastPrediction != null) && (spectrumHeader == lastPrediction._1)) {
+    if (charge >  0) {
+      charge
+    } else {
+    if ( (lastPrediction != null) && (spectrumHeader == lastPrediction._1)) {
        if (charge !=  lastPrediction._2.charge)
-        logger.info(s"change predicted charge from $charge to ${lastPrediction._2.charge}")
+        logger.info(s"scan ${spectrumHeader.getInitialId} : change predicted charge from $charge to ${lastPrediction._2.charge}")
       lastPrediction._2.charge
     } else {
       val time = spectrumHeader.getElutionTime()
@@ -55,11 +58,12 @@ class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends D
       val bestPattern = getBestIsotopicPatternMatch(spectrumHeader, precMz, time)
       if (bestPattern.isDefined) {
        if (charge !=  bestPattern.get.charge)
-        logger.info(s"Change predicted charge from $charge to ${bestPattern.get.charge}")
+        logger.info(s"change predicted charge from $charge to ${bestPattern.get.charge}")
         bestPattern.get.charge
       } else {
         charge
       }
+    }
     }
   }
   
