@@ -5,18 +5,23 @@ import fr.profi.mzdb.model.SpectrumHeader
 import fr.profi.mzdb.algo.IsotopicPatternScorer
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import com.typesafe.scalalogging.LazyLogging
+import fr.profi.mzdb.db.model.params.Precursor
+
 
 /**
  * @author CB205360
  */
 
-class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends IPrecursorComputation with LazyLogging {
-
+class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends DefaultPrecursorComputer(reader, mzTolPPM) { 
+  
   private var lastPrediction: (SpectrumHeader, TheoreticalIsotopePattern) = _
   
   override def getPrecursorMz(spectrumHeader: SpectrumHeader): Double = {
     val time = spectrumHeader.getElutionTime()
-    var precMz = spectrumHeader.getPrecursorMz()
+    val precursor = spectrumHeader.getPrecursor()
+    var precMz = precursor.parseFirstSelectedIonMz()
+    precMz = this.refinePrecMz(reader, precursor, precMz, mzTolPPM, time, 5);
+    
     val bestPattern = getBestIsotopicPatternMatch(spectrumHeader, precMz, time)
     if (bestPattern.isDefined) {
       lastPrediction = (spectrumHeader, bestPattern.get)
@@ -40,7 +45,7 @@ class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends I
 
   override def getPrecursorCharge(spectrumHeader: SpectrumHeader): Int = {
     val charge = spectrumHeader.getPrecursorCharge
-    if ((lastPrediction != null) && (spectrumHeader == lastPrediction._1)) {
+    if ((charge <= 0) && (lastPrediction != null) && (spectrumHeader == lastPrediction._1)) {
        if (charge !=  lastPrediction._2.charge)
         logger.info(s"change predicted charge from $charge to ${lastPrediction._2.charge}")
       lastPrediction._2.charge
