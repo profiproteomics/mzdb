@@ -28,10 +28,14 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	private MzDbReader mzDbReader;
 	private float mzTolPPM;
 	
-	public DefaultPrecursorComputer(PrecursorMzComputationEnum precComp, MzDbReader mzDbReader, float mzTolPPM) {
-		super();
-		this.precComp = precComp;
+	protected DefaultPrecursorComputer(MzDbReader mzDbReader, float mzTolPPM) {
+		this.mzTolPPM = mzTolPPM;
 		this.mzDbReader = mzDbReader;
+	}
+	
+	public DefaultPrecursorComputer(PrecursorMzComputationEnum precComp, MzDbReader mzDbReader, float mzTolPPM) {
+		this(mzDbReader, mzTolPPM);
+		this.precComp = precComp;
 	}
 
 	@Override
