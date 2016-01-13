@@ -2,7 +2,6 @@ package fr.profi.mzdb.io.writer.mgf;
 
 /** */
 public enum PrecursorMzComputationEnum {
-	EXTRACTED("extracted mz value from survey"),
 	MAIN_PRECURSOR_MZ("main precursor mz"),
 	SELECTED_ION_MZ("selected ion mz"),
 	REFINED("mzdb-access refined precursor mz"),

@@ -89,7 +89,7 @@ public class MzDbAccess {
 		@Parameter(names = { "-o", "--output_file_path" }, description = "mgf output file path", required = true)
 		private String outputFile = "";
 
-		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, extracted, refined, refined_thermo'", required = false)
+		@Parameter(names = { "-precmz", "--precursor_mz" }, description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo'", required = false)
 		private PrecursorMzComputationEnum precMzComputation = PrecursorMzComputationEnum.MAIN_PRECURSOR_MZ;
 		
 		@Parameter(names = { "-mztol", "--mz_tol_ppm" }, description = "m/z tolerance used for precursor m/z value definition", required = false)
