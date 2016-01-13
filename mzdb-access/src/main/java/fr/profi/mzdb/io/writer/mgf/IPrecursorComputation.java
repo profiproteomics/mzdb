@@ -15,7 +15,7 @@ public interface IPrecursorComputation {
 	 * @return the precursor m/z value of the specified SpectrumHeader
 	 */
 	
-	public double getPrecursorMz(SpectrumHeader spectrumHeader) throws SQLiteException;
+	public double getPrecursorMz(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException;
 	
 	/**
 	 * Returns the precursor m/z value of the specified SpectrumHeader.
@@ -25,7 +25,7 @@ public interface IPrecursorComputation {
 	 * @return the precursor m/z value of the specified SpectrumHeader
 	 */
 	
-	public int getPrecursorCharge(SpectrumHeader spectrumHeader) throws SQLiteException;
+	public int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException;
 	
 	public String getParamName();
 	

@@ -35,17 +35,12 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
 public class MgfWriter {
 
 	public static String LINE_SPERATOR = System.getProperty("line.separator");
-
 	private static Integer precNotFound = 0;
-
 	final Logger logger = LoggerFactory.getLogger(MgfWriter.class);
-
+	
 	private static String titleQuery = "SELECT id, title FROM spectrum WHERE ms_level=2";
-
 	private final String mzDBFilePath;
-
 	private MzDbReader mzDbReader;
-
 	private Map<Integer, String> titleBySpectrumId = new HashMap<Integer, String>();
 
 	/**
@@ -95,7 +90,7 @@ public class MgfWriter {
 
 
 	public void write(String mgfFile, PrecursorMzComputationEnum precComp, float mzTolPPM, float intensityCutoff, boolean exportProlineTitle ) throws SQLiteException, IOException {
-		write(mgfFile, new DefaultPrecursorComputer(precComp, mzDbReader, mzTolPPM), intensityCutoff, exportProlineTitle);
+		write(mgfFile, new DefaultPrecursorComputer(precComp, mzTolPPM), intensityCutoff, exportProlineTitle);
 	}
 
 
@@ -185,8 +180,8 @@ public class MgfWriter {
 		
 		final float time = spectrumHeader.getElutionTime();
 		
-		final double precMz = precComp.getPrecursorMz(spectrumHeader);
-		final int charge = precComp.getPrecursorCharge(spectrumHeader);
+		final double precMz = precComp.getPrecursorMz(mzDbReader, spectrumHeader);
+		final int charge = precComp.getPrecursorCharge(mzDbReader, spectrumHeader);
 		
 		final MgfHeader mgfSpectrumHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
 

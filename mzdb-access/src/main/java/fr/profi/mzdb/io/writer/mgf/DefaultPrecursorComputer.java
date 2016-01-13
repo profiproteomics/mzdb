@@ -25,16 +25,14 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	final Logger logger = LoggerFactory.getLogger(DefaultPrecursorComputer.class);
 
 	private PrecursorMzComputationEnum precComp;
-	private MzDbReader mzDbReader;
 	private float mzTolPPM;
 	
-	protected DefaultPrecursorComputer(MzDbReader mzDbReader, float mzTolPPM) {
+	protected DefaultPrecursorComputer(float mzTolPPM) {
 		this.mzTolPPM = mzTolPPM;
-		this.mzDbReader = mzDbReader;
 	}
 	
-	public DefaultPrecursorComputer(PrecursorMzComputationEnum precComp, MzDbReader mzDbReader, float mzTolPPM) {
-		this(mzDbReader, mzTolPPM);
+	public DefaultPrecursorComputer(PrecursorMzComputationEnum precComp, float mzTolPPM) {
+		this(mzTolPPM);
 		this.precComp = precComp;
 	}
 
@@ -45,12 +43,12 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 
 
 	@Override
-	public int getPrecursorCharge(SpectrumHeader spectrumHeader) throws SQLiteException {
+	public int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 		return spectrumHeader.getPrecursorCharge();
 	}
 	
 	@Override
-	public double getPrecursorMz(SpectrumHeader spectrumHeader) throws SQLiteException {
+	public double getPrecursorMz(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 
 		final float time = spectrumHeader.getElutionTime();
 		double precMz = spectrumHeader.getPrecursorMz();
@@ -90,17 +88,8 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 			} catch (NullPointerException e) {
 				this.logger.error("Refined thermo value not found: fall back to default");
 			}
-		} else if (precComp == PrecursorMzComputationEnum.EXTRACTED) {
-
-			try {
-				Precursor precursor = spectrumHeader.getPrecursor();
-				precMz = precursor.parseFirstSelectedIonMz();
-				precMz = this.extractPrecMz(precursor, precMz, spectrumHeader, 5);
-			} catch (Exception e) {
-				this.logger.error("Extracted precursor m/z computation failed: fall back to default", e);
-			}
-		}
-
+		} 
+		
 		return precMz;
 
 	}
@@ -116,7 +105,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	 */
 	// TODO: it should be nice to perform this operation in mzdb-processing
 	// This requires that the MgfWriter is be moved to this package
-	protected double extractPrecMz(Precursor precursor, double precMz, SpectrumHeader spectrumHeader, float timeTol)
+	protected double extractPrecMz(MzDbReader mzDbReader, Precursor precursor, double precMz, SpectrumHeader spectrumHeader, float timeTol)
 			throws StreamCorruptedException, SQLiteException {
 
 		long sid = spectrumHeader.getId();
