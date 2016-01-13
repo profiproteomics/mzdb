@@ -12,17 +12,17 @@ import fr.profi.mzdb.db.model.params.Precursor
  * @author CB205360
  */
 
-class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends DefaultPrecursorComputer(reader, mzTolPPM) { 
+class IsolationWindowPrecursorExtractor(mzTolPPM: Float)  extends DefaultPrecursorComputer(mzTolPPM) { 
   
   private var lastPrediction: (SpectrumHeader, TheoreticalIsotopePattern) = _
   
-  override def getPrecursorMz(spectrumHeader: SpectrumHeader): Double = {
+  override def getPrecursorMz(reader: MzDbReader, spectrumHeader: SpectrumHeader): Double = {
     val time = spectrumHeader.getElutionTime()
     val precursor = spectrumHeader.getPrecursor()
     var precMz = precursor.parseFirstSelectedIonMz()
     val altPrecMz = this.refinePrecMz(reader, precursor, precMz, mzTolPPM, time, 5);
     if (altPrecMz != null) { precMz = altPrecMz }
-    val bestPattern = getBestIsotopicPatternMatch(spectrumHeader, precMz, time)
+    val bestPattern = getBestIsotopicPatternMatch(reader, spectrumHeader, precMz, time)
     if (bestPattern.isDefined) {
       lastPrediction = (spectrumHeader, bestPattern.get)
       if (math.abs(precMz - bestPattern.get.monoMz) > 1e-3)
@@ -34,7 +34,7 @@ class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends D
     }
   }
 
-  private def getBestIsotopicPatternMatch(spectrumHeader: SpectrumHeader, precMz: Double, time: Float): Option[TheoreticalIsotopePattern] = {
+  private def getBestIsotopicPatternMatch(reader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, time: Float): Option[TheoreticalIsotopePattern] = {
     val slices = reader.getMsSpectrumSlices(precMz - 5, precMz + 5, time-5f, time+5f)
     if (!slices.isEmpty) {
       val slice = slices.minBy { x => Math.abs(x.getHeader.getElutionTime-time) }
@@ -43,7 +43,7 @@ class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends D
     } else None
   }
 
-  override def getPrecursorCharge(spectrumHeader: SpectrumHeader): Int = {
+  override def getPrecursorCharge(reader: MzDbReader, spectrumHeader: SpectrumHeader): Int = {
     val charge = spectrumHeader.getPrecursorCharge
     if (charge >  0) {
       charge
@@ -55,7 +55,7 @@ class ProlinePrecursorMzComputer(reader: MzDbReader, mzTolPPM: Float)  extends D
     } else {
       val time = spectrumHeader.getElutionTime()
       var precMz = spectrumHeader.getPrecursorMz()
-      val bestPattern = getBestIsotopicPatternMatch(spectrumHeader, precMz, time)
+      val bestPattern = getBestIsotopicPatternMatch(reader, spectrumHeader, precMz, time)
       if (bestPattern.isDefined) {
        if (charge !=  bestPattern.get.charge)
         logger.info(s"change predicted charge from $charge to ${bestPattern.get.charge}")

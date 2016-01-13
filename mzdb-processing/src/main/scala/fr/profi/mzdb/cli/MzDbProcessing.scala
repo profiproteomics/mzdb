@@ -8,7 +8,7 @@ import com.beust.jcommander.JCommander
 import fr.profi.util.ThreadLogger
 import fr.profi.mzdb.io.writer.mgf.MgfWriter
 import com.beust.jcommander.ParameterException
-import fr.profi.mzdb.io.writer.mgf.ProlinePrecursorMzComputer
+import fr.profi.mzdb.io.writer.mgf.IsolationWindowPrecursorExtractor
 
 /**
  * @author CB205360
@@ -24,7 +24,7 @@ object MzDbProcessing extends App with LazyLogging {
     @Parameter(names = Array("-o", "--output_file_path"), description = "mgf output file path", required = true)
     var outputFile: String = ""
 
-    @Parameter(names = Array("-precmz", "--precursor_mz"), description = "must be on of 'main_precursor_mz, selected_ion_mz, extracted, refined, refined_thermo, proline'", required = false)
+    @Parameter(names = Array("-precmz", "--precursor_mz"), description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo, isolation_window_extracted'", required = false)
     var precMzComputation: String = "main_precursor_mz"
 
     @Parameter(names = Array("-mztol", "--mz_tol_ppm"), description = "m/z tolerance used for precursor m/z value definition", required = false)
@@ -75,8 +75,8 @@ object MzDbProcessing extends App with LazyLogging {
     
     if (precCompEnum.isDefined) { 
        writer.write(CreateMgfCommand.outputFile,  precCompEnum.get, CreateMgfCommand.mzTolPPM, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle);
-    } else if (CreateMgfCommand.precMzComputation == "proline") {
-       val precComputer = new ProlinePrecursorMzComputer(writer.getMzDbReader, CreateMgfCommand.mzTolPPM)
+    } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted") {
+       val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
        writer.write(CreateMgfCommand.outputFile, precComputer, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle);
     } else {
       throw new IllegalArgumentException
