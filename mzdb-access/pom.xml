@@ -18,7 +18,7 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/trunk</connection>
+    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/branches/0.4.0-RCandidates</connection>
   </scm>
 
   <dependencies>
