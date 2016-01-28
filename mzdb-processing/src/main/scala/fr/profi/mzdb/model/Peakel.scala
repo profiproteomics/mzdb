@@ -3,11 +3,11 @@ package fr.profi.mzdb.model
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 
+import com.fasterxml.jackson.annotation.JsonFormat
+
 import org.apache.commons.math3.stat.StatUtils
 
 import fr.profi.mzdb.utils.misc.InMemoryIdGen
-import fr.profi.util.math.linearInterpolation
-
 
 /*object Peakel {
   
@@ -56,19 +56,19 @@ trait IPeakelData {
   
   def getElutionTimeIntensityPairs() = getElutionTimes.zip(getIntensityValues)
   
-  def integratePeakel(): (Float,Float,Float) = {
+  def integratePeakel(): (Float,Float) = {
     
     val apexIntensity = this.getIntensityValues.max  
-    val halfApexIntensity = apexIntensity / 2
-    val lastTime = getElutionTimes.last
+    //val halfApexIntensity = apexIntensity / 2
+    //val lastTime = getElutionTimes.last
     
     //val intensitiesAboveHM = intensityList.zipWithIndex.filter(_._1 >= halfApexIntensity )
     //print(apex.getLcContext().getElutionTime()+"\t")
     
     // --- Interpolate the time of peaks at the half maximum peakel intensity ---
-    val intensityElutionTimePairs = getIntensityValues.zip(getElutionTimes)
-    val leftTimeAtHalfApex = _interpolateFirstElutionTimeAtHalfMaximum(intensityElutionTimePairs, halfApexIntensity)
-    val rightTimeAtHalfApex = _interpolateFirstElutionTimeAtHalfMaximum(intensityElutionTimePairs.reverse, halfApexIntensity)
+    //val intensityElutionTimePairs = getIntensityValues.zip(getElutionTimes)
+    //val leftTimeAtHalfApex = _interpolateFirstElutionTimeAtHalfMaximum(intensityElutionTimePairs, halfApexIntensity)
+    //val rightTimeAtHalfApex = _interpolateFirstElutionTimeAtHalfMaximum(intensityElutionTimePairs.reverse, halfApexIntensity)
     //print( mz + "\t"+ leftTimeAtHalfApex + "\t" + rightTimeAtHalfApex + "\t" + defPeaksAboveHM.length)
     
     // Search for the apex and integrate IPs
@@ -121,10 +121,10 @@ trait IPeakelData {
       //computedAAHM = computedSum
     }
     
-    ( computedSum, computedArea, rightTimeAtHalfApex - leftTimeAtHalfApex )
+    ( computedSum, computedArea ) // fwhm = rightTimeAtHalfApex - leftTimeAtHalfApex
   }
   
-  private def _interpolateFirstElutionTimeAtHalfMaximum( intensityTimePairs: Seq[(Float, Float)], halfApexIntensity: Float): Float = {
+  /*private def _interpolateFirstElutionTimeAtHalfMaximum( intensityTimePairs: Seq[(Float, Float)], halfApexIntensity: Float): Float = {
     
     val firstPeakIndex2 = intensityTimePairs.indexWhere(_._1 >= halfApexIntensity)
     val firstPeakIndex1 = if (firstPeakIndex2 > 0) firstPeakIndex2 - 1 else 0
@@ -144,7 +144,7 @@ trait IPeakelData {
     }
     
     firstPeakTime
-  }
+  }*/
   
   /** Just check elution peak in terms of duration in nb spectra */
   def hasEnoughPeaks(minPeaksCount:Int): Boolean = {
@@ -297,25 +297,21 @@ case class Peakel(
   
 }
 
-/** Class used for MessagePack serialization purpose **/
-@org.msgpack.annotation.Message
+/** Class which was used for MessagePack serialization purpose
+ *  Important: now data have to be first wrapped and unwrapped into a PeakelDataMatrix.MsgPackType
+ **/
+@JsonFormat(shape=JsonFormat.Shape.ARRAY)
 case class PeakelDataMatrix(
-  // MessagePack requires mutable fields
-  var spectrumIds: Array[Long],
-  var elutionTimes: Array[Float],
-  var mzValues: Array[Double],
-  var intensityValues: Array[Float]
+  val spectrumIds: Array[Long],
+  val elutionTimes: Array[Float],
+  val mzValues: Array[Double],
+  val intensityValues: Array[Float]
 ) extends IPeakelData {
-  
-  // Plain constructor needed for MessagePack
-  def this() = this(Array(),Array(),Array(),Array())
-  
   def getSpectrumIds(): Seq[Long] = spectrumIds
   def getElutionTimes(): Seq[Float] = elutionTimes
   def getMzValues(): Seq[Double] = mzValues
   def getIntensityValues(): Seq[Float] = intensityValues
   def getNewCursor(): PeakelDataMatrixCursor = new PeakelDataMatrixCursor(this)
-  
 }
 
 class PeakelBuilder(
@@ -391,7 +387,7 @@ class PeakelBuilder(
     //val leftHwhmValues = if( leftHwhmBuffer.count(_ > 0) == 0 ) null else leftHwhmBuffer.toArray
     //val rightHwhmValues = if( rightHwhmBuffer.count(_ > 0) == 0 ) null else rightHwhmBuffer.toArray
     
-    val(intensity, area, fwhm) = this.integratePeakel()
+    val(intensity, area) = this.integratePeakel()
     
     val(leftHwhmMean,leftHwhmSd) = _calcMeanAndSd(leftHwhms)
     val leftHwhmCv = if( leftHwhmSd > 0 ) 100 * leftHwhmMean / leftHwhmSd else 0f
