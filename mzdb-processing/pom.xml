@@ -5,7 +5,7 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.1.0-SNAPSHOT</version>  <!-- Snapshot Trunk version -->
+    <version>0.2.0-SNAPSHOT</version>  <!-- Snapshot Trunk version -->
   </parent>
 
   <groupId>fr.profi</groupId>
@@ -91,8 +91,8 @@
     <!-- Serialization -->
     <dependency>
       <groupId>org.msgpack</groupId>
-      <artifactId>msgpack-scala_${scala.version}</artifactId>
-      <version>0.6.11</version>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
+      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
     <!-- Command Line Interface -->
