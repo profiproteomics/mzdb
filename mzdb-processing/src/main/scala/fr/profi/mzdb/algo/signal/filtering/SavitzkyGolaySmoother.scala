@@ -19,13 +19,13 @@ class SavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfig ) ext
 
     val sgFilter = new SGFilterMath3(nbPoints,nbPoints)
     var smoothedValues = rtIntPairs.map(_._2)
-    val maxBeforeSG = smoothedValues.max
+    //val maxBeforeSG = smoothedValues.max
     
     for( i <- 1 to times ) {
       smoothedValues = sgFilter.smooth(smoothedValues,coeffs)
     }
     
-    // Re-scale value (they are underestimated after SG filter)      
+    // Re-scale value (they are underestimated after SG filter)
     //val maxAfterSG = smoothedValues.max
     //val scalingFactor = maxAfterSG / maxBeforeSG
     //val rescaledSmoothedValues = smoothedValues.map( _ * scalingFactor)
