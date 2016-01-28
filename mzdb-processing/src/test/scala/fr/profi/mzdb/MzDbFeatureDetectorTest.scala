@@ -1,18 +1,16 @@
 package fr.profi.mzdb
 
-import com.typesafe.scalalogging.StrictLogging
-import org.junit.AfterClass
-import org.junit.Assert
-import org.junit.BeforeClass
-import org.junit.Test
-import org.junit.Before
-import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
-import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 import scala.collection.mutable.ArrayBuffer
+
+import com.typesafe.scalalogging.StrictLogging
+
+import org.junit.Before
+import org.junit.Test
+
+import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
 import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model.PutativeFeature
-import org.msgpack.annotation.Ignore
 
 class MzDbFeatureDetectorTest extends StrictLogging {
 
