@@ -285,6 +285,7 @@ class MzDbFeatureDetector(
   val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders()
   //val ms2SpectrumHeaderById = ms2SpectrumHeaders.map( sh => sh.getId.toInt -> sh ).toMap
   val ms2SpectrumHeadersByCycle = ms2SpectrumHeaders.groupBy(_.getCycle.toInt)
+  val ms2SpectrumHeadersById = ms2SpectrumHeaders.map( sh => sh.getId.toLong -> sh ).toMap
  
   // TODO: factorize this code
   // BEGIN OF STOLEN FROM MzDbFeatureExtractor
@@ -303,9 +304,10 @@ class MzDbFeatureDetector(
     
     val msLevel = ftDetectorConfig.msLevel
     
+    val spectrumHeaderById = if (msLevel == 1) { ms1SpectrumHeaderById } else { ms2SpectrumHeadersById }
     
     val peakelDetector = new UnsupervisedPeakelDetector(
-      spectrumHeaderById = ms1SpectrumHeaderById,
+      spectrumHeaderById = spectrumHeaderById,
       nfBySpectrumId = Map.empty[Long,Float],
       mzTolPPM = ftDetectorConfig.mzTolPPM,
       peakelFinder = PeakelFinderBuilder.build(ftDetectorConfig.peakelFinderConfig)
@@ -404,7 +406,7 @@ class MzDbFeatureDetector(
           
           // Use the map to instantiate a peakList tree which will be used for peak extraction
           val pklGroupBySpectrumId = peakListsBySpectrumId.map { case (spectrumId, pkl) => spectrumId -> new PeakListGroup( pkl ) } toMap
-          val pklTree = new PeakListTree( pklGroupBySpectrumId, ms1SpectrumHeaderById )
+          val pklTree = new PeakListTree( pklGroupBySpectrumId, spectrumHeaderById )
                  
           // Enqueue loaded PeakListTree to send it to the consumer
           // Note that the detectorQueue will wait if it is full
