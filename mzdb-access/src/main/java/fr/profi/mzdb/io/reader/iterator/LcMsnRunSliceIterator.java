@@ -22,6 +22,14 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 			+ "AND run_slice.ms_level = ? "
 			+ "AND bounding_box_msn_rtree.min_parent_mz >= ? "
 			+ "AND bounding_box_msn_rtree.max_parent_mz <= ? " + "ORDER BY run_slice.begin_mz";
+
+	private static String enclosingRunSlicesSqlQuery = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
+			+ "WHERE bounding_box_msn_rtree.id = bounding_box.id "
+			+ "AND bounding_box.run_slice_id = run_slice.id "
+			+ "AND run_slice.ms_level = ? "
+			+ "AND bounding_box_msn_rtree.max_parent_mz >= ? "
+			+ "AND bounding_box_msn_rtree.min_parent_mz <= ? " + "ORDER BY run_slice.begin_mz";
+
 	
 	private static String runSlicesSubsetSqlQuery = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
 			+ "WHERE bounding_box_msn_rtree.id = bounding_box.id "
@@ -49,7 +57,7 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		
 		// Set msLevel to 2
 		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, connection, allRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
+		super(mzDbReader, connection, enclosingRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
 			public void accept(SQLiteStatement stmt) throws SQLiteException {
 				stmt.bind(1, 2); // Bind the msLevel
 				stmt.bind(2, minParentMz); // Bind the minParentMz
