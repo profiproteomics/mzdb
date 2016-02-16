@@ -174,7 +174,7 @@ public class MgfWriter {
 				spectrumHeader.getInitialId(),
 				spectrumHeader.getTime(),
 				spectrumHeader.getTime(),
-				mzDbReader.getFirstSourceFileName()
+				mzDbReader.getFirstSourceFileName().split("\\.")[0]
 			);
 		}
 		
