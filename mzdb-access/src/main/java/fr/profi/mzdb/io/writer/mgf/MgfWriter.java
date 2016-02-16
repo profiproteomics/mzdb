@@ -167,7 +167,7 @@ public class MgfWriter {
 		String title;
 		if( exportProlineTitle == false ) title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
 		else {
-			title = String.format("first_cycle:%d;last_cycle:%d;first_spectrum:%d;last_spectrum:%d;first_time:%.02f;last_time:%.02f;raw_file_name:%s;",
+			title = String.format("first_cycle:%d;last_cycle:%d;first_spectrum:%d;last_spectrum:%d;first_time:%.02f;last_time:%.02f;raw_file_identifier:%s;",
 				spectrumHeader.getCycle(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getInitialId(),
@@ -192,8 +192,8 @@ public class MgfWriter {
 		final SpectrumData data = spectrum.getData();
 		final double[] mzs = data.getMzList();
 		final float[] ints = data.getIntensityList();
-		final float[] leftHwhms = data.getLeftHwhmList();
-		final float[] rightHwhms = data.getRightHwhmList();
+		//final float[] leftHwhms = data.getLeftHwhmList();
+		//final float[] rightHwhms = data.getRightHwhmList();
 
 		final int intsLength = ints.length;
 
@@ -205,6 +205,8 @@ public class MgfWriter {
 
 		for (int i = 0; i < intsLength; ++i) {
 			
+		  // DBO: here we boost intensities but this should be optional
+		  // TODO: take into account the width of the peaks
 			float intensity = (float) Math.pow(ints[i], 1.5 ); // ^ 3/2
 			/*if( dataEnc.getMode().equals(DataMode.FITTED) ) {
 			  float peakIntensity = ints[i];
