@@ -16,29 +16,21 @@ import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 /** Class used for DIA/SWATH data **/
 public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements Iterator<RunSlice> {
 
-	private static String allRunSlicesSqlQuery = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
-			+ "WHERE bounding_box_msn_rtree.id = bounding_box.id "
-			+ "AND bounding_box.run_slice_id = run_slice.id "
-			+ "AND run_slice.ms_level = ? "
-			+ "AND bounding_box_msn_rtree.min_parent_mz >= ? "
-			+ "AND bounding_box_msn_rtree.max_parent_mz <= ? " + "ORDER BY run_slice.begin_mz";
-
-	private static String enclosingRunSlicesSqlQuery = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
+	private static String sameIsolationWindowRunSlicesSqlQuery = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
 			+ "WHERE bounding_box_msn_rtree.id = bounding_box.id "
 			+ "AND bounding_box.run_slice_id = run_slice.id "
 			+ "AND run_slice.ms_level = ? "
 			+ "AND bounding_box_msn_rtree.max_parent_mz >= ? "
 			+ "AND bounding_box_msn_rtree.min_parent_mz <= ? " + "ORDER BY run_slice.begin_mz";
-
 	
-	private static String runSlicesSubsetSqlQuery = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
+	private static String sameIsolationWindowRunSlicesSubsetSqlQuery = "SELECT bounding_box.* FROM bounding_box, bounding_box_msn_rtree, run_slice "
 			+ "WHERE bounding_box_msn_rtree.id = bounding_box.id "
 			+ "AND bounding_box.run_slice_id = run_slice.id "
 			+ "AND run_slice.ms_level = ? "
 			+ "AND run_slice.end_mz >= ? "
 			+ "AND run_slice.begin_mz <= ? "
-			+ "AND bounding_box_msn_rtree.min_parent_mz >= ? "
-			+ "AND bounding_box_msn_rtree.max_parent_mz <= ? "
+			+ "AND bounding_box_msn_rtree.max_parent_mz >= ? "
+			+ "AND bounding_box_msn_rtree.min_parent_mz <= ? "
 			+ "ORDER BY run_slice.begin_mz";
 
 	public LcMsnRunSliceIterator(
@@ -57,7 +49,7 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		
 		// Set msLevel to 2
 		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, connection, enclosingRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
+		super(mzDbReader, connection, sameIsolationWindowRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
 			public void accept(SQLiteStatement stmt) throws SQLiteException {
 				stmt.bind(1, 2); // Bind the msLevel
 				stmt.bind(2, minParentMz); // Bind the minParentMz
@@ -73,7 +65,7 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		final double maxParentMz,
 		final double minRunSliceMz,
 		final double maxRunSliceMz
-	) throws SQLiteException, StreamCorruptedException {		
+	) throws SQLiteException, StreamCorruptedException {
 
 		/*super(mzDbReader, runSlicesSubsetSqlQuery, 2, rethrowConsumer( (stmt) -> {
 			// Lambda require to catch Exceptions
@@ -87,7 +79,7 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		
 		// Set msLevel to 2
 		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, connection, runSlicesSubsetSqlQuery, 2, new ISQLiteStatementConsumer() {
+		super(mzDbReader, connection, sameIsolationWindowRunSlicesSubsetSqlQuery, 2, new ISQLiteStatementConsumer() {
 			public void accept(SQLiteStatement stmt) throws SQLiteException {
 				stmt.bind(1, 2); // Bind the msLevel
 				stmt.bind(2, minParentMz); // Bind the minParentMz
