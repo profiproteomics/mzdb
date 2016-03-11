@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import rx.Observable;
-
+import rx.observables.BlockingObservable;
 import fr.profi.mzdb.db.model.*;
 import fr.profi.mzdb.io.reader.cache.DataEncodingAsyncReader;
 import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
@@ -41,6 +41,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	protected DataEncodingAsyncReader _dataEncodingReader = null;
 	protected SpectrumHeaderAsyncReader _spectrumHeaderReader = null;
 	protected RunSliceHeaderAsyncReader _runSliceHeaderReader = null;
+	//private SQLiteConnection _blockingSQLiteConnection = null;
+	private final Object _blockingConnectionLock = new Object();
 
 	/**
 	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
@@ -72,7 +74,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 			throw (new FileNotFoundException("can't find the mzDB file at the given path"));
 		}
 
-		this.dbLocation = dbLocation.getAbsolutePath();
+		this.dbLocation = dbLocation;
 
 		this.queue = new SQLiteQueue(dbLocation);
 		
@@ -165,8 +167,36 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 		this.queue.flush();
 	}
 	
-	public <T> SQLiteObservableJob<T> observeJobExecution( ISQLiteConnectionFunction<T> sqliteJobWrapper ) {
+	/**
+	 * @return the _blockingMzDbReader
+	 * @throws SQLiteException 
+	 * @throws FileNotFoundException 
+	 * @throws ClassNotFoundException 
+	 */
+	protected SQLiteConnection createBlockingSQLiteConnection() throws SQLiteException {
+		
+		synchronized(_blockingConnectionLock) {
+			try {
+				return new MzDbReader(this.dbLocation, this.entityCache, false).getConnection();
+			} catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
+				logger.error("Can't open blocking MzDbReader at location: "+ this.dbLocation.getAbsolutePath(), e);
+				throw new SQLiteException(0, "Error acquiring blocking SQLiteConnection");
+			}
+		}
+	
+	}
+	
+	/*public <T> SQLiteObservableJob<T> observeJobExecution( ISQLiteConnectionFunction<T> sqliteJobWrapper ) {
 		return new SQLiteObservableJob<T>( queue, (SQLiteJobWrapper<T>) sqliteJobWrapper);
+	}*/
+	
+	public <T> SQLiteObservableJob<T> observeJobExecution( ISQLiteConnectionFunction<T> sqliteConnFunction ) {
+	    SQLiteJobWrapper<T> jobWrapper = new SQLiteJobWrapper<T>() {
+			public T job(SQLiteConnection connection) throws Exception {
+				return sqliteConnFunction.apply(connection);
+			}
+		};
+		return new SQLiteObservableJob<T>( queue, jobWrapper);
 	}
 
 	public Observable<String> getModelVersion() {
@@ -784,54 +814,114 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	this._sourceFileReader = new SourceFileReader(this.connection);*/
 	
 	public List<InstrumentConfiguration> getInstrumentConfigurations() throws SQLiteException {
-		if (this.instrumentConfigs == null) {
-			// TODO: synchronize me
-			this.instrumentConfigs = this.observeJobExecution( connection -> {				
-				return new InstrumentConfigReader(connection).getInstrumentConfigList();
-			}).toBlocking().first();
+		synchronized (_blockingConnectionLock) {
+			if (this.instrumentConfigs == null) {
+				this.instrumentConfigs = new InstrumentConfigReader(this.createBlockingSQLiteConnection()).getInstrumentConfigList();
+				/*// TODO: try to understand why a blocking observable is problematic
+				this.instrumentConfigs = this.observeJobExecution( connection -> {				
+					return new InstrumentConfigReader(connection).getInstrumentConfigList();
+				}).toBlocking().first();*/
+			}
 		}
 		
 		return this.instrumentConfigs;
 	}
 
 	public List<Run> getRuns() throws SQLiteException {
-		if (this.runs == null) {
-			// TODO: synchronize me
-			this.runs = this.observeJobExecution( connection -> {				
-				return new RunReader(connection).getRunList();
-			}).toBlocking().first();
+		synchronized (_blockingConnectionLock) {
+			if (this.runs == null) {
+				this.runs = new RunReader(this.createBlockingSQLiteConnection()).getRunList();
+				/*// TODO: try to understand why a blocking observable is problematic
+				this.runs = this.observeJobExecution( connection -> {				
+					return new RunReader(connection).getRunList();
+				}).toBlocking().first();*/
+			}
 		}
+		
+		/*if (this.runs == null) {
+			// TODO: synchronize me
+			ISQLiteConnectionFunction<List<Run> > runListReaderFunction = new ISQLiteConnectionFunction<List<Run>>() {
+				
+				@Override
+				public List<Run> apply(SQLiteConnection connection) throws Exception {
+					System.out.println("apply from SQLLiteConnection => doing RunReader().getRunList()");
+					try {
+						return new RunReader(connection).getRunList();
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+						return null;
+					}
+				}
+			};
+			SQLiteObservableJob<List<Run>> observeJobExecution = this.observeJobExecution( runListReaderFunction );
+			BlockingObservable<List<Run>> blocking = observeJobExecution.toBlocking();
+			try {
+				this.runs = blocking.getIterator().next();
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+		}*/
+		
 		return this.runs;
 	}
 
 	public List<Sample> getSamples() throws SQLiteException {
-		if (this.samples == null) {
+		synchronized (_blockingConnectionLock) {
+			if (this.samples == null) {
+				this.samples = new SampleReader(this.createBlockingSQLiteConnection()).getSampleList();
+			}
+		}
+		
+		return this.samples;
+		
+		// TODO: try to understand why a blocking observable is problematic
+		/*if (this.samples == null) {
 			// TODO: synchronize me
 			this.samples = this.observeJobExecution( connection -> {				
 				return new SampleReader(connection).getSampleList();
 			}).toBlocking().first();
 		}
-		return this.samples;
+		return this.samples;*/
 	}
 
 	public List<Software> getSoftwareList() throws SQLiteException {
-		if (this.softwareList == null) {
+		synchronized (_blockingConnectionLock) {
+			if (this.softwareList == null) {
+				this.softwareList = new SoftwareReader(this.createBlockingSQLiteConnection()).getSoftwareList();
+			}
+		}
+		
+		return this.softwareList;
+		
+		// TODO: try to understand why a blocking observable is problematic
+		/*if (this.softwareList == null) {
 			// TODO: synchronize me
 			this.softwareList = this.observeJobExecution( connection -> {				
 				return new SoftwareReader(connection).getSoftwareList();
 			}).toBlocking().first();
 		}
-		return this.softwareList;
+		return this.softwareList;*/
 	}
 
 	public List<SourceFile> getSourceFiles() throws SQLiteException {
-		if (this.sourceFiles == null) {
+		synchronized (_blockingConnectionLock) {
+			if (this.sourceFiles == null) {
+				this.sourceFiles = new SourceFileReader(this.createBlockingSQLiteConnection()).getSourceFileList();
+			}
+		}
+		
+		return this.sourceFiles;
+		
+		// TODO: try to understand why a blocking observable is problematic
+		/*if (this.sourceFiles == null) {
 			// TODO: synchronize me
 			this.sourceFiles = this.observeJobExecution( connection -> {				
 				return new SourceFileReader(connection).getSourceFileList();
 			}).toBlocking().first();
 		}
-		return this.sourceFiles;
+		return this.sourceFiles;*/
 	}
 
 	public Observable<Peak[]> getMsXicInMzRange(double minMz, double maxMz, XicMethod method) {

@@ -1,5 +1,6 @@
 package fr.profi.mzdb;
 
+import java.io.File;
 import java.io.StreamCorruptedException;
 import java.util.*;
 
@@ -33,13 +34,13 @@ import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
  * @author David
  */
 public abstract class AbstractMzDbReader {
-	
+
 	final Logger logger = LoggerFactory.getLogger(AbstractMzDbReader.class);
 
 	final protected BBSizes bbSizes = new BBSizes();
 
 	/** Some fields initialized in the constructor **/
-	protected String dbLocation = null;
+	protected File dbLocation = null;
 	protected MzDbEntityCache entityCache = null;
 	protected MzDbHeader mzDbHeader = null;
 	protected IMzDBParamNameGetter _paramNameGetter = null;
@@ -50,8 +51,8 @@ public abstract class AbstractMzDbReader {
 	protected AbstractRunSliceHeaderReader _runSliceHeaderReader = null;
 
 	/**
-	 * The is no loss mode. If no loss mode is enabled, all data points will be encoded as highres, i.e. 64
-	 * bits mz and 64 bits int. No peak picking and not fitting will be performed on profile data.
+	 * The is no loss mode. If no loss mode is enabled, all data points will be encoded as highres, i.e. 64 bits mz and 64 bits int. No peak picking and not
+	 * fitting will be performed on profile data.
 	 */
 	protected Boolean isNoLossMode;
 
@@ -80,7 +81,7 @@ public abstract class AbstractMzDbReader {
 	}
 
 	public String getDbLocation() {
-		return this.dbLocation;
+		return this.dbLocation.getAbsolutePath();
 	}
 
 	public MzDbHeader getMzDbHeader() throws SQLiteException {
@@ -351,7 +352,7 @@ public abstract class AbstractMzDbReader {
 		// String queryStr = "SELECT bounding_box.* FROM bounding_box, bounding_box_rtree"
 		// + " WHERE bounding_box.id = bounding_box_rtree.id AND bounding_box.run_slice_id = ?"
 		// + " ORDER BY first_spectrum_id"; // number
-		String queryStr = "SELECT * FROM bounding_box" + " WHERE run_slice_id = ?" + " ORDER BY first_spectrum_id"; // number
+		String queryStr = "SELECT * FROM bounding_box" + " WHERE run_slice_id = ?" + " ORDER BY first_spectrum_id";// number
 
 		// SQLiteStatement stmt =
 		// connection.prepare("SELECT * FROM run_slice WHERE ms_level="+msLevel+" ORDER BY begin_mz ",
@@ -664,18 +665,27 @@ public abstract class AbstractMzDbReader {
 	 *             the sQ lite exception
 	 * @throws StreamCorruptedException
 	 */
-	protected SpectrumSlice[] getMsSpectrumSlices(double minMz, double maxMz, float minRt, float maxRt, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
+	protected SpectrumSlice[] getMsSpectrumSlices(double minMz, double maxMz, float minRt, float maxRt, SQLiteConnection connection)
+			throws SQLiteException, StreamCorruptedException {
 		return this._getSpectrumSlicesInRanges(minMz, maxMz, minRt, maxRt, 1, 0.0, connection);
 	}
 
 	// TODO: think about msLevel > 2
-	protected SpectrumSlice[] getMsnSpectrumSlices(double parentMz, double minFragMz, double maxFragMz, float minRt, float maxRt, SQLiteConnection connection) throws SQLiteException,
+	protected SpectrumSlice[] getMsnSpectrumSlices(double parentMz, double minFragMz, double maxFragMz, float minRt, float maxRt, SQLiteConnection connection)
+			throws SQLiteException,
 			StreamCorruptedException {
 		return this._getSpectrumSlicesInRanges(minFragMz, maxFragMz, minRt, maxRt, 2, parentMz, connection);
 	}
 
-	private SpectrumSlice[] _getSpectrumSlicesInRanges(double minMz, double maxMz, float minRt, float maxRt, int msLevel, double parentMz, SQLiteConnection connection)
-			throws SQLiteException, StreamCorruptedException {
+	private SpectrumSlice[] _getSpectrumSlicesInRanges(
+		double minMz,
+		double maxMz,
+		float minRt,
+		float maxRt,
+		int msLevel,
+		double parentMz,
+		SQLiteConnection connection)
+				throws SQLiteException, StreamCorruptedException {
 
 		BBSizes sizes = this.getBBSizes();
 		float rtWidth = ((msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn);
@@ -773,7 +783,7 @@ public abstract class AbstractMzDbReader {
 			Long spectrumId = entry.getKey();
 			ArrayList<SpectrumData> spectrumDataList = entry.getValue();
 			int peaksCount = peaksCountBySpectrumId.get(spectrumId);
-			
+
 			SpectrumData finalSpectrumData = _mergeSpectrumDataList(spectrumDataList, peaksCount);
 
 			finalSpectrumSlices[spectrumIdx] = new SpectrumSlice(spectrumHeaderById.get(spectrumId), finalSpectrumData);
@@ -783,9 +793,9 @@ public abstract class AbstractMzDbReader {
 
 		return finalSpectrumSlices;
 	}
-	
-	private SpectrumData _mergeSpectrumDataList( ArrayList<SpectrumData> spectrumDataList, int peaksCount ) {
-		
+
+	private SpectrumData _mergeSpectrumDataList(ArrayList<SpectrumData> spectrumDataList, int peaksCount) {
+
 		double[] finalMzList = new double[peaksCount];
 		float[] finalIntensityList = new float[peaksCount];
 		float[] finalLeftHwhmList = null;
@@ -838,7 +848,9 @@ public abstract class AbstractMzDbReader {
 			 * ParamTreeParser.parseParamTree(runParamTree);
 			 */
 
-			final ParamTree runTree = this.getRuns().get(0).getParamTree(connection);
+			List<Run> runs = this.getRuns();
+			Run run0 = runs.get(0);
+			final ParamTree runTree = run0.getParamTree(connection);
 
 			try {
 				final CVParam cvParam = runTree.getCVParam(CVEntry.ACQUISITION_PARAMETER);
@@ -851,7 +863,7 @@ public abstract class AbstractMzDbReader {
 
 		return this.acquisitionMode;
 	}
-	
+
 	/**
 	 * Get the DIA IsolationWindows
 	 * 
@@ -884,7 +896,7 @@ public abstract class AbstractMzDbReader {
 
 		return this.diaIsolationWindows;
 	}
-	
+
 	public abstract List<InstrumentConfiguration> getInstrumentConfigurations() throws SQLiteException;
 
 	public abstract List<Run> getRuns() throws SQLiteException;
@@ -914,11 +926,13 @@ public abstract class AbstractMzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	protected Peak[] getMsXicInMzRange(double minMz, double maxMz, XicMethod method, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
+	protected Peak[] getMsXicInMzRange(double minMz, double maxMz, XicMethod method, SQLiteConnection connection)
+			throws SQLiteException, StreamCorruptedException {
 		return this.getMsXic(minMz, maxMz, -1, -1, method, connection);
 	}
 
-	protected Peak[] getMsXicInMzRtRanges(double minMz, double maxMz, float minRt, float maxRt, XicMethod method, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
+	protected Peak[] getMsXicInMzRtRanges(double minMz, double maxMz, float minRt, float maxRt, XicMethod method, SQLiteConnection connection)
+			throws SQLiteException, StreamCorruptedException {
 
 		final double mzCenter = (minMz + maxMz) / 2;
 		final double mzTolInDa = maxMz - mzCenter;
@@ -940,8 +954,15 @@ public abstract class AbstractMzDbReader {
 		return this._spectrumSlicesToXIC(spectrumSlices, mz, mzTolPPM, method);
 	}
 
-	protected Peak[] getMsnXic(double parentMz, double fragmentMz, double fragmentMzTolInDa, float minRt, float maxRt, XicMethod method, SQLiteConnection connection) throws SQLiteException,
-			StreamCorruptedException {
+	protected Peak[] getMsnXic(
+		double parentMz,
+		double fragmentMz,
+		double fragmentMzTolInDa,
+		float minRt,
+		float maxRt,
+		XicMethod method,
+		SQLiteConnection connection) throws SQLiteException,
+				StreamCorruptedException {
 
 		final double minFragMz = fragmentMz - fragmentMzTolInDa;
 		final double maxFragMz = fragmentMz + fragmentMzTolInDa;
@@ -1065,41 +1086,43 @@ public abstract class AbstractMzDbReader {
 	 *             the sQ lite exception
 	 * @throws StreamCorruptedException
 	 */
-	protected Peak[] getMsPeaksInMzRtRanges(double minMz, double maxMz, float minRt, float maxRt, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
+	protected Peak[] getMsPeaksInMzRtRanges(double minMz, double maxMz, float minRt, float maxRt, SQLiteConnection connection)
+			throws SQLiteException, StreamCorruptedException {
 		SpectrumSlice[] spectrumSlices = this.getMsSpectrumSlices(minMz, maxMz, minRt, maxRt, connection);
 		return this._spectrumSlicesToPeaks(spectrumSlices);
 	}
-	
-	protected Peak[] getMsnPeaksInMzRtRanges(double parentMz, double minFragMz, double maxFragMz, float minRt, float maxRt, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
+
+	protected Peak[] getMsnPeaksInMzRtRanges(double parentMz, double minFragMz, double maxFragMz, float minRt, float maxRt, SQLiteConnection connection)
+			throws SQLiteException, StreamCorruptedException {
 		SpectrumSlice[] spectrumSlices = this.getMsnSpectrumSlices(parentMz, minFragMz, maxFragMz, minRt, maxRt, connection);
 		return this._spectrumSlicesToPeaks(spectrumSlices);
 	}
-	
+
 	// Merge spectrum slices then return a peak array using simply the toPeaks function
-    private Peak[] _spectrumSlicesToPeaks(SpectrumSlice[] spectrumSlices) {
+	private Peak[] _spectrumSlicesToPeaks(SpectrumSlice[] spectrumSlices) {
 
 		this.logger.debug("SpectrumSlice length : {}", spectrumSlices.length);
 
 		if (spectrumSlices.length == 0) {
 			return new Peak[0];
 		}
-		
+
 		int mergedPeaksCount = 0;
-		for( SpectrumSlice spectrumSlice : spectrumSlices ) {
+		for (SpectrumSlice spectrumSlice : spectrumSlices) {
 			SpectrumData sd = spectrumSlice.getData();
 			mergedPeaksCount += sd.getPeaksCount();
 		}
-		
+
 		Peak[] peaks = new Peak[mergedPeaksCount];
-		
+
 		int peakIdx = 0;
-		for( SpectrumSlice spectrumSlice : spectrumSlices ) {
-			for( Peak peak : spectrumSlice.toPeaks() ) {
+		for (SpectrumSlice spectrumSlice : spectrumSlices) {
+			for (Peak peak : spectrumSlice.toPeaks()) {
 				peaks[peakIdx] = peak;
 				peakIdx++;
 			}
 		}
-		
+
 		return peaks;
 	}
 

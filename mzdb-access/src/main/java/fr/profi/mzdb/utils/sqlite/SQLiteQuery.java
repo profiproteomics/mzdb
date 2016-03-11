@@ -308,6 +308,7 @@ public class SQLiteQuery {
 
 	public byte[] extractSingleBlob() throws SQLiteException {
 		this.stmt.step();
+		if ( !stmt.hasRow() ) return null;
 		byte[] result = this.stmt.columnBlob(0);
 		this.dispose();
 		return result;

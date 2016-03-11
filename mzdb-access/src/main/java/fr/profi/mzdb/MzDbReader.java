@@ -78,7 +78,7 @@ public class MzDbReader extends AbstractMzDbReader {
 			throw (new FileNotFoundException("can't find the mzDB file at the given path"));
 		}
 
-		this.dbLocation = dbLocation.getAbsolutePath();
+		this.dbLocation = dbLocation;
 
 		this.connection = new SQLiteConnection(dbLocation);
 		this.connection.openReadonly();
