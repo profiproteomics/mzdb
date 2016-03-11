@@ -177,12 +177,14 @@ public class MzDbReaderAsyncTest {
 				System.out.println("slice = " + slice.toString() );
 			}, onError, onCompleted);
 */			
-			////////////////////////////// Msn Run Slice
+/*
+ * 			////////////////////////////// Msn Run Slice
+ 
 			mzDb.getMsnXic(parentMz, fragmentMz,fragmentMzTolInDa, minRt, maxRt, XicMethod.NEAREST).subscribe((Peak[] peaks) -> {
 				Assert.assertNotNull(slice);
 				System.out.println("slice = " + slice.toString() );
 			}, onError, onCompleted);
-			
+*/		
 		} catch (Throwable e) {
 			e.printStackTrace();
 			Assert.fail("MzDB reader instantiation exception " + e.getMessage() + " for "
