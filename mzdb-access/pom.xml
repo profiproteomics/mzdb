@@ -4,12 +4,12 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
   </parent>
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-access</artifactId>
-  <version>0.4.0-SNAPSHOT</version>
+  <version>0.4.0</version>
 
   <description>The mzDB access Java library</description>
 
@@ -18,7 +18,7 @@
   </properties>
 
   <scm>
-    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/branches/0.4.0-RCandidates</connection>
+    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/tags/0.4.0-SNAPSHOT</connection>
   </scm>
 
   <dependencies>
