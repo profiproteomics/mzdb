@@ -11,20 +11,20 @@ import com.almworks.sqlite4java.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import rx.Observable;
-import rx.observables.BlockingObservable;
 import fr.profi.mzdb.db.model.*;
-import fr.profi.mzdb.io.reader.cache.DataEncodingAsyncReader;
-import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
-import fr.profi.mzdb.io.reader.cache.RunSliceHeaderAsyncReader;
-import fr.profi.mzdb.io.reader.cache.SpectrumHeaderAsyncReader;
+import fr.profi.mzdb.io.reader.MzDbReaderQueries;
+import fr.profi.mzdb.io.reader.cache.*;
 import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
 import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator;
 import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
 import fr.profi.mzdb.io.reader.table.*;
 import fr.profi.mzdb.model.*;
-import fr.profi.mzdb.utils.sqlite.*;
+import fr.profi.mzdb.utils.sqlite.ISQLiteConnectionFunction;
+import fr.profi.mzdb.utils.sqlite.SQLiteJobWrapper;
+import fr.profi.mzdb.utils.sqlite.SQLiteObservableJob;
+
+import rx.Observable;
 
 /**
  * Allows to manipulates data contained in the mzDB file.
@@ -35,13 +35,15 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 
 	final Logger logger = LoggerFactory.getLogger(MzDbAsyncReader.class);
 	
-	protected SQLiteQueue queue = null;
+	private SQLiteQueue queue = null;
 	
 	/** Some readers with internal entity cache **/
-	protected DataEncodingAsyncReader _dataEncodingReader = null;
-	protected SpectrumHeaderAsyncReader _spectrumHeaderReader = null;
-	protected RunSliceHeaderAsyncReader _runSliceHeaderReader = null;
+	private DataEncodingAsyncReader _dataEncodingReader = null;
+	private SpectrumHeaderAsyncReader _spectrumHeaderReader = null;
+	private RunSliceHeaderAsyncReader _runSliceHeaderReader = null;
 	//private SQLiteConnection _blockingSQLiteConnection = null;
+	
+	// Acquire a lock for some methods that could be modify the reader in parallel
 	private final Object _blockingConnectionLock = new Object();
 
 	/**
@@ -100,7 +102,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 				MzDbAsyncReader.this.mzDbHeader = new MzDbHeaderReader(connection).getMzDbHeader();
 				
 				// Set the paramNameGetter
-				String pwizMzDbVersion = MzDbAsyncReader.this.getPwizMzDbVersion(connection);
+				String pwizMzDbVersion = MzDbReaderQueries.getPwizMzDbVersion(connection);
 				MzDbAsyncReader.this._paramNameGetter = (pwizMzDbVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
 
 				// Set BB sizes
@@ -112,7 +114,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingAsyncReader(this);
-		this._spectrumHeaderReader = new SpectrumHeaderAsyncReader(this);
+		this._spectrumHeaderReader = new SpectrumHeaderAsyncReader(this, _dataEncodingReader);
 		this._runSliceHeaderReader = new RunSliceHeaderAsyncReader(this);
 	}
 
@@ -159,6 +161,19 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 		this.queue.stop(false);
 	}
 	
+	@Override
+	public DataEncodingAsyncReader getDataEncodingReader() {
+		return _dataEncodingReader;
+	}
+	@Override
+	public SpectrumHeaderAsyncReader getSpectrumHeaderReader() {
+		return _spectrumHeaderReader;
+	}
+	@Override
+	public RunSliceHeaderAsyncReader getRunSliceHeaderReader() {
+		return _runSliceHeaderReader;
+	}
+	
 	/**
 	 * Waits for the reader to stop execution of queries.
 	 * @throws InterruptedException 
@@ -201,13 +216,13 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 
 	public Observable<String> getModelVersion() {
 		return this.observeJobExecution( connection -> {
-			return this.getModelVersion(connection);
+			return MzDbReaderQueries.getModelVersion(connection);
 		});
 	}
 
 	public Observable<String> getPwizMzDbVersion() {
 		return this.observeJobExecution( connection -> {
-			return this.getPwizMzDbVersion(connection);
+			return MzDbReaderQueries.getPwizMzDbVersion(connection);
 		});
 	}
 
@@ -218,7 +233,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Float> getLastTime() {
 		return this.observeJobExecution( connection -> {
-			return this.getLastTime(connection);
+			return MzDbReaderQueries.getLastTime(connection);
 		});
 	}
 
@@ -229,7 +244,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getMaxMsLevel() {
 		return this.observeJobExecution( connection -> {
-			return this.getMaxMsLevel(connection);
+			return MzDbReaderQueries.getMaxMsLevel(connection);
 		});
 	}
 
@@ -242,7 +257,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<int[]> getMzRange(int msLevel) {
 		return this.observeJobExecution( connection -> {
-			return this.getMzRange(msLevel, connection);
+			return MzDbReaderQueries.getMzRange(msLevel, connection);
 		});
 	}
 
@@ -253,7 +268,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getBoundingBoxesCount() {
 		return this.observeJobExecution( connection -> {
-			return this.getBoundingBoxesCount(connection);
+			return MzDbReaderQueries.getBoundingBoxesCount(connection);
 		});
 	}
 
@@ -266,7 +281,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getBoundingBoxesCount(int runSliceId) {
 		return this.observeJobExecution( connection -> {
-			return this.getBoundingBoxesCount(runSliceId, connection);
+			return MzDbReaderQueries.getBoundingBoxesCount(runSliceId, connection);
 		});
 	}
 
@@ -277,7 +292,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getCyclesCount() {
 		return this.observeJobExecution( connection -> {
-			return this.getCyclesCount(connection);
+			return MzDbReaderQueries.getCyclesCount(connection);
 		});
 	}
 
@@ -288,7 +303,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getDataEncodingsCount() {
 		return this.observeJobExecution( connection -> {
-			return this.getDataEncodingsCount(connection);
+			return MzDbReaderQueries.getDataEncodingsCount(connection);
 		});
 	}
 
@@ -299,7 +314,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getSpectraCount() {
 		return this.observeJobExecution( connection -> {
-			return this.getSpectraCount(connection);
+			return MzDbReaderQueries.getSpectraCount(connection);
 		});
 	}
 
@@ -310,7 +325,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getSpectraCount(int msLevel) {
 		return this.observeJobExecution( connection -> {
-			return this.getSpectraCount(msLevel, connection);
+			return MzDbReaderQueries.getSpectraCount(msLevel, connection);
 		});
 	}
 
@@ -321,7 +336,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getRunSlicesCount() {
 		return this.observeJobExecution( connection -> {
-			return this.getRunSlicesCount(connection);
+			return MzDbReaderQueries.getRunSlicesCount(connection);
 		});
 	}
 
@@ -334,7 +349,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getTableRecordsCount(String tableName) {
 		return this.observeJobExecution( connection -> {
-			return this.getTableRecordsCount(tableName, connection);
+			return MzDbReaderQueries.getTableRecordsCount(tableName, connection);
 		});
 	}
 	
@@ -346,8 +361,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the id
 	 * @return the data encoding
 	 */
-	public DataEncoding getDataEncoding(int id) {
-		return this._dataEncodingReader.getDataEncoding(id).toBlocking().single();
+	public Observable<DataEncoding> getDataEncoding(int id) {
+		return this._dataEncodingReader.getDataEncoding(id);
 	}
 
 	/**
@@ -355,8 +370,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return the data encoding by spectrum id
 	 */
-	public Map<Long, DataEncoding> getDataEncodingBySpectrumId() {
-		return this._dataEncodingReader.getDataEncodingBySpectrumId().toBlocking().single();
+	public Observable<Map<Long, DataEncoding>> getDataEncodingBySpectrumId() {
+		return this._dataEncodingReader.getDataEncodingBySpectrumId();
 	}
 
 	/**
@@ -366,8 +381,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the spectrum id
 	 * @return the spectrum data encoding
 	 */
-	public DataEncoding getSpectrumDataEncoding(long spectrumId) {
-		return this._dataEncodingReader.getSpectrumDataEncoding(spectrumId).toBlocking().single();
+	public Observable<DataEncoding> getSpectrumDataEncoding(long spectrumId) {
+		return this._dataEncodingReader.getSpectrumDataEncoding(spectrumId);
 	}
 
 	/**
@@ -375,8 +390,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return array of runSlice instance without data associated
 	 */
-	public RunSliceHeader[] getRunSliceHeaders(int msLevel) {
-		return this._runSliceHeaderReader.getRunSliceHeaders(msLevel).toBlocking().single();
+	public Observable<RunSliceHeader[]> getRunSliceHeaders(int msLevel) {
+		return this._runSliceHeaderReader.getRunSliceHeaders(msLevel);
 	}
 
 	/**
@@ -386,8 +401,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the ms level
 	 * @return the run slice header by id
 	 */
-	public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel) {
-		return this._runSliceHeaderReader.getRunSliceHeaderById(msLevel).toBlocking().single();
+	public Observable<HashMap<Integer, RunSliceHeader>> getRunSliceHeaderById(int msLevel) {
+		return this._runSliceHeaderReader.getRunSliceHeaderById(msLevel);
 	}
 
 	/**
@@ -412,7 +427,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<byte[]> getBoundingBoxData(int bbId) {
 		return this.observeJobExecution( connection -> {
-			return this.getBoundingBoxData(bbId, connection);
+			return MzDbReaderQueries.getBoundingBoxData(bbId, connection);
 		});
 	}
 
@@ -425,7 +440,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Long> getBoundingBoxFirstSpectrumId(long spectrumId) {
 		return this.observeJobExecution( connection -> {
-			return this.getBoundingBoxFirstSpectrumId(spectrumId, connection);
+			return MzDbReaderQueries.getBoundingBoxFirstSpectrumId(spectrumId, connection);
 		});
 	}
 
@@ -438,7 +453,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Float> getBoundingBoxMinMz(int bbId) {
 		return this.observeJobExecution( connection -> {
-			return this.getBoundingBoxMinMz(bbId, connection);
+			return MzDbReaderQueries.getBoundingBoxMinMz(bbId, connection);
 		});
 	}
 
@@ -451,7 +466,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Float> getBoundingBoxMinTime(int bbId) {
 		return this.observeJobExecution( connection -> {
-			return this.getBoundingBoxMinTime(bbId, connection);
+			return MzDbReaderQueries.getBoundingBoxMinTime(bbId, connection);
 		});
 	}
 
@@ -464,7 +479,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 */
 	public Observable<Integer> getBoundingBoxMsLevel(int bbId) {
 		return this.observeJobExecution( connection -> {
-			return this.getBoundingBoxMsLevel(bbId, connection);
+			return MzDbReaderQueries.getBoundingBoxMsLevel(bbId, connection);
 		});
 	}
 	
@@ -474,8 +489,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return the spectrum headers
 	 */
-	public SpectrumHeader[] getMs1SpectrumHeaders() {
-		return this._spectrumHeaderReader.getMs1SpectrumHeaders().toBlocking().single();
+	public Observable<SpectrumHeader[]> getMs1SpectrumHeaders() {
+		return this._spectrumHeaderReader.getMs1SpectrumHeaders();
 	}
 
 	/**
@@ -483,8 +498,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return the spectrum header by id
 	 */
-	public Map<Long, SpectrumHeader> getMs1SpectrumHeaderById() {
-		return this._spectrumHeaderReader.getMs1SpectrumHeaderById().toBlocking().single();
+	public Observable<Map<Long, SpectrumHeader>> getMs1SpectrumHeaderById() {
+		return this._spectrumHeaderReader.getMs1SpectrumHeaderById();
 	}
 
 	/**
@@ -492,8 +507,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return the spectrum headers
 	 */
-	public SpectrumHeader[] getMs2SpectrumHeaders() {
-		return this._spectrumHeaderReader.getMs2SpectrumHeaders().toBlocking().single();
+	public Observable<SpectrumHeader[]> getMs2SpectrumHeaders() {
+		return this._spectrumHeaderReader.getMs2SpectrumHeaders();
 	}
 
 	/**
@@ -501,8 +516,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return the spectrum header by id
 	 */
-	public Map<Long, SpectrumHeader> getMs2SpectrumHeaderById() {
-		return this._spectrumHeaderReader.getMs2SpectrumHeaderById().toBlocking().single();
+	public Observable<Map<Long, SpectrumHeader>> getMs2SpectrumHeaderById() {
+		return this._spectrumHeaderReader.getMs2SpectrumHeaderById();
 	}
 
 	/**
@@ -510,8 +525,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return the spectrum headers
 	 */
-	public SpectrumHeader[] getSpectrumHeaders() {
-		return this._spectrumHeaderReader.getSpectrumHeaders().toBlocking().single();
+	public Observable<SpectrumHeader[]> getSpectrumHeaders() {
+		return this._spectrumHeaderReader.getSpectrumHeaders();
 	}
 
 	/**
@@ -519,8 +534,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @return the spectrum header by id
 	 */
-	public Map<Long, SpectrumHeader> getSpectrumHeaderById() {
-		return this._spectrumHeaderReader.getSpectrumHeaderById().toBlocking().single();
+	public Observable<Map<Long, SpectrumHeader>> getSpectrumHeaderById() {
+		return this._spectrumHeaderReader.getSpectrumHeaderById();
 	}
 
 	/**
@@ -530,8 +545,8 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the id
 	 * @return the spectrum header
 	 */
-	public SpectrumHeader getSpectrumHeader(long id) {
-		return this._spectrumHeaderReader.getSpectrumHeader(id).toBlocking().single();
+	public Observable<SpectrumHeader> getSpectrumHeader(long id) {
+		return this._spectrumHeaderReader.getSpectrumHeader(id);
 	}
 
 	/**
@@ -543,10 +558,9 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the ms level
 	 * @return spectrumheader the closest to the time input parameter
 	 */
-	public SpectrumHeader getSpectrumHeaderForTime(float time, int msLevel) {
-		return this._spectrumHeaderReader.getSpectrumHeaderForTime(time, msLevel).toBlocking().single();
+	public Observable<SpectrumHeader> getSpectrumHeaderForTime(float time, int msLevel) {
+		return this._spectrumHeaderReader.getSpectrumHeaderForTime(time, msLevel);
 	}
-
 	
 	/**
 	 * Gets the spectrum data.
@@ -634,7 +648,15 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
     			);
     			stmt.bind(1, msLevel);
     			
-    			SQLiteObservableJob.observeIterator( subscriber, new BoundingBoxIterator(this, stmt, msLevel) );
+    			BoundingBoxIterator bbIter = new BoundingBoxIterator(
+    				this._spectrumHeaderReader,
+    				this._dataEncodingReader,
+    				connection,
+    				stmt,
+    				msLevel
+    			);
+    			
+    			SQLiteObservableJob.observeIterator( subscriber, bbIter );
 				
 				return null;
     		});
@@ -715,7 +737,12 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 			
 			SQLiteJob<Void> sqliteJob = SQLiteObservableJob.buildSQLiteJob( subscriber, connection -> {
 
-				LcMsRunSliceIterator runSliceIter = new LcMsRunSliceIterator(this, connection, minRunSliceMz, maxRunSliceMz);
+				LcMsRunSliceIterator runSliceIter = new LcMsRunSliceIterator(
+					this,
+					connection,
+					minRunSliceMz,
+					maxRunSliceMz
+				);
     			
 				SQLiteObservableJob.observeIterator( subscriber, runSliceIter );
 				
@@ -744,7 +771,12 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 				}
 				fakeStmt.dispose();
 
-				LcMsnRunSliceIterator runSliceIter = new LcMsnRunSliceIterator(this, connection, minParentMz, maxParentMz);
+				LcMsnRunSliceIterator runSliceIter = new LcMsnRunSliceIterator(
+					this,
+					connection,
+					minParentMz,
+					maxParentMz
+				);
 				
 				SQLiteObservableJob.observeIterator( subscriber, runSliceIter );
 				
@@ -774,7 +806,14 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 				}
 				fakeStmt.dispose();
 
-				LcMsnRunSliceIterator runSliceIter = new LcMsnRunSliceIterator(this, connection, minParentMz, maxParentMz, minRunSliceMz, maxRunSliceMz);
+				LcMsnRunSliceIterator runSliceIter = new LcMsnRunSliceIterator(
+					this,
+					connection,
+					minParentMz,
+					maxParentMz,
+					minRunSliceMz,
+					maxRunSliceMz
+				);
 				
 				SQLiteObservableJob.observeIterator( subscriber, runSliceIter );
 				

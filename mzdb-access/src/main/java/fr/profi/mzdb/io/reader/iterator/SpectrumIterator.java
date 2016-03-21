@@ -25,18 +25,25 @@ public class SpectrumIterator extends AbstractSpectrumSliceIterator implements I
 	protected boolean bbHasNext = true;
 	
 	public SpectrumIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
-		super(mzDbReader, connection, allMsLevelsSqlQuery);
+		super(mzDbReader.getSpectrumHeaderReader(), mzDbReader.getDataEncodingReader(), connection, allMsLevelsSqlQuery);
 
 		this.initSpectrumSliceBuffer();
 	}
 
 	public SpectrumIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection, final int msLevel) throws SQLiteException, StreamCorruptedException {
 		//super(inst, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) ); // Bind msLevel
-		super(mzDbReader, connection, singleMsLevelSqlQuery, msLevel, new ISQLiteStatementConsumer() {
-			public void accept(SQLiteStatement stmt) throws SQLiteException {
-				stmt.bind(1, msLevel); // Bind msLevel
+		super(
+			mzDbReader.getSpectrumHeaderReader(),
+			mzDbReader.getDataEncodingReader(),
+			connection,
+			singleMsLevelSqlQuery,
+			msLevel,
+			new ISQLiteStatementConsumer() {
+				public void accept(SQLiteStatement stmt) throws SQLiteException {
+					stmt.bind(1, msLevel); // Bind msLevel
+				}
 			}
-		} );
+		);
 
 		this.initSpectrumSliceBuffer();
 	}

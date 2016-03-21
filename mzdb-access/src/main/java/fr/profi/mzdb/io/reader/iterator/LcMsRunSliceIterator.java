@@ -57,15 +57,38 @@ public class LcMsRunSliceIterator extends AbstractRunSliceIterator implements It
 		};
 	}
 
-	public LcMsRunSliceIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
+	public LcMsRunSliceIterator(
+		AbstractMzDbReader mzDbReader,
+		SQLiteConnection connection
+	) throws SQLiteException, StreamCorruptedException {
 		// Set msLevel to 1
-		super(mzDbReader, connection, allRunSlicesSqlQuery, 1, createAllRunSlicesStatementBinder() );
+		super(
+			mzDbReader.getRunSliceHeaderReader(),
+			mzDbReader.getSpectrumHeaderReader(),
+			mzDbReader.getDataEncodingReader(),
+			connection,
+			allRunSlicesSqlQuery,
+			1,
+			createAllRunSlicesStatementBinder()
+		);
 	}
 
-	public LcMsRunSliceIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection, double minRunSliceMz, double maxRunSliceMz)
-			throws SQLiteException, StreamCorruptedException {		
+	public LcMsRunSliceIterator(
+		AbstractMzDbReader mzDbReader,
+		SQLiteConnection connection,
+		double minRunSliceMz,
+		double maxRunSliceMz
+	) throws SQLiteException, StreamCorruptedException {		
 		// Set msLevel to 1
-		super(mzDbReader, connection, runSlicesSubsetSqlQuery, 1, createRunSlicesSubsetStatementBinder(minRunSliceMz,maxRunSliceMz) );
+		super(
+			mzDbReader.getRunSliceHeaderReader(),
+			mzDbReader.getSpectrumHeaderReader(),
+			mzDbReader.getDataEncodingReader(),
+			connection,
+			runSlicesSubsetSqlQuery,
+			1,
+			createRunSlicesSubsetStatementBinder(minRunSliceMz,maxRunSliceMz)
+		);
 	}
 
 }

@@ -17,7 +17,7 @@ import fr.profi.mzdb.model.RunSliceHeader;
  */
 public class RunSliceHeaderReader extends AbstractRunSliceHeaderReader {
 	
-	SQLiteConnection connection;
+	private SQLiteConnection connection;
 
 	/**
 	 * Instantiates a new run slice header reader.

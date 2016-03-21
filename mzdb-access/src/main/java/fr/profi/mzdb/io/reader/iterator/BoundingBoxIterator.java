@@ -3,12 +3,14 @@ package fr.profi.mzdb.io.reader.iterator;
 import java.io.StreamCorruptedException;
 import java.util.Map;
 
-import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
+import fr.profi.mzdb.io.reader.cache.AbstractDataEncodingReader;
+import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.SpectrumHeader;
 
+import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
@@ -18,27 +20,31 @@ public class BoundingBoxIterator extends AbstractStatementIterator<BoundingBox> 
 	protected final Map<Long, DataEncoding> dataEncodingBySpectrumId;
 	
 	public BoundingBoxIterator(
-		AbstractMzDbReader mzDbReader,
+		AbstractSpectrumHeaderReader spectrumHeaderReader,
+		AbstractDataEncodingReader dataEncodingReader,
+		SQLiteConnection connection,
 		SQLiteStatement stmt
 	) throws SQLiteException, StreamCorruptedException {
-		super(mzDbReader, stmt);
+		super(stmt);
 		
-		this.spectrumHeaderById = this.mzDbReader.getSpectrumHeaderById();			
-		this.dataEncodingBySpectrumId = this.mzDbReader.getDataEncodingBySpectrumId();
+		this.spectrumHeaderById = spectrumHeaderReader.getSpectrumHeaderById(connection);			
+		this.dataEncodingBySpectrumId = dataEncodingReader.getDataEncodingBySpectrumId(connection);
 	}
-
+	
 	public BoundingBoxIterator(
-		AbstractMzDbReader mzDbReader,
+		AbstractSpectrumHeaderReader spectrumHeaderReader,
+		AbstractDataEncodingReader dataEncodingReader,
+		SQLiteConnection connection,
 		SQLiteStatement stmt,
 		int msLevel
 	) throws SQLiteException, StreamCorruptedException {
-		super(mzDbReader, stmt);
+		super(stmt);
 		
-		if( msLevel == 1 ) this.spectrumHeaderById = this.mzDbReader.getMs1SpectrumHeaderById();
-		else if( msLevel == 2 ) this.spectrumHeaderById = this.mzDbReader.getMs2SpectrumHeaderById();
+		if( msLevel == 1 ) this.spectrumHeaderById = spectrumHeaderReader.getMs1SpectrumHeaderById(connection);
+		else if( msLevel == 2 ) this.spectrumHeaderById = spectrumHeaderReader.getMs2SpectrumHeaderById(connection);
 		else throw new IllegalArgumentException("unsupported MS level: " + msLevel);
-			
-		this.dataEncodingBySpectrumId = this.mzDbReader.getDataEncodingBySpectrumId();
+		
+		this.dataEncodingBySpectrumId = dataEncodingReader.getDataEncodingBySpectrumId(connection);
 	}
 
 	public BoundingBox extractObject(SQLiteStatement stmt) throws SQLiteException, StreamCorruptedException {

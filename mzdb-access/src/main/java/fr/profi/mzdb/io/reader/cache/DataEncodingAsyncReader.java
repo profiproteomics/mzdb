@@ -18,7 +18,7 @@ import fr.profi.mzdb.model.DataEncoding;
 public class DataEncodingAsyncReader extends AbstractDataEncodingReader {
 	
 	/** The mzDB reader. */
-	protected MzDbAsyncReader mzDbReader = null;
+	private MzDbAsyncReader mzDbReader = null;
 
 	/**
 	 * Instantiates a new data encoding reader.
@@ -29,7 +29,7 @@ public class DataEncodingAsyncReader extends AbstractDataEncodingReader {
 	 *             the sQ lite exception
 	 */
 	public DataEncodingAsyncReader(MzDbAsyncReader mzDbReader) throws SQLiteException {
-		super(mzDbReader, mzDbReader.getModelVersion().toBlocking().first() );
+		super(mzDbReader);
 	}
 
 	/**

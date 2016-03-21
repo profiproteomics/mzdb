@@ -20,14 +20,14 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	public static boolean loadPrecursorList = false;
 	
 	/** The mzDB reader. */
-	protected MzDbAsyncReader mzDbReader = null;
+	private MzDbAsyncReader mzDbReader = null;
 	
 	/**
 	 * @param mzDbReader
 	 * @throws SQLiteException 
 	 */
-	public SpectrumHeaderAsyncReader(MzDbAsyncReader mzDbReader) {
-		super(mzDbReader, mzDbReader.getSpectraCount(1).toBlocking().single(), mzDbReader.getSpectraCount(2).toBlocking().single());
+	public SpectrumHeaderAsyncReader(MzDbAsyncReader mzDbReader, AbstractDataEncodingReader dataEncodingReader) throws SQLiteException {
+		super(mzDbReader, dataEncodingReader);
 	}
 
 	/**

@@ -9,12 +9,10 @@ import java.util.Iterator;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import fr.profi.mzdb.AbstractMzDbReader;
-import fr.profi.mzdb.model.BoundingBox;
-import fr.profi.mzdb.model.RunSlice;
-import fr.profi.mzdb.model.RunSliceData;
-import fr.profi.mzdb.model.RunSliceHeader;
-import fr.profi.mzdb.model.SpectrumSlice;
+import fr.profi.mzdb.io.reader.cache.AbstractDataEncodingReader;
+import fr.profi.mzdb.io.reader.cache.AbstractRunSliceHeaderReader;
+import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
+import fr.profi.mzdb.model.*;
 import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
 public abstract class AbstractRunSliceIterator extends AbstractSpectrumSliceIterator implements Iterator<RunSlice> {
@@ -24,15 +22,17 @@ public abstract class AbstractRunSliceIterator extends AbstractSpectrumSliceIter
 	protected final HashMap<Integer, RunSliceHeader> runSliceHeaderById;
 	
 	public AbstractRunSliceIterator(
-		AbstractMzDbReader mzDbReader,
+		AbstractRunSliceHeaderReader runSliceHeaderReader,
+		AbstractSpectrumHeaderReader spectrumHeaderReader,
+		AbstractDataEncodingReader dataEncodingReader,
 		SQLiteConnection connection,
 		String sqlQuery,
 		int msLevel,
 		ISQLiteStatementConsumer stmtBinder
 	) throws SQLiteException, StreamCorruptedException {
-		super(mzDbReader, connection, sqlQuery, msLevel, stmtBinder);
+		super(spectrumHeaderReader, dataEncodingReader, connection, sqlQuery, msLevel, stmtBinder);
 		
-		this.runSliceHeaderById = this.mzDbReader.getRunSliceHeaderById(msLevel);
+		this.runSliceHeaderById = runSliceHeaderReader.getRunSliceHeaderById(msLevel, connection);
 	}
 	
 	protected void initSpectrumSliceBuffer() {

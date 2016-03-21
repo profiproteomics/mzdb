@@ -18,14 +18,14 @@ public class SpectrumHeaderReader extends AbstractSpectrumHeaderReader {
 	public static boolean loadScanList = false;
 	public static boolean loadPrecursorList = false;
 	
-	SQLiteConnection connection;
+	private SQLiteConnection connection;
 	
 	/**
 	 * @param mzDbReader
 	 * @throws SQLiteException 
 	 */
-	public SpectrumHeaderReader(MzDbReader mzDbReader) throws SQLiteException {
-		super(mzDbReader, mzDbReader.getSpectraCount(1), mzDbReader.getSpectraCount(2));
+	public SpectrumHeaderReader(MzDbReader mzDbReader, AbstractDataEncodingReader dataEncodingReader) throws SQLiteException {
+		super(mzDbReader, dataEncodingReader);
 		
 		this.connection = mzDbReader.getConnection();
 	}

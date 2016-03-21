@@ -19,7 +19,7 @@ import fr.profi.mzdb.model.RunSliceHeader;
 public class RunSliceHeaderAsyncReader extends AbstractRunSliceHeaderReader {
 	
 	/** The mzDB reader. */
-	protected MzDbAsyncReader mzDbReader = null;
+	private MzDbAsyncReader mzDbReader = null;
 	
 	/**
 	 * Instantiates a new run slice header reader.

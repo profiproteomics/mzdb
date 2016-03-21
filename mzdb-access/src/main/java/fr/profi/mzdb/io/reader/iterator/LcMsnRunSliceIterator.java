@@ -49,13 +49,21 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		
 		// Set msLevel to 2
 		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, connection, sameIsolationWindowRunSlicesSqlQuery, 2, new ISQLiteStatementConsumer() {
-			public void accept(SQLiteStatement stmt) throws SQLiteException {
-				stmt.bind(1, 2); // Bind the msLevel
-				stmt.bind(2, minParentMz); // Bind the minParentMz
-				stmt.bind(3, maxParentMz); // Bind the maxParentMz
+		super(
+			mzDbReader.getRunSliceHeaderReader(),
+			mzDbReader.getSpectrumHeaderReader(),
+			mzDbReader.getDataEncodingReader(),
+			connection,
+			sameIsolationWindowRunSlicesSqlQuery,
+			2,
+			new ISQLiteStatementConsumer() {
+				public void accept(SQLiteStatement stmt) throws SQLiteException {
+					stmt.bind(1, 2); // Bind the msLevel
+					stmt.bind(2, minParentMz); // Bind the minParentMz
+					stmt.bind(3, maxParentMz); // Bind the maxParentMz
+				}
 			}
-		} );
+		);
 	}
 
 	public LcMsnRunSliceIterator(
@@ -79,15 +87,23 @@ public class LcMsnRunSliceIterator extends AbstractRunSliceIterator implements I
 		
 		// Set msLevel to 2
 		// FIXME: what about msLevel > 2 ?
-		super(mzDbReader, connection, sameIsolationWindowRunSlicesSubsetSqlQuery, 2, new ISQLiteStatementConsumer() {
-			public void accept(SQLiteStatement stmt) throws SQLiteException {
-				stmt.bind(1, 2); // Bind the msLevel
-				stmt.bind(2, minParentMz); // Bind the minParentMz
-				stmt.bind(3, maxParentMz); // Bind the maxParentMz
-				stmt.bind(4, minRunSliceMz); // Bind the minRunSliceMz
-				stmt.bind(5, maxRunSliceMz); // Bind the maxRunSliceMz
+		super(
+			mzDbReader.getRunSliceHeaderReader(),
+			mzDbReader.getSpectrumHeaderReader(),
+			mzDbReader.getDataEncodingReader(),
+			connection,
+			sameIsolationWindowRunSlicesSubsetSqlQuery,
+			2,
+			new ISQLiteStatementConsumer() {
+				public void accept(SQLiteStatement stmt) throws SQLiteException {
+					stmt.bind(1, 2); // Bind the msLevel
+					stmt.bind(2, minParentMz); // Bind the minParentMz
+					stmt.bind(3, maxParentMz); // Bind the maxParentMz
+					stmt.bind(4, minRunSliceMz); // Bind the minRunSliceMz
+					stmt.bind(5, maxRunSliceMz); // Bind the maxRunSliceMz
+				}
 			}
-		} );
+		);
 	}
 
 }

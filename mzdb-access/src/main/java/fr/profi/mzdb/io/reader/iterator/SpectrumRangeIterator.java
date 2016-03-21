@@ -9,6 +9,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.io.reader.bb.IBlobReader;
+import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.Spectrum;
 import fr.profi.mzdb.model.SpectrumSlice;
@@ -43,11 +44,13 @@ public class SpectrumRangeIterator implements Iterator<Spectrum> {
 	// private boolean toStop = false;
 
 	public SpectrumRangeIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection, int msLevel, int start, int end) throws SQLiteException, StreamCorruptedException {
+		AbstractSpectrumHeaderReader spectrumHeaderReader = mzDbReader.getSpectrumHeaderReader();
+		
 		//this.mzDbReader = mzDbReader;
 		this.wantedStartingSpectrumId = start;
 		this.wantedEndingSpectrumId = end;
-		this.bbStartingSpectrumId = mzDbReader.getSpectrumHeader(start).getBBFirstSpectrumId();
-		this.bbEndingSpectrumId = mzDbReader.getSpectrumHeader(end).getBBFirstSpectrumId();
+		this.bbStartingSpectrumId = spectrumHeaderReader.getSpectrumHeader(start, connection).getBBFirstSpectrumId();
+		this.bbEndingSpectrumId = spectrumHeaderReader.getSpectrumHeader(end, connection).getBBFirstSpectrumId();
 		sqlQuery = "SELECT bounding_box.* FROM bounding_box, spectrum WHERE spectrum.id = bounding_box.first_spectrum_id AND spectrum.ms_level= ? AND "
 			+ "bounding_box.first_spectrum_id >= "
 			+ this.bbStartingSpectrumId
@@ -66,11 +69,18 @@ public class SpectrumRangeIterator implements Iterator<Spectrum> {
 		public MsSpectrumRangeIteratorImpl(AbstractMzDbReader mzDbReader, SQLiteConnection connection, final int msLevel) throws SQLiteException,
 				StreamCorruptedException {
 			//super(mzDbReader, sqlQuery, msLevel, rethrowConsumer( (stmt) -> stmt.bind(1, msLevel) ) ); // Bind msLevel
-			super(mzDbReader, connection, sqlQuery, msLevel, new ISQLiteStatementConsumer() {
-				public void accept(SQLiteStatement stmt) throws SQLiteException {
-					stmt.bind(1, msLevel); // Bind msLevel
+			super(
+				mzDbReader.getSpectrumHeaderReader(),
+				mzDbReader.getDataEncodingReader(),
+				connection,
+				sqlQuery,
+				msLevel,
+				new ISQLiteStatementConsumer() {
+					public void accept(SQLiteStatement stmt) throws SQLiteException {
+						stmt.bind(1, msLevel); // Bind msLevel
+					}
 				}
-			} );
+			);
 			
 			this.initSpectrumSliceBuffer();
 		}

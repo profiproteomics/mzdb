@@ -16,7 +16,7 @@ import fr.profi.mzdb.model.DataEncoding;
  */
 public class DataEncodingReader extends AbstractDataEncodingReader {
 	
-	SQLiteConnection connection;
+	private SQLiteConnection connection;
 
 	/**
 	 * Instantiates a new data encoding reader.
@@ -27,7 +27,7 @@ public class DataEncodingReader extends AbstractDataEncodingReader {
 	 *             the sQ lite exception
 	 */
 	public DataEncodingReader(MzDbReader mzDbReader) throws SQLiteException {
-		super(mzDbReader, mzDbReader.getModelVersion() );
+		super(mzDbReader);
 		
 		this.connection = mzDbReader.getConnection();
 	}

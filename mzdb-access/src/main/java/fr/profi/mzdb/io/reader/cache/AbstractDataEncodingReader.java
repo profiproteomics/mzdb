@@ -13,6 +13,7 @@ import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.table.DataEncodingTable;
 import fr.profi.mzdb.db.table.SpectrumTable;
+import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.DataMode;
@@ -34,9 +35,6 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	/** The _data encoding query str. */
 	private static String _dataEncodingQueryStr = "SELECT * FROM data_encoding";
 	
-	/** The model version. */
-	private String _modelVersion;
-	
 	/** The _data encoding extractor. */
 	private ISQLiteRecordExtraction<DataEncoding> _dataEncodingExtractor;
 
@@ -50,11 +48,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	public AbstractDataEncodingReader(AbstractMzDbReader mzDbReader, String modelVersion) throws SQLiteException {
+	public AbstractDataEncodingReader(AbstractMzDbReader mzDbReader) throws SQLiteException {
 		super(mzDbReader);
-		
-		this._modelVersion = modelVersion;
-		this._dataEncodingExtractor = _getDataEncodingExtractor();
 	}
 	
 	/**
@@ -64,11 +59,14 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	private ISQLiteRecordExtraction<DataEncoding> _getDataEncodingExtractor() throws SQLiteException {
+	private ISQLiteRecordExtraction<DataEncoding> _getDataEncodingExtractor(SQLiteConnection connection) throws SQLiteException {
+		if( _dataEncodingExtractor != null ) return _dataEncodingExtractor;
+		
+		String modelVersion = MzDbReaderQueries.getModelVersion(connection);
 		
 		// Check if model version is newer than 0.6
-		if ( _modelVersion.compareTo("0.6") > 0 ) {
-			return new ISQLiteRecordExtraction<DataEncoding>() {
+		if ( modelVersion.compareTo("0.6") > 0 ) {
+			_dataEncodingExtractor = new ISQLiteRecordExtraction<DataEncoding>() {
 
 				public DataEncoding extract(SQLiteRecord record) throws SQLiteException {
 
@@ -110,7 +108,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 				}
 			};
 		} else {
-			return new ISQLiteRecordExtraction<DataEncoding>() {
+			_dataEncodingExtractor = new ISQLiteRecordExtraction<DataEncoding>() {
 
 				public DataEncoding extract(SQLiteRecord record) throws SQLiteException {
 
@@ -159,6 +157,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 				}
 			};
 		}
+		
+		return _dataEncodingExtractor;
 	}
 
 	/**
@@ -177,11 +177,12 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 		if (this.entityCache != null) {
 			return this.getDataEncodingById(connection).get(dataEncodingId);
 		} else {
+			
 			// Retrieve data encoding record
 			String queryStr = _dataEncodingQueryStr + " WHERE id = ?";
 			return new SQLiteQuery(connection, queryStr)
 				.bind(1, dataEncodingId)
-				.extractRecord(this._dataEncodingExtractor);
+				.extractRecord(this._getDataEncodingExtractor(connection) );
 		}
 
 	}
@@ -196,8 +197,9 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 *             the SQ lite exception
 	 */
 	protected DataEncoding[] getDataEncodings(SQLiteConnection connection) throws SQLiteException {
+		
 		List<DataEncoding> dataEncodings = new SQLiteQuery(connection, _dataEncodingQueryStr)
-				.extractRecordList(this._dataEncodingExtractor);
+				.extractRecordList(this._getDataEncodingExtractor(connection));
 		
 		return dataEncodings.toArray(new DataEncoding[dataEncodings.size()]);
 	}
@@ -239,7 +241,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	protected Map<Long, DataEncoding> getDataEncodingBySpectrumId(SQLiteConnection connection) throws SQLiteException {
+	public Map<Long, DataEncoding> getDataEncodingBySpectrumId(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.dataEncodingBySpectrumId != null) {
 			return this.entityCache.dataEncodingBySpectrumId;

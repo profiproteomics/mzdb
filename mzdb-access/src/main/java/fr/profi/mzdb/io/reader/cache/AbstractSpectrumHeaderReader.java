@@ -9,6 +9,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.AbstractMzDbReader;
+import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.PeakEncoding;
@@ -26,19 +27,18 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	/** The time index width. */
 	protected final static int TIME_INDEX_WIDTH = 15;
 	
-	private int ms1SpectraCount;
-	private int ms2SpectraCount;
-	private int spectraCount;
-
+	private AbstractDataEncodingReader _dataEncodingReader;
+	
+	/** The spectrum header extractor. */
+	private ISQLiteRecordExtraction<SpectrumHeader> _spectrumHeaderExtractor;
+	
 	/**
 	 * @param mzDbReader
 	 */
-	public AbstractSpectrumHeaderReader(AbstractMzDbReader mzDbReader, int ms1SpectraCount, int ms2SpectraCount) {
+	public AbstractSpectrumHeaderReader(AbstractMzDbReader mzDbReader, AbstractDataEncodingReader dataEncodingReader) throws SQLiteException {
 		super(mzDbReader);
 		
-		this.ms1SpectraCount = ms1SpectraCount;
-		this.ms2SpectraCount = ms2SpectraCount;		
-		this.spectraCount = ms1SpectraCount + ms2SpectraCount;
+		this._dataEncodingReader = dataEncodingReader;
 	}
 
 	// Define some variable for spectrum header extraction
@@ -96,63 +96,69 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 		static int dataEncodingId = SpectrumHeaderCol.DATA_ENCODING_ID.ordinal();
 		static int bbFirstSpectrumId = SpectrumHeaderCol.BB_FIRST_SPECTRUM_ID.ordinal();
 	}
+	
+	private ISQLiteRecordExtraction<SpectrumHeader> _getSpectrumHeaderExtractor(SQLiteConnection connection) throws SQLiteException {
+		if( _spectrumHeaderExtractor != null ) return _spectrumHeaderExtractor;
+		
+		_spectrumHeaderExtractor = new ISQLiteRecordExtraction<SpectrumHeader>() {
 
-	private ISQLiteRecordExtraction<SpectrumHeader> _spectrumHeaderExtractor = new ISQLiteRecordExtraction<SpectrumHeader>() {
-
-		public SpectrumHeader extract(SQLiteRecord record) throws SQLiteException {
-
-			SQLiteStatement stmt = record.getStatement();
-
-			// long nano = System.nanoTime();
-			int msLevel = stmt.columnInt(SpectrumHeaderColIdx.msLevel);
-
-			double precursorMz = 0.0;
-			int precursorCharge = 0;
-			if (msLevel == 2) {
-				precursorMz = stmt.columnDouble(SpectrumHeaderColIdx.mainPrecursorMz);
-				precursorCharge = stmt.columnInt(SpectrumHeaderColIdx.mainPrecursorCharge);
+			public SpectrumHeader extract(SQLiteRecord record) throws SQLiteException {
+	
+				SQLiteStatement stmt = record.getStatement();
+	
+				// long nano = System.nanoTime();
+				int msLevel = stmt.columnInt(SpectrumHeaderColIdx.msLevel);
+	
+				double precursorMz = 0.0;
+				int precursorCharge = 0;
+				if (msLevel == 2) {
+					precursorMz = stmt.columnDouble(SpectrumHeaderColIdx.mainPrecursorMz);
+					precursorCharge = stmt.columnInt(SpectrumHeaderColIdx.mainPrecursorCharge);
+				}
+	
+				int bbFirstSpectrumId = stmt.columnInt(SpectrumHeaderColIdx.bbFirstSpectrumId);
+	
+				DataEncoding dataEnc = _dataEncodingReader.getDataEncoding(stmt.columnInt(SpectrumHeaderColIdx.dataEncodingId), connection);
+	
+				boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
+	
+				SpectrumHeader sh = new SpectrumHeader(
+					stmt.columnLong(SpectrumHeaderColIdx.id),
+					stmt.columnInt(SpectrumHeaderColIdx.initialId),
+					stmt.columnInt(SpectrumHeaderColIdx.cycleCol),
+					(float) stmt.columnDouble(SpectrumHeaderColIdx.time),
+					msLevel,
+					stmt.columnInt(SpectrumHeaderColIdx.dataPointsCount),
+					isHighRes,
+					(float) stmt.columnDouble(SpectrumHeaderColIdx.tic),
+					stmt.columnDouble(SpectrumHeaderColIdx.basePeakMz),
+					(float) stmt.columnDouble(SpectrumHeaderColIdx.basePeakIntensity),
+					precursorMz,
+					precursorCharge,
+					bbFirstSpectrumId
+				);
+				
+				if (SpectrumHeaderReader.loadParamTree) {
+					sh.setParamTree( ParamTreeParser.parseParamTree(stmt.columnString(SpectrumHeaderColIdx.paramTree)) );
+				}
+				if (SpectrumHeaderReader.loadScanList) {
+					sh.setScanList(ParamTreeParser.parseScanList(stmt.columnString(SpectrumHeaderColIdx.scanList)));
+				}
+				if (SpectrumHeaderReader.loadPrecursorList && msLevel > 1) {
+					sh.setPrecursor(ParamTreeParser.parsePrecursor(stmt.columnString(SpectrumHeaderColIdx.precursorList)));
+				}
+	
+				// System.out.println( (double) (System.nanoTime() - nano) / 1e3 );
+	
+				// sh.setParamTree(paramTree);
+	
+				return sh;
 			}
-
-			int bbFirstSpectrumId = stmt.columnInt(SpectrumHeaderColIdx.bbFirstSpectrumId);
-
-			DataEncoding dataEnc = mzDbReader.getDataEncoding(stmt.columnInt(SpectrumHeaderColIdx.dataEncodingId));
-
-			boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
-
-			SpectrumHeader sh = new SpectrumHeader(
-				stmt.columnLong(SpectrumHeaderColIdx.id),
-				stmt.columnInt(SpectrumHeaderColIdx.initialId),
-				stmt.columnInt(SpectrumHeaderColIdx.cycleCol),
-				(float) stmt.columnDouble(SpectrumHeaderColIdx.time),
-				msLevel,
-				stmt.columnInt(SpectrumHeaderColIdx.dataPointsCount),
-				isHighRes,
-				(float) stmt.columnDouble(SpectrumHeaderColIdx.tic),
-				stmt.columnDouble(SpectrumHeaderColIdx.basePeakMz),
-				(float) stmt.columnDouble(SpectrumHeaderColIdx.basePeakIntensity),
-				precursorMz,
-				precursorCharge,
-				bbFirstSpectrumId
-			);
-			
-			if (SpectrumHeaderReader.loadParamTree) {
-				sh.setParamTree( ParamTreeParser.parseParamTree(stmt.columnString(SpectrumHeaderColIdx.paramTree)) );
-			}
-			if (SpectrumHeaderReader.loadScanList) {
-				sh.setScanList(ParamTreeParser.parseScanList(stmt.columnString(SpectrumHeaderColIdx.scanList)));
-			}
-			if (SpectrumHeaderReader.loadPrecursorList && msLevel > 1) {
-				sh.setPrecursor(ParamTreeParser.parsePrecursor(stmt.columnString(SpectrumHeaderColIdx.precursorList)));
-			}
-
-			// System.out.println( (double) (System.nanoTime() - nano) / 1e3 );
-
-			// sh.setParamTree(paramTree);
-
-			return sh;
-		}
-
-	};
+	
+		};
+	
+		return _spectrumHeaderExtractor;
+	}
 	
 
 	/**
@@ -192,7 +198,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	protected Map<Long, SpectrumHeader> getSpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
+	public Map<Long, SpectrumHeader> getSpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.spectrumHeaderById != null) {
 			return this.entityCache.spectrumHeaderById;
@@ -232,11 +238,13 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 			//final SQLiteStatement fakeStmt = connection.prepare(_ms1SpectrumHeaderQueryStr, true);
 			//while (fakeStmt.step()) {}
 			//fakeStmt.dispose();
+			
+			int ms1SpectraCount = MzDbReaderQueries.getSpectraCount(1, connection);
 
 			SpectrumHeader[] ms1SpectrumHeaders = new SpectrumHeader[ms1SpectraCount];
 			
 			new SQLiteQuery(connection, _ms1SpectrumHeaderQueryStr)
-				.extractRecords(this._spectrumHeaderExtractor, ms1SpectrumHeaders);
+				.extractRecords(this._getSpectrumHeaderExtractor(connection), ms1SpectrumHeaders);
 
 			if (this.entityCache != null)
 				this.entityCache.ms1SpectrumHeaders = ms1SpectrumHeaders;
@@ -255,7 +263,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	protected Map<Long, SpectrumHeader> getMs1SpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
+	public Map<Long, SpectrumHeader> getMs1SpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.ms1SpectrumHeaderById != null) {
 			return this.entityCache.ms1SpectrumHeaderById;
@@ -288,10 +296,13 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 		if (this.entityCache != null && this.entityCache.ms2SpectrumHeaders != null) {
 			return this.entityCache.ms2SpectrumHeaders;
 		} else {
-
+			
+			ISQLiteRecordExtraction<SpectrumHeader> extractor = this._getSpectrumHeaderExtractor(connection);
+			
+			int ms2SpectraCount = MzDbReaderQueries.getSpectraCount(2, connection);
 			SpectrumHeader[] ms2SpectrumHeaders = new SpectrumHeader[ms2SpectraCount];
 
-			new SQLiteQuery(connection, _ms2SpectrumHeaderQueryStr).extractRecords(this._spectrumHeaderExtractor, ms2SpectrumHeaders);
+			new SQLiteQuery(connection, _ms2SpectrumHeaderQueryStr).extractRecords(extractor, ms2SpectrumHeaders);
 
 			if (this.entityCache != null)
 				this.entityCache.ms2SpectrumHeaders = ms2SpectrumHeaders;
@@ -310,7 +321,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	protected Map<Long, SpectrumHeader> getMs2SpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
+	public Map<Long, SpectrumHeader> getMs2SpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.entityCache != null && this.entityCache.ms2SpectrumHeaderById != null) {
 			return this.entityCache.ms2SpectrumHeaderById;
@@ -340,7 +351,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	protected SpectrumHeader getSpectrumHeader(long id, SQLiteConnection connection) throws SQLiteException {
+	public SpectrumHeader getSpectrumHeader(long id, SQLiteConnection connection) throws SQLiteException {
 		if (this.entityCache != null) {
 
 			if (this.getMs1SpectrumHeaderById(connection).containsKey(id)) {
@@ -371,6 +382,9 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 		if (this.entityCache != null && this.entityCache.spectrumTimeById != null) {
 			return this.entityCache.spectrumTimeById;
 		} else {
+			
+			int spectraCount = MzDbReaderQueries.getSpectraCount(connection);
+			
 			float[] spectrumTimes = new SQLiteQuery(connection, "SELECT time FROM spectrum").extractFloats(spectraCount);
 			if( spectraCount != spectrumTimes.length ){
 				System.err.println("extractFloats error: spectraCount != spectrumTimes.length");

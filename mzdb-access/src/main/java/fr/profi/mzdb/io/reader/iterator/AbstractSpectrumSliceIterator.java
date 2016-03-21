@@ -6,42 +6,62 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import fr.profi.mzdb.AbstractMzDbReader;
+import fr.profi.mzdb.io.reader.cache.AbstractDataEncodingReader;
+import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
 
 public abstract class AbstractSpectrumSliceIterator {
 
-	protected final AbstractMzDbReader mzDbReader;
 	protected final SQLiteStatement statement;
 	protected final BoundingBoxIterator boundingBoxIterator;
 	protected BoundingBox firstBB;
 	
-	public AbstractSpectrumSliceIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection, String sqlQuery ) throws SQLiteException, StreamCorruptedException {
+	public AbstractSpectrumSliceIterator(
+		AbstractSpectrumHeaderReader spectrumHeaderReader,
+		AbstractDataEncodingReader dataEncodingReader,
+		SQLiteConnection connection,
+		String sqlQuery
+	) throws SQLiteException, StreamCorruptedException {
 		
 		// Create a new statement (will be automatically closed by the StatementIterator)
 		SQLiteStatement stmt = connection.prepare(sqlQuery, true); // true = cached enabled
 
 		// Set some fields
-		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt);		
-		this.mzDbReader = mzDbReader;
+		this.boundingBoxIterator = new BoundingBoxIterator(
+			spectrumHeaderReader,
+			dataEncodingReader,
+			connection,
+			stmt
+		);
 		this.statement = stmt;
 
 		initBB();
 	}
 	
-	public AbstractSpectrumSliceIterator(AbstractMzDbReader mzDbReader, SQLiteConnection connection, String sqlQuery, int msLevel, ISQLiteStatementConsumer stmtBinder ) 
-			throws SQLiteException, StreamCorruptedException {
+	public AbstractSpectrumSliceIterator(
+		AbstractSpectrumHeaderReader spectrumHeaderReader,
+		AbstractDataEncodingReader dataEncodingReader,
+		SQLiteConnection connection,
+		String sqlQuery,
+		int msLevel,
+		ISQLiteStatementConsumer stmtBinder
+	) throws SQLiteException, StreamCorruptedException {
 		
 		// Create a new statement (will be automatically closed by the StatementIterator)
 		SQLiteStatement stmt = connection.prepare(sqlQuery, true); // true = cached enabled
 		
 		// Call the statement binder
 		stmtBinder.accept(stmt);
-
+		
 		// Set some fields
-		this.boundingBoxIterator = new BoundingBoxIterator(mzDbReader, stmt, msLevel);		
-		this.mzDbReader = mzDbReader;
+		this.boundingBoxIterator = new BoundingBoxIterator(
+			spectrumHeaderReader,
+			dataEncodingReader,
+			connection,
+			stmt,
+			msLevel
+		);
 		this.statement = stmt;
 
 		initBB();

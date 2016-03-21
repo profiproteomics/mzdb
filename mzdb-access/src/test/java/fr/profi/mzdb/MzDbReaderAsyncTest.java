@@ -14,6 +14,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import fr.profi.mzdb.model.AcquisitionMode;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.Peak;
+import fr.profi.mzdb.model.RunSlice;
 import fr.profi.mzdb.utils.sqlite.SQLite4JavaTest;
 import rx.functions.Action0;
 import rx.functions.Action1;
@@ -171,20 +172,19 @@ public class MzDbReaderAsyncTest {
 				Assert.assertEquals(240.8635f, time.floatValue(), FLOAT_EPSILON);
 			}, onError, onCompleted);
 			
-/*			////////////////////////////// Msn Run Slice
+			////////////////////////////// Msn Run Slice
 			mzDb.getLcMsnRunSliceStream(minParentMz, maxParentMz).subscribe((RunSlice slice) -> {
 				Assert.assertNotNull(slice);
 				System.out.println("slice = " + slice.toString() );
 			}, onError, onCompleted);
-*/			
-/*
- * 			////////////////////////////// Msn Run Slice
- 
+			
+
+ 			////////////////////////////// Msn Run XIC
 			mzDb.getMsnXic(parentMz, fragmentMz,fragmentMzTolInDa, minRt, maxRt, XicMethod.NEAREST).subscribe((Peak[] peaks) -> {
-				Assert.assertNotNull(slice);
-				System.out.println("slice = " + slice.toString() );
+				Assert.assertNotNull(peaks);
+				//System.out.println("slice = " + slice.toString() );
 			}, onError, onCompleted);
-*/		
+		
 		} catch (Throwable e) {
 			e.printStackTrace();
 			Assert.fail("MzDB reader instantiation exception " + e.getMessage() + " for "
@@ -194,7 +194,7 @@ public class MzDbReaderAsyncTest {
 		System.out.print(".");
 
 		try {
-			Thread.sleep(200000);
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			Assert.fail("Sleep interupted : " + e.getMessage());
 			e.printStackTrace();

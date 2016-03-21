@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import fr.profi.mzdb.db.model.*;
+import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.cache.*;
 import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
 import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator;
@@ -33,20 +34,20 @@ public class MzDbReader extends AbstractMzDbReader {
 
 	final Logger logger = LoggerFactory.getLogger(MzDbReader.class);
 	
-	protected SQLiteConnection connection = null;
+	private SQLiteConnection connection = null;
 	
 	/** Some readers with internal entity cache **/
-	protected DataEncodingReader _dataEncodingReader = null;
-	protected SpectrumHeaderReader _spectrumHeaderReader = null;
-	protected RunSliceHeaderReader _runSliceHeaderReader = null;
+	private DataEncodingReader _dataEncodingReader = null;
+	private SpectrumHeaderReader _spectrumHeaderReader = null;
+	private RunSliceHeaderReader _runSliceHeaderReader = null;
 	
 	/** Some readers without internal entity cache **/
-	protected MzDbHeaderReader _mzDbHeaderReader = null;
-	protected InstrumentConfigReader _instrumentConfigReader = null;
-	protected RunReader _runReader = null;
-	protected SampleReader _sampleReader = null;
-	protected SoftwareReader _softwareListReader = null;
-	protected SourceFileReader _sourceFileReader = null;
+	private MzDbHeaderReader _mzDbHeaderReader = null;
+	private InstrumentConfigReader _instrumentConfigReader = null;
+	private RunReader _runReader = null;
+	private SampleReader _sampleReader = null;
+	private SoftwareReader _softwareListReader = null;
+	private SourceFileReader _sourceFileReader = null;
 
 	/**
 	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
@@ -105,14 +106,14 @@ public class MzDbReader extends AbstractMzDbReader {
 
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingReader(this);
-		this._spectrumHeaderReader = new SpectrumHeaderReader(this);
+		this._spectrumHeaderReader = new SpectrumHeaderReader(this, _dataEncodingReader);
 		this._runSliceHeaderReader = new RunSliceHeaderReader(this);
 
 		// Set the mzDvHeader
 		this.mzDbHeader = this._mzDbHeaderReader.getMzDbHeader();
 
 		// Set the paramNameGetter
-		String pwizMzDbVersion = this.getPwizMzDbVersion(this.connection);
+		String pwizMzDbVersion = MzDbReaderQueries.getPwizMzDbVersion(this.connection);
 		this._paramNameGetter = (pwizMzDbVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
 
 		// Set BB sizes
@@ -170,18 +171,31 @@ public class MzDbReader extends AbstractMzDbReader {
 	public void close() {
 		this.connection.dispose();
 	}
-
+	
+	@Override
+	public DataEncodingReader getDataEncodingReader() {
+		return _dataEncodingReader;
+	}
+	@Override
+	public SpectrumHeaderReader getSpectrumHeaderReader() {
+		return _spectrumHeaderReader;
+	}
+	@Override
+	public RunSliceHeaderReader getRunSliceHeaderReader() {
+		return _runSliceHeaderReader;
+	}
+	
 	/**
 	 *
 	 * @return
 	 * @throws SQLiteException
 	 */
 	public String getModelVersion() throws SQLiteException {
-		return this.getModelVersion(connection);
+		return MzDbReaderQueries.getModelVersion(connection);
 	}
 
 	public String getPwizMzDbVersion() throws SQLiteException {
-		return this.getPwizMzDbVersion(connection);
+		return MzDbReaderQueries.getPwizMzDbVersion(connection);
 	}
 	
 
@@ -193,7 +207,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public float getLastTime() throws SQLiteException {
-		return this.getLastTime(connection);
+		return MzDbReaderQueries.getLastTime(connection);
 	}
 
 	/**
@@ -204,7 +218,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getMaxMsLevel() throws SQLiteException {
-		return this.getMaxMsLevel(connection);
+		return MzDbReaderQueries.getMaxMsLevel(connection);
 	}
 
 	/**
@@ -217,7 +231,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int[] getMzRange(int msLevel) throws SQLiteException {
-		return this.getMzRange(msLevel, connection);
+		return MzDbReaderQueries.getMzRange(msLevel, connection);
 	}
 
 	/**
@@ -228,7 +242,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getBoundingBoxesCount() throws SQLiteException {
-		return this.getBoundingBoxesCount(connection);
+		return MzDbReaderQueries.getBoundingBoxesCount(connection);
 	}
 
 	/**
@@ -241,7 +255,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getBoundingBoxesCount(int runSliceId) throws SQLiteException {
-		return this.getBoundingBoxesCount(runSliceId, connection);
+		return MzDbReaderQueries.getBoundingBoxesCount(runSliceId, connection);
 	}
 
 	/**
@@ -251,7 +265,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 * @throws SQLiteException
 	 */
 	public int getCyclesCount() throws SQLiteException {
-		return this.getCyclesCount(connection);
+		return MzDbReaderQueries.getCyclesCount(connection);
 	}
 
 	/**
@@ -262,7 +276,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getDataEncodingsCount() throws SQLiteException {
-		return this.getDataEncodingsCount(connection);
+		return MzDbReaderQueries.getDataEncodingsCount(connection);
 	}
 
 	/**
@@ -273,7 +287,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getSpectraCount() throws SQLiteException {
-		return this.getSpectraCount(connection);
+		return MzDbReaderQueries.getSpectraCount(connection);
 	}
 
 	/**
@@ -284,7 +298,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getSpectraCount(int msLevel) throws SQLiteException {
-		return this.getSpectraCount(msLevel, connection);
+		return MzDbReaderQueries.getSpectraCount(msLevel, connection);
 	}
 
 	/**
@@ -295,7 +309,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getRunSlicesCount() throws SQLiteException {
-		return this.getRunSlicesCount(connection);
+		return MzDbReaderQueries.getRunSlicesCount(connection);
 	}
 
 	/**
@@ -308,7 +322,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getTableRecordsCount(String tableName) throws SQLiteException {
-		return this.getTableRecordsCount(tableName, connection);
+		return MzDbReaderQueries.getTableRecordsCount(tableName, connection);
 	}
 	
 	/**
@@ -395,7 +409,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public byte[] getBoundingBoxData(int bbId) throws SQLiteException {
-		return this.getBoundingBoxData(bbId, connection);
+		return MzDbReaderQueries.getBoundingBoxData(bbId, connection);
 	}
 
 	/**
@@ -408,7 +422,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public long getBoundingBoxFirstSpectrumId(long spectrumId) throws SQLiteException {
-		return this.getBoundingBoxFirstSpectrumId(spectrumId, connection);
+		return MzDbReaderQueries.getBoundingBoxFirstSpectrumId(spectrumId, connection);
 	}
 
 	/**
@@ -421,7 +435,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public float getBoundingBoxMinMz(int bbId) throws SQLiteException {
-		return this.getBoundingBoxMinMz(bbId, connection);
+		return MzDbReaderQueries.getBoundingBoxMinMz(bbId, connection);
 	}
 
 	/**
@@ -434,7 +448,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public float getBoundingBoxMinTime(int bbId) throws SQLiteException {
-		return this.getBoundingBoxMinTime(bbId, connection);
+		return MzDbReaderQueries.getBoundingBoxMinTime(bbId, connection);
 	}
 
 	/**
@@ -447,7 +461,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *             the sQ lite exception
 	 */
 	public int getBoundingBoxMsLevel(int bbId) throws SQLiteException {
-		return this.getBoundingBoxMsLevel(bbId, connection);
+		return MzDbReaderQueries.getBoundingBoxMsLevel(bbId, connection);
 	}
 	
 
@@ -619,7 +633,13 @@ public class MzDbReader extends AbstractMzDbReader {
 			"SELECT bounding_box.* FROM bounding_box, spectrum WHERE spectrum.id = bounding_box.first_spectrum_id AND spectrum.ms_level= ?", false);
 		stmt.bind(1, msLevel);
 
-		return new BoundingBoxIterator(this, stmt, msLevel);
+		return new BoundingBoxIterator(
+			this._spectrumHeaderReader,
+			this._dataEncodingReader,
+			connection,
+			stmt,
+			msLevel
+		);
 	}
 	
 	public Iterator<Spectrum> getSpectrumIterator() throws SQLiteException, StreamCorruptedException {

@@ -163,8 +163,7 @@ public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContai
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	protected HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel, SQLiteConnection connection) throws SQLiteException {
-
+	public HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel, SQLiteConnection connection) throws SQLiteException {
 		RunSliceHeader[] runSliceHeaders = this.getRunSliceHeaders(msLevel, connection);
 		return this._getRunSliceHeaderById(runSliceHeaders);
 	}

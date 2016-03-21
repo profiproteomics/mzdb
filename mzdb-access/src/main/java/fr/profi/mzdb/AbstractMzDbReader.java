@@ -6,7 +6,6 @@ import java.util.*;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +15,7 @@ import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
+import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
 import fr.profi.mzdb.io.reader.bb.IBlobReader;
 import fr.profi.mzdb.io.reader.cache.AbstractDataEncodingReader;
@@ -45,11 +45,6 @@ public abstract class AbstractMzDbReader {
 	protected MzDbHeader mzDbHeader = null;
 	protected IMzDBParamNameGetter _paramNameGetter = null;
 
-	/** Some readers with internal entity cache **/
-	protected AbstractDataEncodingReader _dataEncodingReader = null;
-	protected AbstractSpectrumHeaderReader _spectrumHeaderReader = null;
-	protected AbstractRunSliceHeaderReader _runSliceHeaderReader = null;
-
 	/**
 	 * The is no loss mode. If no loss mode is enabled, all data points will be encoded as highres, i.e. 64 bits mz and 64 bits int. No peak picking and not
 	 * fitting will be performed on profile data.
@@ -70,6 +65,10 @@ public abstract class AbstractMzDbReader {
 	 * Close the file to avoid memory leaks. Method to be implemented in child classes.
 	 */
 	public abstract void close();
+	
+	public abstract AbstractDataEncodingReader getDataEncodingReader();
+	public abstract AbstractSpectrumHeaderReader getSpectrumHeaderReader();
+	public abstract AbstractRunSliceHeaderReader getRunSliceHeaderReader();
 
 	/**
 	 * Gets the entity cache.
@@ -86,21 +85,6 @@ public abstract class AbstractMzDbReader {
 
 	public MzDbHeader getMzDbHeader() throws SQLiteException {
 		return this.mzDbHeader;
-	}
-
-	/**
-	 *
-	 * @return
-	 * @throws SQLiteException
-	 */
-	protected String getModelVersion(SQLiteConnection connection) throws SQLiteException {
-		String sqlString = "SELECT version FROM mzdb LIMIT 1";
-		return new SQLiteQuery(connection, sqlString).extractSingleString();
-	}
-
-	protected String getPwizMzDbVersion(SQLiteConnection connection) throws SQLiteException {
-		String sqlString = "SELECT version FROM software WHERE name LIKE '%mzDB'";
-		return new SQLiteQuery(connection, sqlString).extractSingleString();
 	}
 
 	/**
@@ -145,198 +129,6 @@ public abstract class AbstractMzDbReader {
 	}
 
 	/**
-	 * Gets the last time.
-	 *
-	 * @return float the rt of the last spectrum
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected float getLastTime(SQLiteConnection connection) throws SQLiteException {
-		// Retrieve the number of spectra
-		String sqlString = "SELECT time FROM spectrum ORDER BY id DESC LIMIT 1";
-		return (float) new SQLiteQuery(connection, sqlString).extractSingleDouble();
-	}
-
-	/**
-	 * Gets the max ms level.
-	 *
-	 * @return the max ms level
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getMaxMsLevel(SQLiteConnection connection) throws SQLiteException {
-		return new SQLiteQuery(connection, "SELECT max(ms_level) FROM run_slice").extractSingleInt();
-	}
-
-	/**
-	 * Gets the mz range.
-	 *
-	 * @param msLevel
-	 *            the ms level
-	 * @return runSlice min mz and runSlice max mz
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int[] getMzRange(int msLevel, SQLiteConnection connection) throws SQLiteException {
-
-		final SQLiteStatement stmt = connection.prepare("SELECT min(begin_mz), max(end_mz) FROM run_slice WHERE ms_level=?");
-		stmt.bind(1, msLevel);
-		stmt.step();
-
-		final int minMz = stmt.columnInt(0);
-		final int maxMz = stmt.columnInt(1);
-		stmt.dispose();
-
-		final int[] mzRange = { minMz, maxMz };
-		return mzRange;
-	}
-
-	/**
-	 * Gets the bounding box count.
-	 *
-	 * @return int, the number of bounding box
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getBoundingBoxesCount(SQLiteConnection connection) throws SQLiteException {
-		return this.getTableRecordsCount("bounding_box", connection);
-	}
-
-	/**
-	 * Gets the bounding box count.
-	 *
-	 * @param runSliceId
-	 *            the run slice id
-	 * @return the number of bounding box contained in the specified runSliceId
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getBoundingBoxesCount(int runSliceId, SQLiteConnection connection) throws SQLiteException {
-		String queryStr = "SELECT count(*) FROM bounding_box WHERE bounding_box.run_slice_id = ?";
-		return new SQLiteQuery(connection, queryStr).bind(1, runSliceId).extractSingleInt();
-	}
-
-	/**
-	 * Gets the cycle count.
-	 *
-	 * @return the cycle count
-	 * @throws SQLiteException
-	 */
-	protected int getCyclesCount(SQLiteConnection connection) throws SQLiteException {
-		String queryStr = "SELECT cycle FROM spectrum ORDER BY id DESC LIMIT 1";
-		return new SQLiteQuery(connection, queryStr).extractSingleInt();
-	}
-
-	/**
-	 * Gets the data encoding count.
-	 *
-	 * @return the data encoding count
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getDataEncodingsCount(SQLiteConnection connection) throws SQLiteException {
-		return this.getTableRecordsCount("data_encoding", connection);
-	}
-
-	/**
-	 * Gets the spectra count.
-	 *
-	 * @return int the number of spectra
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getSpectraCount(SQLiteConnection connection) throws SQLiteException {
-		return this.getTableRecordsCount("spectrum", connection);
-	}
-
-	/**
-	 * Gets the spectra count for a given MS level.
-	 *
-	 * @return int the number of spectra
-	 * @throws SQLiteException
-	 *             the SQLite exception
-	 */
-	protected int getSpectraCount(int msLevel, SQLiteConnection connection) throws SQLiteException {
-		String queryStr = "SELECT count(*) FROM spectrum WHERE ms_level = ?";
-		return new SQLiteQuery(connection, queryStr).bind(1, msLevel).extractSingleInt();
-	}
-
-	/**
-	 * Gets the run slice count.
-	 *
-	 * @return int the number of runSlice
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getRunSlicesCount(SQLiteConnection connection) throws SQLiteException {
-		return this.getTableRecordsCount("run_slice", connection);
-	}
-
-	/**
-	 * Gets the table records count.
-	 *
-	 * @param tableName
-	 *            the table name
-	 * @return the int
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getTableRecordsCount(String tableName, SQLiteConnection connection) throws SQLiteException {
-		return new SQLiteQuery(connection, "SELECT seq FROM sqlite_sequence WHERE name = ?").bind(1, tableName).extractSingleInt();
-	}
-
-	/**
-	 * Gets the data encoding.
-	 *
-	 * @param id
-	 *            the id
-	 * @return the data encoding
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public abstract DataEncoding getDataEncoding(int id) throws SQLiteException;
-
-	/**
-	 * Gets the data encoding by spectrum id.
-	 *
-	 * @return the data encoding by spectrum id
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public abstract Map<Long, DataEncoding> getDataEncodingBySpectrumId() throws SQLiteException;
-
-	/**
-	 * Gets the spectrum data encoding.
-	 *
-	 * @param spectrumId
-	 *            the spectrum id
-	 * @return the spectrum data encoding
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public abstract DataEncoding getSpectrumDataEncoding(long spectrumId) throws SQLiteException;
-
-	/**
-	 * Gets the run slices.
-	 *
-	 * @return array of runSlice instance without data associated
-	 * @throws SQLiteException
-	 *             the SQLite exception
-	 */
-	public abstract RunSliceHeader[] getRunSliceHeaders(int msLevel) throws SQLiteException;
-
-	/**
-	 * Gets the run slice header by id.
-	 *
-	 * @param msLevel
-	 *            the ms level
-	 * @return the run slice header by id
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public abstract HashMap<Integer, RunSliceHeader> getRunSliceHeaderById(int msLevel) throws SQLiteException;
-
-	/**
 	 * Gets the run slice data.
 	 *
 	 * @param runSliceId
@@ -361,8 +153,8 @@ public abstract class AbstractMzDbReader {
 
 		List<BoundingBox> bbs = new ArrayList<BoundingBox>();
 		// FIXME: getSpectrumHeaderById
-		Map<Long, SpectrumHeader> spectrumHeaderById = this.getMs1SpectrumHeaderById();
-		Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingBySpectrumId();
+		Map<Long, SpectrumHeader> spectrumHeaderById = this.getSpectrumHeaderReader().getMs1SpectrumHeaderById(connection);
+		Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingReader().getDataEncodingBySpectrumId(connection);
 
 		while (records.hasNext()) {
 			SQLiteRecord record = records.next();
@@ -395,164 +187,6 @@ public abstract class AbstractMzDbReader {
 	}
 
 	/**
-	 * Gets the bounding box data.
-	 *
-	 * @param bbId
-	 *            the bb id
-	 * @return the bounding box data
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected byte[] getBoundingBoxData(int bbId, SQLiteConnection connection) throws SQLiteException {
-		String sqlString = "SELECT data FROM bounding_box WHERE bounding_box.id = ?";
-		return new SQLiteQuery(connection, sqlString).bind(1, bbId).extractSingleBlob();
-	}
-
-	/**
-	 * Gets the bounding box first spectrum index.
-	 *
-	 * @param spectrumId
-	 *            the spectrum id
-	 * @return the bounding box first spectrum index
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected long getBoundingBoxFirstSpectrumId(long spectrumId, SQLiteConnection connection) throws SQLiteException {
-		String sqlString = "SELECT bb_first_spectrum_id FROM spectrum WHERE id = ?";
-		return new SQLiteQuery(connection, sqlString).bind(1, spectrumId).extractSingleLong();
-	}
-
-	/**
-	 * Gets the bounding box min mz.
-	 *
-	 * @param bbId
-	 *            the bb id
-	 * @return the bounding box min mz
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected float getBoundingBoxMinMz(int bbId, SQLiteConnection connection) throws SQLiteException {
-		String sqlString = "SELECT min_mz FROM bounding_box_rtree WHERE bounding_box_rtree.id = ?";
-		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId).extractSingleDouble();
-	}
-
-	/**
-	 * Gets the bounding box min time.
-	 *
-	 * @param bbId
-	 *            the bb id
-	 * @return the bounding box min time
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected float getBoundingBoxMinTime(int bbId, SQLiteConnection connection) throws SQLiteException {
-		String sqlString = "SELECT min_time FROM bounding_box_rtree WHERE bounding_box_rtree.id = ?";
-		return (float) new SQLiteQuery(connection, sqlString).bind(1, bbId).extractSingleDouble();
-	}
-
-	/**
-	 * Gets the bounding box ms level.
-	 *
-	 * @param bbId
-	 *            the bb id
-	 * @return the bounding box ms level
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	protected int getBoundingBoxMsLevel(int bbId, SQLiteConnection connection) throws SQLiteException {
-
-		// FIXME: check that the mzDB file has the bounding_box_msn_rtree table
-		String sqlString1 = "SELECT run_slice_id FROM bounding_box WHERE id = ?";
-		int runSliceId = new SQLiteQuery(connection, sqlString1).bind(1, bbId).extractSingleInt();
-
-		String sqlString2 = "SELECT ms_level FROM run_slice WHERE run_slice.id = ?";
-		return new SQLiteQuery(connection, sqlString2).bind(1, runSliceId).extractSingleInt();
-
-		/*
-		 * String sqlString =
-		 * "SELECT min_ms_level FROM bounding_box_msn_rtree WHERE bounding_box_msn_rtree.id = ?"; return new
-		 * SQLiteQuery(connection, sqlString).bind(1, bbId).extractSingleInt();
-		 */
-	}
-
-	/**
-	 * Gets the MS1 spectrum headers.
-	 *
-	 * @return the spectrum headers
-	 * @throws SQLiteException
-	 *             the SQLiteException
-	 */
-	public abstract SpectrumHeader[] getMs1SpectrumHeaders() throws SQLiteException;
-
-	/**
-	 * Gets the MS1 spectrum header by id.
-	 *
-	 * @return the spectrum header by id
-	 * @throws SQLiteException
-	 *             the SQLiteException
-	 */
-	public abstract Map<Long, SpectrumHeader> getMs1SpectrumHeaderById() throws SQLiteException;
-
-	/**
-	 * Gets the MS2 spectrum headers.
-	 *
-	 * @return the spectrum headers
-	 * @throws SQLiteException
-	 *             the SQLiteException
-	 */
-	public abstract SpectrumHeader[] getMs2SpectrumHeaders() throws SQLiteException;
-
-	/**
-	 * Gets the MS2 spectrum header by id.
-	 *
-	 * @return the spectrum header by id
-	 * @throws SQLiteException
-	 *             the SQLiteException
-	 */
-	public abstract Map<Long, SpectrumHeader> getMs2SpectrumHeaderById() throws SQLiteException;
-
-	/**
-	 * Gets all spectrum headers.
-	 *
-	 * @return the spectrum headers
-	 * @throws SQLiteException
-	 *             the SQLiteException
-	 */
-	public abstract SpectrumHeader[] getSpectrumHeaders() throws SQLiteException;
-
-	/**
-	 * Gets each spectrum header mapped by its id.
-	 *
-	 * @return the spectrum header by id
-	 * @throws SQLiteException
-	 *             the SQLiteException
-	 */
-	public abstract Map<Long, SpectrumHeader> getSpectrumHeaderById() throws SQLiteException;
-
-	/**
-	 * Gets the spectrum header.
-	 *
-	 * @param id
-	 *            the id
-	 * @return the spectrum header
-	 * @throws SQLiteException
-	 *             the sQ lite exception
-	 */
-	public abstract SpectrumHeader getSpectrumHeader(long id) throws SQLiteException;
-
-	/**
-	 * Gets the spectrum header for time.
-	 *
-	 * @param time
-	 *            the time
-	 * @param msLevel
-	 *            the ms level
-	 * @return spectrumheader the closest to the time input parameter
-	 * @throws Exception
-	 */
-	public abstract SpectrumHeader getSpectrumHeaderForTime(float time, int msLevel) throws Exception;
-
-	/**
 	 * Gets the spectrum data.
 	 *
 	 * @param spectrumId
@@ -564,8 +198,8 @@ public abstract class AbstractMzDbReader {
 	 */
 	protected SpectrumData getSpectrumData(long spectrumId, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
 
-		Map<Long, SpectrumHeader> spectrumHeaderById = this.getSpectrumHeaderById();
-		Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingBySpectrumId();
+		Map<Long, SpectrumHeader> spectrumHeaderById = this.getSpectrumHeaderReader().getSpectrumHeaderById(connection);
+		Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingReader().getDataEncodingBySpectrumId(connection);
 
 		long firstSpectrumId = spectrumHeaderById.get(spectrumId).getBBFirstSpectrumId();
 
@@ -628,7 +262,7 @@ public abstract class AbstractMzDbReader {
 	 * @throws StreamCorruptedException
 	 */
 	protected Spectrum getSpectrum(long spectrumId, SQLiteConnection connection) throws SQLiteException, StreamCorruptedException {
-		SpectrumHeader sh = this.getSpectrumHeader(spectrumId);
+		SpectrumHeader sh = this.getSpectrumHeaderReader().getSpectrumHeader(spectrumId, connection);
 		SpectrumData sd = this.getSpectrumData(spectrumId, connection);
 		return new Spectrum(sh, sd);
 	}
@@ -684,8 +318,8 @@ public abstract class AbstractMzDbReader {
 		float maxRt,
 		int msLevel,
 		double parentMz,
-		SQLiteConnection connection)
-				throws SQLiteException, StreamCorruptedException {
+		SQLiteConnection connection
+	) throws SQLiteException, StreamCorruptedException {
 
 		BBSizes sizes = this.getBBSizes();
 		float rtWidth = ((msLevel == 1) ? sizes.BB_RT_WIDTH_MS1 : sizes.BB_RT_WIDTH_MSn);
@@ -718,14 +352,14 @@ public abstract class AbstractMzDbReader {
 
 		Map<Long, SpectrumHeader> spectrumHeaderById = null;
 		if (msLevel == 1) {
-			spectrumHeaderById = this.getMs1SpectrumHeaderById();
+			spectrumHeaderById = this.getSpectrumHeaderReader().getMs1SpectrumHeaderById(connection);
 		} else if (msLevel == 2) {
-			spectrumHeaderById = this.getMs2SpectrumHeaderById();
+			spectrumHeaderById = this.getSpectrumHeaderReader().getMs2SpectrumHeaderById(connection);
 		} else {
 			throw new IllegalArgumentException("unsupported MS level: " + msLevel);
 		}
 
-		Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingBySpectrumId();
+		Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingReader().getDataEncodingBySpectrumId(connection);
 		TreeMap<Long, ArrayList<SpectrumData>> spectrumDataListById = new TreeMap<Long, ArrayList<SpectrumData>>();
 		HashMap<Long, Integer> peaksCountBySpectrumId = new HashMap<Long, Integer>();
 
@@ -946,7 +580,7 @@ public abstract class AbstractMzDbReader {
 		final double minMz = mz - mzTolInDa;
 		final double maxMz = mz + mzTolInDa;
 		final float minRtForRtree = minRt >= 0 ? minRt : 0;
-		final float maxRtForRtree = maxRt > 0 ? maxRt : this.getLastTime(connection);
+		final float maxRtForRtree = maxRt > 0 ? maxRt : MzDbReaderQueries.getLastTime(connection);
 
 		SpectrumSlice[] spectrumSlices = this.getMsSpectrumSlices(minMz, maxMz, minRtForRtree, maxRtForRtree, connection);
 
@@ -967,7 +601,7 @@ public abstract class AbstractMzDbReader {
 		final double minFragMz = fragmentMz - fragmentMzTolInDa;
 		final double maxFragMz = fragmentMz + fragmentMzTolInDa;
 		final float minRtForRtree = minRt >= 0 ? minRt : 0;
-		final float maxRtForRtree = maxRt > 0 ? maxRt : this.getLastTime(connection);
+		final float maxRtForRtree = maxRt > 0 ? maxRt : MzDbReaderQueries.getLastTime(connection);
 
 		SpectrumSlice[] spectrumSlices = this.getMsnSpectrumSlices(parentMz, minFragMz, maxFragMz, minRtForRtree, maxRtForRtree, connection);
 
