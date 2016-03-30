@@ -94,8 +94,6 @@ public class SQLiteObservableJob<T> extends Observable<T> {
 			}
 
 			protected void jobFinished(R result) {
-				System.out.println("Finishing job from SQLiteObservableJob");
-				
 				if (subscriber.isUnsubscribed() == false) {
 					// Complete the observer
 					subscriber.onCompleted();
