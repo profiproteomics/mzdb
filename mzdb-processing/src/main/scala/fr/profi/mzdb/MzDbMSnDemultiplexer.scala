@@ -13,7 +13,7 @@ import fr.profi.mzdb.model.ILcContext
 import fr.profi.util.stat.EntityHistogramComputer
 import fr.profi.mzdb.model.IsolationWindow
 
-case class Spectrum(precursorMz: Double, precursorCharge: Int, elutionTime: Float, peaks: Array[Peak])
+case class DemultiplexedSpectrum(precursorMz: Double, precursorCharge: Int, elutionTime: Float, peaks: Array[Peak])
 
 /**
  *  May provide additionnal configuration ?
@@ -23,7 +23,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
   val spectrumHeaderById = mzDbReader.getMs2SpectrumHeaderById.map { case (k,v) => k.toLong -> v } toMap
   val minNbPeaksInSpectrum = 3
 
-  def demultiplexMSnData(): Array[Spectrum] = {
+  def demultiplexMSnData(): Array[DemultiplexedSpectrum] = {
     /* DIA Maps
    * // 1 - detectFeatures ( MzDbFeatureDetector -> MS Level 1)
    * 
@@ -52,7 +52,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
     val ms1FtsByIWIdx = this._groupFtsByIsolationWindowIdx(isolationWindows, ms1Fts)
 
     //java list has not foreach interface ! conversion ?
-    val spectra = new ArrayBuffer[Spectrum]()
+    val spectra = new ArrayBuffer[DemultiplexedSpectrum]()
     for (i <- 0 until isolationWindows.length) {
       val pair = isolationWindows(i)
       val (minParentMz, maxParentMz) = (pair.getMinMz, pair.getMaxMz)
@@ -79,7 +79,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
   /**
    * Receive ms1Fts filtered on mz dimension
    */
-  private def _groupMSnCorrelatedPeakels(ms1Fts: Array[Feature], msnPeakels: Array[Peakel]): Array[Spectrum] = {
+  private def _groupMSnCorrelatedPeakels(ms1Fts: Array[Feature], msnPeakels: Array[Peakel]): Array[DemultiplexedSpectrum] = {
     logger.info("combining peakels into features...")
     
     val allLcEntities = ms1Fts ++ msnPeakels
@@ -99,7 +99,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
 
     // TODO: keep the information about the sliding to avoid redundant results
     // Starting points should always come from the second bin
-    val spectra = new ArrayBuffer[Spectrum](peakelBins.size)
+    val spectra = new ArrayBuffer[DemultiplexedSpectrum](peakelBins.size)
     
     peakelBins.sliding(3).foreach { peakelBinGroup =>
 
@@ -122,7 +122,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
         
         if( msnPeakels.length >= minNbPeaksInSpectrum ) {
           for( ft <- ms1FtsInGroup ) {
-            spectra += Spectrum(
+            spectra += DemultiplexedSpectrum(
               precursorMz = ft.mz,
               precursorCharge = ft.charge,
               elutionTime = meanTime.toFloat,
