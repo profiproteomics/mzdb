@@ -174,7 +174,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 */
 	protected DataEncoding getDataEncoding(int dataEncodingId, SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null) {
+		if (this.getEntityCache() != null) {
 			return this.getDataEncodingById(connection).get(dataEncodingId);
 		} else {
 			
@@ -215,8 +215,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 */
 	protected Map<Integer, DataEncoding> getDataEncodingById(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.dataEncodingById != null) {
-			return this.entityCache.dataEncodingById;
+		if (this.getEntityCache() != null && this.getEntityCache().dataEncodingById != null) {
+			return this.getEntityCache().dataEncodingById;
 		} else {
 			DataEncoding[] dataEncodings = this.getDataEncodings(connection);
 			HashMap<Integer, DataEncoding> dataEncodingById = new HashMap<Integer, DataEncoding>(
@@ -225,8 +225,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 			for (DataEncoding dataEncoding : dataEncodings)
 				dataEncodingById.put(dataEncoding.getId(), dataEncoding);
 
-			if (this.entityCache != null)
-				this.entityCache.dataEncodingById = dataEncodingById;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().dataEncodingById = dataEncodingById;
 
 			return dataEncodingById;
 		}
@@ -243,8 +243,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 */
 	public Map<Long, DataEncoding> getDataEncodingBySpectrumId(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.dataEncodingBySpectrumId != null) {
-			return this.entityCache.dataEncodingBySpectrumId;
+		if (this.getEntityCache() != null && this.getEntityCache().dataEncodingBySpectrumId != null) {
+			return this.getEntityCache().dataEncodingBySpectrumId;
 		} else {
 
 			Map<Integer, DataEncoding> dataEncodingById = this.getDataEncodingById(connection);
@@ -276,8 +276,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 				dataEncodingBySpectrumId.put(spectrumId, dataEnc);
 			}
 
-			if (this.entityCache != null) {
-				this.entityCache.dataEncodingBySpectrumId = dataEncodingBySpectrumId;
+			if (this.getEntityCache() != null) {
+				this.getEntityCache().dataEncodingBySpectrumId = dataEncodingBySpectrumId;
 			}
 
 			return dataEncodingBySpectrumId;
@@ -298,7 +298,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 */
 	protected DataEncoding getSpectrumDataEncoding(long spectrumId, SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null) {
+		if (this.getEntityCache() != null) {
 			return this.getDataEncodingBySpectrumId(connection).get(spectrumId);
 		} else {
 			// Retrieve encoding PK for the given spectrum id

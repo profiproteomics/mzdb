@@ -4,10 +4,9 @@ import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteException;
 
-import rx.Observable;
-
 import fr.profi.mzdb.MzDbAsyncReader;
 import fr.profi.mzdb.model.SpectrumHeader;
+import rx.Observable;
 
 /**
  * @author David Bouyssie
@@ -28,8 +27,14 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 */
 	public SpectrumHeaderAsyncReader(MzDbAsyncReader mzDbReader, AbstractDataEncodingReader dataEncodingReader) throws SQLiteException {
 		super(mzDbReader, dataEncodingReader);
+		this.mzDbReader = mzDbReader;
 	}
 
+	/** specialized getter */
+	public MzDbAsyncReader getMzDbReader() {
+		return this.mzDbReader;
+	}
+	
 	/**
 	 * Gets the spectrum headers.
 	 * 
@@ -37,7 +42,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<SpectrumHeader[]> getSpectrumHeaders() {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return this.getSpectrumHeaders(connection);
 		});
 	}
@@ -49,7 +54,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<Map<Long, SpectrumHeader>> getSpectrumHeaderById() {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return this.getSpectrumHeaderById(connection);
 		});
 	}
@@ -61,7 +66,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<SpectrumHeader[]> getMs1SpectrumHeaders() {		
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getMs1SpectrumHeaders(connection);
 		});
 	}
@@ -73,7 +78,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<Map<Long, SpectrumHeader>> getMs1SpectrumHeaderById() {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getMs1SpectrumHeaderById(connection);
 		});
 	}
@@ -85,7 +90,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<SpectrumHeader[]> getMs2SpectrumHeaders() {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getMs2SpectrumHeaders(connection);
 		});
 	}
@@ -97,7 +102,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<Map<Long, SpectrumHeader>> getMs2SpectrumHeaderById() {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getMs2SpectrumHeaderById(connection);
 		});
 	}
@@ -112,7 +117,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<SpectrumHeader> getSpectrumHeader(long id) {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getSpectrumHeader(id, connection);
 		});
 	}
@@ -124,7 +129,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException the SQLite exception
 	 */
 	public Observable<Map<Long, Float>> getSpectrumTimeById() {		
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getSpectrumTimeById(connection);
 		});
 	}
@@ -140,7 +145,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws Exception
 	 */
 	public Observable<SpectrumHeader> getSpectrumHeaderForTime(float time, int msLevel) {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getSpectrumHeaderForTime(time, msLevel, connection);
 		});
 	}
@@ -158,7 +163,7 @@ public class SpectrumHeaderAsyncReader extends AbstractSpectrumHeaderReader {
 	 * @throws SQLiteException
 	 */
 	public Observable<long[]> getSpectrumIdsForTimeRange(float minRT, float maxRT, int msLevel) {
-		return mzDbReader.observeJobExecution( connection -> {
+		return getMzDbReader().observeJobExecution( connection -> {
 			return getSpectrumIdsForTimeRange(minRT, maxRT, msLevel, connection);
 		});		
 	}

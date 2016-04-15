@@ -19,6 +19,7 @@ public class SpectrumHeaderReader extends AbstractSpectrumHeaderReader {
 	public static boolean loadPrecursorList = false;
 	
 	private SQLiteConnection connection;
+	private MzDbReader mzDbReader = null;
 	
 	/**
 	 * @param mzDbReader
@@ -26,9 +27,15 @@ public class SpectrumHeaderReader extends AbstractSpectrumHeaderReader {
 	 */
 	public SpectrumHeaderReader(MzDbReader mzDbReader, AbstractDataEncodingReader dataEncodingReader) throws SQLiteException {
 		super(mzDbReader, dataEncodingReader);
-		
+		this.mzDbReader = mzDbReader;
 		this.connection = mzDbReader.getConnection();
 	}
+
+	/** specialized getter */
+	public MzDbReader getMzDbReader() {
+		return this.mzDbReader;
+	}
+	
 
 	/**
 	 * Gets the spectrum headers.

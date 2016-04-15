@@ -30,7 +30,14 @@ public class DataEncodingAsyncReader extends AbstractDataEncodingReader {
 	 */
 	public DataEncodingAsyncReader(MzDbAsyncReader mzDbReader) throws SQLiteException {
 		super(mzDbReader);
+		this.mzDbReader = mzDbReader;
 	}
+
+	/** specialized getter */
+	public MzDbAsyncReader getMzDbReader() {
+		return this.mzDbReader;
+	}
+	
 
 	/**
 	 * Gets the data encoding.

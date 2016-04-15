@@ -975,7 +975,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 		});		
 	}
 
-	public Observable<Peak[]> getMsXic(double mz, double mzTolInDa, float minRt, float maxRt, int msLevel, XicMethod method) {
+	public Observable<Peak[]> getMsXic(double mz, double mzTolInDa, float minRt, float maxRt, XicMethod method) {
 		return this.observeJobExecution( connection -> {
 			return this.getMsXic(mz, mzTolInDa, minRt, maxRt, method, connection);
 		});

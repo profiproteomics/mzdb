@@ -1,6 +1,7 @@
 package fr.profi.mzdb.io.reader.cache;
 
 import fr.profi.mzdb.AbstractMzDbReader;
+import fr.profi.mzdb.MzDbAsyncReader;
 
 /**
  * @author David Bouyssie
@@ -9,8 +10,8 @@ import fr.profi.mzdb.AbstractMzDbReader;
 public abstract class MzDbEntityCacheContainer {
 
 	/** The mzDB reader. */
-	protected AbstractMzDbReader mzDbReader = null;
-	protected MzDbEntityCache entityCache = null;
+//	private AbstractMzDbReader mzDbReader = null;
+	private MzDbEntityCache entityCache = null;
 
 	/**
 	 * Instantiates a new abstract mz db reader helper.
@@ -20,8 +21,20 @@ public abstract class MzDbEntityCacheContainer {
 	 */
 	public MzDbEntityCacheContainer(AbstractMzDbReader mzDbReader) {
 		super();
-		this.mzDbReader = mzDbReader;
+//		this.mzDbReader = mzDbReader;
 		this.entityCache = mzDbReader.getEntityCache();
 	}
+
+	/**
+	 * @return the entityCache
+	 */
+	public MzDbEntityCache getEntityCache() {
+		return entityCache;
+	}
+
+	/**
+	 * @return reader
+	 */
+	public abstract AbstractMzDbReader getMzDbReader();
 
 }

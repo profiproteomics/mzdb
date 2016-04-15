@@ -29,6 +29,12 @@ public class RunSliceHeaderAsyncReader extends AbstractRunSliceHeaderReader {
 	 */
 	public RunSliceHeaderAsyncReader(MzDbAsyncReader mzDbReader) {
 		super(mzDbReader);
+		this.mzDbReader = mzDbReader;
+	}
+	
+	/** specialized getter */
+	public MzDbAsyncReader getMzDbReader() {
+		return this.mzDbReader;
 	}
 	
 	/**

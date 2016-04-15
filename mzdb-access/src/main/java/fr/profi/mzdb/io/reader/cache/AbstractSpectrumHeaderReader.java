@@ -171,8 +171,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 *             the SQ lite exception
 	 */
 	protected SpectrumHeader[] getSpectrumHeaders(SQLiteConnection connection) throws SQLiteException {
-		if (this.entityCache != null && this.entityCache.spectrumHeaders != null) {
-			return this.entityCache.spectrumHeaders;
+		if (this.getEntityCache() != null && this.getEntityCache().spectrumHeaders != null) {
+			return this.getEntityCache().spectrumHeaders;
 		} else {
 			SpectrumHeader[] ms1SpectrumHeaders = this.getMs1SpectrumHeaders(connection);
 			SpectrumHeader[] ms2SpectrumHeaders = this.getMs2SpectrumHeaders(connection);
@@ -182,8 +182,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 			System.arraycopy(ms1SpectrumHeaders, 0, spectrumHeaders, 0, ms1SpectrumHeaders.length);
 			System.arraycopy(ms2SpectrumHeaders, 0, spectrumHeaders, ms1SpectrumHeaders.length, ms2SpectrumHeaders.length);
 
-			if (this.entityCache != null)
-				this.entityCache.spectrumHeaders = spectrumHeaders;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().spectrumHeaders = spectrumHeaders;
 
 			return spectrumHeaders;
 		}
@@ -200,8 +200,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 */
 	public Map<Long, SpectrumHeader> getSpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.spectrumHeaderById != null) {
-			return this.entityCache.spectrumHeaderById;
+		if (this.getEntityCache() != null && this.getEntityCache().spectrumHeaderById != null) {
+			return this.getEntityCache().spectrumHeaderById;
 		} else {
 
 			SpectrumHeader[] spectrumHeaders = getSpectrumHeaders(connection);
@@ -212,8 +212,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 			for (SpectrumHeader spectrumHeader : spectrumHeaders)
 				spectrumHeaderById.put(spectrumHeader.getId(), spectrumHeader);
 
-			if (this.entityCache != null)
-				this.entityCache.spectrumHeaderById = spectrumHeaderById;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().spectrumHeaderById = spectrumHeaderById;
 
 			return spectrumHeaderById;
 		}
@@ -230,8 +230,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 */
 	protected SpectrumHeader[] getMs1SpectrumHeaders(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.ms1SpectrumHeaders != null) {
-			return this.entityCache.ms1SpectrumHeaders;
+		if (this.getEntityCache() != null && this.getEntityCache().ms1SpectrumHeaders != null) {
+			return this.getEntityCache().ms1SpectrumHeaders;
 		} else {
 
 			// First pass to load the index
@@ -246,8 +246,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 			new SQLiteQuery(connection, _ms1SpectrumHeaderQueryStr)
 				.extractRecords(this._getSpectrumHeaderExtractor(connection), ms1SpectrumHeaders);
 
-			if (this.entityCache != null)
-				this.entityCache.ms1SpectrumHeaders = ms1SpectrumHeaders;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().ms1SpectrumHeaders = ms1SpectrumHeaders;
 
 			return ms1SpectrumHeaders;
 		}
@@ -265,8 +265,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 */
 	public Map<Long, SpectrumHeader> getMs1SpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.ms1SpectrumHeaderById != null) {
-			return this.entityCache.ms1SpectrumHeaderById;
+		if (this.getEntityCache() != null && this.getEntityCache().ms1SpectrumHeaderById != null) {
+			return this.getEntityCache().ms1SpectrumHeaderById;
 		} else {
 			SpectrumHeader[] ms1SpectrumHeaders = this.getMs1SpectrumHeaders(connection);
 
@@ -275,8 +275,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 			for (SpectrumHeader ms1SpectrumHeader : ms1SpectrumHeaders)
 				ms1SpectrumHeaderById.put(ms1SpectrumHeader.getId(), ms1SpectrumHeader);
 
-			if (this.entityCache != null)
-				this.entityCache.ms1SpectrumHeaderById = ms1SpectrumHeaderById;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().ms1SpectrumHeaderById = ms1SpectrumHeaderById;
 
 			return ms1SpectrumHeaderById;
 		}
@@ -293,8 +293,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 */
 	protected SpectrumHeader[] getMs2SpectrumHeaders(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.ms2SpectrumHeaders != null) {
-			return this.entityCache.ms2SpectrumHeaders;
+		if (this.getEntityCache() != null && this.getEntityCache().ms2SpectrumHeaders != null) {
+			return this.getEntityCache().ms2SpectrumHeaders;
 		} else {
 			
 			ISQLiteRecordExtraction<SpectrumHeader> extractor = this._getSpectrumHeaderExtractor(connection);
@@ -304,8 +304,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 
 			new SQLiteQuery(connection, _ms2SpectrumHeaderQueryStr).extractRecords(extractor, ms2SpectrumHeaders);
 
-			if (this.entityCache != null)
-				this.entityCache.ms2SpectrumHeaders = ms2SpectrumHeaders;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().ms2SpectrumHeaders = ms2SpectrumHeaders;
 
 			return ms2SpectrumHeaders;
 		}
@@ -323,8 +323,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 */
 	public Map<Long, SpectrumHeader> getMs2SpectrumHeaderById(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.ms2SpectrumHeaderById != null) {
-			return this.entityCache.ms2SpectrumHeaderById;
+		if (this.getEntityCache() != null && this.getEntityCache().ms2SpectrumHeaderById != null) {
+			return this.getEntityCache().ms2SpectrumHeaderById;
 		} else {
 			SpectrumHeader[] ms2SpectrumHeaders = this.getMs2SpectrumHeaders(connection);
 
@@ -333,8 +333,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 			for (SpectrumHeader ms2SpectrumHeader : ms2SpectrumHeaders)
 				ms2SpectrumHeaderById.put(ms2SpectrumHeader.getId(), ms2SpectrumHeader);
 
-			if (this.entityCache != null)
-				this.entityCache.ms2SpectrumHeaderById = ms2SpectrumHeaderById;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().ms2SpectrumHeaderById = ms2SpectrumHeaderById;
 
 			return ms2SpectrumHeaderById;
 		}
@@ -352,7 +352,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 *             the SQ lite exception
 	 */
 	public SpectrumHeader getSpectrumHeader(long id, SQLiteConnection connection) throws SQLiteException {
-		if (this.entityCache != null) {
+		if (this.getEntityCache() != null) {
 
 			if (this.getMs1SpectrumHeaderById(connection).containsKey(id)) {
 				return this.getMs1SpectrumHeaderById(connection).get(id);
@@ -379,8 +379,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 */
 	protected Map<Long, Float> getSpectrumTimeById(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.spectrumTimeById != null) {
-			return this.entityCache.spectrumTimeById;
+		if (this.getEntityCache() != null && this.getEntityCache().spectrumTimeById != null) {
+			return this.getEntityCache().spectrumTimeById;
 		} else {
 			
 			int spectraCount = MzDbReaderQueries.getSpectraCount(connection);
@@ -399,8 +399,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 				spectrumTimeById.put(spectrumId, spectrumTime);
 			}
 
-			if (this.entityCache != null)
-				this.entityCache.spectrumTimeById = spectrumTimeById;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().spectrumTimeById = spectrumTimeById;
 
 			return spectrumTimeById;
 		}
@@ -421,7 +421,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	 */
 	protected SpectrumHeader getSpectrumHeaderForTime(float time, int msLevel, SQLiteConnection connection) throws Exception {
 
-		if (this.entityCache != null) {
+		if (this.getEntityCache() != null) {
 			Map<Integer, ArrayList<Long>> spectrumIdsByTimeIndex = this._getSpectrumIdsByTimeIndex(msLevel, connection);
 
 			int timeIndex = (int) (time / TIME_INDEX_WIDTH);
@@ -478,12 +478,12 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	private Map<Integer, ArrayList<Long>> _getSpectrumIdsByTimeIndex(int msLevel, SQLiteConnection connection) throws SQLiteException {
 
 		HashMap<Integer, ArrayList<Long>> spectrumIdsByTimeIndex = null;
-		if (this.entityCache != null) {
+		if (this.getEntityCache() != null) {
 
-			if (msLevel == 1 && this.entityCache.ms1SpectrumIdsByTimeIndex != null) {
-				spectrumIdsByTimeIndex = (HashMap<Integer, ArrayList<Long>>) this.entityCache.ms1SpectrumIdsByTimeIndex;
-			} else if (msLevel == 2 & this.entityCache.ms1SpectrumIdsByTimeIndex != null) {
-				spectrumIdsByTimeIndex = (HashMap<Integer, ArrayList<Long>>) this.entityCache.ms2SpectrumIdsByTimeIndex;
+			if (msLevel == 1 && this.getEntityCache().ms1SpectrumIdsByTimeIndex != null) {
+				spectrumIdsByTimeIndex = (HashMap<Integer, ArrayList<Long>>) this.getEntityCache().ms1SpectrumIdsByTimeIndex;
+			} else if (msLevel == 2 & this.getEntityCache().ms1SpectrumIdsByTimeIndex != null) {
+				spectrumIdsByTimeIndex = (HashMap<Integer, ArrayList<Long>>) this.getEntityCache().ms2SpectrumIdsByTimeIndex;
 			}
 
 		}
@@ -510,11 +510,11 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 				spectrumIdsByTimeIndex.get(timeIndex).add(spectrumH.getId());
 			}
 
-			if (this.entityCache != null) {
+			if (this.getEntityCache() != null) {
 				if (msLevel == 1)
-					this.entityCache.ms1SpectrumIdsByTimeIndex = spectrumIdsByTimeIndex;
+					this.getEntityCache().ms1SpectrumIdsByTimeIndex = spectrumIdsByTimeIndex;
 				else if (msLevel == 2)
-					this.entityCache.ms2SpectrumIdsByTimeIndex = spectrumIdsByTimeIndex;
+					this.getEntityCache().ms2SpectrumIdsByTimeIndex = spectrumIdsByTimeIndex;
 			}
 
 			return spectrumIdsByTimeIndex;

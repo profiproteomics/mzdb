@@ -82,8 +82,8 @@ public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContai
 	 */
 	protected RunSliceHeader[] getRunSliceHeaders(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.runSliceHeaders != null) {
-			return this.entityCache.runSliceHeaders;
+		if (this.getEntityCache() != null && this.getEntityCache().runSliceHeaders != null) {
+			return this.getEntityCache().runSliceHeaders;
 		} else {
 
 			// Retrieve the corresponding run slices
@@ -92,8 +92,8 @@ public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContai
 			
 			RunSliceHeader[] runSliceHeaders = rshList.toArray(new RunSliceHeader[rshList.size()]);
 
-			if (this.entityCache != null)
-				this.entityCache.runSliceHeaders = runSliceHeaders;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().runSliceHeaders = runSliceHeaders;
 
 			return runSliceHeaders;
 		}
@@ -115,8 +115,8 @@ public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContai
 
 		ArrayList<RunSliceHeader> rshList = new ArrayList<RunSliceHeader>();
 
-		if (this.entityCache != null && this.entityCache.runSliceHeaders != null) {
-			RunSliceHeader[] runSliceHeaders = this.entityCache.runSliceHeaders;
+		if (this.getEntityCache() != null && this.getEntityCache().runSliceHeaders != null) {
+			RunSliceHeader[] runSliceHeaders = this.getEntityCache().runSliceHeaders;
 			for (RunSliceHeader rsh : runSliceHeaders) {
 				if (rsh.getMsLevel() == msLevel)
 					rshList.add(rsh);
@@ -179,14 +179,14 @@ public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContai
 	 */
 	protected Map<Integer, RunSliceHeader> getRunSliceHeaderById(SQLiteConnection connection) throws SQLiteException {
 
-		if (this.entityCache != null && this.entityCache.runSliceHeaderById != null) {
-			return this.entityCache.runSliceHeaderById;
+		if (this.getEntityCache() != null && this.getEntityCache().runSliceHeaderById != null) {
+			return this.getEntityCache().runSliceHeaderById;
 		} else {
 
 			HashMap<Integer, RunSliceHeader> runSliceHeaderById = this._getRunSliceHeaderById(this.getRunSliceHeaders(connection));
 
-			if (this.entityCache != null)
-				this.entityCache.runSliceHeaderById = runSliceHeaderById;
+			if (this.getEntityCache() != null)
+				this.getEntityCache().runSliceHeaderById = runSliceHeaderById;
 
 			return runSliceHeaderById;
 		}
@@ -204,7 +204,7 @@ public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContai
 	 *             the sQ lite exception
 	 */
 	protected RunSliceHeader getRunSliceHeader(int id, SQLiteConnection connection) throws SQLiteException {
-		if (this.entityCache != null) {
+		if (this.getEntityCache() != null) {
 			return this.getRunSliceHeaderById(connection).get(id);
 		} else {
 			String queryStr = "SELECT * FROM run_slice WHERE id = ?";
@@ -255,7 +255,7 @@ public abstract class AbstractRunSliceHeaderReader extends MzDbEntityCacheContai
 
 		RunSliceHeader firstRunSlice = this.getRunSliceForMz(minMz, msLevel, connection);
 		RunSliceHeader lastRunSlice = this.getRunSliceForMz(maxMz, msLevel, connection);
-		double mzHeight = (msLevel == 1) ? mzDbReader.getBBSizes().BB_MZ_HEIGHT_MS1 : mzDbReader.getBBSizes().BB_MZ_HEIGHT_MSn;
+		double mzHeight = (msLevel == 1) ? this.getMzDbReader().getBBSizes().BB_MZ_HEIGHT_MS1 : this.getMzDbReader().getBBSizes().BB_MZ_HEIGHT_MSn;
 
 		int bufferLength = 1 + (int) ((maxMz - minMz) / mzHeight);
 

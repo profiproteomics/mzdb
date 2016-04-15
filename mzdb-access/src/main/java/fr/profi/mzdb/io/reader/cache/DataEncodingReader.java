@@ -5,6 +5,7 @@ import java.util.Map;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
+import fr.profi.mzdb.MzDbAsyncReader;
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.model.DataEncoding;
 
@@ -17,6 +18,7 @@ import fr.profi.mzdb.model.DataEncoding;
 public class DataEncodingReader extends AbstractDataEncodingReader {
 	
 	private SQLiteConnection connection;
+	private MzDbReader mzDbReader = null;
 
 	/**
 	 * Instantiates a new data encoding reader.
@@ -28,9 +30,15 @@ public class DataEncodingReader extends AbstractDataEncodingReader {
 	 */
 	public DataEncodingReader(MzDbReader mzDbReader) throws SQLiteException {
 		super(mzDbReader);
-		
+		this.mzDbReader = mzDbReader;
 		this.connection = mzDbReader.getConnection();
 	}
+
+	/** specialized getter */
+	public MzDbReader getMzDbReader() {
+		return this.mzDbReader;
+	}
+	
 
 	/**
 	 * Gets the data encoding.

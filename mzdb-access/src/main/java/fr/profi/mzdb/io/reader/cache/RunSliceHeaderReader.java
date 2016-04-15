@@ -18,6 +18,7 @@ import fr.profi.mzdb.model.RunSliceHeader;
 public class RunSliceHeaderReader extends AbstractRunSliceHeaderReader {
 	
 	private SQLiteConnection connection;
+	private MzDbReader mzDbReader = null;
 
 	/**
 	 * Instantiates a new run slice header reader.
@@ -27,10 +28,16 @@ public class RunSliceHeaderReader extends AbstractRunSliceHeaderReader {
 	 */
 	public RunSliceHeaderReader(MzDbReader mzDbReader) {
 		super(mzDbReader);
-		
+		this.mzDbReader = mzDbReader;
 		this.connection = mzDbReader.getConnection();
 	}
 	
+	/** specialized getter */
+	public MzDbReader getMzDbReader() {
+		return this.mzDbReader;
+	}
+	
+
 	/**
 	 * Gets the run slices.
 	 * 
