@@ -643,7 +643,7 @@ public class MzDbReaderAsyncTest {
 	}
 
 	/** this test uses local network connection. It may not pass if network configuration change */
-	@Test
+	//@Test
 	public void largeNetworkRequest() {
 
 		final String[] filenames = {
