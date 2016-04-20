@@ -41,7 +41,6 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		return precComp.getUserParamName();
 	}
 
-
 	@Override
 	public int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 		return spectrumHeader.getPrecursorCharge();
@@ -80,8 +79,10 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 
 		} else if (precComp == PrecursorMzComputationEnum.REFINED_THERMO) {
 			try {
-				// TODO: use SpectrumHeaderReader.loadSpectrumList instead (better perf)
-				spectrumHeader.loadScanList(mzDbReader.getConnection());
+				if( spectrumHeader.getScanList() == null ) {
+					spectrumHeader.loadScanList(mzDbReader.getConnection());
+				}
+				
 				UserParam precMzParam = spectrumHeader.getScanList().getScans().get(0).getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
 
 				precMz = Double.parseDouble(precMzParam.getValue());

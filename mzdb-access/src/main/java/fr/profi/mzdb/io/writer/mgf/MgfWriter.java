@@ -103,8 +103,9 @@ public class MgfWriter {
 		// Reset precNotFound static var
 		MgfWriter.precNotFound = 0;
 		
-		// Configure the SpectrumHeaderReader in order to load all precursor lists when reading spectra headers
+		// Configure the SpectrumHeaderReader in order to load all precursor lists and all scan list when reading spectra headers
 		SpectrumHeaderReader.loadPrecursorList = true;
+		SpectrumHeaderReader.loadScanList = true;
 
 		// Iterate over MS2 spectrum
 		final Iterator<Spectrum> spectrumIterator = new SpectrumIterator(mzDbReader, mzDbReader.getConnection(), 2);
@@ -116,12 +117,13 @@ public class MgfWriter {
 			
 			Spectrum s = spectrumIterator.next();
 			long spectrumId = s.getHeader().getId();
+			
 			DataEncoding dataEnc = dataEncodingBySpectrumId.get(spectrumId);
 			String spectrumAsStr = this.stringifySpectrum(s, dataEnc, precComp, intensityCutoff, exportProlineTitle);
 			
 			//this.logger.debug("Writing spectrum with ID="+spectrumId);
 
-			// Write the spectrum			
+			// Write the spectrum
 			mgfWriter.println(spectrumAsStr);
 			
 			// Write a blank line between two spectra
