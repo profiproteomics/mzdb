@@ -5,7 +5,6 @@ import java.util.Map;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import fr.profi.mzdb.MzDbAsyncReader;
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.model.DataEncoding;
 

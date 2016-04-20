@@ -1,7 +1,6 @@
 package fr.profi.mzdb.io.reader.cache;
 
 import fr.profi.mzdb.AbstractMzDbReader;
-import fr.profi.mzdb.MzDbAsyncReader;
 
 /**
  * @author David Bouyssie
