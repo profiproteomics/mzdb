@@ -47,9 +47,17 @@ object MzDbProcessing extends App with LazyLogging {
     try {
       jCmd.parse(args: _*)
       parsedCommand = jCmd.getParsedCommand()
-      if (parsedCommand.equals("create_mgf")) {
-        createMgf();
+      
+      if( parsedCommand == null || parsedCommand.isEmpty() ) {
+        println("A command must be provided !\n")
+        jCmd.usage()
+        System.exit(1)
       }
+      
+      if (parsedCommand != null && parsedCommand.equals("create_mgf")) {
+        createMgf()
+      }
+      
     } catch {
 
       case pEx: ParameterException => {
