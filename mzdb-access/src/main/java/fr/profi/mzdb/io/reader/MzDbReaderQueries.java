@@ -112,7 +112,7 @@ public class MzDbReaderQueries {
 	 * @throws SQLiteException
 	 */
 	public static int getCyclesCount(SQLiteConnection connection) throws SQLiteException {
-		String queryStr = "SELECT cycle FROM spectrum ORDER BY id DESC LIMIT 1";
+		String queryStr = "SELECT max(cycle) FROM spectrum";
 		return new SQLiteQuery(connection, queryStr).extractSingleInt();
 	}
 
