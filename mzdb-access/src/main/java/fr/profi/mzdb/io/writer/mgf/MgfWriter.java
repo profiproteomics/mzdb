@@ -169,7 +169,7 @@ public class MgfWriter {
 		String title;
 		if( exportProlineTitle == false ) title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
 		else {
-			title = String.format("first_cycle:%d;last_cycle:%d;first_spectrum:%d;last_spectrum:%d;first_time:%.02f;last_time:%.02f;raw_file_identifier:%s;",
+			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.02f;last_time:%.02f;raw_file_identifier:%s;",
 				spectrumHeader.getCycle(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getInitialId(),
