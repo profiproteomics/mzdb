@@ -15,21 +15,23 @@ public class MzDbEntityCache {
 
 	protected SpectrumHeader[] ms1SpectrumHeaders = null;
 
-	protected Map<Long, SpectrumHeader> spectrumHeaderById = null;
-
-	protected SpectrumHeader[] spectrumHeaders = null;
-
 	protected Map<Long, SpectrumHeader> ms1SpectrumHeaderById = null;
 	
 	protected SpectrumHeader[] ms2SpectrumHeaders = null;
 
 	protected Map<Long, SpectrumHeader> ms2SpectrumHeaderById = null;
-	
+
+	protected SpectrumHeader[] ms3SpectrumHeaders = null;
+
+	protected Map<Long, SpectrumHeader> ms3SpectrumHeaderById = null;
+
+	protected SpectrumHeader[] spectrumHeaders = null;
+
+	protected Map<Long, SpectrumHeader> spectrumHeaderById = null;
+
 	protected Map<Long, Float> spectrumTimeById = null;
 	
-	protected Map<Integer, ArrayList<Long>> ms1SpectrumIdsByTimeIndex = null;
-	
-	protected Map<Integer, ArrayList<Long>> ms2SpectrumIdsByTimeIndex = null;
+	protected Map<Integer, ArrayList<Long>> spectrumIdsByTimeIndex = null;
 
 	protected Map<Integer, DataEncoding> dataEncodingById = null;
 
