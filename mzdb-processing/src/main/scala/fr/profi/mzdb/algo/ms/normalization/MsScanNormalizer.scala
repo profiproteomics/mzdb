@@ -1,7 +1,9 @@
 package fr.profi.mzdb.algo.ms.normalization
 
+import scala.collection.mutable.LongMap
 import fr.profi.mzdb.model.SpectrumHeader
 import fr.profi.mzdb.MzDbReader
+import fr.profi.util.collection._
 
 /**
  * @author David Bouyssie
@@ -9,7 +11,7 @@ import fr.profi.mzdb.MzDbReader
  */
 object MsSpectrumNormalizer {
   
-  def computeNfBySpectrumId(mzDbReader: MzDbReader): Map[Long,Float] = {
+  def computeNfBySpectrumId(mzDbReader: MzDbReader): LongMap[Float] = {
     
     val cyclesCount = mzDbReader.getCyclesCount()
     val medians = new Array[Float]( cyclesCount )
@@ -30,7 +32,7 @@ object MsSpectrumNormalizer {
     
     val nfs = computeNFs(medians)
     
-    Map() ++ (spectrumIds zip nfs) map { case(id,nf) => (id -> nf) }
+    (spectrumIds zip nfs) toLongMapWith { case(id,nf) => (id -> nf) }
   }
 
   def computeNFs( sic: Array[Float] ) = {

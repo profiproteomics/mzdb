@@ -2,26 +2,30 @@ package fr.profi.mzdb
 
 import java.util.Iterator
 import java.util.concurrent.Executors
+
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.LongMap
 import scala.collection.mutable.Queue
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.control.Breaks._
+
 import com.typesafe.scalalogging.LazyLogging
+
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.feature.extraction.UnsupervisedPeakelDetector
+import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.misc.SetClusterer
 import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.util.collection._
 import fr.profi.util.stat._
 import fr.proline.api.progress._
-import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
-
 
 abstract class PeakelFinderConfig
 
@@ -127,7 +131,7 @@ class PeakelDetectorConsumer(
 case class PeakelDetectorQueueEntry(
   rsNumber: Int,
   pklTree: PeakListTree,
-  curPeaklistBySpectrumId: Map[Long,PeakList]
+  curPeaklistBySpectrumId: LongMap[PeakList]
 )
 
 // Code inspired from: http://studio.cs.hut.fi/snippets/producer.html
@@ -281,17 +285,17 @@ class MzDbFeatureDetector(
   @BeanProperty var ftDetectorConfig: FeatureDetectorConfig = FeatureDetectorConfig()
 ) extends LazyLogging {
   
-  val ms1SpectrumHeaderById = mzDbReader.getMs1SpectrumHeaders().map( sh => sh.getId.toLong -> sh ).toMap
+  val ms1SpectrumHeaderById = mzDbReader.getMs1SpectrumHeaders().toLongMapWith( sh => sh.getId.toLong -> sh )
   val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders()
   //val ms2SpectrumHeaderById = ms2SpectrumHeaders.map( sh => sh.getId.toInt -> sh ).toMap
   val ms2SpectrumHeadersByCycle = ms2SpectrumHeaders.groupBy(_.getCycle.toInt)
-  val ms2SpectrumHeadersById = ms2SpectrumHeaders.map( sh => sh.getId.toLong -> sh ).toMap
+  val ms2SpectrumHeadersById = ms2SpectrumHeaders.toLongMapWith( sh => sh.getId.toLong -> sh )
  
   // TODO: factorize this code
   // BEGIN OF STOLEN FROM MzDbFeatureExtractor
   class RichRunSliceData(self: RunSliceData) {
-    def getPeakListBySpectrumId(): Map[Long,PeakList] = {
-      Map() ++ self.getSpectrumSliceList.map { ss => ss.getSpectrumId -> new PeakList(ss.toPeaks(),0.1) }
+    def getPeakListBySpectrumId(): LongMap[PeakList] = {
+      self.getSpectrumSliceList.toLongMapWith { ss => ss.getSpectrumId -> new PeakList(ss.toPeaks(),0.1) }
     }
   }
   implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
@@ -308,13 +312,13 @@ class MzDbFeatureDetector(
     
     val peakelDetector = new UnsupervisedPeakelDetector(
       spectrumHeaderById = spectrumHeaderById,
-      nfBySpectrumId = Map.empty[Long,Float],
+      nfBySpectrumId = LongMap.empty[Float],
       mzTolPPM = ftDetectorConfig.mzTolPPM,
       peakelFinder = PeakelFinderBuilder.build(ftDetectorConfig.peakelFinderConfig)
     )
     
     // Define a peaklist map (first level = runSliceNumber, second level =spectrumId )
-    val pklBySpectrumIdAndRsNumber = new HashMap[Int, Map[Long, PeakList]]()
+    val pklBySpectrumIdAndRsNumber = new LongMap[LongMap[PeakList]]()
     
     // Create a queue to parallelize the feature detection process
     val nbProcessors = Runtime.getRuntime().availableProcessors()
@@ -385,19 +389,19 @@ class MzDbFeatureDetector(
     
           // Add current run slice peakList to pklBySpectrumIdAndRsNumber
           if ( pklBySpectrumIdAndRsNumber.contains(rsNumber) == false ) {
-            pklBySpectrumIdAndRsNumber += ( rsNumber -> curPeaklistBySpectrumId )
+            pklBySpectrumIdAndRsNumber.put( rsNumber, curPeaklistBySpectrumId )
           }
     
           // Add next run slice peaklist to pklBySpectrumIdAndRsNumber
           val nextRsOpt = if (rsIter.hasNext == false) None
           else {
             val nextRs = rsIter.next
-            pklBySpectrumIdAndRsNumber += ( nextRsNumber -> nextRs.getData.getPeakListBySpectrumId )
+            pklBySpectrumIdAndRsNumber.put( nextRsNumber, nextRs.getData.getPeakListBySpectrumId )
             Some(nextRs)
           }
           
           // Group run slice peakLists into a single map (key = spectrum id)
-          val peakListsBySpectrumId = new HashMap[Long,ArrayBuffer[PeakList]]()
+          val peakListsBySpectrumId = new LongMap[ArrayBuffer[PeakList]]()
           pklBySpectrumIdAndRsNumber.values.foreach { pklBySpectrumId =>
             pklBySpectrumId.foreach { case (spectrumId, pkl) =>
               peakListsBySpectrumId.getOrElseUpdate(spectrumId, new ArrayBuffer[PeakList]) += pkl
@@ -405,9 +409,11 @@ class MzDbFeatureDetector(
           }
           
           // Use the map to instantiate a peakList tree which will be used for peak extraction
-          val pklGroupBySpectrumId = peakListsBySpectrumId.map { case (spectrumId, pkl) => spectrumId -> new PeakListGroup( pkl ) } toMap
+          val pklGroupBySpectrumId = peakListsBySpectrumId.map { case (spectrumId, pkl) =>
+            spectrumId -> new PeakListGroup( pkl )
+          } toLongMap
           val pklTree = new PeakListTree( pklGroupBySpectrumId, spectrumHeaderById )
-                 
+          
           // Enqueue loaded PeakListTree to send it to the consumer
           // Note that the detectorQueue will wait if it is full
           detectorQueue.enqueue(
@@ -678,7 +684,7 @@ class MzDbFeatureDetector(
     for( (groupTime,peakelGroup) <- peakelsGroupedByTime.par ) {
       
       val tmpPeakelPatternsBuffer = new ArrayBuffer[PeakelPattern]()
-      val usedPeakelSetByCharge = new HashMap[Int,HashSet[Peakel]]()
+      val usedPeakelSetByCharge = new LongMap[HashSet[Peakel]]()
       
       // Sort peakels by desc area
       //val sortedPeakels = uniqueMzPeakels.sortWith { (a,b) => a.area > b.area }
@@ -788,7 +794,7 @@ class MzDbFeatureDetector(
     peakelGraph: PeakelGraph,
     mzSortedPeakels: Array[Peakel],
     areLeftPeakels: Boolean,
-    usedPeakelSetByCharge: HashMap[Int,HashSet[Peakel]]
+    usedPeakelSetByCharge: LongMap[HashSet[Peakel]]
   ) {
     
     // Retrieve some values
@@ -861,7 +867,7 @@ class MzDbFeatureDetector(
     mzSortedPeakels: Array[Peakel],
     areLeftPeakels: Boolean,
     peakelOffset: Int,
-    usedPeakelSetByCharge: HashMap[Int,HashSet[Peakel]]
+    usedPeakelSetByCharge: LongMap[HashSet[Peakel]]
   ) {
     if( peakelOffset == mzSortedPeakels.length ) return
     
@@ -961,7 +967,7 @@ class MzDbFeatureDetector(
         
         // Sort peakels by desc area
         val sortedPeakels = peakelGroup.sortWith { (a,b) => a.area > b.area }
-        val peakelPatternBuffersByCharge = new HashMap[Int,HashMap[Peakel,ListBuffer[Peakel]]]
+        val peakelPatternBuffersByCharge = new LongMap[HashMap[Peakel,ListBuffer[Peakel]]]
         
         // Iterate over tested charge states
         for( z <- 1 to maxZ ) {
@@ -1086,7 +1092,7 @@ class MzDbFeatureDetector(
           (charge,peakelPatternBufferByApex) <- peakelPatternBuffersByCharge;
           (apexPeakel,peakelPatternBuffer) <- peakelPatternBufferByApex;
           if peakelPatternBuffer.length > 1 // remove features with one unique peakel
-        ) yield PeakelPattern(apexPeakel,peakelPatternBuffer.toArray,charge)
+        ) yield PeakelPattern(apexPeakel,peakelPatternBuffer.toArray,charge.toInt)
         
         logger.trace( s"found ${newPeakelPatterns.size} new peakel patterns" )
         
@@ -1203,7 +1209,7 @@ class MzDbFeatureDetector(
     
     logger.info("correlating peakels in intensity/time dimensions...")
     
-    val peakelTimeByPeakel = peakels.map( peakel => peakel -> peakel.calcWeightedAverageTime ).toMap
+    val peakelTimeByPeakel = Map() ++ peakels.map( peakel => peakel -> peakel.calcWeightedAverageTime )
     
     // Clusterize peakels having an apex separated by a given time value (10 secs)
     val histoComputer = new EntityHistogramComputer( peakels, { peakel: Peakel =>

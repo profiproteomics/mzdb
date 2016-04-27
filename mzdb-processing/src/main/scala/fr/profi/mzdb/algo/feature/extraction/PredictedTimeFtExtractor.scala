@@ -2,6 +2,7 @@ package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model._
@@ -35,8 +36,8 @@ import fr.profi.ms.algo.IsotopePatternInterpolator
  *  extraction with ms2DrivenExtractor
  */
 class PredictedTimeFtExtractor(
-  override val spectrumHeaderById: Map[Long, SpectrumHeader],
-  override val nfBySpectrumId: Map[Long, Float],
+  override val spectrumHeaderById: LongMap[SpectrumHeader],
+  override val nfBySpectrumId: LongMap[Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig

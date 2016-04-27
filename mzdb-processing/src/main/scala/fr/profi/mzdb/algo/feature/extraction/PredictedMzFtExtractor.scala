@@ -1,14 +1,15 @@
 package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.LongMap
 
 import fr.profi.mzdb.algo.signal.detection.waveletImpl._
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.utils.ms.MsUtils
 
 class PredictedMzFtExtractor(
-  val spectrumHeaderById: Map[Long, SpectrumHeader],
-  val nfBySpectrumId: Map[Long, Float],
+  val spectrumHeaderById: LongMap[SpectrumHeader],
+  val nfBySpectrumId: LongMap[Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.WAVELET),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig

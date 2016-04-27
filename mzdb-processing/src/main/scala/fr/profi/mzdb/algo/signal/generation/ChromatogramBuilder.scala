@@ -2,6 +2,8 @@ package fr.profi.mzdb.algo.signal.generation
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.LongMap
+
 import fr.profi.mzdb.algo.signal.distortion.IErrorGenerator
 import fr.profi.mzdb.algo.signal.distortion.IntensityVsTimeNoiseAdder
 import fr.profi.mzdb.model.ILcContext
@@ -25,17 +27,16 @@ class ChromatogramBuilder() {
   
   def result(): Array[(Float,Double)] = {
     
-    val lcContextBySpectrumIdBuilder = Map.newBuilder[Long,ILcContext]
+    val lcContextBySpectrumId = new LongMap[ILcContext]
     for( peakel <- peakelBuffer ) {
       val peakelCursor = peakel.getNewCursor()
       while( peakelCursor.next() ) {
         val spectrumId = peakelCursor.getSpectrumId()
         val time = peakelCursor.getElutionTime()
-        lcContextBySpectrumIdBuilder += spectrumId -> FullLcContext(spectrumId,time)
+        lcContextBySpectrumId += spectrumId -> FullLcContext(spectrumId,time)
       }
     }
     
-    val lcContextBySpectrumId = lcContextBySpectrumIdBuilder.result()
     val allPeaks = for( peakel <- peakelBuffer; peak <- peakel.toPeaks(lcContextBySpectrumId) ) yield peak
     val peaksBySpectrumId = allPeaks.groupBy(_.getLcContext().getSpectrumId() )
     

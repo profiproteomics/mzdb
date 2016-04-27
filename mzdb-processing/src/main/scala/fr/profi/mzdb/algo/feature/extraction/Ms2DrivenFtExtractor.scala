@@ -1,5 +1,6 @@
 package fr.profi.mzdb.algo.feature.extraction
 
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 
 import com.typesafe.scalalogging.LazyLogging
@@ -14,8 +15,8 @@ object Ms2DrivenFtExtractor {
 }
 
 class Ms2DrivenFtExtractor(
- val spectrumHeaderById: Map[Long,SpectrumHeader],
- val nfBySpectrumId: Map[Long,Float],
+ val spectrumHeaderById: LongMap[SpectrumHeader],
+ val nfBySpectrumId: LongMap[Float],
  val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig(mzTolPPM = 15),
  val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
  val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()

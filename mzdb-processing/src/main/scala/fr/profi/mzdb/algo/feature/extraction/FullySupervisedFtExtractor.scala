@@ -1,6 +1,7 @@
 package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.LongMap
 
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model.Feature
@@ -10,8 +11,8 @@ import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.SpectrumHeader
              
 class FullySupervisedFtExtractor(
-  val spectrumHeaderById: Map[Long,SpectrumHeader],
-  val nfBySpectrumId: Map[Long,Float],
+  val spectrumHeaderById: LongMap[SpectrumHeader],
+  val nfBySpectrumId: LongMap[Float],
   val xtractConfig: FeatureExtractorConfig,
   val peakelDetectionConfig: PeakelDetectionConfig = PeakelDetectionConfig(DetectionAlgorithm.BASIC),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig

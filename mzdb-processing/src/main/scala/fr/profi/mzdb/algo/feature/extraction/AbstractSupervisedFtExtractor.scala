@@ -1,8 +1,9 @@
 package fr.profi.mzdb.algo.feature.extraction
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 
 import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
@@ -19,7 +20,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
   
   val overlappingFeaturesExtractor = new OverlappingFeaturesExtractor(
     this.spectrumHeaderById,
-    Map(),
+    LongMap.empty[Float],
     this
   )
   

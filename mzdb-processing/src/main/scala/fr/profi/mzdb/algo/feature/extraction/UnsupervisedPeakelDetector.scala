@@ -3,6 +3,7 @@ package fr.profi.mzdb.algo.feature.extraction
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
@@ -63,8 +64,8 @@ object UnsupervisedPeakelDetector {
  */
 // TODO: move to feature.detection package ???
 class UnsupervisedPeakelDetector(
-  val spectrumHeaderById: Map[Long,SpectrumHeader],
-  val nfBySpectrumId: Map[Long,Float],
+  val spectrumHeaderById: LongMap[SpectrumHeader],
+  val nfBySpectrumId: LongMap[Float],
   // TODO: create configs for signal extraction
   val mzTolPPM: Float,
   val maxConsecutiveGaps: Int = 3,

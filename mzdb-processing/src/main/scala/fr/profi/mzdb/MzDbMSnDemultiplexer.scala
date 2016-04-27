@@ -1,17 +1,19 @@
 package fr.profi.mzdb
 
-import fr.profi.mzdb.model.Peak
-import com.typesafe.scalalogging.LazyLogging
-import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.model.Feature
-import scala.collection.mutable.ArrayBuffer
-import org.apache.commons.lang3.tuple.ImmutablePair
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.LongMap
+
+import com.typesafe.scalalogging.LazyLogging
+
+import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.ILcContext
-import fr.profi.util.stat.EntityHistogramComputer
 import fr.profi.mzdb.model.IsolationWindow
+import fr.profi.mzdb.model.Peak
+import fr.profi.mzdb.model.Peakel
+import fr.profi.util.collection._
+import fr.profi.util.stat.EntityHistogramComputer
 
 case class DemultiplexedSpectrum(precursorMz: Double, precursorCharge: Int, elutionTime: Float, peaks: Array[Peak])
 
@@ -20,7 +22,7 @@ case class DemultiplexedSpectrum(precursorMz: Double, precursorCharge: Int, elut
  */
 class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for each
   
-  val spectrumHeaderById = mzDbReader.getMs2SpectrumHeaderById.map { case (k,v) => k.toLong -> v } toMap
+  val spectrumHeaderById = mapAsScalaMap(mzDbReader.getMs2SpectrumHeaderById).toLongMapWith { case (k,v) => k.toLong -> v } 
   val minNbPeaksInSpectrum = 3
 
   def demultiplexMSnData(): Array[DemultiplexedSpectrum] = {
@@ -152,9 +154,12 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
     }
   }*/
 
-  def _groupFtsByIsolationWindowIdx(isolationWindowRanges: Array[IsolationWindow], ms1Fts: Array[Feature]): HashMap[Int, ArrayBuffer[Feature]] = {
+  def _groupFtsByIsolationWindowIdx(
+    isolationWindowRanges: Array[IsolationWindow],
+    ms1Fts: Array[Feature]
+  ): LongMap[ArrayBuffer[Feature]] = {
 
-    val ftsByIWIdx = new HashMap[Int, ArrayBuffer[Feature]]()
+    val ftsByIWIdx = new LongMap[ArrayBuffer[Feature]]()
     val firstIW = isolationWindowRanges(0)
     val rangesCount = isolationWindowRanges.length
     

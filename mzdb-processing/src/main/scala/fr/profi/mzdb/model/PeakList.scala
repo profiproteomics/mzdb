@@ -3,6 +3,7 @@ package fr.profi.mzdb.model
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.LongMap
 
 case class MzRange( minMz: Double, maxMz: Double )
 
@@ -25,7 +26,7 @@ object PeakList {
 
 case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProperty val mzRange: MzRange ) {
   
-  private val indexedPeaks = new HashMap[Int,ArrayBuffer[Peak]]
+  private val indexedPeaks = new LongMap[ArrayBuffer[Peak]]
   
   def this( peaks: Array[Peak], indexPrecision: Double = PeakList.DEFAULT_INDEX_PRECISION ) = {
     this( indexPrecision, PeakList.calcMzRange( peaks ) )
@@ -38,7 +39,7 @@ case class PeakList protected( @BeanProperty indexPrecision: Double, @BeanProper
     
   }
   
-  protected def calcMzIndex( mz: Double ): Int = (mz/indexPrecision).toInt
+  protected def calcMzIndex( mz: Double ): Long = (mz/indexPrecision).toLong
   
   def getMinMz() = mzRange.minMz
   def getMaxMz() = mzRange.maxMz

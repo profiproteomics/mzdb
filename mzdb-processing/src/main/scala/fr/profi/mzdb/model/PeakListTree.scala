@@ -1,18 +1,20 @@
 package fr.profi.mzdb.model
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 
 import fr.profi.chemistry.model.MolecularConstants
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.util.collection._
 
 object PeakListTree {
   
   val avgIsotopeMassDiff = MolecularConstants.AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF
   
-  def groupPeaklists( peakListsBySpectrumId: Map[Int, Seq[PeakList]] ): Map[Int,PeakListGroup] = {    
-    Map() ++ peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }
+  def groupPeaklists( peakListsBySpectrumId: LongMap[Seq[PeakList]] ): LongMap[PeakListGroup] = {    
+    peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }
   }
 
   def extractIsotopicPattern(
@@ -48,7 +50,7 @@ object PeakListTree {
   }  
 }
 
-case class PeakListTree( pklGroupBySpectrumId: Map[Long,PeakListGroup], spectrumHeaderById: Map[Long,SpectrumHeader] ) {
+case class PeakListTree( pklGroupBySpectrumId: LongMap[PeakListGroup], spectrumHeaderById: LongMap[SpectrumHeader] ) {
 
   lazy val spectrumIds: Array[Long] = pklGroupBySpectrumId.keys.toArray.sorted
   

@@ -1,12 +1,14 @@
 package fr.profi.mzdb.algo.ms.calibration
-import fr.profi.mzdb.MzDbReader
-import scala.collection.mutable.ArrayBuffer
-import java.util.TreeMap
-import fr.profi.mzdb.model.PeakList
-import scala.collection.JavaConversions._
-import java.io.PrintWriter
-import java.io.File
 
+import java.io.File
+import java.io.PrintWriter
+import java.util.TreeMap
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
+
+import fr.profi.mzdb.MzDbReader
+import fr.profi.mzdb.model.PeakList
 
 object CalibrationCurveWriter {
 	
@@ -15,16 +17,13 @@ object CalibrationCurveWriter {
     maxDeltaPpm : Double, 
     intensityThresh:Double = 0.9, 
     skipBeginningSpectra: Int = 0
-  ): Pair[TreeMap[Long, Double], TreeMap[Long, Double]] ={
-	  
+  ): (TreeMap[Long, Double], TreeMap[Long, Double]) ={
 	  
 	  var ms1Iter = mzdb.getSpectrumIterator(1)
 	  for (i <- 0 until skipBeginningSpectra) {
 	     if (ms1Iter.hasNext) ms1Iter.next
 	     else throw new Throwable("reach last spectrum while trying to skip beginning spectra")
 	  }
-	  
-	  
 	  
 	  var m445 = new TreeMap[Long, Double]
 	  var result = new TreeMap[Long, Double]

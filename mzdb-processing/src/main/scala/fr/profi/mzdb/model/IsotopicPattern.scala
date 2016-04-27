@@ -1,6 +1,7 @@
 package fr.profi.mzdb.model
 
 import scala.beans.BeanProperty
+import scala.collection.mutable.LongMap
 
 object IsotopicPatternLike {
   
@@ -62,7 +63,7 @@ case class IsotopicPattern(
     p.setLcContext(spectrumHeader) 
   }
   
-  def normalizeIntensities( nfBySpectrumId: Map[Long,Float] ) {
+  def normalizeIntensities( nfBySpectrumId: LongMap[Float] ) {
     val nf = nfBySpectrumId(this.spectrumHeader.id)
     
     for( p <- peaks if p != null ) {

@@ -1,13 +1,14 @@
 package fr.profi.mzdb.algo.feature.extraction
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.model._
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.mzdb.algo.feature.scoring.FeatureScorer
-import java.util.concurrent.atomic.AtomicLong
 
 case class OverlappingStatus(
     
@@ -37,8 +38,8 @@ object OverlappingFeaturesExtractor {
  * inherit from Ms2DrivenExtractor essentially to fetch parameters
  */
 class OverlappingFeaturesExtractor(
-  val spectrumHeaderById: Map[Long, SpectrumHeader],
-  val nfBySpectrumId: Map[Long,Float] = Map(),
+  val spectrumHeaderById: LongMap[SpectrumHeader],
+  val nfBySpectrumId: LongMap[Float] = LongMap(),
   val ftExtractor: AbstractSupervisedFtExtractor
 ) extends LazyLogging {
   

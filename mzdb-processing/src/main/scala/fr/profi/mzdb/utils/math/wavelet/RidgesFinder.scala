@@ -2,6 +2,7 @@ package fr.profi.mzdb.utils.math.wavelet
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.LongMap
 import scala.beans.BeanProperty
 
 /**
@@ -12,7 +13,7 @@ import scala.beans.BeanProperty
 
 case class Ridge(var gap: Int = 0) {
   /** internal map stocking the scale as key the maxIdx and the max value as Option may not exist (gap) */
-  val maximaIndexPerScale = HashMap[Float, Option[Pair[Int, Double]]]()
+  val maximaIndexPerScale = HashMap[Float, Option[(Int, Double)]]()
   var totalGaps = 0
   var SNR : Float = 0
   var id:Int = -1
@@ -42,9 +43,9 @@ case class Ridge(var gap: Int = 0) {
     (v._1, v._2.get._1, v._2.get._2)
   }
 
-  def add(scale: Float, maxima: Option[Pair[Int, Double]]) { maximaIndexPerScale(scale) = maxima }
+  def add(scale: Float, maxima: Option[(Int, Double)]) { maximaIndexPerScale(scale) = maxima }
   def hasScale(scale: Float): Boolean = { maximaIndexPerScale.get(scale) == None }
-  def get(scale: Float): Option[Pair[Int, Double]] = { maximaIndexPerScale(scale) }
+  def get(scale: Float): Option[(Int, Double)] = { maximaIndexPerScale(scale) }
   def incGap() = {gap += 1; totalGaps +=1 }
   def initGap() = {gap = 0}
   def length(): Int = { maximaIndexPerScale.size }//with gap since we stop it 
@@ -67,11 +68,10 @@ trait RidgesFinder {
    */
   var coeffs: HashMap[Float, Array[Float]]
   
-  def findRidges(maximaIndexesPerScale: HashMap[Float, Array[Int]],  winLength: Int = 5, maxGap:Int = 4): Pair[Array[Ridge], Array[Ridge]] = {
+  def findRidges(maximaIndexesPerScale: HashMap[Float, Array[Int]],  winLength: Int = 5, maxGap:Int = 4): (Array[Ridge], Array[Ridge]) = {
     //check emptyness
     if (maximaIndexesPerScale.isEmpty)
-      return new Pair(Array[Ridge](), Array[Ridge]())
-   
+      return (Array[Ridge](), Array[Ridge]())
       
     val sortedScales = maximaIndexesPerScale.keys.toBuffer.sorted
     val lastMaximaRow = maximaIndexesPerScale(sortedScales.last)
@@ -81,13 +81,13 @@ trait RidgesFinder {
     //init a ridge for each max
     for (maxVal <- lastMaximaRow) { 
       val ridge = Ridge()
-      ridge.add(sortedScales.last, Some(Pair(maxVal, coeffs(sortedScales.last)(maxVal))))
+      ridge.add(sortedScales.last, Some((maxVal, coeffs(sortedScales.last)(maxVal))))
       ridges += ridge
     }
     
     //if only one scale
     if (sortedScales.length == 1) {
-      return Pair(ridges.toArray, orphanRidges.toArray)
+      return (ridges.toArray, orphanRidges.toArray)
     }
     
     //else
@@ -119,7 +119,7 @@ trait RidgesFinder {
           val closestMax = currentRow.minBy(x => math.abs(prevMaxIndex.get._1 - x)) 
   
           if (math.abs(prevMaxIndex.get._1 - closestMax) < winSize / 2) { // /2
-            ridge.add(currentScale, Some(Pair(closestMax, coeffs(currentScale)(closestMax))))
+            ridge.add(currentScale, Some((closestMax, coeffs(currentScale)(closestMax))))
             ridge.initGap()
             treatedIdx += closestMax
   
@@ -131,14 +131,14 @@ trait RidgesFinder {
         //start a new ridge for all max not assigned to a ridge
         for (maxIdx <- currentRow if !treatedIdx.contains(maxIdx)) {
           val ridge = Ridge()
-          ridge.add(currentScale, Some(Pair(maxIdx, coeffs(currentScale)(maxIdx))))
+          ridge.add(currentScale, Some((maxIdx, coeffs(currentScale)(maxIdx))))
           ridges += ridge
         }
       }
     }
     
     //remove different ridge lines with the same apex, take the longest
-    val ridgesPerMaxIndexAtFirstScale = HashMap[Int, ArrayBuffer[Ridge]]()
+    val ridgesPerMaxIndexAtFirstScale = LongMap[ArrayBuffer[Ridge]]()
     ridges.foreach { r => ridgesPerMaxIndexAtFirstScale.getOrElseUpdate(r.firstScaleMaxCoeffPos._2, new ArrayBuffer[Ridge]()) += r }
     val lastOfLastRidges = new ArrayBuffer[Ridge]()
     ridgesPerMaxIndexAtFirstScale.foreach { case (u, v) => lastOfLastRidges += v.maxBy { x => x.length() } }

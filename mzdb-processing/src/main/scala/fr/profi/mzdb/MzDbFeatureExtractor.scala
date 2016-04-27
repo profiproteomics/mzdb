@@ -1,20 +1,19 @@
 package fr.profi.mzdb
 
-import java.io.File
 import scala.collection.JavaConversions.mapAsScalaMap
-import scala.collection.immutable.TreeMap
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.Buffer
 import scala.collection.mutable.HashMap
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
+
 import com.typesafe.scalalogging.LazyLogging
+
 import fr.profi.mzdb.algo.FeatureExtractor
-import fr.profi.mzdb.algo.ms.normalization.MsSpectrumNormalizer
+import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model._
-import fr.proline.api.progress._
-import scala.collection.mutable.HashSet
-import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
+import fr.profi.util.collection._
+
 
 /**
  *
@@ -79,16 +78,16 @@ class MzDbFeatureExtractor(
   
 
   class RichRunSliceData(self: RunSliceData) {
-    def getPeakListBySpectrumId(): Map[Long, PeakList] = {
-      val mapBuilder = Map.newBuilder[Long, PeakList]
-      mapBuilder.sizeHint(self.getSpectrumSliceList.length)
+    def getPeakListBySpectrumId(): LongMap[PeakList] = {
+      val slicesCount = self.getSpectrumSliceList.length
+      val peakListBySpectrumId = new LongMap[PeakList](slicesCount)
       
       for( ss <- self.getSpectrumSliceList ) {
         // FIXME: remove the hardcoded 0.1 index value
-        mapBuilder += ss.getSpectrumId() -> new PeakList( ss.toPeaks() )
+        peakListBySpectrumId.put( ss.getSpectrumId() , new PeakList( ss.toPeaks() ) )
       }
       
-      mapBuilder.result
+      peakListBySpectrumId
     }
   }
   implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
@@ -128,7 +127,7 @@ class MzDbFeatureExtractor(
       throw new Exception("run slice headers must have a unique number")
 
     // Define a putative feature map
-    val putativeFtsByRsNumber = new HashMap[Int, ArrayBuffer[PutativeFeature]]
+    val putativeFtsByRsNumber = new LongMap[ArrayBuffer[PutativeFeature]]()
 
     // Group putative features by run slice id
     for (pft <- putativeFeatures) {
@@ -140,13 +139,15 @@ class MzDbFeatureExtractor(
     //progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
 
     // Retrieve spectra mapped by their id
-    val spectrumHeaderById = collection.immutable.Map() ++ mzDbReader.getSpectrumHeaderById.map { case (i, sh) => i.toLong -> sh }
+    val spectrumHeaderById = mzDbReader.getSpectrumHeaderById.map { case (i, sh) => i.toLong -> sh } toLongMap
+ 
+    // Compute MS spectra normalization factors
  
     // Compute MS spectra normalization factors
     //val nfBySpectrumId = MsSpectrumNormalizer.computeNfBySpectrumId(mzDbReader)
 
     // Define a peaklist map (first level = runSliceId, second level =spectrumId )
-    val pklBySpectrumIdAndRsId = new HashMap[Int, Map[Long, PeakList]]()
+    val pklBySpectrumIdAndRsId = new LongMap[LongMap[PeakList]]()
 
     // Define an array of features to be extracted
     val extractedFeatures = new ArrayBuffer[Feature](putativeFeatures.length)
@@ -220,31 +221,31 @@ class MzDbFeatureExtractor(
         // " ; putative features count=" +
         // runSlicePutativeFeatures.size() );
         
-        val emptyMap = new HashMap[Int,Map[Long,fr.profi.mzdb.model.PeakList]]()
+        val emptyMap = new LongMap[LongMap[fr.profi.mzdb.model.PeakList]]()
 
         // Retrieve previous run slice peaklist
         if (prevRSH.isDefined) {
           if (pklBySpectrumIdAndRsId.contains(prevRsNumber) == false) {
-            pklBySpectrumIdAndRsId += (prevRsNumber -> this._getRSD(rsdProvider, prevRsNumber).getPeakListBySpectrumId)
+            pklBySpectrumIdAndRsId.put(prevRsNumber, this._getRSD(rsdProvider, prevRsNumber).getPeakListBySpectrumId)
           }
         }
 
         // Retrieve current run slice peakList
         if (pklBySpectrumIdAndRsId.contains(rsNum) == false) {
-          pklBySpectrumIdAndRsId += (rsNum -> this._getRSD(rsdProvider, rsNum).getPeakListBySpectrumId)
+          pklBySpectrumIdAndRsId.put(rsNum, this._getRSD(rsdProvider, rsNum).getPeakListBySpectrumId)
         }
 
         // Retrieve current next slice peaklist
         if (nextRSH.isDefined) {
           if (pklBySpectrumIdAndRsId.contains(nextRsNumber) == false) {
-            pklBySpectrumIdAndRsId += (nextRsNumber -> this._getRSD(rsdProvider, nextRsNumber).getPeakListBySpectrumId)
+            pklBySpectrumIdAndRsId.put(nextRsNumber, this._getRSD(rsdProvider, nextRsNumber).getPeakListBySpectrumId)
           }
         }
 
         //progressPlan(MZFT_STEP4_0).incrementAndGetCount(1)
         
         // Group run slice peakLists into a single map (key = spectrum id)
-        val peakListsBySpectrumId = new HashMap[Long, ArrayBuffer[PeakList]]()
+        val peakListsBySpectrumId = new LongMap[ArrayBuffer[PeakList]]()
         pklBySpectrumIdAndRsId.values.foreach {
           _.foreach {
             case (spectrumId, pkl) =>
@@ -254,7 +255,7 @@ class MzDbFeatureExtractor(
         //progressPlan(MZFT_STEP4_1).incrementAndGetCount(1)
 
         // Use the map to instantiate a peakList tree which will be used for peak extraction
-        val pklGroupBySpectrumId = Map() ++ peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup(kv._2) }
+        val pklGroupBySpectrumId = peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup(kv._2) } toLongMap
         //progressPlan(MZFT_STEP4_2).setAsCompleted()
         
         val ms1SpectrumHeaderById = spectrumHeaderById.filter(_._2.getMsLevel() == 1)

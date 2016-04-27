@@ -3,22 +3,26 @@ package fr.profi.mzdb.algo.feature.extraction
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 
 import com.typesafe.scalalogging.LazyLogging
 
 import fr.profi.mzdb.model._
+import fr.profi.util.collection._
 
 abstract class AbstractFeatureExtractor extends LazyLogging {
   
   /** Required parameters */
-  def spectrumHeaderById: Map[Long, SpectrumHeader]
-  def nfBySpectrumId: Map[Long, Float]
+  def spectrumHeaderById: LongMap[SpectrumHeader]
+  def nfBySpectrumId: LongMap[Float]
   
   /** Computed values */
   protected val spectrumHeaders = spectrumHeaderById.values.toArray.sortBy(_.getId)
-  protected val ms1SpectrumHeaderByCycleNum = spectrumHeaders.withFilter(_.getMsLevel() == 1 ).map(sh => sh.getCycle -> sh).toMap
-  protected val ms1SpectrumIdByCycleNum: Map[Int, Long] = ms1SpectrumHeaderByCycleNum.map { case (cycle,sh) => cycle -> sh.getId }
+  protected val ms1SpectrumHeaderByCycleNum = spectrumHeaders
+    .withFilter(_.getMsLevel() == 1 )
+    .toLongMapWith(sh => sh.getCycle.toLong -> sh)
+  protected val ms1SpectrumIdByCycleNum = ms1SpectrumHeaderByCycleNum.map { case (cycle,sh) => cycle -> sh.getId }
   
   private val TIME_INDEX_WIDTH = 15
   
@@ -34,12 +38,12 @@ abstract class AbstractFeatureExtractor extends LazyLogging {
     _tmpSpectrumIdsMap
   }*/
   
-  private val spectrumHeadersByTimeIndex: HashMap[Int, ArrayBuffer[SpectrumHeader]] = {
+  private val spectrumHeadersByTimeIndex: LongMap[ArrayBuffer[SpectrumHeader]] = {
 
-    val _tmpSpectrumHeaderMap = new HashMap[Int, ArrayBuffer[SpectrumHeader]]()
+    val _tmpSpectrumHeaderMap = new LongMap[ArrayBuffer[SpectrumHeader]]()
 
     for ( spectrumH <- spectrumHeaders ) {
-      val timeIndex = (spectrumH.getTime / TIME_INDEX_WIDTH).toInt
+      val timeIndex = (spectrumH.getTime / TIME_INDEX_WIDTH).toLong
       _tmpSpectrumHeaderMap.getOrElseUpdate(timeIndex, new ArrayBuffer[SpectrumHeader]()) += spectrumH
     }
 

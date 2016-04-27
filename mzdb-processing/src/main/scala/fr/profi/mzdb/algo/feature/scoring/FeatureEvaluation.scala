@@ -1,5 +1,6 @@
 package fr.profi.mzdb.algo.feature.scoring
 
+import scala.collection.mutable.LongMap
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.ILcContext
 
@@ -365,7 +366,7 @@ object FeatureEvaluator  {
     features: Seq[Feature],
     ftScoringConfig: FeatureScoringConfig,
     thresholdComputer: IFeatureThresholdsComputer,
-    lcContextBySpectrumId: Map[Long,ILcContext]
+    lcContextBySpectrumId: LongMap[ILcContext]
   ): Seq[FeatureEvaluation] = {
     //fill data 
     val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig, lcContextBySpectrumId)) toArray
@@ -377,7 +378,7 @@ object FeatureEvaluator  {
   def computeQualityVector(
     f: Feature,
     ftScoringConfig: FeatureScoringConfig = FeatureScoringConfig(),
-    lcContextBySpectrumId: Map[Long,ILcContext]
+    lcContextBySpectrumId: LongMap[ILcContext]
   ) : FeatureQualityVector = {
     
     var (signalFluctuation, shape) = (0f, 0f)

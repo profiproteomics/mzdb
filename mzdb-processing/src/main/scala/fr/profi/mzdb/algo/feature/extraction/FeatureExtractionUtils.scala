@@ -3,6 +3,7 @@ package fr.profi.mzdb.algo.feature.extraction
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 
 import com.typesafe.scalalogging.LazyLogging
@@ -20,8 +21,8 @@ object FeatureExtractionUtils {
     peakel: IPeakelData,
     detectionAlgorithm: DetectionAlgorithm.Value, 
     minSNR: Float = 1.0f,
-    lcContextBySpectrumId: Map[Long,ILcContext]
-  ): Array[Pair[Int, Int]] = {
+    lcContextBySpectrumId: LongMap[_ <: ILcContext]
+  ): Array[(Int, Int)] = {
     
     var peakelIndices: Array[(Int, Int)] = null 
     

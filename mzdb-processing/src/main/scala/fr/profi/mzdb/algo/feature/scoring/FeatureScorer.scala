@@ -1,6 +1,7 @@
 package fr.profi.mzdb.algo.feature.scoring
 
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.LongMap
 import scala.util.control.Breaks._
 import org.apache.commons.math3.stat.StatUtils
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation
@@ -208,7 +209,7 @@ object FeatureScorer {
 
   /** using the basic peakel finder.*/
   // a perfect shape would be only one maximum index
-  def calcSignalFluctuationByBasicPeakelFinder(f: Feature, lcContextBySpectrumId: Map[Long,ILcContext] ): Float = {
+  def calcSignalFluctuationByBasicPeakelFinder(f: Feature, lcContextBySpectrumId: LongMap[ILcContext] ): Float = {
     var shape = 0f
 
     f.indexedPeakels.foreach { case (p,idx) => 
@@ -219,7 +220,7 @@ object FeatureScorer {
   }
 
   /**using the wavelet peakel finder*/
-  def calcSignalFluctuationByWaveletBasedPeakelFinder(f: Feature, lcContextBySpectrumId: Map[Long,ILcContext]): Float = {
+  def calcSignalFluctuationByWaveletBasedPeakelFinder(f: Feature, lcContextBySpectrumId: LongMap[ILcContext]): Float = {
     var shape = 0f
 
     f.indexedPeakels.foreach { case (p,idx) => 

@@ -86,7 +86,7 @@ object SetClusterer {
       
       // Split samesets based on the specificity of their values
       val unspecificSamesets = new ArrayBuffer[SetCluster[K,V]](0)
-      val samesetById = new collection.mutable.HashMap[Long,SetCluster[K,V]]()
+      val samesetById = new collection.mutable.LongMap[SetCluster[K,V]]()
       val oversetIdsByValue = new collection.mutable.HashMap[V,ArrayBuffer[Long]]()
       
       val samesets = samesetMap.values

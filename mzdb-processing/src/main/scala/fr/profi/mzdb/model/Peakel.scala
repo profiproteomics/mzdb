@@ -2,6 +2,7 @@ package fr.profi.mzdb.model
 
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.LongMap
 
 import com.fasterxml.jackson.annotation.JsonFormat
 
@@ -155,7 +156,7 @@ trait IPeakelData {
     true
   }
 
-  def toPeaks( lcContextBySpectrumId: Map[Long,ILcContext] ): Array[Peak] = {
+  def toPeaks( lcContextBySpectrumId: LongMap[_ <: ILcContext] ): Array[Peak] = {
     val peakelCursor = this.getNewCursor()
     
     val peaks = new Array[Peak](this.getSpectrumIds.length)
@@ -482,7 +483,7 @@ trait IPeakelDataCursor {
   def getMz(): Double
   def getIntensity(): Float
   
-  def toPeak( lcContextBySpectrumId: Map[Long,ILcContext] ): Peak = {
+  def toPeak( lcContextBySpectrumId: LongMap[_ <: ILcContext] ): Peak = {
     new Peak( getMz, getIntensity, 0f, 0f, lcContextBySpectrumId(getSpectrumId) )
   }
   

@@ -1,21 +1,22 @@
 package fr.profi.mzdb.algo
 
-import collection.mutable.ArrayBuffer
-import collection.mutable.HashMap
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.LongMap
+
+import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.algo.feature.extraction._
 import fr.profi.mzdb.model.Feature
-import fr.profi.mzdb.model.PeakList
 import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.SpectrumHeader
-import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.utils.ms.MsUtils
 import fr.proline.api.progress._
 
 class FeatureExtractor(
   val mzDbReader: MzDbReader,
-  val spectrumHeaderById: Map[Long,SpectrumHeader],
-  val nfBySpectrumId: Map[Long,Float],
+  val spectrumHeaderById: LongMap[SpectrumHeader],
+  val nfBySpectrumId: LongMap[Float],
   val xtractConfig: FeatureExtractorConfig = FeatureExtractorConfig( mzTolPPM = 10 ),
   val overlapXtractConfig: OverlappingFeatureExtractorConfig = OverlappingFeatureExtractorConfig()
 ) extends AbstractFeatureExtractor { //with ProgressComputing {
@@ -108,8 +109,7 @@ class FeatureExtractor(
     }
     
     
-    val ftsByMs2SpectrumId = new HashMap[Long,ArrayBuffer[Feature]]
-    ftsByMs2SpectrumId.sizeHint(spectrumHeaderById.size)
+    val ftsByMs2SpectrumId = new LongMap[ArrayBuffer[Feature]](spectrumHeaderById.size)
     
     // Update MS2 spectrum ids of the feature
     for( foundFt <- ft ) {
