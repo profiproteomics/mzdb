@@ -156,9 +156,17 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 
 	/**
 	 * close the connection to avoid memory leaks.
+	 * @throws InterruptedException 
 	 */
 	public void close() {
-		this.queue.stop(false);
+		this.queue.stop(true);
+		logger.debug("Waiting for Job queue to finish");
+		try {
+			this.queue.join();
+		} catch (InterruptedException e) {
+			logger.error(e.getMessage());
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@Override
