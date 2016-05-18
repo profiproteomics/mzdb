@@ -3,7 +3,6 @@ package fr.profi.mzdb.algo.signal.detection
 import scala.collection.mutable.ArrayBuffer
 
 import fr.profi.mzdb.algo.signal.filtering._
-import fr.profi.mzdb.model.IPeakelData
 import fr.profi.mzdb.model.Peak
 
 /**
