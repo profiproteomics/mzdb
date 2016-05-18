@@ -100,7 +100,7 @@ object CalibrationCurveWriter {
 			i+=1
 		}//end first while
 	    
-	    var peak445 = new PeakList(firstSpectrum.toPeaks(), 100.0).getNearestPeak(445.12, 445.12 * maxDeltaPpm / 1e6)
+	    var peak445 = new PeakList(firstSpectrum).getNearestPeak(445.12, 445.12 * maxDeltaPpm / 1e6)
 	    if (peak445 != null) m445.put(firstSpectrum.getHeader().getId(), peak445.getMz)
 	    
 	    result.put(firstSpectrum.getHeader().getId, deltaMass.sum / deltaMass.length)
