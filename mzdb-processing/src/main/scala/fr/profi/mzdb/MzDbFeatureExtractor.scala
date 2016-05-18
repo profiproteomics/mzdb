@@ -83,8 +83,7 @@ class MzDbFeatureExtractor(
       val peakListBySpectrumId = new LongMap[PeakList](slicesCount)
       
       for( ss <- self.getSpectrumSliceList ) {
-        // FIXME: remove the hardcoded 0.1 index value
-        peakListBySpectrumId.put( ss.getSpectrumId() , new PeakList( ss.toPeaks() ) )
+        peakListBySpectrumId.put( ss.getSpectrumId() , new PeakList( ss ) )
       }
       
       peakListBySpectrumId
@@ -255,11 +254,11 @@ class MzDbFeatureExtractor(
         //progressPlan(MZFT_STEP4_1).incrementAndGetCount(1)
 
         // Use the map to instantiate a peakList tree which will be used for peak extraction
-        val pklGroupBySpectrumId = peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup(kv._2) } toLongMap
+        val pklTripletBySpectrumId = peakListsBySpectrumId.map { kv => kv._1 -> new PeakListTriplet(kv._2.toArray) }
         //progressPlan(MZFT_STEP4_2).setAsCompleted()
         
         val ms1SpectrumHeaderById = spectrumHeaderById.filter(_._2.getMsLevel() == 1)
-        val pklTree = new PeakListTree(pklGroupBySpectrumId,ms1SpectrumHeaderById)
+        val pklTree = new PeakListTree(pklTripletBySpectrumId,ms1SpectrumHeaderById)
          
         //progressPlan(MZFT_STEP4_3).incrementAndGetCount(1)
         

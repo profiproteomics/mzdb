@@ -13,12 +13,11 @@ import fr.profi.mzdb.algo.signal.detection.waveletImpl._
 import fr.profi.mzdb.model._
 
 object FeatureExtractionUtils {
-
   
   /** Detects peakels */ 
   // TODO: keep me ???
   def findPeakelsIndices(
-    peakel: IPeakelData,
+    peakel: IPeakelDataContainer,
     detectionAlgorithm: DetectionAlgorithm.Value, 
     minSNR: Float = 1.0f,
     lcContextBySpectrumId: LongMap[_ <: ILcContext]

@@ -13,12 +13,12 @@ object PeakListTree {
   
   val avgIsotopeMassDiff = MolecularConstants.AVERAGE_PEPTIDE_ISOTOPE_MASS_DIFF
   
-  def groupPeaklists( peakListsBySpectrumId: LongMap[Seq[PeakList]] ): LongMap[PeakListGroup] = {    
-    peakListsBySpectrumId.map { kv => kv._1 -> new PeakListGroup( kv._2 ) }
+  def buildPeakListTriplets( peakListsBySpectrumId: LongMap[Array[PeakList]] ): LongMap[PeakListTriplet] = {    
+    peakListsBySpectrumId.map { kv => kv._1 -> new PeakListTriplet( kv._2 ) }
   }
 
   def extractIsotopicPattern(
-    pklGroup: PeakListGroup,
+    pklTriplet: PeakListTriplet,
     mz: Double,
     mzTolPPM: Float,
     charge: Int,
@@ -37,12 +37,13 @@ object PeakListTree {
         val mzTolDa = MsUtils.ppmToDa( mzToExtract, mzTolPPM )
         
         // Try to retrieve the nearest peak
-        val nearestPeak = pklGroup.getNearestPeak( mzToExtract, mzTolDa)
+        val nearestPeak = pklTriplet.getNearestPeak( mzToExtract, mzTolDa)
         
         // If nearest peak is found, add it it to the list of peaks
         if (nearestPeak == null && peakPos > maxTheoreticalPeakelIndex) {
             break
         } //else
+        
         peaks += nearestPeak
       }
     }
@@ -50,59 +51,70 @@ object PeakListTree {
   }  
 }
 
-case class PeakListTree( pklGroupBySpectrumId: LongMap[PeakListGroup], spectrumHeaderById: LongMap[SpectrumHeader] ) {
+case class PeakListTree(
+  pklTripletBySpectrumId: LongMap[PeakListTriplet],
+  spectrumHeaderById: LongMap[SpectrumHeader]
+) {
+  
+  val peaksCount = pklTripletBySpectrumId.values.foldLeft(0){ case (s,pklTriplet) => s + pklTriplet.peaksCount }
 
-  lazy val spectrumIds: Array[Long] = pklGroupBySpectrumId.keys.toArray.sorted
+  lazy val spectrumIds: Array[Long] = pklTripletBySpectrumId.keys.toArray.sorted
   
   class SpectrumHeaderMap() {
     
     private val shCount = spectrumIds.length
       
-    private val shMapBuilder = collection.immutable.Map.newBuilder[SpectrumHeader,Int]
+    private val shMap = new LongMap[Int](shCount)
     private val pklTreeSpectrumHeaders = new Array[SpectrumHeader](shCount)
     
     spectrumIds.zipWithIndex.foreach { case (sId,idx) =>
       val sh = spectrumHeaderById(sId)
-      shMapBuilder += (sh -> idx)
+      shMap.put(sh.getId, idx)
       pklTreeSpectrumHeaders(idx) = sh
     }
     
-    private val pklTreeShMap = shMapBuilder.result()
+    def getSpectrumHeaders(): Array[SpectrumHeader] = pklTreeSpectrumHeaders
     
     def getSpectrumHeader( shIdx: Int ): Option[SpectrumHeader] = {
       if( shIdx < 0 || shIdx >= shCount ) None
       else Some( pklTreeSpectrumHeaders(shIdx) )
     }
     
-    def getSpectrumHeaderIndex( spectrumHeader: SpectrumHeader ): Int = pklTreeShMap(spectrumHeader)
+    def getSpectrumHeaderIndex( spectrumHeaderId: Long ): Int = shMap(spectrumHeaderId)
   }
   
   lazy val spectrumHeaderMap = new SpectrumHeaderMap()
-
-    // TODO: end of move to peaklist tree or create a dedicated class ???
-  
-  /*def this( peakListsBySpectrumId: Map[Int, Seq[PeakList]] ) = {
-    this( PeakListTree.groupPeaklists(peakListsBySpectrumId) )
+      
+  /*def getIndexedPeak( peakId: Long ): IndexedPeak = {
+    val peaklist = peaklistByPeakId(peakId)
+    peaklist.getIndexedPeak(peakId)
   }*/
+  
+  def getPeakAt( spectrumIdx: Int, peaklistIdx: Int, peakIdx: Int ): Peak = {
+    val spectrumId = spectrumIds(spectrumIdx)
+    val pklTriplet = pklTripletBySpectrumId(spectrumId)
+    val peaklist = pklTriplet.peakLists(peaklistIdx)
+    peaklist.getPeakAt(peakIdx)
+  }
   
   /**
    * Returns all peaks contained in the PeakListTree.
    * @return an array containing all peakLists peaks (assumed to be sorted by spectrum then m/z).
    */
-  def getAllPeaks(): Array[Peak] = {
-    this.spectrumIds.flatMap( pklGroupBySpectrumId(_).getAllPeaks() )
-  }
+  /*def getAllPeaks(): Array[Peak] = {
+    this.spectrumIds.flatMap( pklTripletBySpectrumId(_).getAllPeaks() )
+  }*/
   
   def getNearestPeak( spectrumId: Long, mzToExtract: Double, mzTolDa: Double ): Peak = {
-    pklGroupBySpectrumId(spectrumId).getNearestPeak( mzToExtract, mzTolDa )
+    pklTripletBySpectrumId(spectrumId).getNearestPeak( mzToExtract, mzTolDa )
   }
   
-  def getPeaksInRange( spectrumId: Long, minMz: Double, maxMz: Double ): Array[Peak] = {
-    pklGroupBySpectrumId(spectrumId).getPeaksInRange( minMz, maxMz )
-  }
+  /*def getPeaksInRange( spectrumId: Long, minMz: Double, maxMz: Double ): Array[Peak] = {
+    pklTripletBySpectrumId(spectrumId).getPeaksInRange( minMz, maxMz )
+  }*/
  
-  def getXic(mz:Double, mzTolPPM: Double) : Array[Peak] = {
-    this.spectrumIds.map( pklGroupBySpectrumId(_).getNearestPeak(mz, mz * mzTolPPM / 1e6))
+  def getXic(mz:Double, mzTolPPM: Double): Array[Peak] = {
+    this.spectrumIds.map( pklTripletBySpectrumId(_).getNearestPeak(mz, mz * mzTolPPM / 1e6))
   }
   
   protected def extractIsotopicPattern(
@@ -111,20 +123,19 @@ case class PeakListTree( pklGroupBySpectrumId: LongMap[PeakListGroup], spectrumH
     mzTolPPM: Float,
     maxNbPeaksInIP: Option[Int],
     overlapShiftOpt: Option[Int], // overlap if defined return an overlapping isotopicPatternObject
-    maxTheoreticalPeakelIndex:Int
+    maxTheoreticalPeakelIndex: Int
   ): Option[IsotopicPatternLike] = {
     
     val mz = theoreticalIP.monoMz
     val charge = theoreticalIP.charge
     val maxNbPeaks = if (maxNbPeaksInIP.isDefined) maxNbPeaksInIP.get else theoreticalIP.abundances.filter(_ >= 5).length
     val spectrumId = spectrumHeader.id
-    val pklGroupAsOpt = pklGroupBySpectrumId.get(spectrumId)
+    val pklTriplet = pklTripletBySpectrumId.getOrNull(spectrumId)
     
-    if( charge < 1 || pklGroupAsOpt == None )
+    if( charge < 1 || pklTriplet == null )
       return Option.empty[IsotopicPatternLike]
     
-    val pklGroup = pklGroupAsOpt.get
-    val ipPeaks = PeakListTree.extractIsotopicPattern(pklGroup, mz, mzTolPPM, charge, maxNbPeaks, maxTheoreticalPeakelIndex)
+    val ipPeaks = PeakListTree.extractIsotopicPattern(pklTriplet, mz, mzTolPPM, charge, maxNbPeaks, maxTheoreticalPeakelIndex)
     
     // No peaks found, there is a gap
     if (ipPeaks.isEmpty || ipPeaks.count(_ != null) == 0 )

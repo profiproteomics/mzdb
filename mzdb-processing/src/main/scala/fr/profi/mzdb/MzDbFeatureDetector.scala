@@ -29,13 +29,15 @@ import fr.proline.api.progress._
 
 abstract class PeakelFinderConfig
 
-case class SmartPeakelFinderConfig(minPeaksCount: Int = 5,
+case class SmartPeakelFinderConfig(
+  minPeaksCount: Int = 5,
   miniMaxiDistanceThresh: Int = 3,
   useOscillationFactor: Boolean = false,
   maxOscillationFactor: Int = 10,
   usePartialSGSmoother: Boolean = false,
-  useBaselineRemover: Boolean = false) extends PeakelFinderConfig
-    
+  useBaselineRemover: Boolean = false
+) extends PeakelFinderConfig
+
 case class FeatureDetectorConfig(
   msLevel: Int = 1,
   mzTolPPM: Float = 10,
@@ -43,18 +45,19 @@ case class FeatureDetectorConfig(
   peakelFinderConfig: PeakelFinderConfig = SmartPeakelFinderConfig()
 )
 
-object PeakelFinderBuilder {
-	def build(config: PeakelFinderConfig): IPeakelFinder = {
-	  config match {
-	    case smf: SmartPeakelFinderConfig => new SmartPeakelFinder(
-	        minPeaksCount = smf.minPeaksCount, 
-	        miniMaxiDistanceThresh = smf.miniMaxiDistanceThresh,
-	        useOscillationFactor = smf.useOscillationFactor,
-	        maxOscillationFactor = smf.maxOscillationFactor,
-	        usePartialSGSmoother = smf.usePartialSGSmoother,
-	        useBaselineRemover = smf.useBaselineRemover )
-	  }
-	}
+object BuildPeakelFinder {
+  def apply(config: PeakelFinderConfig): IPeakelFinder = {
+    config match {
+      case smf: SmartPeakelFinderConfig => new SmartPeakelFinder(
+        minPeaksCount = smf.minPeaksCount,
+        miniMaxiDistanceThresh = smf.miniMaxiDistanceThresh,
+        useOscillationFactor = smf.useOscillationFactor,
+        maxOscillationFactor = smf.maxOscillationFactor,
+        usePartialSGSmoother = smf.usePartialSGSmoother,
+        useBaselineRemover = smf.useBaselineRemover
+      )
+    }
+  }
 }
 
 
@@ -83,18 +86,26 @@ class PeakelDetectorConsumer(
         val rsNumber = queueEntry.rsNumber
         val pklTree = queueEntry.pklTree
         val curPeaklistBySpectrumId = queueEntry.curPeaklistBySpectrumId
-    
-        // Retrieve all peaks in curPeaklistBySpectrumId
-        var curRsPeaks = curPeaklistBySpectrumId.values.flatMap( _.getAllPeaks() ).toArray
         
         this.logger.debug("unsupervised processing of run slice "+rsNumber)
         
-        // Sort the peaks
-        this.logger.debug(s"sorting #${ curRsPeaks.length} peaks by descending intensity in run slice " + rsNumber)
+        // Create a peaklist group that is only used to call getPeaksCoordsSortedByDescIntensity
+        // TODO: create a static method for that ???
+        val curRsPeakLists = pklTree.spectrumIds.map( specId => curPeaklistBySpectrumId.getOrNull(specId) )
+        val curRsPeakListColl = PeakListCollection(curRsPeakLists)
         
-        curRsPeaks = curRsPeaks.sortWith( (a,b) => a.getIntensity > b.getIntensity )
+        // Sort the peaks by descending intensity
+        this.logger.debug(s"sorting #${curRsPeakListColl.peaksCount} peaks by descending intensity in run slice " + rsNumber)
         
-        this.logger.debug( s"Peak intensity range in run slice $rsNumber = "+ curRsPeaks.last.getIntensity+" to "+curRsPeaks.head.getIntensity)
+        // Sort cursRsPeakRefs according to cursRsIntensityList
+        val curRsPeaksCoords = curRsPeakListColl.getPeaksCoordsSortedByDescIntensity()
+        
+        val highestPeakCoords = curRsPeaksCoords.head
+        val lowestPeakCoords = curRsPeaksCoords.last
+        val highestIntensity = curRsPeakListColl.getPeakAt(highestPeakCoords(0), highestPeakCoords(1)).getIntensity
+        val lowestIntensity = curRsPeakListColl.getPeakAt(lowestPeakCoords(0), lowestPeakCoords(1)).getIntensity
+        
+        this.logger.debug( s"Peak intensity range in run slice $rsNumber = "+ lowestIntensity+" to "+highestIntensity)
         
         // Create a HashMap to memorize which peaks have been already used
         // Note: in previous implementation we included peaks of the previous run slice
@@ -104,9 +115,7 @@ class PeakelDetectorConsumer(
         
         // Detect peakels in pklTree by using curRsPeaks as starting points
         val peakels = pklTree.synchronized {
-          curRsPeaks.synchronized {
-            peakelDetector.detectPeakels(pklTree, curRsPeaks)
-          }
+          peakelDetector.detectPeakels(pklTree, curRsPeakListColl, curRsPeaksCoords)
         }
         
         this.logger.debug( s"found ${peakels.length} peakels in run slice "+rsNumber)
@@ -130,8 +139,8 @@ class PeakelDetectorConsumer(
 
 case class PeakelDetectorQueueEntry(
   rsNumber: Int,
-  pklTree: PeakListTree,
-  curPeaklistBySpectrumId: LongMap[PeakList]
+  pklTree: PeakListTree, // contains peaks of [previous,current,next] RunSlices
+  curPeaklistBySpectrumId: LongMap[PeakList] // contains only peaks of the current RunSlice
 )
 
 // Code inspired from: http://studio.cs.hut.fi/snippets/producer.html
@@ -288,14 +297,16 @@ class MzDbFeatureDetector(
   val ms1SpectrumHeaderById = mzDbReader.getMs1SpectrumHeaders().toLongMapWith( sh => sh.getId.toLong -> sh )
   val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders()
   //val ms2SpectrumHeaderById = ms2SpectrumHeaders.map( sh => sh.getId.toInt -> sh ).toMap
-  val ms2SpectrumHeadersByCycle = ms2SpectrumHeaders.groupBy(_.getCycle.toInt)
+  val ms2SpectrumHeadersByCycle = ms2SpectrumHeaders.groupByLong(_.getCycle.toInt)
   val ms2SpectrumHeadersById = ms2SpectrumHeaders.toLongMapWith( sh => sh.getId.toLong -> sh )
  
   // TODO: factorize this code
   // BEGIN OF STOLEN FROM MzDbFeatureExtractor
   class RichRunSliceData(self: RunSliceData) {
     def getPeakListBySpectrumId(): LongMap[PeakList] = {
-      self.getSpectrumSliceList.toLongMapWith { ss => ss.getSpectrumId -> new PeakList(ss.toPeaks(),0.1) }
+      self.getSpectrumSliceList.withFilter(_.getData.getPeaksCount > 0).toLongMapWith { ss => 
+        ss.getSpectrumId -> new PeakList(ss)
+      }
     }
   }
   implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
@@ -314,7 +325,7 @@ class MzDbFeatureDetector(
       spectrumHeaderById = spectrumHeaderById,
       nfBySpectrumId = LongMap.empty[Float],
       mzTolPPM = ftDetectorConfig.mzTolPPM,
-      peakelFinder = PeakelFinderBuilder.build(ftDetectorConfig.peakelFinderConfig)
+      peakelFinder = BuildPeakelFinder(ftDetectorConfig.peakelFinderConfig)
     )
     
     // Define a peaklist map (first level = runSliceNumber, second level =spectrumId )
@@ -409,10 +420,10 @@ class MzDbFeatureDetector(
           }
           
           // Use the map to instantiate a peakList tree which will be used for peak extraction
-          val pklGroupBySpectrumId = peakListsBySpectrumId.map { case (spectrumId, pkl) =>
-            spectrumId -> new PeakListGroup( pkl )
-          } toLongMap
-          val pklTree = new PeakListTree( pklGroupBySpectrumId, spectrumHeaderById )
+          val pklTripletBySpectrumId = peakListsBySpectrumId.map { case (spectrumId, pkls) =>
+            Tuple2(spectrumId, new PeakListTriplet( pkls.toArray ) )
+          }
+          val pklTree = new PeakListTree( pklTripletBySpectrumId, spectrumHeaderById )
           
           // Enqueue loaded PeakListTree to send it to the consumer
           // Note that the detectorQueue will wait if it is full
@@ -435,6 +446,7 @@ class MzDbFeatureDetector(
       
     } catch {
       case e: Throwable => {
+        logger.error("Exception raised from peakel detector consumer",e)
         detectorQueue.enqueueException(e)
       }
     } finally {
@@ -1243,17 +1255,6 @@ class MzDbFeatureDetector(
     val roundedApproxZ = math.round(approxZ)
     
     (mzDiff, roundedApproxZ)
-  }
-  
-  def quickSortPeaksByDescIntensity(peaks: Array[Peak]) {
-    
-    // TODO: try to perform quickSort in parallel
-    val peakDescOrdering = new Ordering[Peak] {
-      def compare(a: Peak, b: Peak) = b.getIntensity compare a.getIntensity
-    }
-    
-    // Note: may result in StackOverFlowError (fixed in scala 2.11)
-    scala.util.Sorting.quickSort(peaks)(peakDescOrdering)
   }
 
 }

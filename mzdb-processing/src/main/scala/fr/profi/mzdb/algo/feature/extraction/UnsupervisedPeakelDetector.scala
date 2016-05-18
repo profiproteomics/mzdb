@@ -1,6 +1,8 @@
 package fr.profi.mzdb.algo.feature.extraction
 
+import java.util.BitSet
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
 import scala.collection.mutable.HashSet
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.LongMap
@@ -78,25 +80,28 @@ class UnsupervisedPeakelDetector(
   val minPeaksCount = 5
   val minPeakelAmplitude = 1.5f
   
+  private val maxHalfDuration = maxTimeWindow / 2
   
-  /*val msLevel = 2
-  
-  val ms1SpectrumIdByCycleNum = spectrumHeaderById.values
-    .withFilter( _.getMsLevel == this.msLevel )
-    .map( sh => sh.getCycle -> sh.getId )
-    .toMap*/
+  def detectPeakels(
+    pklTree: PeakListTree,
+    curRsPklColl: PeakListCollection,
+    intensityDescPeakCoords: Array[Array[Int]]
+  ): Array[Peakel] = {
     
-  /*def peakelsToFeatures(peakels: Array[Peakel] ): Array[Feature] = {
+    val nbPeaks = intensityDescPeakCoords.length
     
-  }*/
-  
-  def detectPeakels(pklTree: PeakListTree, intensityDescPeaks: Array[Peak] ): Array[Peakel] = {
     // Return if the number of peaks is too low
-    if( intensityDescPeaks.length < 10 ) return Array()
-        
-    val usedPeakSet = new HashSet[Peak]()
-        
-    val nbPeaks = intensityDescPeaks.length
+    if( nbPeaks < 10 ) return Array()
+    
+    // Instantiate a HashMap which will memorize used peaks
+    val usedPeakMap = new HashMap[PeakList,BitSet]()
+    usedPeakMap.sizeHint(curRsPklColl.peakListsCount)
+    for ( (specId,pklTriplet) <- pklTree.pklTripletBySpectrumId; peaklist <- pklTriplet.peakLists) {
+      usedPeakMap(peaklist) = new BitSet(peaklist.peaksCount)
+    }
+    
+    val curRsPeakLists = curRsPklColl.peakLists
+    val curRsPeaklistsCount = curRsPeakLists.length
     
     // Set up the progress computer
     val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newDetectionProgressPlan() )
@@ -109,27 +114,61 @@ class UnsupervisedPeakelDetector(
     //val q1 = math.log10( intensityDescPeaks( (nbPeaks * 0.75).toInt ).getIntensity )
     //val iqr = (q3 - q2) * 2
     //val intensityThreshold = math.pow(10, q1 - (1 * iqr) )
-    val intensityThreshold = intensityDescPeaks( (nbPeaks * 0.9).toInt ).getIntensity
+    
+    // TODO: put the relative intensity threshold (0.9) in the config
+    val lowestPeakCoords = intensityDescPeakCoords( (nbPeaks * 0.9).toInt + 1 ) // plus 1 to compare with previous implem
+    val lowestPeakListIdx = lowestPeakCoords(0)
+    val lowestPeakIdx = lowestPeakCoords(1)
+    val intensityThreshold = curRsPklColl.getPeakAt(lowestPeakListIdx, lowestPeakIdx).getIntensity
+    
     logger.debug(s"detecting peakels using intensity threshold ="+ intensityThreshold)
     
+    // Get peaklist tree peaks sorted by m/z value
     val peakelBuffer = new ArrayBuffer[Peakel]()
+    
+    // Instantiate a shared PeakelCoordinates that will be used as a shared memory matrix
+    //println("curRsPeaklistsCount: "+ curRsPeaklistsCount)
+    val sharedPeakelCoordinates = new PeakelCoordinates(curRsPeaklistsCount)
     
     // Iterate over all peaks sorted by descending order
     breakable {
-      for( peak <- intensityDescPeaks ) {
+      var peakNum = 0
+      for( peakCoords <- intensityDescPeakCoords ) {
+        peakNum += 1
         
-        // Increment the step count
-        curStep.incrementAndGetCount()
+        // Update progress every 1000 peaks
+        if( peakNum % 1000 == 0 ) {
+          // Increment the step count
+          curStep.incrementAndGetCount()
+        }
         
-        if( peak.getIntensity() < intensityThreshold ) {
+        val peakListIdx = peakCoords(0)
+        val peakIdx = peakCoords(1)
+        val peakList = curRsPeakLists(peakListIdx)
+        
+        // Stop if we reach the lowest acceptable peak
+        //if( peak.getIntensity < intensityThreshold ) {
+        if (peakListIdx == lowestPeakListIdx && peakIdx == lowestPeakIdx) {
           break
-        } else if( usedPeakSet.contains(peak) == false ) {
+        } else if( usedPeakMap(peakList).get(peakIdx) == false ) {
           
-          // Retrieve corresponding spectrum header
-          val spectrumHeader = this.spectrumHeaderById(peak.getLcContext.getSpectrumId)
+          // Retrieve corresponding spectrum slice
+          val spectrumSlice = peakList.getSpectrum
+          
+          // Update apex peakList and the boundaries in the sharedPeakelCoordinates
+          sharedPeakelCoordinates.peakLists(peakListIdx) = peakList
+          sharedPeakelCoordinates.minIdx = peakListIdx
+          sharedPeakelCoordinates.maxIdx = peakListIdx
           
           // Initiate a peakel extraction using this starting point
-          val peakelOpt = this.extractPeakel(pklTree, usedPeakSet, spectrumHeader, peak)
+          val peakelOpt = this.extractPeakel(
+            pklTree,
+            usedPeakMap,
+            peakListIdx,
+            spectrumSlice,
+            peakIdx,
+            sharedPeakelCoordinates
+          )
           
           // Check if we found one peakel
           if( peakelOpt.isDefined ) {
@@ -144,43 +183,55 @@ class UnsupervisedPeakelDetector(
         }
       }
     } // END OF BREAKABLE
+        
+    // Increment the step count
+    curStep.setAsCompleted()
     
     peakelBuffer.toArray
   }
   
   protected def extractPeakel(
     pklTree: PeakListTree,
-    usedPeakSet: HashSet[Peak],
-    apexSpectrumHeader: SpectrumHeader,
-    apexPeak: Peak
+    usedPeakMap: HashMap[PeakList,BitSet],
+    spectrumIdx: Int,
+    apexSpectrum: Spectrum,
+    apexPeakIdx: Int,
+    sharedPeakelCoordinates: PeakelCoordinates
   ): Option[Peakel] = {
     
     // Set up the progress computer
     //val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newExtractionProgressPlan() )
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP1)
     
+    val pklTripletBySpectrumId = pklTree.pklTripletBySpectrumId
+    val sharedPeakLists = sharedPeakelCoordinates.peakLists
+    val sharedPeakIndices = sharedPeakelCoordinates.peakIndices
+    
     // Retrieve the spectrum header map
     val pklTreeShMap = pklTree.spectrumHeaderMap
+    val pklTreeSpecHeaders = pklTreeShMap.getSpectrumHeaders()
+    val shCount = pklTreeSpecHeaders.length
+    //println("sharedPeakLists.length "+sharedPeakLists.length)
     
     // Define some values
-    val apexMz = apexPeak.getMz
-    val apexIntensity = apexPeak.getIntensity
+    val apexSpectrumHeader = apexSpectrum.getHeader
+    val apexSpectrumData = apexSpectrum.getData
+    val apexMz = apexSpectrumData.getMzList()(apexPeakIdx)
+    val apexIntensity = apexSpectrumData.getIntensityList()(apexPeakIdx)
+    
+    //println("apexMz "+ apexMz)
+    //println("apexIntensity "+ apexIntensity)
     val apexTime = apexSpectrumHeader.getTime
-    val apexShPklTreeIdx = pklTreeShMap.getSpectrumHeaderIndex(apexSpectrumHeader) //apexSpectrumHeader.getCycle    
+    val apexShPklTreeIdx = pklTreeShMap.getSpectrumHeaderIndex(apexSpectrumHeader.getId) //apexSpectrumHeader.getCycle    
     
     // Compute the m/z tolerance in Daltons
     val mzTolDa = MsUtils.ppmToDa( apexMz, mzTolPPM )
     val intensityThreshold = apexIntensity * minPercentageOfMaxInt
     
     // Define some vars
+    var peakelPeaksCount = 0
     var numOfAnalyzedDirections = 0
     var isRightDirection = true
-    
-    // Create a buffer for peaks
-    val peaksBuffer = new ListBuffer[Peak]()
-    
-//          logger.debug("Extract Peakel from apex mz=" + apexMz + ", intensity=" +apexIntensity + ", spectrumId="+apexSpectrumHeader.getInitialId())
-
     
     // Loop until left and right directions have been analyzed
     while( numOfAnalyzedDirections < 2 ) {
@@ -198,68 +249,53 @@ class UnsupervisedPeakelDetector(
           if( isRightDirection == false ) shIdxShift -= 1
           
           // Determine current spectrum header index
-          //val curCycleNum = cycleNum + cycleShift
           val curShIdx = apexShPklTreeIdx + shIdxShift
           
           // Try to retrieve the spectrum id
-          var curSpectrumHOpt = pklTreeShMap.getSpectrumHeader(curShIdx)
-          
-          if( curSpectrumHOpt.isEmpty ) {//if wrong spectrumID
+          if( curShIdx < 0 || curShIdx >= shCount ) {//if wrong spectrumID
             timeOverRange = true
             break
           } else {
-            val curSpectrumH = curSpectrumHOpt.get
+            val curSpectrumH = pklTreeSpecHeaders(curShIdx)
             val curSpectrumId = curSpectrumH.getId
             val curTime = curSpectrumH.getTime
               
             // TODO: check if total time does not exceed the provided threshold
-            if( this.maxTimeWindow > 0 && (curTime - apexTime).abs > this.maxTimeWindow / 2 ) {
+            if( this.maxHalfDuration > 0 && Math.abs(curTime - apexTime) > this.maxHalfDuration ) {
               timeOverRange = true
               break
             }
             
-            // Try to retrieve a peaklist group for the current spectrum header
-            val pklGroupOpt = pklTree.pklGroupBySpectrumId.get(curSpectrumId)
-            require( pklGroupOpt.isDefined, "pklGroupOpt is empty" )
+            // Try to retrieve a peaklist triplet for the current spectrum header
+            val pklTriplet = pklTripletBySpectrumId.getOrNull(curSpectrumId)
+            require( pklTriplet != null, "no pklTriplet for spectrum #" + curSpectrumId )
             
-            val pklGroup = pklGroupOpt.get
-  
             // Try to retrieve the nearest peak
-            val peak = pklGroup.getNearestPeak( apexMz, mzTolDa )
+            val nearestPeakIdx = pklTriplet.addNearestPeakToPeakelCoordinates(
+              apexMz,
+              mzTolDa,
+              sharedPeakelCoordinates,
+              curShIdx
+            )
             
             // Check if a peak has been found
-            // TODO: should we search the peak again with getNearestPeak if it has already been used ???
-            if( peak != null && usedPeakSet.contains(peak) == false ) {
-              
-              // Retrieve some values
-              val intensity = peak.getIntensity
-              
-              if( intensity == 0 ) {
-                consecutiveGapCount += 1
-              }
-              /*// Check if intensity lower than threshold (a given percentage of max. intensity)
-              if( intensity < intensityThreshold ) {
-                consecutiveGapCount += 1
-              }*/
-              
-              // Add the peak to the peaks buffer
-              // Note: before code
-              //if( isRightDirection ) peaksBuffer += peak // append peak
-              //else { peaksBuffer.+=:( peak ) } // prepend peak
-              // New one => perform sort at the end => optimization
-              else {
-                peaksBuffer += peak
-                consecutiveGapCount = 0
-              }
-              
+            if( nearestPeakIdx != -1 && usedPeakMap(sharedPeakLists(curShIdx)).get(nearestPeakIdx) == false ) {
+              consecutiveGapCount = 0
+              peakelPeaksCount += 1
             // Else if peak is not defined
             } else {
-              // Note that null peaks are excluded => peakels will have some missing peaks
+              // Note that missing peaks are excluded => peakels will have some missing peaks
               consecutiveGapCount += 1
+              sharedPeakelCoordinates.removePeak(curShIdx)
             }
   
             // Increase spectrum header index shift if right direction
-            if( isRightDirection) shIdxShift += 1
+            if (isRightDirection) {
+              shIdxShift += 1
+              sharedPeakelCoordinates.maxIdx = curShIdx
+            } else {
+              sharedPeakelCoordinates.minIdx = curShIdx
+            }
             
           } // END OF ELSE
         } // END OF WHILE
@@ -274,55 +310,56 @@ class UnsupervisedPeakelDetector(
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP2)
     
     // TODO: define a minimum number of peaks for a peakel in the config
-    val peakelAndPeaksOpt = if( peaksBuffer.length < minPeaksCount ) {
+    val peakelAndPeaksOpt = if( peakelPeaksCount < minPeaksCount ) {
       return None
     }
-      
-    // Sort peaks by ascending spectrum id
-    val extractedPeaks = peaksBuffer.sortBy(_.getLcContext().getSpectrumId())
+    
+    // Retrieve RT / intensity pairs
+    val rtIntPairs = sharedPeakelCoordinates.getElutionTimeIntensityPairs()
+    require(
+      rtIntPairs.length == peakelPeaksCount,
+      s"invalid number of RT/intensity pairs for mz=$apexMz: got ${rtIntPairs.length} but expected $peakelPeaksCount"
+    )
+    //println("peakelPeaksCount: "+ peakelPeaksCount)
+    //println("rtIntPairs length: "+ rtIntPairs.length)
     
     // Check if we have enough peaks for peakel detection
-    val peakelsIndices = peakelFinder.findPeakelsIndices(extractedPeaks)
+    val peakelsIndices = peakelFinder.findPeakelsIndices(rtIntPairs)
     
     // Retrieve the peakel corresponding to the feature apex
     // and memorize peak indices
     var matchingPeakelIdxOpt = Option.empty[(Int, Int)]
-    val detectedPeaksIndices = new ArrayBuffer[Int]()
+    val detectedPeaksIndices = new LongMap[Boolean](rtIntPairs.length)
     
     for( peakelIdx <- peakelsIndices ) {
-      
       if(
-        apexTime >= extractedPeaks(peakelIdx._1).getLcContext.getElutionTime && 
-        apexTime <= extractedPeaks(peakelIdx._2).getLcContext.getElutionTime
+        apexTime >= rtIntPairs(peakelIdx._1)._1 && 
+        apexTime <= rtIntPairs(peakelIdx._2)._1
       ) matchingPeakelIdxOpt = Some(peakelIdx)
       
-      detectedPeaksIndices ++= peakelIdx._1 to peakelIdx._2
-    }
-    
-    // Remove noisy peaks from future peakel extractions
-    val detectedPeaksIndexSet = detectedPeaksIndices.toSet
-    for( i <- 0 until extractedPeaks.length ) {
-      // Check if this peak has belong to a peakel
-      if( detectedPeaksIndexSet.contains(i) == false ) {
-        // If this is not the case we add it to the usedPeakSet (it corresponds to noise)
-        usedPeakSet += extractedPeaks(i)
+      var idx = peakelIdx._1
+      while( idx <= peakelIdx._2) {
+        detectedPeaksIndices.put(idx, true)
+        idx += 1
       }
     }
     
-    /*
-    val mozToFind = 437.2611
-    val mzTol = 20
-    val mozTolInDa = MsUtils.ppmToDa(mozToFind, mzTol)
-    if( apexMz > mozToFind - mozTolInDa && apexMz < mozToFind + mozTolInDa ) {
-      println("extractedPeaks")
-      println(extractedPeaks.map(_.getLcContext().getElutionTime() / 60).mkString("\t"))
-      println(extractedPeaks.map(_.getIntensity()).mkString("\t"))
-      println(matchingPeakelIdxOpt)
-      
-      HistogramBasedPeakelFinder.debug = true
-      HistogramBasedPeakelFinder.findPeakelsIndices( extractedPeaks )
-      HistogramBasedPeakelFinder.debug = false
-    }*/
+    val peakListIdxByDefPeakIdx = sharedPeakelCoordinates.getDefinedPeakListIndexMapping()
+    
+    // Remove noisy peaks from future peakel extractions
+    val rtIntPairsLength = rtIntPairs.length
+    var i = 0
+    while (i < rtIntPairsLength) {
+      // Check if this peak has belong to a peakel
+      if( detectedPeaksIndices.contains(i) == false ) {
+        val peakListIdx = peakListIdxByDefPeakIdx(i)
+        val peakList = sharedPeakLists(peakListIdx)
+        val peakIdx = sharedPeakIndices(peakListIdx)
+        // If this is not the case we add it to the usedPeakSet (it corresponds to noise)
+        usedPeakMap(peakList).set(peakIdx, true)
+      }
+      i += 1
+    }
     
     if( matchingPeakelIdxOpt.isEmpty ) {
       /*this.logger.warn(
@@ -333,10 +370,15 @@ class UnsupervisedPeakelDetector(
     
     // Retrieve peakel peaks
     val matchingPeakelIdx = matchingPeakelIdxOpt.get
-    val peakelPeaks = extractedPeaks.slice(matchingPeakelIdx._1, matchingPeakelIdx._2 + 1 ).toArray
+    
+    // Update sharedPeakelCoordinates boundaries
+    sharedPeakelCoordinates.minIdx = peakListIdxByDefPeakIdx(matchingPeakelIdx._1)
+    sharedPeakelCoordinates.maxIdx = peakListIdxByDefPeakIdx(matchingPeakelIdx._2)
     
     // Build the peakel
-    val peakel = new PeakelBuilder( peakelPeaks ).result()
+    //println("minIdx:"+sharedPeakelCoordinates.minIdx)
+    //println("maxIdx:"+sharedPeakelCoordinates.maxIdx)
+    val peakel = sharedPeakelCoordinates.toPeakel()
     
     //progressComputer.setCurrentStepAsCompleted()
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP3)
@@ -347,19 +389,27 @@ class UnsupervisedPeakelDetector(
     }
     
     // Check peakel amplitude is big enough
-    val peaksSortedByItensity = peakelPeaks.sortBy(_.getIntensity)
-      
-    // TODO: define a minimum amplitude for a peakel in the config
-    val( minIntensity, maxIntensity ) = (peaksSortedByItensity.head.getIntensity, peaksSortedByItensity.last.getIntensity)
+    val minIntensity = peakel.intensityValues.min
+    val maxIntensity = peakel.getApexIntensity()
     val intensityAmplitude = if( minIntensity == 0 ) 2f else maxIntensity / minIntensity
     
     if( intensityAmplitude < minPeakelAmplitude ) {
       return None
     }
     
+    //println( "peakel.getApexMz(): "+peakel.getApexMz() )
+    //println( "peakel.getPeaksCount(): "+peakel.getPeaksCount() )
+    
     // Re-add peakel peaks to usedPeakMap
-    for( peak <- peakelPeaks)
-      usedPeakSet += peak
+    i = sharedPeakelCoordinates.minIdx
+    while (i <= sharedPeakelCoordinates.maxIdx) {
+       val peakList = sharedPeakLists(i)
+       if (peakList != null) {
+         val peakIdx = sharedPeakIndices(i)
+         usedPeakMap(peakList).set(peakIdx, true)
+       }
+      i += 1
+    }
   
     //progressComputer.setCurrentStepAsCompleted()
 
