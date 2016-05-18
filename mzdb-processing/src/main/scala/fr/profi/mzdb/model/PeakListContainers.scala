@@ -1,7 +1,5 @@
 package fr.profi.mzdb.model
 
-// TODO: rename this file into PeakListContainers
-
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.LongMap
 
