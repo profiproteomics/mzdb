@@ -3,7 +3,6 @@ package fr.profi.mzdb.algo.signal.detection
 import scala.collection.mutable.ArrayBuffer
 
 import fr.profi.mzdb.algo.signal.filtering._
-import fr.profi.mzdb.model.IPeakelData
 import fr.profi.mzdb.model.Peak
 import fr.profi.util.stat._
 
@@ -11,9 +10,10 @@ import fr.profi.util.stat._
  * @author David Bouyssie
  *
  */
-class HistogramBasedPeakelFinder(var sameSlopeCountThreshold:Int = 2,
-  								 var expectedBinDataPointsCount:Int = 5) extends IPeakelFinder {
-  
+class HistogramBasedPeakelFinder(
+  var sameSlopeCountThreshold:Int = 2,
+  var expectedBinDataPointsCount:Int = 5
+) extends IPeakelFinder {
  
   val basicPeakelFinder = new BasicPeakelFinder(sameSlopeCountThreshold)
   

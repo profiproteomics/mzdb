@@ -18,11 +18,20 @@ class SavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfig ) ext
     val coeffs = SGFilterMath3.computeSGCoefficients(nl,nr,order)
 
     val sgFilter = new SGFilterMath3(nbPoints,nbPoints)
-    var smoothedValues = rtIntPairs.map(_._2)
+    val peaksCount = rtIntPairs.length
+    var smoothedValues = new Array[Double](peaksCount)
+    
+    var i = 0
+    while (i < peaksCount) {
+      smoothedValues(i) = rtIntPairs(i)._2
+      i += 1
+    }
     //val maxBeforeSG = smoothedValues.max
     
-    for( i <- 1 to times ) {
+    var time = 1
+    while( time <= times ) {
       smoothedValues = sgFilter.smooth(smoothedValues,coeffs)
+      time += 1
     }
     
     // Re-scale value (they are underestimated after SG filter)
@@ -30,10 +39,15 @@ class SavitzkyGolaySmoother( smoothingConfig: SavitzkyGolaySmoothingConfig ) ext
     //val scalingFactor = maxAfterSG / maxBeforeSG
     //val rescaledSmoothedValues = smoothedValues.map( _ * scalingFactor)
   
-    val smoothedRtIntPairs = for( i <- rtIntPairs.indices )
-      yield rtIntPairs(i)._1 -> smoothedValues(i)
+    val smoothedRtIntPairs = new Array[(Float,Double)](peaksCount)
     
-    smoothedRtIntPairs.toArray
+    i = 0
+    while (i < peaksCount) {
+      smoothedRtIntPairs(i) = (rtIntPairs(i)._1, smoothedValues(i))
+      i += 1
+    }
+    
+    smoothedRtIntPairs
   }
 
 }

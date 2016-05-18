@@ -1,13 +1,13 @@
 package fr.profi.mzdb.algo.signal.detection
 
-import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.algo.signal.filtering._
-import fr.profi.mzdb.model.IPeakelData
-import fr.profi.mzdb.model.Peak
-import fr.profi.util.stat._
-import fr.profi.mzdb.utils.math.DerivativeAnalysis
 import scala.beans.BeanProperty
+import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging.LazyLogging
+import fr.profi.mzdb.algo.signal.filtering._
+import fr.profi.mzdb.model.Peak
+import fr.profi.mzdb.utils.math.DerivativeAnalysis
+import fr.profi.mzdb.utils.math.DerivativeAnalysis.ILocalDerivativeChange
+import fr.profi.util.stat._
 
 /**
  * @author David Bouyssie
@@ -77,13 +77,25 @@ class SmartPeakelFinder(
     }
 
     // Convert mini/maxi into peakel indices
-    val tmpPeakelsIndices = miniMaxi.filter(_.isMaximum == false).sliding(2).map { buffer =>
-      buffer(0).index -> buffer(1).index
+    val miniMaxiCount = miniMaxi.length
+    val tmpPeakelsIndices = new ArrayBuffer[(Int,Int)](miniMaxiCount)
+    var miniMaxiIdx = 0
+    var prevMinMax: ILocalDerivativeChange = null
+    while (miniMaxiIdx < miniMaxiCount) {
+      val curMinMax = miniMaxi(miniMaxiIdx)
+      if (curMinMax.isMinimum) {
+        if (prevMinMax != null) {
+          tmpPeakelsIndices += Tuple2(prevMinMax.index, curMinMax.index)
+        }
+        prevMinMax = curMinMax
+      }
+      miniMaxiIdx += 1
     }
 
     // Refine peakels using BaselineRemover algorithm
-    val refinedPeakelsIndices = if (useBaselineRemover) {
-        tmpPeakelsIndices.map { tmpPeakelIndices =>
+    val refinedPeakelsIndices = if (useBaselineRemover == false) tmpPeakelsIndices
+    else {
+      tmpPeakelsIndices.map { tmpPeakelIndices =>
 
         // Retrieve peakel time/intensity pairs
         val (firstIndex, lastIndex) = tmpPeakelIndices
@@ -107,9 +119,8 @@ class SmartPeakelFinder(
           refinedFirstIndex -> refinedLastIndex
         }
       }
-    } else {
-      tmpPeakelsIndices
     }
+    
     refinedPeakelsIndices.toArray
   }
 
