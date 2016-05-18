@@ -30,36 +30,85 @@ object IsotopePatternEstimator extends LazyLogging {
     Array(0.00000E+00, 0.00000E+00, 1.22218E-09, 7.63295E-12, 3.97254E-15, 0.00000E+00, 0.00000E+00, 0.00000E+00),
     Array(0.00000E+00, 0.00000E+00, 0.00000E+00, 6.79135E-13, 1.41381E-15, 4.41487E-19, 0.00000E+00, 0.00000E+00),
     Array(0.00000E+00, 0.00000E+00, 0.00000E+00, 2.01418E-14, 1.88689E-16, 1.96404E-19, 4.08871E-23, 0.00000E+00),
-    Array(0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 1.11923E-17, 3.49498E-20, 2.18273E-23, 3.24570E-27))
+    Array(0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 1.11923E-17, 3.49498E-20, 2.18273E-23, 3.24570E-27)
+  )
+  final private val coeffsMatrixLen = coeffs.length
+  final private val coeffsRowLen = coeffs(0).length
 
   // A mass (not m/z) must be provided
   def getTheoreticalPattern(mz: Double, charge: Int): TheoreticalIsotopePattern = {
     require(charge > 0, "charge must be greater than zero")
 
     // Convert m/z into mass
-    var mass = mozToMass(mz, charge)
-    var m = new Array[Double](coeffs(0).length)
+    val mass = mozToMass(mz, charge)
+    val m = new Array[Double](coeffsRowLen)
     m(0) = 1.0
     m(1) = mass
     
-    for(i <- 2 until m.length) {
-      m(i) = m(i-1)*mass
+    var prevMass = mass
+    var i = 2
+    while (i < coeffsRowLen) {
+      val curMass = prevMass * mass
+      m(i) = curMass
+      prevMass = curMass
+      
+      i += 1
     }
     
-    val mzIntPairs = new ArrayBuffer[(Double, Float)](coeffs.length)
-    val r = mult(coeffs, m)
-    val max = r.reduceLeft(_ max _)
-    for (i <- 0 until r.length) {
-    	val isoMz = mz + (i * avgIsoMassDiff / charge)
-        mzIntPairs += (isoMz -> (r(i)*100.0/max).toFloat )      
+    val (r, max) = mult(coeffs, m)
+    val relativeFactor = 100 / max
+    
+    val mzIntPairs = new Array[(Double, Float)](coeffsMatrixLen)
+    i = 0
+    while (i < coeffsMatrixLen) {
+      val isoMz = mz + (i * avgIsoMassDiff / charge)
+      val isoRelInt = r(i) * relativeFactor
+      mzIntPairs(i) = Tuple2(isoMz, isoRelInt.toFloat )
+      i += 1
     }
 
-    TheoreticalIsotopePattern(mzIntPairs.toArray, charge)
+    TheoreticalIsotopePattern(mzIntPairs, charge)
   }
 
-  def mult(a: Array[Array[Double]], b: Array[Double]) : Array[Double]= {
+  /*def mult(m: Array[Array[Double]], b: Array[Double]) : Array[Double]= {
     for (row <- a)
       yield row zip b map Function.tupled(_ * _) sum
     
+  }*/
+
+  /**
+   * @author David Bouyssie
+   * @return the array of obtained values after dot product, and the maximum value in the array
+   */
+  private def mult(aMatrix: Array[Array[Double]], b: Array[Double]): (Array[Double],Double) = {
+    
+    val len = aMatrix.length
+    val result = new Array[Double](len)
+    
+    var max = 0.0
+    var i = 0
+    while (i < len) {
+      val value = dotProduct(aMatrix(i), b)
+      result(i) = value
+      if (value > max) max = value
+      i += 1
+    }
+    
+    (result,max)
+  }
+  
+  private def dotProduct(a: Array[Double], b: Array[Double]): Double = {
+    var value = 0.0
+    var sum = 0.0
+
+    val len = a.length
+    var i = 0
+    while (i < len) {
+      value = a(i) * b(i)
+      sum = sum + value
+      i += 1
+    }
+
+    sum
   }
 }
