@@ -1,7 +1,9 @@
 package fr.profi.mzdb.utils.math
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.LongMap
+import fr.profi.util.collection._
 
 object DerivativeAnalysis {
   
@@ -19,12 +21,15 @@ object DerivativeAnalysis {
   trait ILocalDerivativeChange {
     def value: Double
     def index: Int
+    def isMinimum: Boolean
     def isMaximum: Boolean
   }
   case class LocalMinimum( value: Double, index: Int ) extends ILocalDerivativeChange {
+    def isMinimum = true
     def isMaximum = false
   }
   case class LocalMaximum( value: Double, index: Int ) extends ILocalDerivativeChange {
+    def isMinimum = false
     def isMaximum = true
   }
   
@@ -32,6 +37,7 @@ object DerivativeAnalysis {
     values: Array[Double]
   ): Array[ILocalDerivativeChange] = {
     
+    val valuesCount = values.length
     var prevIdx = 0
     var prevSlope = 0
     var prevMaxValue = 0.0
@@ -39,11 +45,12 @@ object DerivativeAnalysis {
     var afterMinimum = true
     var afterMaximum = false
     
-    val changes = new ArrayBuffer[ILocalDerivativeChange]()
+    val changes = new ListBuffer[ILocalDerivativeChange]()
     
-    values.sliding(2).foreach { buffer =>
-      val prevValue = buffer(0)
-      val curValue = buffer(1)
+    val maxPrevIdx = valuesCount - 2
+    while( prevIdx <= maxPrevIdx ) {
+      val prevValue = values(prevIdx)
+      val curValue = values(prevIdx + 1)
       val curDiff = (curValue - prevValue)
       val curSlope = if( curDiff == 0 ) 0 else curDiff.signum
       
@@ -76,59 +83,88 @@ object DerivativeAnalysis {
       
       prevSlope = curSlope
       prevIdx += 1
-    } //end sliding foreach
+      
+    } // ends while
     
     if( changes.isEmpty )
       return Array()
       
-    val indexedValues = values.zipWithIndex
+    val firstChange = changes(0)
     
     // If needed, add missing initial minimum
-    if( changes.head.isMaximum ) {
+    if( firstChange.isMaximum ) {
+      val firstChangeIdx = firstChange.index
+      
       // If maximum is the first value
-      if( changes.head.index == 0 ) {
+      if( firstChangeIdx == 0 ) {
         // We remove it from the array
-        changes.remove(changes.head.index)
+        changes.remove(0)
       } else {
-        val prevMinWithIndex = indexedValues.slice(0,changes.head.index + 1).minBy(_._1)
+        
+        // Search for previous minimum value
+        var prevMinValue = Double.MaxValue
+        var prevMinIndex = -1
+        var idx = 0
+        while (idx <= firstChangeIdx) {
+          val value = values(idx)
+          if (value < prevMinValue) {
+            prevMinValue = value
+            prevMinIndex = idx
+          }
+          idx += 1
+        }
         
         // Handle the case where the minimum value equals the maximum value
-        if( prevMinWithIndex._1 != changes.head.value ) {
-          changes.prepend( LocalMinimum( prevMinWithIndex._1, prevMinWithIndex._2 ) )
+        if( prevMinValue != firstChange.value ) {
+          changes.prepend( LocalMinimum( prevMinValue, prevMinIndex ) )
         } else {
-          val firstIndexedValue = indexedValues.head
-          changes.prepend( LocalMinimum( firstIndexedValue._1, firstIndexedValue._2 ) )
+          changes.prepend( LocalMinimum( values(0), 0 ) )
         }
       }
     }
     
+    val lastChange = changes.last
+    
     // If needed, add missing final minimum
-    if( changes.last.isMaximum ) {
-      val lastValueIndex = values.length -1
+    if( lastChange.isMaximum ) {
+      val lastChangeIndex = lastChange.index
+      val lastValueIndex = valuesCount - 1
       
       // If maximum is the last value
-      if( changes.last.index == lastValueIndex ) {
+      if( lastChangeIndex == lastValueIndex ) {
         // We remove it from the array
-        changes.remove(lastValueIndex)
+        changes.remove(lastChangeIndex)
       } else {
-        val nextMinWithIndex = indexedValues.slice(changes.last.index, indexedValues.length).minBy(_._1)
+        //val nextMinWithIndex = indexedValues.slice(lastChange.index, indexedValues.length).minBy(_._1)
+        
+        // Search for next minimum value
+        var nextMinValue = Double.MaxValue
+        var nextMinIndex = -1
+        var idx = lastChange.index
+        while (idx <= lastValueIndex) {
+          val value = values(idx)
+          if (value < nextMinValue) {
+            nextMinValue = value
+            nextMinIndex = idx
+          }
+          idx += 1
+        }
         
         // Handle the case where the minimum value equals the maximum value
-        if( nextMinWithIndex._1 != changes.last.value ) {
-          changes.append( LocalMinimum( nextMinWithIndex._1, nextMinWithIndex._2 ) )
+        if( nextMinValue != lastChange.value ) {
+          changes.append( LocalMinimum( nextMinValue, nextMinIndex ) )
         } else {
-          val lastIndexedValue = indexedValues.last
-          changes.append( LocalMinimum( lastIndexedValue._1, lastIndexedValue._2 ) )
+          changes.append( LocalMinimum( values(lastValueIndex), lastValueIndex ) )
         }
       }
     }
     
     // Check we have an alternation of minima and maxima
     // TODO: remove me if exception not thrown for a while
-    require(
+    /*require(
       changes.tail.grouped(2).forall( buffer => buffer(0).isMaximum && buffer(1).isMaximum == false ),
       "invalid alternation of minima and maxima"
-    )
+    )*/
     
     changes.toArray
   }
@@ -148,16 +184,19 @@ object DerivativeAnalysis {
     }
     
     // Split maxima and minima
-    val indexedMiniMaxi = miniMaxi.zipWithIndex
+    val indexedMiniMaxi = miniMaxi.toList.zipWithIndex
     val (indexedMaxima, indexedMinima) = indexedMiniMaxi.partition(_._1.isMaximum)
-   
+    
     // Map indexed map to know if they have been processed or not    
-    val validatedMinimaIndexMap = new HashMap() ++ indexedMinima.map( _._2 -> false )
-    val validatedMaximaIndexMap = new HashMap() ++ indexedMaxima.map( _._2 -> true )
+    val validatedMinimaIndexMap = new LongMap[Boolean](indexedMinima.length)
+    for ( (k,v) <- indexedMinima ) validatedMinimaIndexMap.put(v, false)
+    val validatedMaximaIndexMap = new LongMap[Boolean](indexedMaxima.length)
+    for ( (k,v) <- indexedMaxima ) validatedMaximaIndexMap.put(v, true)
     
     // Loop over sorted maxima to filter changes
+    val sortedIndexedMaxima = indexedMaxima.sortBy(-_._1.value)
     for(
-      indexedMaximum <- indexedMaxima.sortBy(-_._1.value);
+      indexedMaximum <- sortedIndexedMaxima;
       if validatedMaximaIndexMap(indexedMaximum._2)
     ) {
       //println("maximum:"+ indexedMaximum._1)
@@ -248,7 +287,7 @@ object DerivativeAnalysis {
     // Add validated minima and maxima to filteredIndexedChanges
     val filteredIndexedChanges = new ArrayBuffer[(ILocalDerivativeChange,Int)]()
     for( (minIdx,isValidated) <- validatedMinimaIndexMap ++ validatedMaximaIndexMap; if isValidated ) {
-      filteredIndexedChanges += indexedMiniMaxi(minIdx)
+      filteredIndexedChanges += indexedMiniMaxi(minIdx.toInt)
     }
 
     val filteredAndSortedChanges = filteredIndexedChanges.distinct.sortBy(_._2)
@@ -297,10 +336,10 @@ object DerivativeAnalysis {
     
     // Check we have an alternation of minima and maxima
     // TODO: remove me if exception not thrown for a while
-    require(
+    /*require(
       significantChanges.tail.grouped(2).forall( buffer => buffer(0).isMaximum && buffer(1).isMaximum == false ),
       "invalid alternation of minima and maxima"
-    )
+    )*/
     
     significantChanges.toArray
   }
