@@ -27,6 +27,7 @@ object PeakList {
     scala.util.Sorting.quickSort(peaks)(ascMzPeaksOrdering)
   }
   
+  /*
   def sortPeakIdsByDescIntensity(peakIds: Array[Long], intensityList: Array[Float]): Array[Long] = {
     
     // Sort peaks indices by descending intensity values
@@ -76,7 +77,7 @@ object PeakList {
     }
     
     sortedIds
-  }
+  }*/
   
   def sortPeaksCoordsByDescIntensity(peaksCoords: Array[Array[Int]], intensityList: Array[Float]): Array[Array[Int]] = {
     

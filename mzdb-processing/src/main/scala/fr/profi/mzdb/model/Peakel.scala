@@ -289,6 +289,72 @@ case class Peakel(
   
 }
 
+object PeakelDataMatrix {
+  
+  def pack(peakelDataMatrix: PeakelDataMatrix): Array[Byte] = {
+    
+    // Read values from peakelDataMatrix
+    val spectrumIds = peakelDataMatrix.spectrumIds
+    val elutionTimes = peakelDataMatrix.elutionTimes
+    val mzValues = peakelDataMatrix.mzValues
+    val intensityValues = peakelDataMatrix.intensityValues
+    val len = spectrumIds.length
+    
+    val packer = org.msgpack.core.MessagePack.newDefaultBufferPacker()
+    
+    // Create an array header corresponding to the matrix of 4 following arrays
+    packer.packArrayHeader(4)
+    
+    packer.packArrayHeader(len)
+    var i = 0; while (i < len) { packer.packLong(spectrumIds(i)); i += 1}
+    
+    packer.packArrayHeader(len)
+    i = 0; while (i < len) { packer.packFloat(elutionTimes(i)); i += 1}
+    
+    packer.packArrayHeader(len)
+    i = 0; while (i < len) { packer.packDouble(mzValues(i)); i += 1}
+    
+    packer.packArrayHeader(len)
+    i = 0; while (i < len) { packer.packFloat(intensityValues(i)); i += 1}
+    
+    val result = packer.toByteArray()
+    
+    packer.close()
+    
+    result
+  }
+  
+  def unpack(peakelMessageAsBytes: Array[Byte]): PeakelDataMatrix = {
+    
+    val unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(peakelMessageAsBytes)
+    
+    // Read array header corresponding to the matrix of 4 following arrays
+    unpacker.unpackArrayHeader()
+    
+    // Read first array length to instantiate the 4 arrays
+    val len = unpacker.unpackArrayHeader()
+    val spectrumIds = new Array[Long](len)
+    val elutionTimes = new Array[Float](len)
+    val mzValues = new Array[Double](len)
+    val intensityValues = new Array[Float](len)
+    
+    var i = 0; while (i < len) { spectrumIds(i) = unpacker.unpackLong(); i += 1}
+    
+    unpacker.unpackArrayHeader()
+    i = 0; while (i < len) { elutionTimes(i) = unpacker.unpackFloat(); i += 1}
+    
+    unpacker.unpackArrayHeader()
+    i = 0; while (i < len) { mzValues(i) = unpacker.unpackDouble(); i += 1}
+    
+    unpacker.unpackArrayHeader()
+    i = 0; while (i < len) { intensityValues(i) = unpacker.unpackFloat(); i += 1}
+    
+    unpacker.close()
+    
+    PeakelDataMatrix(spectrumIds,elutionTimes,mzValues,intensityValues)
+  }
+}
+
 /** Class which was used for MessagePack serialization purpose
  *  Important: now data have to be first wrapped and unwrapped into a PeakelDataMatrix.MsgPackType
  **/
