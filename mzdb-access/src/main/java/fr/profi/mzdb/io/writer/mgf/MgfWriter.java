@@ -207,9 +207,13 @@ public class MgfWriter {
 
 		for (int i = 0; i < intsLength; ++i) {
 			
-		  // DBO: here we boost intensities but this should be optional
-		  // TODO: take into account the width of the peaks
-			float intensity = (float) Math.pow(ints[i], 1.5 ); // ^ 3/2
+			float intensity = ints[i];
+
+			// DBO: here we tried boost intensities (but this should be optional)
+			// The benefit is not the same for all instruments
+			// TODO: take into account the width of the peaks
+			//float intensity = (float) Math.pow(ints[i], 1.5 ); // ^ 3/2
+
 			/*if( dataEnc.getMode().equals(DataMode.FITTED) ) {
 			  float peakIntensity = ints[i];
 			  float leftHwhm = leftHwhms[i];
