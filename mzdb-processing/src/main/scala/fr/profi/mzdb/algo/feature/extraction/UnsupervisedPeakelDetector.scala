@@ -116,7 +116,7 @@ class UnsupervisedPeakelDetector(
     //val intensityThreshold = math.pow(10, q1 - (1 * iqr) )
     
     // TODO: put the relative intensity threshold (0.9) in the config
-    val lowestPeakCoords = intensityDescPeakCoords( (nbPeaks * 0.9).toInt + 1 ) // plus 1 to compare with previous implem
+    val lowestPeakCoords = intensityDescPeakCoords( (nbPeaks * 0.9).toInt )
     val lowestPeakListIdx = lowestPeakCoords(0)
     val lowestPeakIdx = lowestPeakCoords(1)
     val intensityThreshold = curRsPklColl.getPeakAt(lowestPeakListIdx, lowestPeakIdx).getIntensity
