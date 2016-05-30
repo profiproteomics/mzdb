@@ -304,7 +304,7 @@ class MzDbFeatureDetector(
   // BEGIN OF STOLEN FROM MzDbFeatureExtractor
   class RichRunSliceData(self: RunSliceData) {
     def getPeakListBySpectrumId(): LongMap[PeakList] = {
-      self.getSpectrumSliceList.withFilter(_.getData.getPeaksCount > 0).toLongMapWith { ss => 
+      self.getSpectrumSliceList.filter(_.getData.getPeaksCount > 0).toLongMapWith { ss => 
         ss.getSpectrumId -> new PeakList(ss)
       }
     }
