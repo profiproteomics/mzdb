@@ -4,7 +4,7 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.1.0</version>
+    <version>0.3.0-SNAPSHOT</version>
     <relativePath />
   </parent>
 
