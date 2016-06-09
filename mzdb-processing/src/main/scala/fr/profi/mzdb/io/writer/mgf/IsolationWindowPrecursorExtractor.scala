@@ -38,7 +38,7 @@ class IsolationWindowPrecursorExtractor(mzTolPPM: Float)  extends DefaultPrecurs
     val slices = reader.getMsSpectrumSlices(precMz - 5, precMz + 5, time-5f, time+5f)
     if (!slices.isEmpty) {
       val slice = slices.minBy { x => Math.abs(x.getHeader.getElutionTime-time) }
-      val putativePatterns = IsotopicPatternScorer.calclIsotopicPatternHypotheses(slice.getData(), precMz, mzTolPPM)
+      val putativePatterns = IsotopicPatternScorer.calcIsotopicPatternHypotheses(slice.getData(), precMz, mzTolPPM)
       Some(putativePatterns.head._2)
     } else None
   }

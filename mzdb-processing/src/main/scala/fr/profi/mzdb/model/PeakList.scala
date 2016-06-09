@@ -130,9 +130,7 @@ case class PeakList protected(
   protected def calcMzIndex( mz: Double ): Long = (mz/MZ_INDEX_PRECISION).toLong
   
   def this( spectrum: Spectrum ) = {
-    this( spectrum, spectrum.getData.getPeaksCount, spectrum.getData.getMinMz, spectrum.getData.getMaxMz )    
-    
-    require( peaksCount > 0, "can't create a peaklist with an empty spectrum" )
+    this( spectrum, spectrum.getData.getPeaksCount, spectrum.getData.getMinMz, spectrum.getData.getMaxMz )
   }
   
   private val mzWindow = maxMz - minMz
@@ -189,6 +187,7 @@ case class PeakList protected(
    * @return nearest index or -1
    */
   def getNearestPeakIdx( mzToExtract: Double, mzTolDa: Double ): Int = {
+    if (peaksCount == 0) return -1
     
     val searchedMinMz = mzToExtract - mzTolDa
     val searchedMaxMz = mzToExtract + mzTolDa
