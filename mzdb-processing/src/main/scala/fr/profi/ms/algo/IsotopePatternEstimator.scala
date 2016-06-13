@@ -45,21 +45,15 @@ object IsotopePatternEstimator extends LazyLogging {
     m(0) = 1.0
     m(1) = mass
     
-    var prevMass = mass
-    var i = 2
-    while (i < coeffsRowLen) {
-      val curMass = prevMass * mass
-      m(i) = curMass
-      prevMass = curMass
-      
-      i += 1
+    for(i <- 2 until coeffsRowLen) {
+      m(i) = m(i-1)*mass
     }
     
     val (r, max) = mult(coeffs, m)
     val relativeFactor = 100 / max
     
     val mzIntPairs = new Array[(Double, Float)](coeffsMatrixLen)
-    i = 0
+    var i = 0
     while (i < coeffsMatrixLen) {
       val isoMz = mz + (i * avgIsoMassDiff / charge)
       val isoRelInt = r(i) * relativeFactor
