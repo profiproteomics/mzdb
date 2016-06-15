@@ -79,17 +79,18 @@ def calcIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : 
       ipMoz = if (rank == 0) ipMoz else ipMoz + IsotopePatternEstimator.avgIsoMassDiff / charge
       val ipAbundance = (pattern.mzAbundancePairs(rank)._2) * isotopeAbundance / normAbundance
       var nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
-      val penality = if (rank == isotopicShift) 1e2 else Math.max(0.01, Math.pow(10, -(2 * rank - 4)))
+      val rankPenality = if (rank == isotopicShift) 1e2 else Math.max(0.01, Math.pow(10, -(2 * rank - 4)))
       val abundance = {
         if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
           ipMoz = spectrum.getMzList()(nearestPeakIdx)
           matches += 1
           spectrum.getIntensityList()(nearestPeakIdx)
         } else {
+          // No peak found at the expected mz value : creates an artificial distance from expected abundance value 
           ipAbundance / 1000.0f
         }
       }
-      val d = ((ipAbundance - abundance) / math.min(abundance, ipAbundance)) * penality
+      val d = ((ipAbundance - abundance) / math.min(abundance, ipAbundance)) * rankPenality
       score += d * d
     }
 
