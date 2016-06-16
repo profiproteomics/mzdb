@@ -28,10 +28,10 @@ object IsotopicPatternScorer extends LazyLogging {
   * Tries to explain a peak at the specified mz value by testing different isotopic pattern explanations. 
   * 
   * 
- * @param spectrum : the MS data (mz, intensities) signal around the peak to explain
- * @param mz : the mz of the peak that must be explained 
+ * @param spectrum the MS data (mz, intensities) signal around the peak to explain
+ * @param mz the mz of the peak that must be explained 
  * @param ppmTol
- * @return : a list of isotopic patterns tested, ordered by score (better = higher score first).
+ * @return a list of isotopic patterns tested, ordered by score (better = higher score first).
  */
 def calcIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : Double): Array[(Double, TheoreticalIsotopePattern)] = {
      var result = ArrayBuffer[(Double, TheoreticalIsotopePattern)]()
@@ -57,13 +57,13 @@ def calcIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : 
    * observed intensities. In case a theoretical peak is not found in the MS data a penality is applied to the difference.
    * The penality is less important as the rank of the isotopic peak is high.
    *
-   * @param spectrum : the MS data (mz, intensities) signal around the peak to explain
-   * @param mz : the mz of the peak that must be explained
-   * @param charge : the isotopic pattern charge state
-   * @param matchingPeakIdx : the index of the peak to explain in the MS data array
-   * @param matchingIsotopeIdx : the index of the isotope that must match this peak
+   * @param spectrum the MS data (mz, intensities) signal around the peak to explain
+   * @param mz the mz of the peak that must be explained
+   * @param charge the isotopic pattern charge state
+   * @param matchingPeakIdx the index of the peak to explain in the MS data array
+   * @param matchingIsotopeIdx the index of the isotope that must match this peak
    * @param ppmTol
-   * @return : the score and the theoretical isotopic pattern.
+   * @return the score and the theoretical isotopic pattern.
    */
   def getIPHypothesis(spectrum: SpectrumData, initialMz: Double, isotopicShift: Int, charge: Int, ppmTol: Double): (Double, TheoreticalIsotopePattern) = {
     var score = 0.0
