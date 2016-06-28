@@ -169,13 +169,14 @@ public class MgfWriter {
 		String title;
 		if( exportProlineTitle == false ) title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
 		else {
-			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.02f;last_time:%.02f;raw_file_identifier:%s;",
+		  float timeInMinutes = spectrumHeader.getTime() / 60;
+			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.3f;last_time:%.3f;raw_file_identifier:%s;",
 				spectrumHeader.getCycle(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getInitialId(),
 				spectrumHeader.getInitialId(),
-				spectrumHeader.getTime(),
-				spectrumHeader.getTime(),
+				timeInMinutes,
+				timeInMinutes,
 				mzDbReader.getFirstSourceFileName().split("\\.")[0]
 			);
 		}
