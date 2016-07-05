@@ -22,9 +22,9 @@ public class ScanParamTree extends AbstractParamTree {
 	
 	public ThermoScanMetaData getThermoMetaData() {
 		CVParam filterStringCvParam = this.getCVParam(CVEntry.FILTER_STRING);
-		String ms2FilterString = filterStringCvParam.getValue();
+		if (filterStringCvParam == null) return null;
 		
-		return new ThermoScanMetaData(ms2FilterString);
+		return new ThermoScanMetaData(filterStringCvParam.getValue());
 	}
 	
 }

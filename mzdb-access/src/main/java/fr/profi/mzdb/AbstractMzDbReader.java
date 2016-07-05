@@ -44,6 +44,11 @@ public abstract class AbstractMzDbReader {
 	protected MzDbEntityCache entityCache = null;
 	protected MzDbHeader mzDbHeader = null;
 	protected IMzDBParamNameGetter _paramNameGetter = null;
+	
+	/** Some fields related to XML data loading **/
+	private boolean _loadParamTree = false;
+	private boolean _loadScanList = false;
+	private boolean _loadPrecursorList = false;
 
 	/**
 	 * The is no loss mode. If no loss mode is enabled, all data points will be encoded as highres, i.e. 64 bits mz and 64 bits int. No peak picking and not
@@ -69,6 +74,30 @@ public abstract class AbstractMzDbReader {
 	public abstract AbstractDataEncodingReader getDataEncodingReader();
 	public abstract AbstractSpectrumHeaderReader getSpectrumHeaderReader();
 	public abstract AbstractRunSliceHeaderReader getRunSliceHeaderReader();
+	
+	public boolean isParamTreeLoadingEnabled() {
+		return _loadParamTree;
+	}
+	
+	public void enableParamTreeLoading() {
+		_loadParamTree = true;
+	}
+	
+	public boolean isScanListLoadingEnabled() {
+		return _loadScanList;
+	}
+	
+	public void enableScanListLoading() {
+		_loadScanList = true;
+	}
+	
+	public boolean isPrecursorListLoadingEnabled() {
+		return _loadPrecursorList;
+	}
+	
+	public void enablePrecursorListLoading() {
+		_loadPrecursorList = true;
+	}
 
 	/**
 	 * Gets the entity cache.

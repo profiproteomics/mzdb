@@ -18,7 +18,6 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.table.SpectrumTable;
-import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader;
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.PeakEncoding;
@@ -103,9 +102,9 @@ public class MgfWriter {
 		// Reset precNotFound static var
 		MgfWriter.precNotFound = 0;
 		
-		// Configure the SpectrumHeaderReader in order to load all precursor lists and all scan list when reading spectra headers
-		SpectrumHeaderReader.loadPrecursorList = true;
-		SpectrumHeaderReader.loadScanList = true;
+		// Configure the mzDbReader in order to load all precursor lists and all scan list when reading spectra headers
+		mzDbReader.enablePrecursorListLoading();
+		mzDbReader.enableScanListLoading();
 
 		// Iterate over MS2 spectrum
 		final Iterator<Spectrum> spectrumIterator = new SpectrumIterator(mzDbReader, mzDbReader.getConnection(), 2);

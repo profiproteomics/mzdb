@@ -54,12 +54,12 @@ public class MzDbMetaDataTest {
 		}
 		Assert.assertNotNull("Reader cannot be created", mzDb);
 
-		// Read ScanList values
+		// Perform some checks for Thermo MS2 meta-data
 		try {
-			// Perform some checks for Thermo MS2 meta-data
+			mzDb.enableScanListLoading();
+			
 			Spectrum ms2Spectrum = mzDb.getSpectrum(17);
 			SpectrumHeader header = ms2Spectrum.getHeader();
-			header.loadScanList(mzDb.getConnection());
 			
 			ThermoScanMetaData ms2Meta = header.getScanList().getScans().get(0).getThermoMetaData();
 			Assert.assertEquals("MS level check for MS2", 2, ms2Meta.getMsLevel());
