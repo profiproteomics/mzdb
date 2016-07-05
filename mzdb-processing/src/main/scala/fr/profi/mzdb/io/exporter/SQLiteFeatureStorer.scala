@@ -46,10 +46,10 @@ object SQLiteIsolationWindowStorer extends LazyLogging {
     // Prepare INSERT statement
     val stmt = connection.prepare("INSERT INTO isolation_window VALUES (?, ?, ?, ?)",true)
     
-		// Configure the SpectrumHeaderReader in order to load all precursor lists when reading spectra headers
-		SpectrumHeaderReader.loadPrecursorList = true
+    // Configure the SpectrumHeaderReader in order to load all precursor lists when reading spectra headers
+    mzDbReader.enablePrecursorListLoading()
     
-		val ms1ShByCycle = mzDbReader.getMs1SpectrumHeaders().map { sh => sh.getCycle() -> sh } toMap
+    val ms1ShByCycle = mzDbReader.getMs1SpectrumHeaders().map { sh => sh.getCycle() -> sh } toMap
     val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders().take(1000)
     
     for( sh <- ms2SpectrumHeaders ) {
