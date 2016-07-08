@@ -7,8 +7,6 @@ import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.utils.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
 import scala.beans.BeanProperty
-import fr.profi.mzdb.model.AveragineComputer
-//import fr.profi.mzdb.model.MercuryLauncher
 import util.control.Breaks._
 
 // TODO: remove this file
