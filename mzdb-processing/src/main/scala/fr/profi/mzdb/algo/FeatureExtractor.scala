@@ -10,7 +10,7 @@ import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.SpectrumHeader
-import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.mzdb.util.ms.MsUtils
 import fr.proline.api.progress._
 
 class FeatureExtractor(

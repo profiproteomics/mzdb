@@ -3,7 +3,7 @@ package fr.profi.mzdb.algo.signal.detection
 import fr.profi.mzdb.model.ILcContext
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.math.wavelet.MotherWavelet
+import fr.profi.mzdb.util.math.wavelet.MotherWavelet
 
 /** result of the algorithm */
 case class CwtPeakel(

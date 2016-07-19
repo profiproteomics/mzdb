@@ -6,7 +6,7 @@ import scala.util.control.Breaks._
 
 import fr.profi.chemistry.model.MolecularConstants
 import fr.profi.ms.model.TheoreticalIsotopePattern
-import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.mzdb.util.ms.MsUtils
 import fr.profi.util.collection._
 
 object PeakListTree {

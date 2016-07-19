@@ -10,7 +10,7 @@ import org.apache.commons.math.optimization.VectorialPointValuePair
 import org.apache.commons.math.optimization.fitting.WeightedObservedPoint
 import org.apache.commons.math.optimization.fitting.GaussianParametersGuesser
 import org.apache.commons.math.optimization.fitting.ParametricGaussianFunction
-import fr.profi.mzdb.utils.math.pdf.ParametricLorentzian
+import fr.profi.mzdb.util.math.pdf.ParametricLorentzian
 
 class GaussLorentzFitter(@BeanProperty val x: Array[Double], //mz
                           @BeanProperty val y: Array[Double], //intensity

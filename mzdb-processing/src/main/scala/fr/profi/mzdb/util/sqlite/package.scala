@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils
+package fr.profi.mzdb.util
 
 /**
  * @author David Bouyssie

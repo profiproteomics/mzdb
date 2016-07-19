@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math.pdf
+package fr.profi.mzdb.util.math.pdf
 
 import scala.beans.BeanProperty
 import org.apache.commons.math3.analysis.UnivariateFunction

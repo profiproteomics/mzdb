@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math
+package fr.profi.mzdb.util.math
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.ListBuffer

@@ -1,7 +1,7 @@
 package fr.profi.mzdb.algo.signal.filtering
 
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.utils.math.DerivativeAnalysis
+import fr.profi.mzdb.util.math.DerivativeAnalysis
 
 /**
  * @author David Bouyssie

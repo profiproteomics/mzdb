@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math.wavelet
+package fr.profi.mzdb.util.math.wavelet
 
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model.Peak

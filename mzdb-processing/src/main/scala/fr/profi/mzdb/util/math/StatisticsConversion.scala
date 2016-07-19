@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math
+package fr.profi.mzdb.util.math
 
 import org.apache.commons.math3.distribution.NormalDistribution
 

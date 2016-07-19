@@ -1,7 +1,7 @@
 package fr.profi.mzdb.model
 
 import scala.beans.BeanProperty
-import fr.profi.mzdb.utils.misc.InMemoryIdGen
+import fr.profi.mzdb.util.misc.InMemoryIdGen
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.ms.algo.IsotopePatternInterpolator
 

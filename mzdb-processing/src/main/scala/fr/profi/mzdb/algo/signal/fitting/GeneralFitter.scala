@@ -12,9 +12,9 @@ import org.apache.commons.math.optimization.general.AbstractLeastSquaresOptimize
 import org.apache.commons.math.optimization.VectorialPointValuePair
 import org.apache.commons.math.optimization.fitting.WeightedObservedPoint
 import org.apache.commons.math.optimization.fitting.GaussianParametersGuesser
-import fr.profi.mzdb.utils.math.pdf.ParametricGaussApprox
+import fr.profi.mzdb.util.math.pdf.ParametricGaussApprox
 import org.apache.commons.math.optimization.fitting.ParametricGaussianFunction
-import fr.profi.mzdb.utils.math.pdf.ParametricPolynomial
+import fr.profi.mzdb.util.math.pdf.ParametricPolynomial
 
 /*trait SpecifiedParametricRealFunction extends ParametricRealFunction {
   def getNbParameters(): Int

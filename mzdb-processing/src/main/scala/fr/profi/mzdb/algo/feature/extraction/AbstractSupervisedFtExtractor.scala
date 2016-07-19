@@ -8,7 +8,7 @@ import scala.util.control.Breaks._
 
 import fr.profi.mzdb.algo.signal.detection.AbstractWaveletPeakelFinder
 import fr.profi.mzdb.model._
-import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.mzdb.util.ms.MsUtils
 import FeatureExtractionUtils._
 
 abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor {

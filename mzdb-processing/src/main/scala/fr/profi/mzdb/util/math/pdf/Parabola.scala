@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math.pdf
+package fr.profi.mzdb.util.math.pdf
 
 import math.{ exp, log, sqrt }
 import org.apache.commons.math3.analysis.ParametricUnivariateFunction

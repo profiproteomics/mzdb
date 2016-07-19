@@ -2,7 +2,7 @@ package fr.profi.mzdb.algo.signal.filtering
 
 import scala.collection.mutable.ArrayBuffer
 import org.apache.commons.math3.stat.StatUtils
-import fr.profi.mzdb.utils.math.DerivativeAnalysis
+import fr.profi.mzdb.util.math.DerivativeAnalysis
 import fr.profi.mzdb.model.Peak
 
 /**

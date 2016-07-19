@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math.pdf
+package fr.profi.mzdb.util.math.pdf
 
 /**
  * @author David Bouyssie

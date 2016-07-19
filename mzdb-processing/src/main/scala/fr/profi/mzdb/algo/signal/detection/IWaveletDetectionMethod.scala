@@ -1,9 +1,9 @@
 package fr.profi.mzdb.algo.signal.detection
 
 import com.typesafe.scalalogging.LazyLogging
-import fr.profi.mzdb.utils.math.wavelet.RidgesFinder
+import fr.profi.mzdb.util.math.wavelet.RidgesFinder
 import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.math.wavelet.Ridge
+import fr.profi.mzdb.util.math.wavelet.Ridge
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 

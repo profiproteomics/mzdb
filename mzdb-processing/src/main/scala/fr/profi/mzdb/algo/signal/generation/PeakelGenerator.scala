@@ -2,7 +2,7 @@ package fr.profi.mzdb.algo.signal.generation
 
 import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.model._
-import fr.profi.mzdb.utils.math.pdf.GaussianModel
+import fr.profi.mzdb.util.math.pdf.GaussianModel
 
 object PeakelGenerator {
 

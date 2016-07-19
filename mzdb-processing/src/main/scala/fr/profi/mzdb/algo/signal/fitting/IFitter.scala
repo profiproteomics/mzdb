@@ -8,7 +8,7 @@ import scala.reflect.BeanProperty
 import org.apache.commons.math.optimization.fitting.GaussianFunction
 import org.apache.commons.math.analysis.polynomials.PolynomialFunction
 import scala.collection.mutable.ArrayBuffer
-import fr.profi.mzdb.utils.math.pdf.LorentzianFunction
+import fr.profi.mzdb.util.math.pdf.LorentzianFunction
 
 object PeakType extends Enumeration {
   type PeakType = Value

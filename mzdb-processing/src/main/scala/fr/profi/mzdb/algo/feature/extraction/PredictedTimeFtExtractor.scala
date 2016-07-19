@@ -7,8 +7,8 @@ import scala.util.control.Breaks._
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.algo.signal.detection._
-import fr.profi.mzdb.utils.math.VectorSimilarity
-import fr.profi.mzdb.utils.math.wavelet._
+import fr.profi.mzdb.util.math.VectorSimilarity
+import fr.profi.mzdb.util.math.wavelet._
 import FeatureExtractionUtils._
 import java.io.PrintWriter
 import java.io.File

@@ -4,7 +4,7 @@ import collection.mutable.ArrayBuffer
 import collection.mutable.HashMap
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.utils.math.VectorSimilarity
+import fr.profi.mzdb.util.math.VectorSimilarity
 import fr.profi.mzdb.model.Feature
 import scala.beans.BeanProperty
 import util.control.Breaks._

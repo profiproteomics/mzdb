@@ -1,8 +1,9 @@
-/*package fr.profi.mzdb.utils.math
+package fr.profi.mzdb.util.math;
+/*package fr.profi.mzdb.util.math
 
 import scala.collection.immutable.HashMap
 import scala.beans.BeanProperty
-import fr.profi.mzdb.utils.math.wavelet.WaveletUtils
+import fr.profi.mzdb.util.math.wavelet.WaveletUtils
 
 /** UWT equivalent to SWT*/
 // TODO: implement this smoother in the filtering package

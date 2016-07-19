@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.math.wavelet
+package fr.profi.mzdb.util.math.wavelet
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap

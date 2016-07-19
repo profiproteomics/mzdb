@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 
 import org.apache.commons.math3.stat.StatUtils
 
-import fr.profi.mzdb.utils.misc.InMemoryIdGen
+import fr.profi.mzdb.util.misc.InMemoryIdGen
 
 trait IPeakelCursorProvider {
   def getNewCursor(): IPeakelDataCursor

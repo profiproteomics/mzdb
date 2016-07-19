@@ -8,8 +8,8 @@ import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation
 import fr.profi.mzdb.algo.signal.detection._
 import fr.profi.mzdb.model.Peak
 
-import fr.profi.mzdb.utils.math.wavelet.MexicanHat
-import fr.profi.mzdb.utils.math.wavelet.Ridge
+import fr.profi.mzdb.util.math.wavelet.MexicanHat
+import fr.profi.mzdb.util.math.wavelet.Ridge
 
 class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
   

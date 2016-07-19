@@ -5,8 +5,8 @@ import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.algo.signal.filtering._
 import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.math.DerivativeAnalysis
-import fr.profi.mzdb.utils.math.DerivativeAnalysis.ILocalDerivativeChange
+import fr.profi.mzdb.util.math.DerivativeAnalysis
+import fr.profi.mzdb.util.math.DerivativeAnalysis.ILocalDerivativeChange
 import fr.profi.util.stat._
 
 /**

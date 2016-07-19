@@ -11,8 +11,8 @@ import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
 //import fr.profi.mzdb.algo.signal.fitting._
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.utils.math.StatisticsConversion
-import fr.profi.mzdb.utils.math.VectorSimilarity
+import fr.profi.mzdb.util.math.StatisticsConversion
+import fr.profi.mzdb.util.math.VectorSimilarity
 import fr.profi.mzdb.model.ILcContext
 
 object FeatureScorer {

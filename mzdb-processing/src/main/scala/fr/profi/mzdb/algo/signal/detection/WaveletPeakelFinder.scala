@@ -18,7 +18,7 @@ import org.jfree.data.xy.DefaultXYZDataset
 import com.typesafe.scalalogging.LazyLogging
 
 import fr.profi.mzdb.model.Peak
-import fr.profi.mzdb.utils.math.wavelet._
+import fr.profi.mzdb.util.math.wavelet._
 
 
 /** Peak Width are ~= 2 * scale where scale is the maxima point on the ridge */

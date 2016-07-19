@@ -20,7 +20,7 @@ import fr.profi.mzdb.algo.signal.filtering._
 import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.utils.math.DerivativeAnalysis
+import fr.profi.mzdb.util.math.DerivativeAnalysis
 
 object SQLiteIsolationWindowStorer extends LazyLogging {
   

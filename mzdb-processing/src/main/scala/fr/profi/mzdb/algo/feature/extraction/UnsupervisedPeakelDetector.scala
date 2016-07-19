@@ -10,7 +10,7 @@ import scala.util.control.Breaks._
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
-import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.mzdb.util.ms.MsUtils
 import fr.proline.api.progress._
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.IPeakelFinder

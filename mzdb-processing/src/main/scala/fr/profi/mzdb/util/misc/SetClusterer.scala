@@ -1,4 +1,4 @@
-package fr.profi.mzdb.utils.misc
+package fr.profi.mzdb.util.misc
 
 import collection.mutable.ArrayBuffer
 import collection.mutable.HashSet

@@ -21,8 +21,8 @@ import fr.profi.mzdb.algo.feature.extraction.UnsupervisedPeakelDetector
 import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 import fr.profi.mzdb.model._
-import fr.profi.mzdb.utils.misc.SetClusterer
-import fr.profi.mzdb.utils.ms.MsUtils
+import fr.profi.mzdb.util.misc.SetClusterer
+import fr.profi.mzdb.util.ms.MsUtils
 import fr.profi.util.collection._
 import fr.profi.util.stat._
 import fr.proline.api.progress._

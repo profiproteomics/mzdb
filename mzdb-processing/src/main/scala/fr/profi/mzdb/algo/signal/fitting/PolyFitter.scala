@@ -11,7 +11,7 @@ import org.apache.commons.math.optimization.VectorialPointValuePair
 import org.apache.commons.math.optimization.fitting.WeightedObservedPoint
 import org.apache.commons.math.optimization.fitting.GaussianParametersGuesser
 import org.apache.commons.math.analysis.DifferentiableMultivariateVectorialFunction
-import fr.profi.mzdb.utils.math.pdf.ParametricPolynomial
+import fr.profi.mzdb.util.math.pdf.ParametricPolynomial
 
 /** Here we consider that lwhm and rwhm are the same => update :Nope we fit 2 parabola...
  *  do not know if it is necessary...but we try it*/

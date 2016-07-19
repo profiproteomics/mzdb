@@ -1,8 +1,8 @@
-package fr.profi.mzdb.utils
+package fr.profi.mzdb.util
 
 import java.util.concurrent.atomic.AtomicInteger
 
-package object misc {
+package misc {
 
   trait InMemoryIdGen {
     private val inMemoryIdSequence = new AtomicInteger(0)
