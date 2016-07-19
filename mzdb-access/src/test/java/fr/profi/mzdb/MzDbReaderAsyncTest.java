@@ -21,7 +21,8 @@ import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.RunSlice;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.sqlite.SQLite4JavaTest;
+import fr.profi.mzdb.util.sqlite.SQLite4JavaTest;
+
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.observers.TestSubscriber;

@@ -23,10 +23,10 @@ import fr.profi.mzdb.io.reader.cache.AbstractRunSliceHeaderReader;
 import fr.profi.mzdb.io.reader.cache.AbstractSpectrumHeaderReader;
 import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
 import fr.profi.mzdb.model.*;
-import fr.profi.mzdb.utils.ms.MsUtils;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecordIterator;
+import fr.profi.mzdb.util.ms.MsUtils;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.SQLiteRecordIterator;
 
 /**
  * Allows to manipulates data contained in the mzDB file.

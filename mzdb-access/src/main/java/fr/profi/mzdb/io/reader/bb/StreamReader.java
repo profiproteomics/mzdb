@@ -9,7 +9,7 @@ import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.SpectrumData;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.primitives.BytesUtils;
+import fr.profi.mzdb.util.primitives.BytesUtils;
 
 /**
  * This class aloow to read a SQLite blob using a stream reader. We process data only in one direction in a

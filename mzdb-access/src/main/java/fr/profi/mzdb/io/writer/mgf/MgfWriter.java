@@ -24,9 +24,9 @@ import fr.profi.mzdb.model.PeakEncoding;
 import fr.profi.mzdb.model.Spectrum;
 import fr.profi.mzdb.model.SpectrumData;
 import fr.profi.mzdb.model.SpectrumHeader;
-import fr.profi.mzdb.utils.sqlite.ISQLiteRecordOperation;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 /**
  * @author MDB

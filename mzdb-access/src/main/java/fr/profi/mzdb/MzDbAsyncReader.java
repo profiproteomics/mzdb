@@ -20,9 +20,9 @@ import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
 import fr.profi.mzdb.io.reader.table.*;
 import fr.profi.mzdb.model.*;
-import fr.profi.mzdb.utils.sqlite.ISQLiteConnectionFunction;
-import fr.profi.mzdb.utils.sqlite.SQLiteJobWrapper;
-import fr.profi.mzdb.utils.sqlite.SQLiteObservableJob;
+import fr.profi.mzdb.util.sqlite.ISQLiteConnectionFunction;
+import fr.profi.mzdb.util.sqlite.SQLiteJobWrapper;
+import fr.profi.mzdb.util.sqlite.SQLiteObservableJob;
 
 import rx.Observable;
 

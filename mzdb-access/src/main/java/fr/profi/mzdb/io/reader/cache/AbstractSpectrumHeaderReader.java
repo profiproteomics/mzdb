@@ -14,9 +14,9 @@ import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.PeakEncoding;
 import fr.profi.mzdb.model.SpectrumHeader;
-import fr.profi.mzdb.utils.sqlite.ISQLiteRecordExtraction;
-import fr.profi.mzdb.utils.sqlite.SQLiteQuery;
-import fr.profi.mzdb.utils.sqlite.SQLiteRecord;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
+import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 /**
  * @author David Bouyssie

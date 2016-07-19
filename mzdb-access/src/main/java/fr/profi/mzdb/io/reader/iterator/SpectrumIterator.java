@@ -11,7 +11,7 @@ import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.model.BoundingBox;
 import fr.profi.mzdb.model.Spectrum;
 import fr.profi.mzdb.model.SpectrumSlice;
-import fr.profi.mzdb.utils.sqlite.ISQLiteStatementConsumer;
+import fr.profi.mzdb.util.sqlite.ISQLiteStatementConsumer;
 
 //import static fr.profi.mzdb.utils.lambda.JavaStreamExceptionWrappers.rethrowConsumer;
 
