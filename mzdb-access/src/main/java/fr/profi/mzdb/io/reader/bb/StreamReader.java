@@ -50,7 +50,7 @@ public class StreamReader extends AbstractBlobReader {
 		try {
 			_stream.close();
 		} catch (IOException e) {
-			logger.error("IOException has been catched while closing stream", e);
+			logger.error("IOException has been caught while closing stream", e);
 		}
 	}
 
@@ -73,7 +73,7 @@ public class StreamReader extends AbstractBlobReader {
 			while (_stream.read() != 0)
 				c++;
 		} catch (IOException e) {
-			logger.error("IOException catched while calculating the size of the stream", e);
+			logger.error("IOException caught while calculating the size of the stream", e);
 			e.printStackTrace();
 		}
 		return c;*/
@@ -103,7 +103,7 @@ public class StreamReader extends AbstractBlobReader {
 			}
 			_stream.close();
 		} catch (IOException e) {
-			logger.error("IOException has been catched while closing stream", e);
+			logger.error("IOException has been caught while closing stream", e);
 		}
 		
 		return lastSpectrumId;

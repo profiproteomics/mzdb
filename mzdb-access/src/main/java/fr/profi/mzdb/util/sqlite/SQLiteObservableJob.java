@@ -83,7 +83,7 @@ public class SQLiteObservableJob<T> extends Observable<T> {
 					// Warning: the consumer MUST call the onNext method
 					result = function.apply(connection);
 				} catch (Exception e) {
-					System.err.println("Error catched in SQLiteObservableJob");
+					System.err.println("Error caught in SQLiteObservableJob");
 					e.printStackTrace();
 					
 					// Send error to the observer
