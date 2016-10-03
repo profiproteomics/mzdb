@@ -124,7 +124,7 @@ class UnsupervisedPeakelDetector(
     logger.debug(s"detecting peakels using intensity threshold ="+ intensityThreshold)
     
     // Get peaklist tree peaks sorted by m/z value
-    val peakelBuffer = new ArrayBuffer[Peakel]()
+    val peakelBuffer = new ArrayBuffer[Peakel](20000)
     
     // Instantiate a shared PeakelCoordinates that will be used as a shared memory matrix
     //println("curRsPeaklistsCount: "+ curRsPeaklistsCount)
@@ -400,7 +400,7 @@ class UnsupervisedPeakelDetector(
     //println( "peakel.getApexMz(): "+peakel.getApexMz() )
     //println( "peakel.getPeaksCount(): "+peakel.getPeaksCount() )
     
-    // Re-add peakel peaks to usedPeakMap
+    // Add matching peakel peaks to usedPeakMap
     i = sharedPeakelCoordinates.minIdx
     while (i <= sharedPeakelCoordinates.maxIdx) {
        val peakList = sharedPeakLists(i)
@@ -410,7 +410,7 @@ class UnsupervisedPeakelDetector(
        }
       i += 1
     }
-  
+    
     //progressComputer.setCurrentStepAsCompleted()
 
     Some( peakel )

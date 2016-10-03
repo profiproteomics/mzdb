@@ -2,6 +2,7 @@ package fr.profi.mzdb
 
 import java.util.Iterator
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
 
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
@@ -26,6 +27,12 @@ import fr.profi.mzdb.util.ms.MsUtils
 import fr.profi.util.collection._
 import fr.profi.util.stat._
 import fr.proline.api.progress._
+
+import rx.lang.scala.Observable
+import rx.lang.scala.Subject
+import rx.lang.scala.Subscriber
+import rx.lang.scala.schedulers.ExecutionContextScheduler
+import rx.lang.scala.subjects.PublishSubject
 
 abstract class PeakelFinderConfig
 
@@ -64,77 +71,89 @@ object BuildPeakelFinder {
 class PeakelDetectorConsumer(
   val consumerNumber: Int,
   val peakelDetector: UnsupervisedPeakelDetector,
-  val detectorQueue: PeakelDetectorQueue,
-  val peakelsBuffer: ArrayBuffer[Peakel]  
+  val detectorQueue: PeakelDetectorQueue
+  //val queue: ArrayBlockingQueue[Option[PeakelDetectorQueueEntry]]
 )(implicit execCtx: ExecutionContextExecutor) extends LazyLogging {
   
-  // Here is the PeakListTree consumer code written in a Future block
-  val future = Future {
-    var hasFinished = false
+  // Here is the PeakListTree consumer code written in an Observable block
+  // Note that exceptions will be automatically managed by RxJava
+  // and can be intercepted by the observable subscriber (onError method)
+  private val coldObservable = Observable[Array[Peakel]] { subscriber =>
     
-    // Consume the queue while the file is being read and until queue is empty
-    while( hasFinished == false ) {
-      val queueEntry = detectorQueue.dequeue()
+    try {
+      var hasFinished = false
       
-      // TODO: find a better way to exit the consumer
-      // This example could help: http://stackoverflow.com/questions/16009837/how-to-cancel-future-in-scala
-      if( queueEntry == null ) {
-        hasFinished = true
-        logger.debug("exiting feature detector consumer "+ consumerNumber)
-      } else {
+      // Consume the queue while the file is being read and until queue is empty
+      while (hasFinished == false) {
+        val queueEntry = detectorQueue.dequeue()
+        //val queueEntryOpt = queue.take()
         
-        val rsNumber = queueEntry.rsNumber
-        val pklTree = queueEntry.pklTree
-        val curPeaklistBySpectrumId = queueEntry.curPeaklistBySpectrumId
-        
-        this.logger.debug("unsupervised processing of run slice "+rsNumber)
-        
-        // Create a peaklist group that is only used to call getPeaksCoordsSortedByDescIntensity
-        // TODO: create a static method for that ???
-        val curRsPeakLists = pklTree.spectrumIds.map( specId => curPeaklistBySpectrumId.getOrNull(specId) )
-        val curRsPeakListColl = PeakListCollection(curRsPeakLists)
-        
-        // Sort the peaks by descending intensity
-        this.logger.debug(s"sorting #${curRsPeakListColl.peaksCount} peaks by descending intensity in run slice " + rsNumber)
-        
-        // Sort cursRsPeakRefs according to cursRsIntensityList
-        val curRsPeaksCoords = curRsPeakListColl.getPeaksCoordsSortedByDescIntensity()
-        
-        val highestPeakCoords = curRsPeaksCoords.head
-        val lowestPeakCoords = curRsPeaksCoords.last
-        val highestIntensity = curRsPeakListColl.getPeakAt(highestPeakCoords(0), highestPeakCoords(1)).getIntensity
-        val lowestIntensity = curRsPeakListColl.getPeakAt(lowestPeakCoords(0), lowestPeakCoords(1)).getIntensity
-        
-        this.logger.debug( s"Peak intensity range in run slice $rsNumber = "+ lowestIntensity+" to "+highestIntensity)
-        
-        // Create a HashMap to memorize which peaks have been already used
-        // Note: in previous implementation we included peaks of the previous run slice
-        // TODO: check if not doing that has an effect on the quality of detection
-        // TODO: otherwise switch to an HashSet[Peak]
-        //val usedPeakMap = new HashMap[Peak,Boolean]() // true if used in last detection false if previous detection
-        
-        // Detect peakels in pklTree by using curRsPeaks as starting points
-        val peakels = pklTree.synchronized {
-          peakelDetector.detectPeakels(pklTree, curRsPeakListColl, curRsPeaksCoords)
+        // TODO: find a better way to exit the consumer
+        // This example could help: http://stackoverflow.com/questions/16009837/how-to-cancel-future-in-scala
+        if( queueEntry == null ) {
+          hasFinished = true
+          logger.debug("exiting feature detector consumer "+ consumerNumber)
+        } else {
+          
+          //val queueEntry = queueEntryOpt.get
+          val rsNumber = queueEntry.rsNumber
+          val pklTree = queueEntry.pklTree
+          val curPeaklistBySpectrumId = queueEntry.curPeaklistBySpectrumId
+          
+          this.logger.debug(s"unsupervised processing of run slice $rsNumber in consumer $consumerNumber")
+          
+          // Create a peaklist group that is only used to call getPeaksCoordsSortedByDescIntensity
+          // TODO: create a static method for that ???
+          val curRsPeakLists = pklTree.spectrumIds.map( specId => curPeaklistBySpectrumId.getOrNull(specId) )
+          val curRsPeakListColl = PeakListCollection(curRsPeakLists)
+          
+          // Sort the peaks by descending intensity
+          this.logger.debug(s"sorting #${curRsPeakListColl.peaksCount} peaks by descending intensity in run slice " + rsNumber)
+          
+          // Sort cursRsPeakRefs according to cursRsIntensityList
+          val curRsPeaksCoords = curRsPeakListColl.getPeaksCoordsSortedByDescIntensity()
+          
+          val highestPeakCoords = curRsPeaksCoords.head
+          val lowestPeakCoords = curRsPeaksCoords.last
+          val highestIntensity = curRsPeakListColl.getPeakAt(highestPeakCoords(0), highestPeakCoords(1)).getIntensity
+          val lowestIntensity = curRsPeakListColl.getPeakAt(lowestPeakCoords(0), lowestPeakCoords(1)).getIntensity
+          
+          this.logger.debug( s"Peak intensity range in run slice $rsNumber = "+ lowestIntensity+" to "+highestIntensity)
+          
+          // Create a HashMap to memorize which peaks have been already used
+          // Note: in previous implementation we included peaks of the previous run slice
+          // TODO: check if not doing that has an effect on the quality of detection
+          //val usedPeakMap = new HashMap[Peak,Boolean]() // true if used in last detection false if previous detection
+          
+          // Detect peakels in pklTree by using curRsPeaks as starting points
+          val peakels = pklTree.synchronized {
+            peakelDetector.detectPeakels(
+              pklTree,
+              curRsPeakListColl,
+              curRsPeaksCoords
+            )
+          }
+          
+          subscriber.onNext(peakels)
+          
+          this.logger.debug( s"found ${peakels.length} peakels in run slice "+rsNumber)
         }
-        
-        this.logger.debug( s"found ${peakels.length} peakels in run slice "+rsNumber)
-        
-        // Add peakels to the global buffer
-        peakelsBuffer.synchronized {
-          peakelsBuffer ++= peakels
-        }
-        
       }
+      
+      // Terminate the observable
+      subscriber.onCompleted()
+      
+    } catch {
+      case t: Throwable => subscriber.onError(t)
     }
+
   }
   
-  future.onFailure { case e =>
-    logger.error(s"exiting consumer ${consumerNumber} with error", e)
-    
-    detectorQueue.enqueueException(e)
-  }
+  private val execCtxScheduler = ExecutionContextScheduler(execCtx) // for subscribeOn
+  private val hotObservable = coldObservable.subscribeOn(execCtxScheduler).publish
+  hotObservable.connect // Execute the observable
   
+  def observable = hotObservable
 }
 
 case class PeakelDetectorQueueEntry(
@@ -155,7 +174,7 @@ class PeakelDetectorQueue(maxSize: Int) extends LazyLogging {
   
   def clear() = peakelDetectorQueue.clear()
   def hasEntries(): Boolean = ! peakelDetectorQueue.isEmpty
-  def stop() = synchronized {    
+  def stop() = synchronized {
     // Dequeue all entries
     /*while( this.hasEntries() ) {
       this.dequeue()
@@ -163,7 +182,7 @@ class PeakelDetectorQueue(maxSize: Int) extends LazyLogging {
     isStopped = true
   }
 
-  // This method is used to dequeue a PeakListTree...
+  // This method is used to dequeue a PeakListTree
   // Take attentation to the peaklistTreeQueue.synchronized
   // This says that to enter the code inside synchronized you should holds the lock PeakelDetectorQueue    
   def dequeue(): PeakelDetectorQueueEntry = peakelDetectorQueue.synchronized {
@@ -285,6 +304,19 @@ object MzDbFeatureDetector {
   }
 }
 
+private object Wrapper {
+  // TODO: factorize this code
+  // BEGIN OF STOLEN FROM MzDbFeatureExtractor
+  implicit class RichRunSliceData(val self: RunSliceData) extends AnyVal {
+    def getPeakListBySpectrumId(): LongMap[PeakList] = {
+      self.getSpectrumSliceList.filter(_.getData.getPeaksCount > 0).toLongMapWith { ss => 
+        ss.getSpectrumId -> new PeakList(ss)
+      }
+    }
+  }
+  // END OF STOLEN FROM MzDbFeatureExtractor
+}
+
 /**
  * @author David Bouyssie
  *
@@ -294,72 +326,141 @@ class MzDbFeatureDetector(
   @BeanProperty var ftDetectorConfig: FeatureDetectorConfig = FeatureDetectorConfig()
 ) extends LazyLogging {
   
+  import Wrapper._
+  
   val ms1SpectrumHeaderById = mzDbReader.getMs1SpectrumHeaders().toLongMapWith( sh => sh.getId.toLong -> sh )
   val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders()
   //val ms2SpectrumHeaderById = ms2SpectrumHeaders.map( sh => sh.getId.toInt -> sh ).toMap
   val ms2SpectrumHeadersByCycle = ms2SpectrumHeaders.groupByLong(_.getCycle.toInt)
   val ms2SpectrumHeadersById = ms2SpectrumHeaders.toLongMapWith( sh => sh.getId.toLong -> sh )
- 
-  // TODO: factorize this code
-  // BEGIN OF STOLEN FROM MzDbFeatureExtractor
-  class RichRunSliceData(self: RunSliceData) {
-    def getPeakListBySpectrumId(): LongMap[PeakList] = {
-      self.getSpectrumSliceList.filter(_.getData.getPeaksCount > 0).toLongMapWith { ss => 
-        ss.getSpectrumId -> new PeakList(ss)
-      }
-    }
-  }
-  implicit def rsdToRichRsd(rsd: RunSliceData) = new RichRunSliceData(rsd)
-  // END OF STOLEN FROM MzDbFeatureExtractor
   
   /**
    * Detect peakels using the unsupervised peakel detector
    */
-  def detectPeakels(rsIter: Iterator[RunSlice]): Array[Peakel] = { 
+  def detectPeakels(rsIter: Iterator[RunSlice], nbThreads: Option[Int] = None): Array[Peakel] = {
     
-    val msLevel = ftDetectorConfig.msLevel
+    val promise = Promise[Array[Peakel]]
+    val onDetectedPeakels = { observablePeakels: Observable[Array[Peakel]] =>
+      
+      // Listen for peakels in a distinct thread
+      val futurePeakels = Future {
+        // Create a buffer that contains the detected peakels
+        // Note: the buffer must be synchronized when accessed by multiple threads
+        val peakelsBuffer = new ArrayBuffer[Peakel](50000) // we assume to have at least 50000 peakels
+        
+        observablePeakels
+          .toBlocking
+          .subscribe({ peakels =>
+            peakelsBuffer ++= peakels
+          })
+        
+        promise.success(peakelsBuffer.toArray)
+        
+      }(scala.concurrent.ExecutionContext.Implicits.global)
+    }
     
-    val spectrumHeaderById = if (msLevel == 1) { ms1SpectrumHeaderById } else { ms2SpectrumHeadersById }
+    this.detectPeakelsAsync(rsIter, onDetectedPeakels, nbThreads)
     
-    val peakelDetector = new UnsupervisedPeakelDetector(
-      spectrumHeaderById = spectrumHeaderById,
-      nfBySpectrumId = LongMap.empty[Float],
-      mzTolPPM = ftDetectorConfig.mzTolPPM,
-      peakelFinder = BuildPeakelFinder(ftDetectorConfig.peakelFinderConfig)
-    )
+    Await.result(promise.future,Duration.Inf)
+  }
+  
+  /*def detectPeakelsAsync(
+    rsIter: Iterator[RunSlice],
+    nbThreads: Option[Int] = None
+  ): Unit = {
+    
+    val peakelsPromise = Promise[Array[Peakel]]
+    val onDetectedPeakels = { observablePeakels: Observable[Array[Peakel]] =>
+      peakelsPromise.success(observablePeakels)
+    }
+    
+    this.detectPeakelsAsync(rsIter, onDetectedPeakels, nbThreads)
+  }*/
+  
+  def detectPeakelsAsync[Unit](
+    rsIter: Iterator[RunSlice],
+    onDetectedPeakels: Observable[Array[Peakel]] => Unit,
+    nbThreads: Option[Int] = None
+  ) {
+    
+    // Determine the thread pool size
+    val poolSize = if (nbThreads.isDefined) nbThreads.get
+    else {
+      val nbProcessors = Runtime.getRuntime().availableProcessors()
+      math.max( 1, (nbProcessors / 2).toInt )
+    }
+    
+    // Create an implicit execution context for the execution of the consumers
+    val threadPool = Executors.newFixedThreadPool( poolSize ).asInstanceOf[ThreadPoolExecutor]
+    
+    try {
+      val spectrumHeaderById = if (ftDetectorConfig.msLevel == 1) { ms1SpectrumHeaderById } else { ms2SpectrumHeadersById }
+      
+      val peakelDetector = new UnsupervisedPeakelDetector(
+        spectrumHeaderById = spectrumHeaderById,
+        nfBySpectrumId = LongMap.empty[Float],
+        mzTolPPM = ftDetectorConfig.mzTolPPM,
+        peakelFinder = BuildPeakelFinder(ftDetectorConfig.peakelFinderConfig)
+      )
+      
+      // Create a queue to parallelize the peakel detection process
+      val nbConsumers = threadPool.getMaximumPoolSize
+      logger.info(s"Will perform detection using $nbConsumers cores")
+      val detectorQueue = new PeakelDetectorQueue( nbConsumers ) // nbConsumers * 2
+      //val queue = new ArrayBlockingQueue[Option[PeakelDetectorQueueEntry]](nbConsumers)
+      
+      // Create an execution context for the execution of the consumers
+      val execCtx = ExecutionContext.fromExecutor(threadPool)
+      
+      // Create as many consumers as nbConsumers
+      val consumers = (for( consumerNumber <- 1 to nbConsumers ) yield {
+        new PeakelDetectorConsumer(
+          consumerNumber = consumerNumber,
+          peakelDetector = peakelDetector,
+          detectorQueue = detectorQueue
+          //queue = queue
+        )(execCtx)
+      }) toList
+      
+      // Merge the consumers observable into a single one and then redirect detected peakels to the PublishSubject
+      val observablePeakels = consumers.map( _.observable ).toObservable.flatten.doOnError( { error: Throwable =>
+        logger.error(s"exiting consumers with error", error)
+        detectorQueue.enqueueException(error)
+      })
+      
+      onDetectedPeakels( observablePeakels )
+      
+      // Produce run slices for asynchronous peakel detection 
+      _produceRunSlicesForPeakelDetection(rsIter, detectorQueue, consumers, spectrumHeaderById)
+      
+      ()
+      
+    } finally {
+      logger.debug( "Shutting down thread pool used for peakel detection..." )
+      if(threadPool.isShutdown() == false ) threadPool.shutdownNow()
+    }
+    
+    //System.gc()
+    
+    //Thread.sleep(10000)
+  }
+  
+  private def _produceRunSlicesForPeakelDetection(
+    rsIter: Iterator[RunSlice],
+    detectorQueue: PeakelDetectorQueue,
+    //queue: ArrayBlockingQueue[Option[PeakelDetectorQueueEntry]],
+    consumers: List[PeakelDetectorConsumer],
+    spectrumHeaderById: LongMap[SpectrumHeader]
+  ): Unit = {
     
     // Define a peaklist map (first level = runSliceNumber, second level =spectrumId )
     val pklBySpectrumIdAndRsNumber = new LongMap[LongMap[PeakList]]()
     
-    // Create a queue to parallelize the feature detection process
-    val nbProcessors = Runtime.getRuntime().availableProcessors()
-    val nbConsumers = math.max( 1, (nbProcessors / 2).toInt )
-    val threadPool = Executors.newFixedThreadPool( nbConsumers )
-    implicit val futureExecCtx = ExecutionContext.fromExecutor(threadPool)
-    //implicit val execCtx = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(30))
-    //implicit val execCtx = scala.concurrent.ExecutionContext.Implicits.global
-    
-    logger.info(s"Will perform detection using $nbConsumers cores" )
-    val detectorQueue = new PeakelDetectorQueue( nbConsumers )
-    
-    // Create a buffer that contains the detected peakels
-    // Note: the buffer must be synchronized when accessed by multiple threads
-    val peakelsBuffer = new ArrayBuffer[Peakel]()
-    
-    // Create as many consumers as nbConsumers
-    val consumers = for( consumerNumber <- 1 to nbConsumers ) yield {
-      new PeakelDetectorConsumer(
-        consumerNumber = consumerNumber,
-        peakelDetector = peakelDetector,
-        detectorQueue = detectorQueue,
-        peakelsBuffer = peakelsBuffer
-      )
-    }
-    
+    // Execute the detection loop in a protected try/catch block
     try {
       
       // Retrieve run slices headers
-      val rsHeaders = mzDbReader.getRunSliceHeaders(msLevel)
+      val rsHeaders = mzDbReader.getRunSliceHeaders(ftDetectorConfig.msLevel)
       val rsHeaderByNumber = rsHeaders.map { rsh => rsh.getNumber -> rsh } toMap
       
       // Define some vars for the run slice iteration
@@ -385,7 +486,7 @@ class MzDbFeatureDetector(
           val curPeaklistBySpectrumId = rsd.getPeakListBySpectrumId
          
           // Retrieve run slices and their corresponding id
-          this.logger.debug(s"loading run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz})")
+          this.logger.debug(s"will process run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz})")
           
           // Build the list of obsolete run slices
           val rsNumbersToRemove = for(
@@ -397,16 +498,20 @@ class MzDbFeatureDetector(
     
           // Clean the peaklist map => remove obsolete run slices
           rsNumbersToRemove.foreach { pklBySpectrumIdAndRsNumber -= _ }
-    
+          
           // Add current run slice peakList to pklBySpectrumIdAndRsNumber
           if ( pklBySpectrumIdAndRsNumber.contains(rsNumber) == false ) {
             pklBySpectrumIdAndRsNumber.put( rsNumber, curPeaklistBySpectrumId )
           }
-    
+          
           // Add next run slice peaklist to pklBySpectrumIdAndRsNumber
           val nextRsOpt = if (rsIter.hasNext == false) None
           else {
+            this.logger.debug(s"loading run slice ${rsNumber+1}...")
             val nextRs = rsIter.next
+            val nextRsh = nextRs.getHeader
+            this.logger.debug(s"run slice ${rsNumber+1} (${nextRsh.getBeginMz},${nextRsh.getEndMz}) has been loaded !")
+            
             pklBySpectrumIdAndRsNumber.put( nextRsNumber, nextRs.getData.getPeakListBySpectrumId )
             Some(nextRs)
           }
@@ -425,6 +530,8 @@ class MzDbFeatureDetector(
           }
           val pklTree = new PeakListTree( pklTripletBySpectrumId, spectrumHeaderById )
           
+          this.logger.debug(s"sending run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz}) to the consumer")
+          
           // Enqueue loaded PeakListTree to send it to the consumer
           // Note that the detectorQueue will wait if it is full
           detectorQueue.enqueue(
@@ -434,11 +541,17 @@ class MzDbFeatureDetector(
               curPeaklistBySpectrumId = curPeaklistBySpectrumId
             )
           )
+          /*queue.put(
+            Some(PeakelDetectorQueueEntry(
+              rsNumber = rsNumber,
+              pklTree = pklTree,
+              curPeaklistBySpectrumId = curPeaklistBySpectrumId
+            ))
+          )*/
           
           // Update some vars
           prevRsNumber = rsNumber
           rsOpt = nextRsOpt
-          
         }
       }
       
@@ -446,17 +559,16 @@ class MzDbFeatureDetector(
       
     } catch {
       case e: Throwable => {
-        logger.error("Exception raised from peakel detector consumer",e)
-        detectorQueue.enqueueException(e)
+        logger.error("Exception raised from peakel detector producer",e)
+        throw e
       }
     } finally {
       
       // Small hack: enqueue null values to exit the consumers
       for( consumer <- consumers ) {
         detectorQueue.enqueue(null)
+        //queue.put(None)
       }
-      
-      detectorQueue.stop()
       
       // Update the progress computer
       //progressComputer.setCurrentStepAsCompleted()
@@ -464,32 +576,13 @@ class MzDbFeatureDetector(
       logger.debug( "Detector queue has been stopped !" )
     }
     
-    val result = try {
-      
-      // Throw an exception if the queue has exceptions
-      if( detectorQueue.hasExceptions() ) {
-        logger.error("Exception catched in detector queue !")
-        throw detectorQueue.dequeueException()
-      }
-      
-      Await.result(
-        
-        Future.sequence(consumers.map(_.future)).map { nada =>
-          peakelsBuffer.toArray
-        },
-        Duration.Inf
-      )
-
-    } finally {
-      logger.debug( "Shutting down thread pool used for peakel detection..." )
-      if(threadPool.isShutdown() == false ) threadPool.shutdownNow()
+    // Throw an exception if the queue has exceptions (its means that a consumer has thrown an exception)
+    if (detectorQueue.hasExceptions()) {
+      logger.error("Exception caught in detector queue !")
+      throw detectorQueue.dequeueException()
     }
     
-    System.gc()
-    
-    //Thread.sleep(10000)
-    
-    result
+    ()
   }
   
   /**
