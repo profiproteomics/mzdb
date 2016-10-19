@@ -42,7 +42,7 @@
     <dependency>
       <groupId>io.reactivex</groupId>
       <artifactId>rxjava</artifactId>
-      <version>1.0.13</version>
+      <version>1.1.8</version>
     </dependency>
 
     <!-- SQLite Jar then native libraries -->
