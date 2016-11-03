@@ -1,16 +1,19 @@
 package fr.profi.mzdb
 
-import scala.collection.mutable.ArrayBuffer
-
 import com.typesafe.scalalogging.StrictLogging
-
-import org.junit.Before
+import org.junit.AfterClass
+import org.junit.Assert
+import org.junit.BeforeClass
 import org.junit.Test
-
+import org.junit.Before
+import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
+import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
 import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model.PutativeFeature
+import java.io.File
+import org.junit.Ignore
 
 class MzDbFeatureDetectorTest extends StrictLogging {
 
@@ -49,6 +52,7 @@ class MzDbFeatureDetectorTest extends StrictLogging {
     }
   }
 
+
   @Test
   def testExtractFeaturesFromMS2() = {
 
@@ -86,4 +90,31 @@ class MzDbFeatureDetectorTest extends StrictLogging {
 
   }
 
+   
+  @Ignore
+  @Test
+  def testDetectPeakelsFromMS2() = {
+
+      mzDb = new MzDbReader(new File("C:/Local/bruley/Data/mzDB/Wiff TTOF/TTOF2_01832.mzdb"), true ) 
+      val mzDbFts = try {
+        
+      val ftDetectorConfig = FeatureDetectorConfig(2, mzTolPPM = 50.0f, 5, new SmartPeakelFinderConfig(5, 3, 0.66f, false, 10, false, false))
+      val mzdbDetector = new MzDbFeatureDetector(mzDb, ftDetectorConfig)
+      // detect peakels
+      var rsIter = mzDb.getLcMsnRunSliceIterator(606.59,606.612)
+      this.logger.info("iterating over run slices")
+      while(rsIter.hasNext()) {
+        val rs = rsIter.next()
+        this.logger.info(s"RSlice header ${rs.getHeader.getNumber}, level = ${rs.getHeader.getMsLevel} " )
+      }
+      rsIter = mzDb.getLcMsnRunSliceIterator(606.59,606.612)
+      val peakels = mzdbDetector.detectPeakels(rsIter)
+      logger.info("Nb peakels detected : "+peakels.length)
+      peakels
+    } finally {
+      mzDb.close()
+    }
+    
+  }
+  
 }

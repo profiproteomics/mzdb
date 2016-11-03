@@ -39,6 +39,7 @@ abstract class PeakelFinderConfig
 case class SmartPeakelFinderConfig(
   minPeaksCount: Int = 5,
   miniMaxiDistanceThresh: Int = 3,
+  maxIntensityRelThresh: Float = 0.66f,
   useOscillationFactor: Boolean = false,
   maxOscillationFactor: Int = 10,
   usePartialSGSmoother: Boolean = false,
@@ -58,6 +59,7 @@ object BuildPeakelFinder {
       case smf: SmartPeakelFinderConfig => new SmartPeakelFinder(
         minPeaksCount = smf.minPeaksCount,
         miniMaxiDistanceThresh = smf.miniMaxiDistanceThresh,
+        maxIntensityRelThresh = smf.maxIntensityRelThresh,
         useOscillationFactor = smf.useOscillationFactor,
         maxOscillationFactor = smf.maxOscillationFactor,
         usePartialSGSmoother = smf.usePartialSGSmoother,
