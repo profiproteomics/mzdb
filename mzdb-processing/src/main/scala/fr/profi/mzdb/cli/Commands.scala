@@ -391,16 +391,16 @@ object Commands extends LazyLogging {
     logger.info("Creating MGF File for mzDB at: " + CreateMgfCommand.mzdbFile)
     logger.info("Precursor m/z values will be defined using the method: " + CreateMgfCommand.precMzComputation)
 
-    val writer = new MgfWriter(CreateMgfCommand.mzdbFile)
+    val writer = new MgfWriter(CreateMgfCommand.mzdbFile, CreateMgfCommand.msLevel)
     val precCompEnum = PrecursorMzComputationEnum.values().find(_.name() == CreateMgfCommand.precMzComputation)
     
-    if (precCompEnum.isDefined) { 
+    if (precCompEnum.isDefined) {
        writer.write(CreateMgfCommand.outputFile,  precCompEnum.get, CreateMgfCommand.mzTolPPM, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted") {
        val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
        writer.write(CreateMgfCommand.outputFile, precComputer, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else {
-      throw new IllegalArgumentException
+      throw new IllegalArgumentException("Can't create the MGF file, invalid precursor m/z computation method")
     }
   }
 

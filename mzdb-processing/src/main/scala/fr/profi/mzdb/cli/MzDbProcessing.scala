@@ -127,6 +127,9 @@ object MzDbProcessing extends App with LazyLogging {
 
     @Parameter(names = Array("-o", "--output_file_path"), description = "mgf output file path", required = true)
     var outputFile: String = ""
+    
+    @Parameter(names = Array("-ms", "--ms_level"), description = "the MS level to export", required = false)
+    var msLevel: Int = 2
 
     @Parameter(names = Array("-precmz", "--precursor_mz"), description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo, isolation_window_extracted'", required = false)
     var precMzComputation: String = "main_precursor_mz"
@@ -199,19 +202,20 @@ object MzDbProcessing extends App with LazyLogging {
       
     } catch {
 
-      case pEx: ParameterException => {
+      case pEx: ParameterException=> {
         println()
         logger.warn("Invalid command or parameter", pEx)
         jCmd.usage()
+        System.exit(1)
       }
 
       case ex: Exception => {
         println()
         logger.error("Execution of command '" + parsedCommand + "' failed", ex)
-        jCmd.usage()
+        System.exit(1)
       }
-
     }
+    
   }
 
 
