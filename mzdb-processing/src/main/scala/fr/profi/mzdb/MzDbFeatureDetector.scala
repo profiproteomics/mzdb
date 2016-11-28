@@ -196,7 +196,7 @@ class PeakelDetectorQueue(maxSize: Int) extends LazyLogging {
     
     // If the queue is empty (no PeakelDetectorQueueEntry in the queue)
     while (peakelDetectorQueue.isEmpty) {
-      logger.debug("waiting for new entries in the queue...")
+      logger.trace("waiting for new entries in the queue...")
       
       // As it is empty we cannot do anything now and must go to waiting
       // This is done by calling the wait method of the lock object of the PeakelDetectorQueue
@@ -408,7 +408,7 @@ class MzDbFeatureDetector(
       // Create a queue to parallelize the peakel detection process
       val nbConsumers = threadPool.getMaximumPoolSize
       logger.info(s"Will perform detection using $nbConsumers cores")
-      val detectorQueue = new PeakelDetectorQueue( nbConsumers ) // nbConsumers * 2
+      val detectorQueue = new PeakelDetectorQueue( nbConsumers * 2 )
       //val queue = new ArrayBlockingQueue[Option[PeakelDetectorQueueEntry]](nbConsumers)
       
       // Create an execution context for the execution of the consumers
