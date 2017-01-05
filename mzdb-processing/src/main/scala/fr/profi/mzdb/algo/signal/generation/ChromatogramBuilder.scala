@@ -45,10 +45,10 @@ class ChromatogramBuilder() {
       if( peaksCount == 1 ) peaks.head
       else {        
         val peakelBuilder = new PeakelBuilder(peaks.toArray)
-        val mzValues = peakelBuilder.getMzValues()
-        val intensityValues = peakelBuilder.getIntensityValues()
-        val leftHwhms = peakelBuilder.getLeftHwhms()
-        val rightHwhms = peakelBuilder.getRightHwhms()
+        val mzValues = peakelBuilder.getMzValues().result()
+        val intensityValues = peakelBuilder.getIntensityValues().result()
+        val leftHwhms = peakelBuilder.getLeftHwhms().result()
+        val rightHwhms = peakelBuilder.getRightHwhms().result()
         
         new Peak(
           mzValues.sum / peaksCount,

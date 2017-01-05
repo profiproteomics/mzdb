@@ -79,6 +79,7 @@ object Feature extends InMemoryIdGen {
     peakelBuilders.toArray
   }
 
+  // TODO: return PeakelBuffer instead of PeakelBuilder ?
   protected def _ipsToIndexedPeakelBuilders(ips: Seq[IsotopicPatternLike], peakelIdx: Int): Option[(PeakelBuilder,Int)] = {
 
     val peaks = new ArrayBuffer[Peak]()

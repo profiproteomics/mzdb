@@ -65,10 +65,10 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     val maxPeakelIndex = if (maxTheoreticalPeakelIndex < indexedPeakelBuilders.length) maxTheoreticalPeakelIndex else 0
 
     // Get the defined peaks
-    val maxPeakelBuilder = indexedPeakelBuilders(maxPeakelIndex)._1
+    val maxTmpPeakel = indexedPeakelBuilders(maxPeakelIndex)._1.result()
 
     // Check definedPeaks length > 3 and peaks length >= 5
-    if ( maxPeakelBuilder.hasEnoughPeaks(minConsecutiveSpectra) == false )
+    if ( maxTmpPeakel.hasEnoughPeaks(minConsecutiveSpectra) == false )
       return Option.empty[Feature]
 
     //-------- REFINE PEAKEL OPTIONAL STEP --------
@@ -77,12 +77,12 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       
       // Detect peaks
       val peakelsIndices = findPeakelsIndices(
-        maxPeakelBuilder,
+        maxTmpPeakel,
         ftXtractAlgoConfig.detectionAlgorithm,
         ftXtractAlgoConfig.minSNR,
         spectrumHeaderById
       )
-      val elutionTimes = maxPeakelBuilder.elutionTimes
+      val elutionTimes = maxTmpPeakel.elutionTimes
       
       // Treat matching Idx
       var matchingPeakelIdxPair: (Int, Int) = null
@@ -105,10 +105,10 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
             logger.error(s"can't retrieve apex using peakel indices: ${idxPair}")
             Float.MaxValue
           } else {
-            val apexIdx = filteredMaxPeakelIndices.maxBy( maxPeakelBuilder.intensityValues(_) )
+            val apexIdx = filteredMaxPeakelIndices.maxBy( i => maxTmpPeakel.intensityValues(i) )
             
             // Compute the absolute time diff between feature and peakel apex
-            math.abs(ftTime - maxPeakelBuilder.elutionTimes(apexIdx) )
+            math.abs(ftTime - maxTmpPeakel.elutionTimes(apexIdx) )
           }
         }
       }
@@ -120,7 +120,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
       // TODO: check what was the purpose of this
       //val ipsIndexes = (peaks.indexOf(definedPeaks(matchingPeakIdx._1)), peaks.indexOf(definedPeaks(matchingPeakIdx._2)))
 
-      val maxPeakelSpectrumIds = maxPeakelBuilder.getSpectrumIds()
+      val maxPeakelSpectrumIds = maxTmpPeakel.getSpectrumIds()
       
       val(firstPeakelIdx, lastPeakelIdx) = matchingPeakelIdxPair
       val(firstSpectrumId, lastSpectrumId) = (maxPeakelSpectrumIds(firstPeakelIdx), maxPeakelSpectrumIds(lastPeakelIdx) )
