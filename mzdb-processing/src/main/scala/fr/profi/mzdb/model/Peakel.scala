@@ -78,6 +78,8 @@ trait IPeakelDataContainer extends IPeakelCursorProvider {
 
 object Peakel extends InMemoryIdGen {
   
+  private val kurtosisCalc = new org.apache.commons.math3.stat.descriptive.moment.Kurtosis()
+  
   def calcMeanAndCv( values: Seq[Float] ): (Float,Float) = {
     if( values == null ) return (0f,0f)
     
@@ -89,11 +91,27 @@ object Peakel extends InMemoryIdGen {
     if( values == null ) return (0f,0f)
     
     val mean = StatUtils.mean(values)
-    val variance = StatUtils.variance(values, mean)
-    val sd = math.sqrt(variance)
-    val cv = if( sd > 0 ) 100 * mean / sd else 0f
+    val cv = calcCv(values, mean)
    
     (mean.toFloat, cv.toFloat )
+  }
+  
+  def calcCv( values: Array[Double], mean: Double ): Float = {
+    if (values == null) return 0f
+    
+    val variance = StatUtils.variance(values, mean)
+    val sd = math.sqrt(variance)
+    val cv = if( sd > 0 ) 100 * sd / mean else 0f
+    
+    kurtosisCalc.evaluate(values)
+   
+    cv.toFloat
+  }
+  
+  def calcKurtosis( values: Array[Double] ): Float = {
+    if (values == null) return 0f
+    
+    kurtosisCalc.evaluate(values).toFloat
   }
   
   def integratePeakel(peakelCursor: IPeakelDataCursor): (Float,Float) = {
@@ -258,7 +276,14 @@ case class Peakel(
   def getPeakMz(pIdx: Int): Double = mzValues(pIdx)
   def getPeakIntensity(pIdx: Int): Float = intensityValues(pIdx)
   
+  def calcAmplitude(): Float = getApexIntensity / intensityValues.filter( i => i > 0 && !i.isNaN() ).min
   def calcDuration(): Float = getLastElutionTime - getFirstElutionTime
+  def calcGapCount(cycleBySpecId: LongMap[Int]): Int = {
+    val cycleDelta = cycleBySpecId(spectrumIds.last) - cycleBySpecId(spectrumIds.head)
+    1 + cycleDelta - spectrumIds.length
+  }
+  def calcIntensityCv(): Float = Peakel.calcCv( intensityValues.map( _.toDouble ), (intensitySum / peaksCount).toDouble )
+  def calcKurtosis(): Float = Peakel.calcKurtosis( intensityValues.map( _.toDouble ) )
   
   def calcWeightedAverageTime(): Float = {
     var intensitySum = 0f
