@@ -102,6 +102,23 @@
       <!-- Version inherited from ProFI-Pom -->
     </dependency>
     
+    <!-- R*Tree library -->
+    <dependency>
+      <groupId>com.github.davidmoten</groupId>
+      <artifactId>rtree</artifactId>
+      <version>0.8-RC10</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.davidmoten</groupId>
+      <artifactId>guava-mini</artifactId>
+      <version>0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.davidmoten</groupId>
+      <artifactId>rxjava-extras</artifactId>
+      <version>0.7.9.22</version>
+    </dependency>
+    
     <!-- RxJava & RxScala -->
     <dependency>
       <groupId>io.reactivex</groupId>
