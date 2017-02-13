@@ -632,14 +632,18 @@ class PeakelBuilder(
     )
   }
   
+  private def _setSizeHint( size: Int ) {
+    spectrumIds.sizeHint(size)
+    elutionTimes.sizeHint(size)
+    mzValues.sizeHint(size)
+    intensityValues.sizeHint(size)
+    leftHwhms.sizeHint(size)
+    rightHwhms.sizeHint(size)
+  }
+  
   def this( bufferSize: Int ) = {
     this()
-    spectrumIds.sizeHint(bufferSize)
-    elutionTimes.sizeHint(bufferSize)
-    mzValues.sizeHint(bufferSize)
-    intensityValues.sizeHint(bufferSize)
-    leftHwhms.sizeHint(bufferSize)
-    rightHwhms.sizeHint(bufferSize)
+    this._setSizeHint(bufferSize)
   }
   
   def this( peaks: Seq[Peak] ) = {
@@ -680,10 +684,13 @@ class PeakelBuilder(
     this
   }
   
-  def ++=( peaks: Iterable[Peak] ): this.type = {
+  def ++=( peaks: Seq[Peak] ): this.type = {
     require( peaks != null, "peaks is null")
     
-    for( peak <- peaks ) this += peak
+    val newSize = this.getPeaksCount() + peaks.length
+    this._setSizeHint(newSize)
+    
+    for (peak <- peaks) this += peak
     
     this
   }
@@ -755,6 +762,10 @@ class PeakelBuilder(
     val leftHwhmsArray = leftHwhms.result()
     val rightHwhmsArray = rightHwhms.result()
     
+    val spectrumIdCount = spectrumIdsArray.length
+    require(leftHwhmsArray.length == spectrumIdCount, "invalid leftHwhms length")
+    require(rightHwhmsArray.length == spectrumIdCount, "invalid rightHwhms length")
+    
     val matchingSpectrumIdsWithIdx = spectrumIdsArray.zipWithIndex.filter { case (spectrumId,idx) =>
       spectrumId >= firstSpectrumId && spectrumId <= lastSpectrumId
     }
@@ -763,17 +774,13 @@ class PeakelBuilder(
     val firstIdx = matchingSpectrumIdsWithIdx.head._2
     val lastBoundary = matchingSpectrumIdsWithIdx.last._2 + 1
     
-    val spectrumIdCount = spectrumIdsArray.length
-    val newLeftHwhms = if (leftHwhmsArray.length == spectrumIdCount ) null else leftHwhmsArray.slice(firstIdx, lastBoundary)
-    val newRightHwhms = if (rightHwhmsArray.length == spectrumIdCount ) null else rightHwhmsArray.slice(firstIdx, lastBoundary)
-    
     val newPeakelBuilder = new PeakelBuilder(
       new ArrayBuilder.ofLong ++= spectrumIdsArray.slice(firstIdx, lastBoundary),
       new ArrayBuilder.ofFloat ++= elutionTimesArray.slice(firstIdx, lastBoundary),
       new ArrayBuilder.ofDouble ++= mzValuesArray.slice(firstIdx, lastBoundary),
       new ArrayBuilder.ofFloat ++= intensityValuesArray.slice(firstIdx, lastBoundary),
-      new ArrayBuilder.ofFloat ++= newLeftHwhms,
-      new ArrayBuilder.ofFloat ++= newRightHwhms
+      new ArrayBuilder.ofFloat ++= leftHwhmsArray.slice(firstIdx, lastBoundary),
+      new ArrayBuilder.ofFloat ++= rightHwhmsArray.slice(firstIdx, lastBoundary)
     )
     
     Some( newPeakelBuilder )
@@ -844,7 +851,8 @@ class PeakelBuffer(
   def ++=( peaks: Iterable[Peak] ): this.type = {
     require( peaks != null, "peaks is null")
     
-    for( peak <- peaks ) this += peak    
+    for( peak <- peaks ) this += peak
+    
     this
   }
   
@@ -904,6 +912,10 @@ class PeakelBuffer(
   /** Restrict to is inclusive here **/
   def restrictToSpectrumIdRange( firstSpectrumId: Long, lastSpectrumId: Long ): Option[PeakelBuffer] = {
     
+    val spectrumIdCount = spectrumIds.length
+    require(leftHwhms.length == spectrumIdCount, "invalid leftHwhms length")
+    require(rightHwhms.length == spectrumIdCount, "invalid rightHwhms length")
+    
     val matchingSpectrumIdsWithIdx = spectrumIds.zipWithIndex.filter { case (spectrumId,idx) =>
       spectrumId >= firstSpectrumId && spectrumId <= lastSpectrumId
     }
@@ -912,14 +924,13 @@ class PeakelBuffer(
     val firstIdx = matchingSpectrumIdsWithIdx.head._2
     val lastBoundary = matchingSpectrumIdsWithIdx.last._2 + 1
     
-    val spectrumIdCount = spectrumIds.length
     val newPeakelBuffer = new PeakelBuffer(
       spectrumIds.slice(firstIdx, lastBoundary),
       elutionTimes.slice(firstIdx, lastBoundary),
       mzValues.slice(firstIdx, lastBoundary),
       intensityValues.slice(firstIdx, lastBoundary),
-      if( leftHwhms.length == spectrumIdCount ) null else leftHwhms.slice(firstIdx, lastBoundary),
-      if( rightHwhms.length == spectrumIdCount ) null else rightHwhms.slice(firstIdx, lastBoundary)
+      leftHwhms.slice(firstIdx, lastBoundary),
+      rightHwhms.slice(firstIdx, lastBoundary)
     )
     
     Some( newPeakelBuffer )
