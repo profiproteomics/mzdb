@@ -12,7 +12,6 @@ import java.util.TreeMap;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +33,6 @@ import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 import fr.profi.mzdb.util.sqlite.SQLiteRecordIterator;
 
-import rx.Observable;
-import rx.functions.Action1;
-
 /**
  * Allows to manipulates data contained in the mzDB file.
  *
@@ -45,8 +41,8 @@ import rx.functions.Action1;
 public abstract class AbstractMzDbReader {
 	
 	// Define a new static scheduler
-	final protected static java.util.concurrent.ExecutorService computationThreadPool = java.util.concurrent.Executors.newCachedThreadPool();
-	final protected static rx.Scheduler rxCompScheduler = rx.schedulers.Schedulers.from(computationThreadPool);
+	//final protected static java.util.concurrent.ExecutorService computationThreadPool = java.util.concurrent.Executors.newCachedThreadPool();
+	//final protected static rx.Scheduler rxCompScheduler = rx.schedulers.Schedulers.from(computationThreadPool);
 
 	final protected Logger logger = LoggerFactory.getLogger(AbstractMzDbReader.class);
 	
@@ -471,7 +467,7 @@ public abstract class AbstractMzDbReader {
 		return finalSpectrumSlices;
 	}
 
-	private SpectrumSlice[] _getSpectrumSlicesInRangesUsingMultiThreading(
+	/*private SpectrumSlice[] _getSpectrumSlicesInRangesUsingMultiThreading(
 		double minMz,
 		double maxMz,
 		float minRt,
@@ -523,110 +519,93 @@ public abstract class AbstractMzDbReader {
 		final Map<Long, DataEncoding> dataEncodingBySpectrumId = this.getDataEncodingReader().getDataEncodingBySpectrumId(connection);
 		
 		// Create a SpectrumData Observable that will help us to process them in parallel
-		Observable<ImmutablePair<Long,SpectrumData>> spectrumDataObservable = Observable.create( spectrumDataSubscriber -> {
+		Observable<ImmutablePair<BoundingBox,Boolean>> bbObservable = Observable.create( bBoxSubscriber -> {
+			
+			try {
+
+				// Iterate over bounding boxes
+				while (recordIter.hasNext()) {
 		
-			Observable<ImmutablePair<BoundingBox,Boolean>> bbObservable = Observable.create( bBoxSubscriber -> {
-				
-				try {
-	
-					// Iterate over bounding boxes
-					while (recordIter.hasNext()) {
-			
-						SQLiteRecord record = recordIter.next();
-			
-						int bbId = record.columnInt(BoundingBoxTable.ID);
-			
-						// TODO: remove me when the query is performed using msn_rtree
-						// if (getBoundingBoxMsLevel(bbId) != msLevel)
-						// continue;
-			
-						// Retrieve bounding box data
-						byte[] data = record.columnBlob(BoundingBoxTable.DATA);
-						long firstSpectrumId = record.columnLong(BoundingBoxTable.FIRST_SPECTRUM_ID);
-						long lastSpectrumId = record.columnLong(BoundingBoxTable.LAST_SPECTRUM_ID);
-			
-						// Build the Bounding Box
-						BoundingBox bb = BoundingBoxBuilder.buildBB(bbId, data, firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId);
-						// bb.setRunSliceId(record.columnInt(BoundingBoxTable.RUN_SLICE_ID));
-						
-						//System.out.println(Thread.currentThread().getName() + ": " +bb.getId() + " #spectra="+ bb.getSpectraCount());
-			
-						bBoxSubscriber.onNext(new ImmutablePair<>(bb,!recordIter.hasNext()));
-					}
-				
-				} catch (Exception e) {
-					//bBoxSubscriber.onError(e);
-					spectrumDataSubscriber.onError(e);
-				}
+					SQLiteRecord record = recordIter.next();
 		
-				if (!bBoxSubscriber.isUnsubscribed()) {
-					bBoxSubscriber.onCompleted();
+					int bbId = record.columnInt(BoundingBoxTable.ID);
+		
+					// TODO: remove me when the query is performed using msn_rtree
+					// if (getBoundingBoxMsLevel(bbId) != msLevel)
+					// continue;
+		
+					// Retrieve bounding box data
+					byte[] data = record.columnBlob(BoundingBoxTable.DATA);
+					long firstSpectrumId = record.columnLong(BoundingBoxTable.FIRST_SPECTRUM_ID);
+					long lastSpectrumId = record.columnLong(BoundingBoxTable.LAST_SPECTRUM_ID);
+		
+					// Build the Bounding Box
+					BoundingBox bb = BoundingBoxBuilder.buildBB(bbId, data, firstSpectrumId, lastSpectrumId, spectrumHeaderById, dataEncodingBySpectrumId);
+					// bb.setRunSliceId(record.columnInt(BoundingBoxTable.RUN_SLICE_ID));
+					
+					//System.out.println(Thread.currentThread().getName() + ": " +bb.getId() + " #spectra="+ bb.getSpectraCount());
+		
+					bBoxSubscriber.onNext(new ImmutablePair<>(bb,!recordIter.hasNext()));
 				}
-				
-			});
 			
-			// TODO: schedule the observer to process BBs in parallel threads
+			} catch (Exception e) {
+				bBoxSubscriber.onError(e);
+			}
+	
+			if (!bBoxSubscriber.isUnsubscribed()) {
+				bBoxSubscriber.onCompleted();
+			}
 			
-			Action1<ImmutablePair<BoundingBox,Boolean>> onEachBBox = new Action1<ImmutablePair<BoundingBox,Boolean>>() {
-	            @Override
-	            public void call(ImmutablePair<BoundingBox,Boolean> pair) {
-	            	
-	            	BoundingBox bb = pair.left;
-	            	Boolean isLastBB = pair.right;
-	            	//System.out.println(Thread.currentThread().getName() + ": " +bb.getId() + " #spectra="+ bb.getSpectraCount());
-	            	
-	        		// begins BB parsing
-	        		// should be done in parallel
-	        		IBlobReader bbReader = bb.getReader();
-	        		int bbSpectraCount = bbReader.getSpectraCount();
-	        		long[] bbSpectrumIds = bbReader.getAllSpectrumIds();
-	
-	        		// Iterate over each spectrum of the bounding box
-	        		for (int spectrumIdx = 0; spectrumIdx < bbSpectraCount; spectrumIdx++) {
-	
-	        			long spectrumId = bbSpectrumIds[spectrumIdx];
-	        			SpectrumHeader sh = spectrumHeaderById.get(spectrumId);
-	        			float currentRt = sh.getElutionTime();
-	
-	        			// Filtering on time dimension
-	        			if ((currentRt >= minRt) && (currentRt <= maxRt)) {
-	        				// Filtering on m/z dimension
-	        				SpectrumData spectrumSliceData = bbReader.readFilteredSpectrumSliceDataAt(spectrumIdx, minMz, maxMz);
-	        				
-	        				if (spectrumSliceData.isEmpty() == false) {
-	        					//System.out.println(Thread.currentThread().getName() + ", subscriber: " +spectrumSliceData.getMinMz() + " #peaks="+ spectrumSliceData.getPeaksCount());
-	        					
-	        					// Emit the spectrumSliceData and corresponding spectrum id in the observed stream
-	        					ImmutablePair<Long,SpectrumData> p = new ImmutablePair<>(spectrumId, spectrumSliceData);
-	        					spectrumDataSubscriber.onNext(p);
-	        				}
-	        			}
-	        		}
-	        		
-	        		if (isLastBB) {
-	        			spectrumDataSubscriber.onCompleted();
-	        		}
-	        		
-	        		// ends BB parsing
-	            }
-	        };
-			
-			bbObservable.observeOn(rxCompScheduler).subscribe(
-				onEachBBox,
-				(error) -> System.out.println("Error during BBs reading" + error.getMessage()),
-				() -> {} //System.out.println("Got all BBs!")
-			);
 		});
+		
+		Observable<Object> spectrumDataObservable = bbObservable.map(pair -> Observable.create(spectrumDataSubscriber -> {
+			BoundingBox bb = pair.left;
+			//System.out.println(Thread.currentThread().getName() + ": " + bb.getId() + " #spectra=" + bb.getSpectraCount());
+
+			// begins BB parsing
+			// should be done in parallel
+			IBlobReader bbReader = bb.getReader();
+			int bbSpectraCount = bbReader.getSpectraCount();
+			long[] bbSpectrumIds = bbReader.getAllSpectrumIds();
+
+			// Iterate over each spectrum of the bounding box
+			for (int spectrumIdx = 0; spectrumIdx < bbSpectraCount; spectrumIdx++) {
+
+				long spectrumId = bbSpectrumIds[spectrumIdx];
+				SpectrumHeader sh = spectrumHeaderById.get(spectrumId);
+				float currentRt = sh.getElutionTime();
+
+				// Filtering on time dimension
+				if ((currentRt >= minRt) && (currentRt <= maxRt)) {
+					// Filtering on m/z dimension
+					SpectrumData spectrumSliceData = bbReader.readFilteredSpectrumSliceDataAt(spectrumIdx, minMz, maxMz);
+
+					if (spectrumSliceData.isEmpty() == false) {
+						//System.out.println(Thread.currentThread().getName() + ", subscriber: " + spectrumSliceData.getMinMz() + " #peaks="+ spectrumSliceData.getPeaksCount());
+
+						// Emit the spectrumSliceData and corresponding spectrum id in the observed stream
+						ImmutablePair<Long, SpectrumData> p = new ImmutablePair<>(spectrumId, spectrumSliceData);
+						spectrumDataSubscriber.onNext(p);
+					}
+				}
+			}
+			
+			spectrumDataSubscriber.onCompleted();
+
+		}) ).flatMap( val -> 
+		  val.subscribeOn(rxCompScheduler)
+		);
 		
 		TreeMap<Long, ArrayList<SpectrumData>> spectrumDataListById = new TreeMap<>();
 		HashMap<Long, Integer> peaksCountBySpectrumId = new HashMap<>();
 		
-		Action1<ImmutablePair<Long,SpectrumData>> onEachSpectrumData = new Action1<ImmutablePair<Long,SpectrumData>>() {
+		Action1<Object> onEachSpectrumData = new Action1<Object>() {
             @Override
-            public void call(ImmutablePair<Long,SpectrumData> pair) {
+            public void call(Object pair) {
             	
-            	Long spectrumId = pair.left;
-            	SpectrumData spectrumSliceData = pair.right;
+            	ImmutablePair<Long,SpectrumData> castedPair = (ImmutablePair<Long,SpectrumData>) pair;
+            	Long spectrumId = castedPair.left;
+            	SpectrumData spectrumSliceData = castedPair.right;
             	
             	//System.out.println(Thread.currentThread().getName() + ", observer: " +spectrumSliceData.getMinMz() + " #peaks="+ spectrumSliceData.getPeaksCount());
             	
@@ -665,7 +644,7 @@ public abstract class AbstractMzDbReader {
 		}
 
 		return finalSpectrumSlices;
-	}
+	}*/
 
 	private SpectrumData _mergeSpectrumDataList(ArrayList<SpectrumData> spectrumDataList, int peaksCount) {
 
