@@ -80,7 +80,7 @@ class PeakelDetectorConsumer(
   // Here is the PeakListTree consumer code written in an Observable block
   // Note that exceptions will be automatically managed by RxJava
   // and can be intercepted by the observable subscriber (onError method)
-  private val coldObservable = Observable[(Int,Array[Peakel])] { subscriber =>
+  private val coldObservable = Observable[Array[Peakel]] { subscriber =>
     
     try {
       var hasFinished = false
@@ -136,7 +136,7 @@ class PeakelDetectorConsumer(
             )
           }
           
-          subscriber.onNext((rsNumber,peakels))
+          subscriber.onNext(peakels)
           
           this.logger.debug( s"found ${peakels.length} peakels in run slice "+rsNumber)
         }
@@ -152,9 +152,10 @@ class PeakelDetectorConsumer(
   }
   
   private val execCtxScheduler = ExecutionContextScheduler(execCtx) // for subscribeOn
-  private val configuredObservable = coldObservable.subscribeOn(execCtxScheduler)
+  private val hotObservable = coldObservable.subscribeOn(execCtxScheduler).publish
+  hotObservable.connect // Execute the observable
   
-  def observable = configuredObservable
+  def observable = hotObservable
 }
 
 case class PeakelDetectorQueueEntry(
@@ -341,7 +342,7 @@ class MzDbFeatureDetector(
   def detectPeakels(rsIter: Iterator[RunSlice], nbThreads: Option[Int] = None): Array[Peakel] = {
     
     val promise = Promise[Array[Peakel]]
-    val onDetectedPeakels = { observablePeakels: Observable[(Int,Array[Peakel])] =>
+    val onDetectedPeakels = { observablePeakels: Observable[Array[Peakel]] =>
       
       // Listen for peakels in a distinct thread
       val futurePeakels = Future {
@@ -351,8 +352,7 @@ class MzDbFeatureDetector(
         
         observablePeakels
           .toBlocking
-          .subscribe({ tuple =>
-            val (rsId: Int, peakels: Array[Peakel]) = tuple
+          .subscribe({ peakels =>
             peakelsBuffer ++= peakels
           })
         
@@ -381,7 +381,7 @@ class MzDbFeatureDetector(
   
   def detectPeakelsAsync[Unit](
     rsIter: Iterator[RunSlice],
-    onDetectedPeakels: Observable[(Int,Array[Peakel])] => Unit,
+    onDetectedPeakels: Observable[Array[Peakel]] => Unit,
     nbThreads: Option[Int] = None
   ) {
     
