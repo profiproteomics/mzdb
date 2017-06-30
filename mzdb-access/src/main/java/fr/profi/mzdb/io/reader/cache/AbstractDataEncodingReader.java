@@ -80,6 +80,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 					DataMode dm;
 					if (dmAsStr.equalsIgnoreCase("FITTED"))
 						dm = DataMode.FITTED;
+					else if (dmAsStr.equalsIgnoreCase("PROFILE"))
+						dm = DataMode.PROFILE;
 					else
 						dm = DataMode.CENTROID;
 
@@ -122,6 +124,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 					DataMode dm;
 					if (dmAsStr.equalsIgnoreCase("FITTED"))
 						dm = DataMode.FITTED;
+					else if (dmAsStr.equalsIgnoreCase("PROFILE"))
+						dm = DataMode.PROFILE;
 					else
 						dm = DataMode.CENTROID;
 
@@ -219,8 +223,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 			return this.getEntityCache().dataEncodingById;
 		} else {
 			DataEncoding[] dataEncodings = this.getDataEncodings(connection);
-			HashMap<Integer, DataEncoding> dataEncodingById = new HashMap<Integer, DataEncoding>(
-					dataEncodings.length);
+			HashMap<Integer, DataEncoding> dataEncodingById = new HashMap<Integer, DataEncoding>(dataEncodings.length);
 
 			for (DataEncoding dataEncoding : dataEncodings)
 				dataEncodingById.put(dataEncoding.getId(), dataEncoding);
