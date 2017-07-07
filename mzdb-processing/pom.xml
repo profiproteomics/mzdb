@@ -4,13 +4,13 @@
   <parent>
     <artifactId>ProFI-Pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.3.0-SNAPSHOT</version>
+    <version>0.3.0</version>
     <relativePath />
   </parent>
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-processing</artifactId>
-  <version>0.7.0-SNAPSHOT</version>
+  <version>0.7.0</version>
 
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
@@ -21,7 +21,7 @@
   </properties>
 
 	<scm>
-	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/branches/0.7.0-RCandidates</connection>
+	  <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/tags/0.7.0</connection>
 	</scm>
 
   <dependencies>
@@ -30,21 +30,21 @@
     <dependency>
       <groupId>fr.proline.util</groupId>
       <artifactId>ProFI-Commons-Scala</artifactId>
-      <version>0.6.0-SNAPSHOT</version>
+      <version>0.6.0</version>
     </dependency>
     
     <!-- ProFi Proteomics -->
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>ProFI-Proteomics</artifactId>
-      <version>0.2.0-SNAPSHOT</version>
+      <version>0.2.0</version>
     </dependency>
 
     <!-- mzdb-access -->
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>mzdb-access</artifactId>
-      <version>0.7.0-SNAPSHOT</version>
+      <version>0.7.0</version>
     </dependency>
 
     <!-- Scala -->
