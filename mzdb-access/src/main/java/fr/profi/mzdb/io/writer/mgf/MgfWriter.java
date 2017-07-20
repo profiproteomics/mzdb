@@ -41,7 +41,7 @@ public class MgfWriter {
 	private final String mzDBFilePath;
 	private final int msLevel;
 	private MzDbReader mzDbReader;
-	private Map<Integer, String> titleBySpectrumId = new HashMap<Integer, String>();
+	private Map<Long, String> titleBySpectrumId = new HashMap<Long, String>();
 
 	/**
 	 * 
@@ -78,15 +78,15 @@ public class MgfWriter {
 
 		/** inner class for treating sql resulting records */
 		final class TitleByIdFiller implements ISQLiteRecordOperation {
-			private Map<Integer, String> titleById;
+			private Map<Long, String> titleById;
 
-			TitleByIdFiller(Map<Integer, String> t) {
+			TitleByIdFiller(Map<Long, String> t) {
 				this.titleById = t;
 			}
 
 			@Override
 			public void execute(SQLiteRecord elem, int idx) throws SQLiteException {
-				int id = elem.columnInt(SpectrumTable.ID);
+				long id = elem.columnLong(SpectrumTable.ID);
 				String title = elem.columnString(SpectrumTable.TITLE);
 				titleById.put(id, title);
 			}

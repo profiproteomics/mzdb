@@ -164,6 +164,10 @@ public class MzDbReader extends AbstractMzDbReader {
 	public SQLiteConnection getConnection() {
 		return this.connection;
 	}
+	
+	public SQLiteConnection setConnection(SQLiteConnection newConn) {
+		return this.connection = newConn;
+	}
 
 	/**
 	 * close the connection to avoid memory leaks.
@@ -720,11 +724,14 @@ public class MzDbReader extends AbstractMzDbReader {
 	 */
 	public Iterator<RunSlice> getLcMsnRunSliceIterator(double minParentMz, double maxParentMz) throws SQLiteException, StreamCorruptedException {
 
+		/*
 		// First pass to load the index
 		final SQLiteStatement fakeStmt = this.connection.prepare("SELECT data FROM bounding_box", false);
 		while (fakeStmt.step()) {
 		}
-		fakeStmt.dispose();
+		fakeStmt.dispose();*/
+		
+		readWholeFile(this.dbLocation);
 
 		return new LcMsnRunSliceIterator(this, connection, minParentMz, maxParentMz);
 	}
