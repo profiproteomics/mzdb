@@ -11,34 +11,35 @@ import math.{pow,sqrt}
 object VectorSimilarity {
   
   /** The dot function.
-  * Returns the dot operation of the 2 arrays
-  * => f(a[0],b[0]) + f(a[1],b[1]) + ... + f(a[n-1],b[n-1])
-  */
+   * Returns the dot operation of the 2 arrays
+   * => f(a[0],b[0]) + f(a[1],b[1]) + ... + f(a[n-1],b[n-1])
+   */
+  // TODO: mix with the version from IsotopePatternEstimator
   def dot[T](as: Iterable[T], bs: Iterable[T])(f: (T,T) => Double): Double =
     (for ((a, b) <- as zip bs) yield f(a, b)) sum
   
   /** The dotProduct function.
-  * Returns the dot product of the 2 double arrays
-  * => (a[0]*b[0]) + (a[1]*b[1])+ ... + (a[n-1]*b[n-1])
-  */
+   * Returns the dot product of the 2 double arrays
+   * => (a[0]*b[0]) + (a[1]*b[1])+ ... + (a[n-1]*b[n-1])
+   */
   def dotProduct(vector1: Array[Double], vector2: Array[Double]) = dot(vector1, vector2)(_*_)
   def dotProduct(vector1: Array[Float], vector2: Array[Float]) = dot(vector1, vector2)(_*_)
   def dotProduct(vector1: Array[Int], vector2: Array[Int]) = dot(vector1, vector2)(_*_)
   
   /**
-  * Return the magnitude of an array
-  * We multiply each element, sum it, then square root the result.
-  */
+   * Return the magnitude of an array
+   * We multiply each element, sum it, then square root the result.
+   */
   def magnitude(vector: Array[Double]): Double = {
     sqrt( vector.fold(0.0) { (x2Sum,x) => x2Sum + (x * x) } )
   }
   
   /**
-  * This method takes 2 equal length arrays of Double
-  * It returns a double representing similarity of the 2 arrays
-  * 0.9925 would be 99.25% similar
-  * (x dot y)/||X|| ||Y||
-  */
+   * This method takes 2 equal length arrays of Double
+   * It returns a double representing similarity of the 2 arrays
+   * 0.9925 would be 99.25% similar
+   * (x dot y)/||X|| ||Y||
+   */
   def cosineSimilarity(vector1: Array[Double], vector2: Array[Double]): Double = {
     require(vector1.size == vector2.size, "vectors must have same length" )
     dotProduct(vector1, vector2)/(magnitude(vector1) * magnitude(vector2))
@@ -52,7 +53,7 @@ object VectorSimilarity {
    * @param values2     second points
    * @return Uncentered correlation coefficient
    */
-  def uncenteredCorrelation(vector1: Array[Double], vector2: Array[Double] ): Double = {
+  def uncenteredCorrelation(vector1: Array[Double], vector2: Array[Double]): Double = {
     require(vector1.size == vector2.size, "vectors must have same length" )
     
     val N = vector1.length
@@ -133,11 +134,11 @@ object VectorSimilarity {
   }
   
   /**
-  * This method takes 2 equal length arrays of Double
-  * It returns a double representing the RSMD between the 2 arrays
-  * http://en.wikipedia.org/wiki/Root-mean-square_deviation
-  * 
-  */
+   * This method takes 2 equal length arrays of Double
+   * It returns a double representing the RSMD between the 2 arrays
+   * http://en.wikipedia.org/wiki/Root-mean-square_deviation
+   * 
+   */
   def rmsd(vector1: Array[Double], vector2: Array[Double]): Double = {
     require(vector1.size == vector2.size, "vectors must have same length" )
     

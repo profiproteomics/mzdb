@@ -166,7 +166,7 @@ object MzDbProcessing extends App with LazyLogging {
         jCmd.usage()
         System.exit(1)
       } else {
-        this.logger.info("Running '" + parsedCommand + "' command...")
+        this.logger.info(s"Running '$parsedCommand' command...")
       }
       
       import Commands._
@@ -196,13 +196,13 @@ object MzDbProcessing extends App with LazyLogging {
           createMgf()
         }
         case _ => {
-          throw new MissingCommandException("unknown command '" + jCmd.getParsedCommand() + "'")
+          throw new MissingCommandException(s"Unknown command '${jCmd.getParsedCommand}'")
         }
       }
       
     } catch {
 
-      case pEx: ParameterException=> {
+      case pEx: ParameterException => {
         println()
         logger.warn("Invalid command or parameter", pEx)
         jCmd.usage()
@@ -211,7 +211,7 @@ object MzDbProcessing extends App with LazyLogging {
 
       case ex: Exception => {
         println()
-        logger.error("Execution of command '" + parsedCommand + "' failed", ex)
+        logger.error(s"Execution of command '$parsedCommand' failed", ex)
         System.exit(1)
       }
     }

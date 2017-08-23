@@ -118,6 +118,11 @@
       <artifactId>rxjava-extras</artifactId>
       <version>0.7.9.22</version>
     </dependency>
+    <dependency>
+      <groupId>com.vividsolutions</groupId>
+      <artifactId>jts-core</artifactId>
+      <version>[1.14.0,)</version>
+    </dependency>
     
     <!-- RxJava & RxScala -->
     <dependency>
@@ -179,8 +184,8 @@
         <configuration>
           <launchers>
             <launcher>
-              <id>RunCommand</id>
-              <mainClass>fr.profi.mzdb.RunCommand</mainClass>
+              <id>MzDbProcessing</id>
+              <mainClass>fr.profi.mzdb.cli.MzDbProcessing</mainClass>
               <!-- args are optional <args> <arg>arg1</arg> </args> -->
               <!-- jvmArgs are optional -->
               <jvmArgs>
