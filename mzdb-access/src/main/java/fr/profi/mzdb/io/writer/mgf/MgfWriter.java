@@ -189,12 +189,7 @@ public class MgfWriter {
 				mzDbReader.getFirstSourceFileName().split("\\.")[0]);
 		}
 
-		final float time = spectrumHeader.getElutionTime();
-
-		final double precMz = precComp.getPrecursorMz(mzDbReader, spectrumHeader);
-		final int charge = precComp.getPrecursorCharge(mzDbReader, spectrumHeader);
-
-		final MgfHeader mgfSpectrumHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
+		MgfHeader mgfSpectrumHeader = precComp.getMgfHeader(mzDbReader, spectrumHeader, title);
 
 		StringBuilder spectrumStringBuilder = new StringBuilder();
 		mgfSpectrumHeader.appendToStringBuilder(spectrumStringBuilder);

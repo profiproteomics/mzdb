@@ -5,15 +5,20 @@
 package fr.profi.mzdb.model;
 
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 import fr.profi.mzdb.db.model.AbstractTableModel;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.ScanList;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
+import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -299,16 +304,70 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	public float getTIC() {
 		return tic;
 	}
+	
+	private static Map<Long, String> _loadXmlFieldBySpectrumId(String sqlString, SQLiteConnection mzDbConnection) {
+		Map<Long, String> xmlFieldBySpecId = new HashMap<>();
+		
+		try {
+			SQLiteQuery query = new SQLiteQuery(mzDbConnection, sqlString);
+			SQLiteStatement stmt = query.getStatement();
+			
+			query.forEachRecord(
+				new ISQLiteRecordOperation() {
+					@Override
+					public void execute(SQLiteRecord elem, int idx) throws SQLiteException {
+						long id = stmt.columnLong(0);
+						String xmlField = stmt.columnString(1);
+						xmlFieldBySpecId.put(id, xmlField);
+					}
+				} // end inner class
+			);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		}
+		
+		return xmlFieldBySpecId;
+	}
 
 	public static void loadParamTrees(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection) {
-		// TODO: load all param_trees in a single SQL query
+		String sqlString = "SELECT id, param_tree FROM spectrum";
+		Map<Long, String> paramTreeBySpecId = _loadXmlFieldBySpectrumId(sqlString, mzDbConnection);
+		
 		for (SpectrumHeader header : spectrumHeaders) {
-			if (!header.hasParamTree())
-				try {
-					header.loadParamTree(mzDbConnection);
-				} catch (SQLiteException e) {
-					e.printStackTrace();
+			if (!header.hasParamTree()) {
+				String paramTreeAsStr = paramTreeBySpecId.get(header.getId());
+				if (paramTreeAsStr != null) {
+					header.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
 				}
+			}
+		}
+	}
+	
+	public static void loadScanLists(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection) {
+		String sqlString = "SELECT id, scan_list FROM spectrum";
+		Map<Long, String> scanListBySpecId = _loadXmlFieldBySpectrumId(sqlString, mzDbConnection);
+		
+		for (SpectrumHeader header : spectrumHeaders) {
+			if (header.scanList == null) {
+				String scanListAsStr = scanListBySpecId.get(header.getId());
+				if (scanListAsStr != null) {
+					header.scanList = ParamTreeParser.parseScanList(scanListAsStr);
+				}
+			}
+		}
+	}
+	
+	public static void loadPrecursors(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection) {
+		String sqlString = "SELECT id, precursor_list FROM spectrum";
+		Map<Long, String> precursorBySpecId = _loadXmlFieldBySpectrumId(sqlString, mzDbConnection);
+		
+		for (SpectrumHeader header : spectrumHeaders) {
+			if (header.precursor == null) {
+				String precursorAsStr = precursorBySpecId.get(header.getId());
+				if (precursorAsStr != null) {
+					header.precursor = ParamTreeParser.parsePrecursor(precursorAsStr);
+				}
+			}
 		}
 	}
 

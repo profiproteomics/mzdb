@@ -65,7 +65,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 		MAIN_PRECURSOR_CHARGE("main_precursor_charge"),
 		DATA_POINTS_COUNT("data_points_count"),
 		PARAM_TREE("param_tree"),
-		SCAN_LIST("spectrum_list"),
+		SCAN_LIST("scan_list"),
 		PRECURSOR_LIST("precursor_list"),
 		DATA_ENCODING_ID("data_encoding_id"),
 		BB_FIRST_SPECTRUM_ID("bb_first_spectrum_id");

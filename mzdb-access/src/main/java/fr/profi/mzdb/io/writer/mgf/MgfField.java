@@ -2,7 +2,13 @@ package fr.profi.mzdb.io.writer.mgf;
 
 /** */
 public enum MgfField {
-	BEGIN_IONS("BEGIN IONS"), END_IONS("END IONS"), TITLE("TITLE"), PEPMASS("PEPMASS"), CHARGE("CHARGE"), RTINSECONDS("RTINSECONDS");
+	BEGIN_IONS("BEGIN IONS"),
+	END_IONS("END IONS"),
+	TITLE("TITLE"),
+	PEPMASS("PEPMASS"),
+	CHARGE("CHARGE"),
+	RTINSECONDS("RTINSECONDS"),
+	SCANS("SCANS");
 
 	//
 	// NEWLINE("\n"), EQUAL("="), PLUS("+");

@@ -35,6 +35,19 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		this(mzTolPPM);
 		this.precComp = precComp;
 	}
+	
+	@Override
+	public MgfHeader getMgfHeader(MzDbReader mzDbReader, SpectrumHeader spectrumHeader, String title) throws SQLiteException {
+		
+		final float time = spectrumHeader.getElutionTime();
+		final double precMz = this.getPrecursorMz(mzDbReader, spectrumHeader);
+		final int charge = this.getPrecursorCharge(mzDbReader, spectrumHeader);
+
+		final MgfHeader mgfSpectrumHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
+
+		return mgfSpectrumHeader;
+	}
+
 
 	@Override
 	public String getParamName() {

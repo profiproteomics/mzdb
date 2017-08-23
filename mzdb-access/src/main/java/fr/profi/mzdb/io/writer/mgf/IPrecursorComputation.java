@@ -29,4 +29,6 @@ public interface IPrecursorComputation {
 	
 	public String getParamName();
 	
+	public MgfHeader getMgfHeader(MzDbReader mzDbReader, SpectrumHeader spectrumHeader, String title) throws SQLiteException;
+	
 }
