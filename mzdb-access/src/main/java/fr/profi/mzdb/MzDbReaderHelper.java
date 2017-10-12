@@ -1,11 +1,18 @@
 package fr.profi.mzdb;
 
+import com.almworks.sqlite4java.SQLiteException;
 import java.io.File;
 import java.util.concurrent.Callable;
 
 import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
+import fr.profi.mzdb.model.Spectrum;
+import fr.profi.mzdb.model.SpectrumData;
 import fr.profi.mzdb.model.SpectrumSlice;
 import fr.profi.mzdb.util.concurrent.Callback;
+import java.io.FileNotFoundException;
+import java.io.StreamCorruptedException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author JeT
@@ -13,43 +20,82 @@ import fr.profi.mzdb.util.concurrent.Callback;
  */
 public class MzDbReaderHelper {
 
-	private MzDbReaderHelper() {
-		// helper class
-	}
+    private MzDbReaderHelper() {
+        // helper class
+    }
 
-	/**
-	 * get an async
-	 *
-	 * @param minMz
-	 * @param maxMz
-	 * @param minRt
-	 * @param maxRt
-	 * @param file
-	 * @param cache
-	 * @param callback
-	 * @return
-	 */
-	public static Callable<SpectrumSlice[]> getSpectrumSlicesInRanges(
-		final double minMz,
-		final double maxMz,
-		final float minRt,
-		final float maxRt,
-		final File file,
-		final MzDbEntityCache cache,
-		final Callback<SpectrumSlice[]> callback) {
-		
-		return new Callable<SpectrumSlice[]>() {
+    /**
+     * get an async
+     *
+     * @param minMz
+     * @param maxMz
+     * @param minRt
+     * @param maxRt
+     * @param file
+     * @param cache
+     * @param callback
+     * @return
+     */
+    public static Callable<SpectrumSlice[]> getSpectrumSlicesInRanges(
+            final double minMz,
+            final double maxMz,
+            final float minRt,
+            final float maxRt,
+            final File file,
+            final MzDbEntityCache cache,
+            final Callback<SpectrumSlice[]> callback) {
 
-			@Override
-			public SpectrumSlice[] call() throws Exception {
-				MzDbReader reader = new MzDbReader(file, cache, false);
-				SpectrumSlice[] msSpectrumSlices = reader.getMsSpectrumSlices(minMz, maxMz, minRt, maxRt);
-				if (callback != null) {
-					callback.onCompletion(msSpectrumSlices);
-				}
-				return msSpectrumSlices;
-			}
-		};
+        return new Callable<SpectrumSlice[]>() {
 
-	}
+            @Override
+            public SpectrumSlice[] call() throws Exception {
+                MzDbReader reader = new MzDbReader(file, cache, false);
+                SpectrumSlice[] msSpectrumSlices = reader.getMsSpectrumSlices(minMz, maxMz, minRt, maxRt);
+                if (callback != null) {
+                    callback.onCompletion(msSpectrumSlices);
+                }
+                return msSpectrumSlices;
+            }
+        };
+
+    }
+
+    public static boolean isValid(File file) {
+        boolean pass = false;
+        MzDbReader reader = null;
+        try {
+
+            reader = new MzDbReader(file, true);
+
+            Spectrum rawSpectrum = reader.getSpectrum(0);
+
+            if (rawSpectrum != null) {
+
+                SpectrumData data = rawSpectrum.getData();
+                if (data != null) {
+                    final double[] mzList = data.getMzList();
+                    if (mzList != null && mzList.length > 0) {
+                        pass = true;
+                    } else {
+                        pass = false;
+                    }
+                } else {
+                    pass = false;
+                }
+            } else {
+                pass = false;
+            }
+
+        } catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
+            pass = false;
+        } catch (StreamCorruptedException ex) {
+            pass = false;
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        return pass;
+    }
+
 }
