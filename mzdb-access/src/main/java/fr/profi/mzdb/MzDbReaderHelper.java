@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
 import fr.profi.mzdb.model.Spectrum;
 import fr.profi.mzdb.model.SpectrumData;
+import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
 import fr.profi.mzdb.util.concurrent.Callback;
 import java.io.FileNotFoundException;
@@ -61,41 +62,101 @@ public class MzDbReaderHelper {
     }
 
     public static boolean isValid(File file) {
-        boolean pass = false;
-        MzDbReader reader = null;
-        try {
 
+        boolean pass = false;
+
+        /*
+         boolean pass = false;
+         MzDbReader reader = null;
+         try {
+
+         reader = new MzDbReader(file, true);
+
+         SpectrumHeader[] ms1Headers = reader.getMs1SpectrumHeaders();
+
+         SpectrumHeader[] ms2Headers = reader.getMs2SpectrumHeaders();
+
+         System.out.println("skata");
+            
+         if (ms1Headers != null && ms1Headers.length > 0 && ms2Headers != null && ms2Headers.length > 0) {
+         Spectrum rawSpectrum = reader.getSpectrum(ms1Headers[0].getId());
+
+         if (rawSpectrum != null) {
+
+         SpectrumData data = rawSpectrum.getData();
+         if (data != null) {
+         final double[] mzList = data.getMzList();
+         if (mzList != null && mzList.length > 0) {
+         pass = true;
+         } else {
+         pass = false;
+         }
+         } else {
+         pass = false;
+         }
+         } else {
+         pass = false;
+         }
+         }
+
+         } catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
+         pass = false;
+         } catch (StreamCorruptedException ex) {
+         pass = false;
+         } finally {
+         if (reader != null) {
+         reader.close();
+         }
+         }
+         return pass;
+         */
+        MzDbReader reader = null;
+
+        try {
             reader = new MzDbReader(file, true);
 
-            Spectrum rawSpectrum = reader.getSpectrum(0);
+            SpectrumHeader[] headers = reader.getMs2SpectrumHeaders();
 
-            if (rawSpectrum != null) {
+            if (headers != null && headers.length > 0) {
+                
+                Spectrum rawSpectrum = reader.getSpectrum(headers[0].getId());
 
-                SpectrumData data = rawSpectrum.getData();
-                if (data != null) {
-                    final double[] mzList = data.getMzList();
-                    if (mzList != null && mzList.length > 0) {
-                        pass = true;
+                if (rawSpectrum != null) {
+
+                    SpectrumData data = rawSpectrum.getData();
+                    
+                    if (data != null) {
+                        
+                        final double[] mzList = data.getMzList();
+                        
+                        if (mzList != null && mzList.length > 0) {
+                            pass = true;
+                        } else {
+                            pass = false;
+                        }
+                        
                     } else {
                         pass = false;
                     }
+                    
                 } else {
                     pass = false;
                 }
-            } else {
-                pass = false;
+                
             }
 
         } catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
-            pass = false;
+            return false;
         } catch (StreamCorruptedException ex) {
-            pass = false;
+            Logger.getLogger(MzDbReaderHelper.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             if (reader != null) {
                 reader.close();
             }
         }
+
         return pass;
+
     }
 
 }
