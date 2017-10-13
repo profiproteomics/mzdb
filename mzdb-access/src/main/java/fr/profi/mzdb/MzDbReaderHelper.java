@@ -1,19 +1,11 @@
 package fr.profi.mzdb;
 
-import com.almworks.sqlite4java.SQLiteException;
 import java.io.File;
 import java.util.concurrent.Callable;
 
 import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
-import fr.profi.mzdb.model.Spectrum;
-import fr.profi.mzdb.model.SpectrumData;
-import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
 import fr.profi.mzdb.util.concurrent.Callback;
-import java.io.FileNotFoundException;
-import java.io.StreamCorruptedException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author JeT
@@ -58,59 +50,6 @@ public class MzDbReaderHelper {
                 return msSpectrumSlices;
             }
         };
-
-    }
-
-    public static boolean isValid(File file) {
-
-        boolean pass = false;
-
-        MzDbReader reader = null;
-
-        try {
-            reader = new MzDbReader(file, true);
-
-            SpectrumHeader[] headers = reader.getMs2SpectrumHeaders();
-
-            if (headers != null && headers.length > 0) {
-                
-                Spectrum rawSpectrum = reader.getSpectrum(headers[0].getId());
-
-                if (rawSpectrum != null) {
-
-                    SpectrumData data = rawSpectrum.getData();
-                    
-                    if (data != null) {
-                        
-                        final double[] mzList = data.getMzList();
-                        
-                        if (mzList != null && mzList.length > 0) {
-                            pass = true;
-                        } else {
-                            pass = false;
-                        }
-                        
-                    } else {
-                        pass = false;
-                    }
-                    
-                } else {
-                    pass = false;
-                }
-                
-            }
-
-        } catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
-            return false;
-        } catch (StreamCorruptedException ex) {
-            Logger.getLogger(MzDbReaderHelper.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
-        }
-
-        return pass;
 
     }
 
