@@ -9,13 +9,16 @@ import fr.profi.mzdb.model.Peak
  * @author David Bouyssie
  *
  */
-class BasicPeakelFinder(var sameSlopeCountThreshold:Int = 2)  extends IPeakelFinder {
+class BasicPeakelFinder(
+  var sameSlopeCountThreshold:Int = 2,
+  val minPeaksCount: Int = 5
+)  extends IPeakelFinder {
   
   var useSmoothing = true
   
   def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[Tuple2[Int,Int]] = {
     
-    if( rtIntPairs.length < 5 )
+    if( rtIntPairs.length < minPeaksCount )
       return Array()
     
     val smoothedRtIntPairs = if( useSmoothing == false ) rtIntPairs

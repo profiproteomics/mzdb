@@ -12,7 +12,8 @@ import fr.profi.util.stat._
  */
 class HistogramBasedPeakelFinder(
   var sameSlopeCountThreshold:Int = 2,
-  var expectedBinDataPointsCount:Int = 5
+  var expectedBinDataPointsCount:Int = 5,
+  val minPeaksCount: Int = 5
 ) extends IPeakelFinder {
  
   val basicPeakelFinder = new BasicPeakelFinder(sameSlopeCountThreshold)
@@ -20,7 +21,7 @@ class HistogramBasedPeakelFinder(
   def findPeakelsIndices(rtIntPairs: Array[(Float,Double)] ): Array[(Int,Int)] = {
     
     // Check we have at least 5 peaks before the filtering
-    if( rtIntPairs.length < 5 ) return Array()
+    if( rtIntPairs.length < minPeaksCount ) return Array()
     
     val xicBinner = new XicBinner( XicBinnerConfig(expectedBinDataPointsCount) )
     val extendedBins = xicBinner.calcBins(rtIntPairs)
