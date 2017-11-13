@@ -77,7 +77,7 @@ class UnsupervisedPeakelDetector(
 ) extends LazyLogging {
   
   // TODO: add to config
-  val minPeaksCount = 5
+  val minPeaksCount = peakelFinder.minPeaksCount  
   val minPeakelAmplitude = 1.5f
   
   private val maxHalfDuration = maxTimeWindow / 2
@@ -121,7 +121,8 @@ class UnsupervisedPeakelDetector(
     val lowestPeakIdx = lowestPeakCoords(1)
     val intensityThreshold = curRsPklColl.getPeakAt(lowestPeakListIdx, lowestPeakIdx).getIntensity
     
-    logger.debug(s"detecting peakels using intensity threshold ="+ intensityThreshold)
+    logger.debug(s"detecting peakels using ${minPeaksCount} min peaks count")
+    logger.debug(s"detecting peakels using intensity threshold = ${intensityThreshold}")
     
     // Get peaklist tree peaks sorted by m/z value
     val peakelBuffer = new ArrayBuffer[Peakel](20000)
@@ -174,11 +175,7 @@ class UnsupervisedPeakelDetector(
           if( peakelOpt.isDefined ) {
             val peakel = peakelOpt.get
             val apexIdx = peakel.apexIndex
-      
-            // Append peakel only if its apex is not at the extrema
-            if( apexIdx > 0 && apexIdx < peakel.spectrumIds.length - 1 ) {
-              peakelBuffer += peakelOpt.get
-            }
+            peakelBuffer += peakelOpt.get
           }
         }
       }
