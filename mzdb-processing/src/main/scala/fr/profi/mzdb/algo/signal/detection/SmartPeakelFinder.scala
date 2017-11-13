@@ -31,7 +31,7 @@ class SmartPeakelFinder(
 
   def findPeakelsIndices(rtIntPairs: Array[(Float, Double)]): Array[(Int, Int)] = {
 
-    // Check we have at least 5 peaks before the filtering
+    // Check we have at least minPeaksCount peaks before the filtering
     val peaksCount = rtIntPairs.length
     if (peaksCount < minPeaksCount) return Array()
 
