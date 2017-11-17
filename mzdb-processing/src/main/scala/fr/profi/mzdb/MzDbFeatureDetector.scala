@@ -43,7 +43,8 @@ case class SmartPeakelFinderConfig(
   useOscillationFactor: Boolean = false,
   maxOscillationFactor: Int = 10,
   usePartialSGSmoother: Boolean = false,
-  useBaselineRemover: Boolean = false
+  useBaselineRemover: Boolean = false,
+  useSmoothing: Boolean = true
 ) extends PeakelFinderConfig
 
 case class FeatureDetectorConfig(
@@ -63,7 +64,8 @@ object BuildPeakelFinder {
         useOscillationFactor = smf.useOscillationFactor,
         maxOscillationFactor = smf.maxOscillationFactor,
         usePartialSGSmoother = smf.usePartialSGSmoother,
-        useBaselineRemover = smf.useBaselineRemover
+        useBaselineRemover = smf.useBaselineRemover,
+        useSmoothing = smf.useSmoothing
       )
     }
   }
@@ -97,7 +99,8 @@ class PeakelDetectorConsumer(
         } else {
           
           //val queueEntry = queueEntryOpt.get
-          val rsNumber = queueEntry.rsNumber
+          val rsHeader = queueEntry.rsHeader
+          val rsNumber = queueEntry.rsHeader.getNumber
           val pklTree = queueEntry.pklTree
           val curPeaklistBySpectrumId = queueEntry.curPeaklistBySpectrumId
           
@@ -133,7 +136,7 @@ class PeakelDetectorConsumer(
               curRsPeakListColl,
               curRsPeaksCoords
             )
-          }
+          }.filter(p => (p.getApexMz() >= rsHeader.getBeginMz) && (p.getApexMz() <= rsHeader.getEndMz))
           
           subscriber.onNext((rsNumber,peakels))
           
@@ -157,7 +160,7 @@ class PeakelDetectorConsumer(
 }
 
 case class PeakelDetectorQueueEntry(
-  rsNumber: Int,
+  rsHeader: RunSliceHeader,
   pklTree: PeakListTree, // contains peaks of [previous,current,next] RunSlices
   curPeaklistBySpectrumId: LongMap[PeakList] // contains only peaks of the current RunSlice
 )
@@ -530,14 +533,14 @@ class MzDbFeatureDetector(
             Tuple2(spectrumId, new PeakListTriplet( pkls.toArray ) )
           }
           val pklTree = new PeakListTree( pklTripletBySpectrumId, spectrumHeaderById )
-          
-          this.logger.debug(s"sending run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz}) to the consumer")
+
+          this.logger.debug(s"sending run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz}) to the consumer with ${pklTree.peaksCount}")          
           
           // Enqueue loaded PeakListTree to send it to the consumer
           // Note that the detectorQueue will wait if it is full
           detectorQueue.enqueue(
             PeakelDetectorQueueEntry(
-              rsNumber = rsNumber,
+              rsHeader = rsh,
               pklTree = pklTree,
               curPeaklistBySpectrumId = curPeaklistBySpectrumId
             )
