@@ -150,27 +150,7 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
     //if (matchingPeakels.length == 1) {
     for (matchingPeakel <- matchingPeakels) {
 
-      val matchingSpectrumId = matchingPeakel.getApexSpectrumId()
-      val coelutingPeakelsCount = coelutingPeakels.length
-      //logger.debug(s"Found $coelutingPeakelsCount co-eluting peakels")
-
-      val mzList = new ArrayBuffer[Double](coelutingPeakelsCount)
-      val intensityList = new ArrayBuffer[Float](coelutingPeakelsCount)
-
-      // Slice the obtained peakels to create a virtual spectrum
-      coelutingPeakels.sortBy(_.getApexMz()).map { peakel =>
-        val peakelCursor = peakel.getNewCursor()
-        var foundPeak = false
-
-        // TODO: optimize this search (start from the apex or implement binary search)
-        while (peakelCursor.next() && foundPeak == false) {
-          if (peakelCursor.getSpectrumId() == matchingSpectrumId) {
-            mzList += peakelCursor.getMz()
-            intensityList += peakelCursor.getIntensity()
-            foundPeak = true
-          }
-        }
-      }
+      val (mzList, intensityList) = slicePeakels(coelutingPeakels, matchingPeakel)
 
       val spectrumData = new SpectrumData(mzList.toArray, intensityList.toArray)
       val isReliable = isMatchReliable(spectrumData, mozTolPPM, matchingPeakel.getApexMz(), charge, mozTolInDa)
@@ -184,4 +164,27 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
     filteredPeakels
   }
 
+  def slicePeakels(coelutingPeakels: Seq[Peakel],matchingPeakel: Peakel): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
+    // Slice the obtained peakels to create a virtual spectrum
+    val matchingSpectrumId = matchingPeakel.getApexSpectrumId()
+    val mzList = new ArrayBuffer[Double](coelutingPeakels.length)
+    val intensityList = new ArrayBuffer[Float](coelutingPeakels.length)
+      
+    coelutingPeakels.sortBy(_.getApexMz()).map { peakel =>
+      val peakelCursor = peakel.getNewCursor()
+      var foundPeak = false
+
+      // TODO: optimize this search (start from the apex or implement binary search)
+      while (peakelCursor.next() && foundPeak == false) {
+        if (peakelCursor.getSpectrumId() == matchingSpectrumId) {
+          mzList += peakelCursor.getMz()
+          intensityList += peakelCursor.getIntensity()
+          foundPeak = true
+        }
+      }
+    }
+    
+    (mzList, intensityList)
+  }
+  
 }

@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.peakels
+package fr.profi.mzdb.peakeldb
 
 import java.io.File
 
@@ -9,8 +9,11 @@ import com.almworks.sqlite4java.SQLiteStatement
 import com.github.davidmoten.rtree.RTree
 import com.github.davidmoten.rtree.geometry
 
+import fr.profi.mzdb.peakeldb.io.PeakelDbReader
+import fr.profi.mzdb.peakeldb.io.PeakelDbWriter
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.model.PeakelDataMatrix
+
 import rx.lang.scala.Observable
 import java.util.Arrays
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation

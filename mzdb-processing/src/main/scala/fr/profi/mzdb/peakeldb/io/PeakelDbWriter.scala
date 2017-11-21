@@ -1,4 +1,4 @@
-package fr.profi.mzdb.io.peakels
+package fr.profi.mzdb.peakeldb.io
 
 import java.io.File
 
