@@ -468,8 +468,20 @@ class MzDbFeatureDetector(
       val rsHeaderByNumber = rsHeaders.map { rsh => rsh.getNumber -> rsh } toMap
       
       // Define some vars for the run slice iteration
-      var( prevRsNumber, nextRsNumber ) = (0,0)
-      var rsOpt = if( rsIter.hasNext) Some(rsIter.next) else None
+      var prevRsNumber = 0
+      
+      def loadNextRunSlice(): Option[RunSlice] = if (rsIter.hasNext == false) None
+      else {
+        this.logger.debug(s"loading next slice...")
+        val nextRs = rsIter.next
+        val nextRsh = nextRs.getHeader
+        val rsNumber = nextRsh.getNumber
+        this.logger.debug(s"run slice $rsNumber (${nextRsh.getBeginMz},${nextRsh.getEndMz}) has been loaded !")
+        
+        Some(nextRs)
+      }
+      
+      var rsOpt = loadNextRunSlice()
       
       // Iterate over run slice headers
       // This loops acts as a producer for the detectorQueue
@@ -480,9 +492,10 @@ class MzDbFeatureDetector(
         val rsd = rs.getData
         val rsNumber = rsh.getNumber
         val nextRsNumber = rsNumber + 1
+        val nextRsOpt = loadNextRunSlice()
         
         val peaksCountSum = rsd.getSpectrumSliceList.view.map(_.getData.getPeaksCount).sum
-        if( peaksCountSum == 0 ) {
+        if (peaksCountSum == 0) {
           logger.warn(s"Run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz}) is empty")
         }
         else {
@@ -509,15 +522,8 @@ class MzDbFeatureDetector(
           }
           
           // Add next run slice peaklist to pklBySpectrumIdAndRsNumber
-          val nextRsOpt = if (rsIter.hasNext == false) None
-          else {
-            this.logger.debug(s"loading run slice ${rsNumber+1}...")
-            val nextRs = rsIter.next
-            val nextRsh = nextRs.getHeader
-            this.logger.debug(s"run slice ${rsNumber+1} (${nextRsh.getBeginMz},${nextRsh.getEndMz}) has been loaded !")
-            
-            pklBySpectrumIdAndRsNumber.put( nextRsNumber, nextRs.getData.getPeakListBySpectrumId )
-            Some(nextRs)
+          if (nextRsOpt.isDefined) {
+            pklBySpectrumIdAndRsNumber.put( nextRsNumber, nextRsOpt.get.getData.getPeakListBySpectrumId )
           }
           
           // Group run slice peakLists into a single map (key = spectrum id)
@@ -545,19 +551,13 @@ class MzDbFeatureDetector(
               curPeaklistBySpectrumId = curPeaklistBySpectrumId
             )
           )
-          /*queue.put(
-            Some(PeakelDetectorQueueEntry(
-              rsNumber = rsNumber,
-              pklTree = pklTree,
-              curPeaklistBySpectrumId = curPeaklistBySpectrumId
-            ))
-          )*/
-          
-          // Update some vars
-          prevRsNumber = rsNumber
-          rsOpt = nextRsOpt
         }
-      }
+        
+        // Update some vars
+        prevRsNumber = rsNumber
+        rsOpt = nextRsOpt
+        
+      } //ends while (rsIter.hasNext)
       
       logger.debug( "End of run slices iteration !" )
       
