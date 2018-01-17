@@ -66,9 +66,12 @@ CREATE TABLE peakel (
                 id INTEGER NOT NULL,
                 moz DOUBLE NOT NULL,
                 elution_time REAL NOT NULL,
+                duration REAL NOT NULL,
+                gap_count INTEGER NOT NULL,
                 apex_intensity REAL NOT NULL,
                 area REAL NOT NULL,
-                duration REAL NOT NULL,
+                amplitude REAL NOT NULL,
+                intensity_cv REAL NOT NULL,
                 left_hwhm_mean REAL,
                 left_hwhm_cv REAL,
                 right_hwhm_mean REAL,
@@ -148,7 +151,7 @@ CREATE TABLE peakel_rtree (
 
     // Prepare the insertion in the peakel table
     val peakelStmt = sqliteConn.prepare(
-      s"INSERT INTO peakel VALUES (${Array.fill(18)("?").mkString(",")})"
+      s"INSERT INTO peakel VALUES (${Array.fill(21)("?").mkString(",")})"
     )
     // Prepare the insertion in the peakel_rtree table
     val peakelIndexStmt = sqliteConn.prepare(
@@ -169,9 +172,12 @@ CREATE TABLE peakel_rtree (
         peakelStmt.bind(fieldNumber, peakel.id); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakelMz); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakelTime); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakel.calcDuration()); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakel.calcGapCount(cycleByMzDbSpecId)); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakel.getApexIntensity); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakel.area); fieldNumber += 1
-        peakelStmt.bind(fieldNumber, peakel.calcDuration()); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakel.calcAmplitude()); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakel.calcIntensityCv()); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakel.leftHwhmMean); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakel.leftHwhmCv); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakel.rightHwhmMean); fieldNumber += 1
