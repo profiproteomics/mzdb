@@ -35,7 +35,7 @@ object Feature extends InMemoryIdGen {
   */
   
   /**
-   * Take independant peakels and return an array of aligned peakel.
+   * Take independent peakels and return an array of aligned peakel.
    */
   /*def alignPeakels( unalignedPeakels: Array[Peakel] ): Array[Peakel] = {
     
