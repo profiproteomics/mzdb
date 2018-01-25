@@ -12,7 +12,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 object PeakelDbWriter {
-  
 
   def initPeakelStore(fileLocation: File): SQLiteConnection = {
 
@@ -48,7 +47,7 @@ CREATE TABLE lcms_map (
                 serialized_properties CLOB,
                 peakeldb_file_id INTEGER NOT NULL,
                 CONSTRAINT lcms_map_pk PRIMARY KEY (id),
-		CONSTRAINT peakeldb_file_lcms_map_fk FOREIGN KEY (peakeldb_file_id) REFERENCES peakeldb_file (id)
+                CONSTRAINT peakeldb_file_lcms_map_fk FOREIGN KEY (peakeldb_file_id) REFERENCES peakeldb_file (id)
 );
 
 CREATE TABLE lcms_map_relation (
@@ -57,9 +56,8 @@ CREATE TABLE lcms_map_relation (
                 min_parent_mz REAL NOT NULL,
                 max_parent_mz REAL NOT NULL,
                 CONSTRAINT lcms_map_relation_pk PRIMARY KEY (parent_lcms_map_id, child_lcms_map_id)
-		CONSTRAINT lcms_map_lcms_map_relation_fk1 FOREIGN KEY (parent_lcms_map_id) REFERENCES lcms_map (id)
-		CONSTRAINT lcms_map_lcms_map_relation_fk2 FOREIGN KEY (child_lcms_map_id) REFERENCES lcms_map (id)		
-		
+                CONSTRAINT lcms_map_lcms_map_relation_fk1 FOREIGN KEY (parent_lcms_map_id) REFERENCES lcms_map (id)
+                CONSTRAINT lcms_map_lcms_map_relation_fk2 FOREIGN KEY (child_lcms_map_id) REFERENCES lcms_map (id)		
 );
 
 CREATE TABLE peakel (
@@ -85,7 +83,7 @@ CREATE TABLE peakel (
                 last_spectrum_id INTEGER NOT NULL,
                 map_id INTEGER NOT NULL,
                 CONSTRAINT peakel_pk PRIMARY KEY (id)
-		CONSTRAINT lcms_map_peakel_fk FOREIGN KEY (map_id) REFERENCES lcms_map (id)
+                CONSTRAINT lcms_map_peakel_fk FOREIGN KEY (map_id) REFERENCES lcms_map (id)
 );
 
 CREATE INDEX peakel_map_idx ON peakel ( map_id );
@@ -99,7 +97,7 @@ CREATE TABLE peakel_rtree (
                 min_time REAL NOT NULL,
                 max_time REAL NOT NULL,
                 CONSTRAINT peakel_rtree_pk PRIMARY KEY (id)
-		CONSTRAINT peakel_peakel_rtree_fk FOREIGN KEY (id) REFERENCES peakel (id)
+                CONSTRAINT peakel_peakel_rtree_fk FOREIGN KEY (id) REFERENCES peakel (id)
 );
 
 """
