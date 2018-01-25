@@ -74,7 +74,7 @@ CREATE TABLE peakel (
                 left_hwhm_cv REAL,
                 right_hwhm_mean REAL,
                 right_hwhm_cv REAL,
-                is_interferring BOOLEAN NOT NULL,
+                is_interfering BOOLEAN NOT NULL,
                 peak_count INTEGER NOT NULL,
                 peaks BLOB NOT NULL,
                 serialized_properties CLOB,
@@ -180,7 +180,7 @@ CREATE TABLE peakel_rtree (
         peakelStmt.bind(fieldNumber, peakel.leftHwhmCv); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakel.rightHwhmMean); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakel.rightHwhmCv); fieldNumber += 1
-        peakelStmt.bind(fieldNumber, 0); fieldNumber += 1 // is_interferring (0|1 boolean encoding)
+        peakelStmt.bind(fieldNumber, 0); fieldNumber += 1 // is_interfering (0|1 boolean encoding)
         peakelStmt.bind(fieldNumber, peakel.spectrumIds.length); fieldNumber += 1
         peakelStmt.bind(fieldNumber, peakelMessageAsBytes); fieldNumber += 1
         peakelStmt.bindNull(fieldNumber); fieldNumber += 1 // serialized properties
