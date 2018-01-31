@@ -81,7 +81,7 @@
     <column id="COL22" populated="true" UUID="f33dcf0c-89ef-44b2-ad12-a0c9bd5e2ee5" autoIncrement="false" autoIncrementSequenceName="peakel_right_hwhm_cv_seq" defaultValue="" name="right_hwhm_cv" nullable="1" physicalName="right_hwhm_cv" precision="0" referenceCount="1" scale="0" source-column-ref="COL19" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
      <remarks></remarks>
     </column>
-    <column id="COL23" populated="true" UUID="0574e98f-ea4d-481f-ae98-240b410c9157" autoIncrement="false" autoIncrementSequenceName="peakel_is_interferring_seq" defaultValue="" name="is_interferring" nullable="0" physicalName="is_interferring" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="16" userDefinedTypeUUID="a26374aa-3026-4bb8-b564-eb2e186dfa5d" >
+    <column id="COL23" populated="true" UUID="0574e98f-ea4d-481f-ae98-240b410c9157" autoIncrement="false" autoIncrementSequenceName="peakel_is_interfering_seq" defaultValue="" name="is_interfering" nullable="0" physicalName="is_interfering" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="16" userDefinedTypeUUID="a26374aa-3026-4bb8-b564-eb2e186dfa5d" >
      <remarks></remarks>
     </column>
     <column id="COL24" populated="true" UUID="459902c6-d5e3-4e26-a4fc-8133bb985151" autoIncrement="false" autoIncrementSequenceName="peakel_peak_count_seq" defaultValue="" name="peak_count" nullable="0" physicalName="peak_count" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
