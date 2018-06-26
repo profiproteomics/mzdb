@@ -70,7 +70,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 				Precursor precursor = spectrumHeader.getPrecursor();
 				precMz = precursor.parseFirstSelectedIonMz();
 			} catch (Exception e) {
-				this.logger.error("Selected ion m/z value not found: fall back to default", e);
+				this.logger.error("Selected ion m/z value not found: fall back to default spectrum header precursor mz");
 			}
 		} else if (precComp == PrecursorMzComputationEnum.REFINED) {
 
@@ -79,7 +79,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 				precMz = precursor.parseFirstSelectedIonMz();
 				precMz = this.refinePrecMz(mzDbReader, precursor, precMz, mzTolPPM, time, 5);
 			} catch (Exception e) {
-				this.logger.error("Refined precursor m/z computation failed: fall back to default", e);
+				this.logger.error("Refined precursor m/z computation failed: fall back to default spectrum header precursor mz");
 			}
 
 			/*if (Math.abs(refinedPrecMz - precMz) > 0.5) {
@@ -97,10 +97,15 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 				}
 				
 				UserParam precMzParam = spectrumHeader.getScanList().getScans().get(0).getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
-
-				precMz = Double.parseDouble(precMzParam.getValue());
+				double refinedPrecMz = Double.parseDouble(precMzParam.getValue());
+				// it seems that some Thermo raw files contains a Monoisotopic M/Z value set to 0.0
+                if (refinedPrecMz > 0.0) {
+                    precMz = refinedPrecMz;
+                } else {
+                    logger.warn("[Thermo Trailer Extra]Monoisotopic M/Z found but set to 0.0 : spectrum header precursor mz will be used");
+                }
 			} catch (NullPointerException e) {
-				this.logger.error("Refined thermo value not found: fall back to default");
+				this.logger.error("Refined thermo value not found: fall back to default spectrum header precursor mz");
 			}
 		} 
 		
