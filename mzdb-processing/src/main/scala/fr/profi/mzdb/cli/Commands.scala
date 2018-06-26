@@ -392,7 +392,7 @@ object Commands extends LazyLogging {
     logger.info("Precursor m/z values will be defined using the method: " + CreateMgfCommand.precMzComputation)
 
     val writer = new MgfWriter(CreateMgfCommand.mzdbFile, CreateMgfCommand.msLevel)
-    val precCompEnum = PrecursorMzComputationEnum.values().find(_.name() == CreateMgfCommand.precMzComputation)
+    val precCompEnum = PrecursorMzComputationEnum.values().find(_.name() == CreateMgfCommand.precMzComputation.toUpperCase)
     
     if (precCompEnum.isDefined) {
        writer.write(CreateMgfCommand.outputFile,  precCompEnum.get, CreateMgfCommand.mzTolPPM, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
