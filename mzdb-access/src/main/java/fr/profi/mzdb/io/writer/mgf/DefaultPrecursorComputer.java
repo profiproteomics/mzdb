@@ -26,19 +26,19 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 
 	private PrecursorMzComputationEnum precComp;
 	private float mzTolPPM;
-	
+
 	protected DefaultPrecursorComputer(float mzTolPPM) {
 		this.mzTolPPM = mzTolPPM;
 	}
-	
+
 	public DefaultPrecursorComputer(PrecursorMzComputationEnum precComp, float mzTolPPM) {
 		this(mzTolPPM);
 		this.precComp = precComp;
 	}
-	
+
 	@Override
 	public MgfHeader getMgfHeader(MzDbReader mzDbReader, SpectrumHeader spectrumHeader, String title) throws SQLiteException {
-		
+
 		final float time = spectrumHeader.getElutionTime();
 		final double precMz = this.getPrecursorMz(mzDbReader, spectrumHeader);
 		final int charge = this.getPrecursorCharge(mzDbReader, spectrumHeader);
@@ -47,7 +47,6 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 
 		return mgfSpectrumHeader;
 	}
-
 
 	@Override
 	public String getParamName() {
@@ -58,7 +57,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	public int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 		return spectrumHeader.getPrecursorCharge();
 	}
-	
+
 	@Override
 	public double getPrecursorMz(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 
@@ -92,23 +91,23 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 
 		} else if (precComp == PrecursorMzComputationEnum.REFINED_THERMO) {
 			try {
-				if( spectrumHeader.getScanList() == null ) {
+				if (spectrumHeader.getScanList() == null) {
 					spectrumHeader.loadScanList(mzDbReader.getConnection());
 				}
-				
+
 				UserParam precMzParam = spectrumHeader.getScanList().getScans().get(0).getUserParam("[Thermo Trailer Extra]Monoisotopic M/Z:");
 				double refinedPrecMz = Double.parseDouble(precMzParam.getValue());
 				// it seems that some Thermo raw files contains a Monoisotopic M/Z value set to 0.0
-                if (refinedPrecMz > 0.0) {
-                    precMz = refinedPrecMz;
-                } else {
-                    logger.warn("[Thermo Trailer Extra]Monoisotopic M/Z found but set to 0.0 : spectrum header precursor mz will be used");
-                }
+				if (refinedPrecMz > 0.0) {
+					precMz = refinedPrecMz;
+				} else {
+					logger.warn("[Thermo Trailer Extra]Monoisotopic M/Z found but set to 0.0 : spectrum header precursor mz will be used");
+				}
 			} catch (NullPointerException e) {
 				this.logger.error("Refined thermo value not found: fall back to default spectrum header precursor mz");
 			}
-		} 
-		
+		}
+
 		return precMz;
 
 	}
@@ -125,7 +124,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	// TODO: it should be nice to perform this operation in mzdb-processing
 	// This requires that the MgfWriter is be moved to this package
 	protected double extractPrecMz(MzDbReader mzDbReader, Precursor precursor, double precMz, SpectrumHeader spectrumHeader, float timeTol)
-			throws StreamCorruptedException, SQLiteException {
+		throws StreamCorruptedException, SQLiteException {
 
 		long sid = spectrumHeader.getId();
 		float time = spectrumHeader.getTime();
@@ -140,8 +139,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		for (SpectrumSlice sl : spectrumSlices) {
 			if (nearestSpectrumSlice == null)
 				nearestSpectrumSlice = sl;
-			else if (Math.abs(sl.getHeader().getElutionTime() - time) < Math.abs(nearestSpectrumSlice.getHeader()
-					.getElutionTime() - time))
+			else if (Math.abs(sl.getHeader().getElutionTime() - time) < Math.abs(nearestSpectrumSlice.getHeader().getElutionTime() - time))
 				nearestSpectrumSlice = sl;
 		}
 
@@ -205,8 +203,10 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 						}
 
 						if (foundInterferencePeak == false) {
-							logger.debug("Found better m/z value for precMz=" + precMz + " at spectrum id=" + sid
-									+ " with int ratio=" + intRatio + " and z=" + putativeZ + " : " + prevPeakExpMz);
+							logger.debug(
+								"Found better m/z value for precMz=" + precMz + " at spectrum id=" + sid
+								+" with int ratio=" + intRatio + " and z=" + putativeZ + " : " + prevPeakExpMz
+							);
 							previousPeaks.add(prevPeak);
 						} else {
 							logger.debug("Found interference m/z value for precMz=" + precMz + " at spectrum id=" + sid + " : " + interferencePeakMz);
@@ -236,7 +236,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	 * @throws StreamCorruptedException
 	 */
 	protected Double refinePrecMz(MzDbReader mzDbReader, Precursor precursor, double precMz, double mzTolPPM, float time, float timeTol)
-			throws StreamCorruptedException, SQLiteException {
+		throws StreamCorruptedException, SQLiteException {
 
 		// Do a XIC in the isolation window and around the provided time
 		final SpectrumSlice[] spectrumSlices = this._getSpectrumSlicesInIsolationWindow(mzDbReader, precursor, time, timeTol);
@@ -274,7 +274,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	}
 
 	private SpectrumSlice[] _getSpectrumSlicesInIsolationWindow(MzDbReader mzDbReader, Precursor precursor, float time, float timeTol)
-			throws StreamCorruptedException, SQLiteException {
+		throws StreamCorruptedException, SQLiteException {
 
 		// do a XIC over isolation window
 		final IsolationWindowParamTree iw = precursor.getIsolationWindow();
@@ -299,6 +299,5 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 
 		return mzDbReader.getMsSpectrumSlices(minmz, maxmz, minrt, maxrt);
 	}
-
 
 }
