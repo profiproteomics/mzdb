@@ -11,7 +11,7 @@ import fr.profi.mzdb.model.PeakListTree
 import fr.profi.mzdb.model.PutativeFeature
 import fr.profi.mzdb.model.SpectrumHeader
 import fr.profi.mzdb.util.ms.MsUtils
-import fr.proline.api.progress._
+import fr.profi.api.progress._
 
 class FeatureExtractor(
   val mzDbReader: MzDbReader,

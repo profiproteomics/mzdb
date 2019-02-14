@@ -11,7 +11,7 @@ import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.util.ms.MsUtils
-import fr.proline.api.progress._
+import fr.profi.api.progress._
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder

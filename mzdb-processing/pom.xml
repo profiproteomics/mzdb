@@ -2,14 +2,14 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>ProFI-Pom</artifactId>
+    <artifactId>profi-pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.4.0-SNAPSHOT</version>
+    <version>0.5.0-SNAPSHOT</version>
     <relativePath />
   </parent>
 
   <groupId>fr.profi</groupId>
-  <artifactId>mzdb-processing</artifactId>
+  <artifactId>mzdb-processing_${scala.version}</artifactId>
   <version>0.9.0-SNAPSHOT</version>
 
   <name>${project.artifactId}</name>
@@ -29,26 +29,26 @@
     <!-- ProFI commons  -->
     <dependency>
       <groupId>fr.proline.util</groupId>
-      <artifactId>ProFI-Commons-Scala</artifactId>
+      <artifactId>profi-commons-scala</artifactId>
       <version>0.8.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>fr.proline.util</groupId>
-      <artifactId>ProFI-Commons-Java</artifactId>
+      <artifactId>profi-commons-java</artifactId>
       <version>0.7.0-SNAPSHOT</version>
     </dependency>
 
     <!-- ProFi Proteomics -->
     <dependency>
       <groupId>fr.profi</groupId>
-      <artifactId>ProFI-Proteomics</artifactId>
+      <artifactId>profi-proteomics</artifactId>
       <version>0.4.0-SNAPSHOT</version>
     </dependency>
 
     <!-- mzdb-access -->
     <dependency>
       <groupId>fr.profi</groupId>
-      <artifactId>mzdb-access</artifactId>
+      <artifactId>mzdb-access_${scala.version}</artifactId>
       <version>0.9.0-SNAPSHOT</version>
     </dependency>
 

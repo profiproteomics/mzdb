@@ -26,7 +26,7 @@ import fr.profi.mzdb.util.misc.SetClusterer
 import fr.profi.mzdb.util.ms.MsUtils
 import fr.profi.util.collection._
 import fr.profi.util.stat._
-import fr.proline.api.progress._
+import fr.profi.api.progress._
 
 import rx.lang.scala.Observable
 import rx.lang.scala.Subject

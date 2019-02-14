@@ -1,20 +1,10 @@
 package fr.profi.mzdb.algo.feature.extraction
 
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.LongMap
-import scala.util.control.Breaks._
-import fr.profi.mzdb.MzDbReader
-import fr.profi.mzdb.model._
-import fr.profi.mzdb.algo.signal.detection._
-import fr.profi.mzdb.util.math.VectorSimilarity
-import fr.profi.mzdb.util.math.wavelet._
-import FeatureExtractionUtils._
-import java.io.PrintWriter
-import java.io.File
-import java.io.Closeable
-import fr.proline.api.progress._
 import fr.profi.ms.algo.IsotopePatternInterpolator
+import fr.profi.mzdb.algo.feature.extraction.FeatureExtractionUtils._
+import fr.profi.mzdb.model._
+
+import scala.collection.mutable.{ArrayBuffer, LongMap}
 
 /**
  * Try to select the best peakel in cross assignment
