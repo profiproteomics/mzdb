@@ -2,14 +2,14 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>ProFI-Pom</artifactId>
+    <artifactId>profi-pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.4.0-SNAPSHOT</version>
+    <version>0.5.0-SNAPSHOT</version>
     <relativePath />
   </parent>
 
   <groupId>fr.profi</groupId>
-  <artifactId>mzdb-access</artifactId>
+  <artifactId>mzdb-access_${scala.version}</artifactId> <!-- scala version from profipom-->
   <version>0.9.0-SNAPSHOT</version>
 
   <description>The mzDB access Java library</description>
