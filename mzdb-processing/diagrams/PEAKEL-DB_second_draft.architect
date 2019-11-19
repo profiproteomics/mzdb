@@ -1,0 +1,860 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<architect-project version="1.0" appversion="1.0.8">
+ <project-name>PEAKEL-DB</project-name>
+ <print-settings numCopies="1" zoom="1.0" pageNumbersPrinted="true" orientation="1" paperWidth="612.0" paperHeight="792.0" leftBorder="50.0" rightBorder="50.0" topBorder="50.0" bottomBorder="50.0" />
+ <project-data-sources>
+  <data-source id="DS0">
+   <property key="Logical" value="PlayPen Database" />
+  </data-source>
+ </project-data-sources>
+ <source-databases>
+ </source-databases>
+ <target-database id="ppdb" dbcs-ref="DS0">
+  <table id="TAB1" populated="true" UUID="b29be342-0488-4d48-8a96-45f88744def3" name="spectrum" objectType="TABLE" physicalName="spectrum" >
+   <remarks></remarks>
+   <folder id="FOLTAB11" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL2" populated="true" UUID="3967b3b8-4445-4b73-86ce-b8bb85feeeb0" autoIncrement="true" autoIncrementSequenceName="spectrum_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL3" populated="true" UUID="c627e157-8535-45df-8507-b65481c7a040" autoIncrement="false" autoIncrementSequenceName="spectrum_initial_id_seq" defaultValue="" name="initial_id" nullable="0" physicalName="initial_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL4" populated="true" UUID="1074f174-5d56-4995-b0ea-d55dc69516e6" autoIncrement="false" autoIncrementSequenceName="spectrum_cycle_seq" defaultValue="" name="cycle" nullable="0" physicalName="cycle" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL5" populated="true" UUID="1e2a3082-e94d-470e-9b2a-652f477d842c" autoIncrement="false" autoIncrementSequenceName="spectrum_time_seq" defaultValue="" name="time" nullable="0" physicalName="time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Scan time in seconds</remarks>
+    </column>
+    <column id="COL6" populated="true" UUID="d6225015-4354-46f0-a2a7-2ff73ca7f4ae" autoIncrement="false" autoIncrementSequenceName="spectrum_ms_level_seq" defaultValue="" name="ms_level" nullable="0" physicalName="ms_level" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL7" populated="true" UUID="51fb8132-c557-4f81-8924-2f62ca2197af" autoIncrement="false" autoIncrementSequenceName="spectrum_tic_seq" defaultValue="" name="tic" nullable="0" physicalName="tic" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks></remarks>
+    </column>
+    <column id="COL8" populated="true" UUID="5432565b-ecb4-4353-b3a2-5ddd4042166c" autoIncrement="false" autoIncrementSequenceName="spectrum_base_peak_moz_seq" defaultValue="" name="base_peak_moz" nullable="0" physicalName="base_peak_moz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks></remarks>
+    </column>
+    <column id="COL9" populated="true" UUID="6aaad709-863b-43dd-be3a-0743ddc205bd" autoIncrement="false" autoIncrementSequenceName="spectrum_base_peak_intensity_seq" defaultValue="" name="base_peak_intensity" nullable="0" physicalName="base_peak_intensity" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks></remarks>
+    </column>
+    <column id="COL10" populated="true" UUID="325ba6ad-95fb-4817-8cec-01db60f5537f" autoIncrement="false" autoIncrementSequenceName="spectrum_precursor_moz_seq" defaultValue="" name="precursor_moz" nullable="1" physicalName="precursor_moz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks></remarks>
+    </column>
+    <column id="COL11" populated="true" UUID="207b48d6-b062-4e36-8301-91ceb12574d2" autoIncrement="false" autoIncrementSequenceName="spectrum_precursor_charge_seq" defaultValue="" name="precursor_charge" nullable="1" physicalName="precursor_charge" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL12" populated="true" UUID="dcbde042-42f1-498f-a138-d84755d59c18" autoIncrement="false" autoIncrementSequenceName="spectrum_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB13" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB12" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB14" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX13" populated="true" UUID="983bc46a-5d46-41a4-889e-cbcf3e02d8db" clustered="false" name="spectrum_pk" physicalName="scan_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC14" populated="true" UUID="ea2f7f28-0690-45af-ae74-acdfbd2c7e2f" ascendingOrDescending="UNSPECIFIED" column-ref="COL2" name="id" physicalName="id" />
+    </index>
+    <index id="IDX15" populated="true" UUID="e649cbb0-2e8f-4f9e-8b1a-b5893e168449" clustered="false" name="scan_precursor_moz_idx" physicalName="scan_precursor_moz_idx" primaryKeyIndex="false" unique="false" >
+     <index-column id="IDC16" populated="true" UUID="26d716d0-022f-4ebd-a35b-3ece49efa11d" ascendingOrDescending="UNSPECIFIED" column-ref="COL10" name="precursor_moz" physicalName="precursor_moz" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB17" populated="true" UUID="967b25da-f996-4a88-895f-40a37d1c7b28" name="object_tree" objectType="TABLE" physicalName="object_tree" >
+   <remarks></remarks>
+   <folder id="FOLTAB171" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL18" populated="true" UUID="db451a01-33cf-4de7-917b-52405044f64b" autoIncrement="true" autoIncrementSequenceName="object_tree_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL19" populated="true" UUID="cd356f28-e318-4cb4-bb0d-ec5817a21286" autoIncrement="false" autoIncrementSequenceName="object_tree_blob_data_seq" defaultValue="" name="blob_data" nullable="1" physicalName="blob_data" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2004" userDefinedTypeUUID="5c50e616-a448-40e1-abcd-5bfc04dcc607" >
+     <remarks>An object tree serialized as bytes using a given binary serialization framework.</remarks>
+    </column>
+    <column id="COL20" populated="true" UUID="9a8f2638-c73e-4488-80b4-bea4bfd1c2a0" autoIncrement="false" autoIncrementSequenceName="object_tree_clob_data_seq" defaultValue="" name="clob_data" nullable="1" physicalName="clob_data" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An object tree serialized in a string of a given format (XML or JSON).</remarks>
+    </column>
+    <column id="COL21" populated="true" UUID="37f6a339-5697-454e-aa90-ae4065acafff" autoIncrement="false" autoIncrementSequenceName="object_tree_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>May be used to store the creation timestamp and other meta information.</remarks>
+    </column>
+    <column id="COL22" populated="true" UUID="72406158-ae11-4833-91d6-d673965c05a3" autoIncrement="false" autoIncrementSequenceName="object_tree_schema_object_tree_schema_id_seq" defaultValue="" name="schema_name" nullable="0" physicalName="schema_name" precision="1000" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB173" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB172" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB174" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX23" populated="true" UUID="8a402e62-6dfd-4f5c-9764-578b10f1ba23" clustered="false" name="object_tree_pk" physicalName="object_tree_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC24" populated="true" UUID="a18d8919-c770-4f69-9027-6d298f0cfe2f" ascendingOrDescending="UNSPECIFIED" column-ref="COL18" name="id" physicalName="id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB25" populated="true" UUID="2486b572-13df-4752-a320-7cfcaef7e2eb" name="object_tree_schema" objectType="TABLE" physicalName="object_tree_schema" >
+   <remarks></remarks>
+   <folder id="FOLTAB251" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL26" populated="true" UUID="7738e029-4c4f-4654-a185-e01d2aa9634d" autoIncrement="false" autoIncrementSequenceName="object_tree_schema_name_seq" defaultValue="" name="name" nullable="0" physicalName="name" precision="1000" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks></remarks>
+    </column>
+    <column id="COL27" populated="true" UUID="e3f82d6f-0269-4c3c-941c-187515fe20af" autoIncrement="false" autoIncrementSequenceName="property_a_key_seq" defaultValue="" name="type" nullable="0" physicalName="type" precision="50" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>XSD or JSON</remarks>
+    </column>
+    <column id="COL28" populated="true" UUID="0e697565-7637-4a55-959f-d79b664d1601" autoIncrement="false" autoIncrementSequenceName="object_tree_schema_is_binary_mode_seq" defaultValue="" name="is_binary_mode" nullable="0" physicalName="is_binary_mode" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="16" userDefinedTypeUUID="a26374aa-3026-4bb8-b564-eb2e186dfa5d" >
+     <remarks>Specifies if mode of the data encoding which could be binary based or string based (XML or JSON). If binary mode is used the data must be stored in the blob_data field, else in the clob_data field.</remarks>
+    </column>
+    <column id="COL29" populated="true" UUID="81bef187-f3aa-41b4-9615-7950242feead" autoIncrement="false" autoIncrementSequenceName="object_tree_schema_version_seq" defaultValue="" name="version" nullable="0" physicalName="version" precision="100" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks></remarks>
+    </column>
+    <column id="COL30" populated="true" UUID="5b691339-190a-4bbc-bf89-bb7d91451ba5" autoIncrement="false" autoIncrementSequenceName="property_schema_seq" defaultValue="" name="schema" nullable="0" physicalName="schema" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>The document describing the schema used for the serialization of the object_tree.</remarks>
+    </column>
+    <column id="COL31" populated="true" UUID="647ef527-f572-4270-aee2-4b9d0d59e405" autoIncrement="false" autoIncrementSequenceName="object_tree_schema_description_seq" defaultValue="" name="description" nullable="1" physicalName="description" precision="1000" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks></remarks>
+    </column>
+    <column id="COL32" populated="true" UUID="6f23e1b0-ccdf-43e0-90d6-2cb09c3060f1" autoIncrement="false" autoIncrementSequenceName="property_a_value_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB253" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB252" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB254" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX33" populated="true" UUID="9e5e071d-40cf-4f69-acef-bf8c8a392345" clustered="false" name="object_tree_schema_pk" physicalName="object_tree_schema_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC34" populated="true" UUID="4dfc4411-756b-4923-a755-39e9b06e69df" ascendingOrDescending="UNSPECIFIED" column-ref="COL26" name="name" physicalName="property_id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB35" populated="true" UUID="ce9586d6-25c9-4832-be2e-8379dd2514ad" name="lcms_map" objectType="TABLE" physicalName="lcms_map" >
+   <remarks>An LC-MS map is a two dimensional representation of signals detected in DDA or DIA experiments. Each map can be seen as a collection of spectra belonging to the same acquisition channel. A DDA experiment provides a single LC-MS map for MS data, while a DIA experiments provides one LC-MS map and multiple LC-MS/MS maps (one for each IA window).</remarks>
+   <folder id="FOLTAB351" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL36" populated="true" UUID="c2b47a21-f762-4ef9-9529-894bd6df9932" autoIncrement="true" autoIncrementSequenceName="lcms_map_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL37" populated="true" UUID="a992db84-9624-480a-9453-669ad824f512" autoIncrement="false" autoIncrementSequenceName="lcms_map_ms_level_seq" defaultValue="" name="ms_level" nullable="0" physicalName="ms_level" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>The MS level of the map. MS level 1 corresponds to a LC-MS map (DDA acquisition) while MS level 2 corresponds to a LC-MS/MS map (DIA acquisition).</remarks>
+    </column>
+    <column id="COL38" populated="true" UUID="b43eda64-196d-4863-9d3e-83d5cf6bd5dc" autoIncrement="false" autoIncrementSequenceName="lcms_map_peakel_count_seq" defaultValue="" name="peakel_count" nullable="0" physicalName="peakel_count" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>The number of peakels in this map.</remarks>
+    </column>
+    <column id="COL39" populated="true" UUID="20a671e7-a736-4f60-a759-c1575725d509" autoIncrement="false" autoIncrementSequenceName="lcms_map_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    <column id="COL40" populated="true" UUID="79041980-d56f-4ea7-8da6-16bbca57a00b" autoIncrement="false" autoIncrementSequenceName="lcms_map_id_seq" defaultValue="" name="peakeldb_file_id" nullable="0" physicalName="peakeldb_file_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB353" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB352" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB354" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX41" populated="true" UUID="0311730b-548c-4f7b-b770-40482dcc4e45" clustered="false" name="lcms_map_pk" physicalName="map_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC42" populated="true" UUID="471d60ea-44a3-479a-b97b-bfed87373e58" ascendingOrDescending="UNSPECIFIED" column-ref="COL36" name="id" physicalName="id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB43" populated="true" UUID="691e0183-2f9e-4aa7-8f9c-03a09031bd6d" name="peakeldb_file_object_tree_mapping" objectType="TABLE" physicalName="peakeldb_file_object_tree_mapping" >
+   <remarks>Mapping between the peakeldb_file table and the object_tree one. One of the main use case is store in the object_tree table some parameters specific to the tool which has generated this peakelDB file. This allows a custom and generic way to store this kind of information, which tool being free to define its own meta-data representation. JSON data serialization is however advised.</remarks>
+   <folder id="FOLTAB431" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL44" populated="true" UUID="cbba70e1-b81c-4bec-8196-097a947319b6" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_object_tree_mapping_peakeldb_file_id_seq" defaultValue="" name="peakeldb_file_id" nullable="0" physicalName="peakeldb_file_id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL45" populated="true" UUID="c823f09f-2814-4fbc-88d4-908512e27900" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_object_tree_mapping_schema_name_seq" defaultValue="" name="schema_name" nullable="0" physicalName="schema_name" precision="1000" primaryKeySeq="1" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks></remarks>
+    </column>
+    <column id="COL46" populated="true" UUID="1d7b734d-7375-436b-8cfe-7c85b0ed9d95" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_object_tree_mapping_object_tree_id_seq" defaultValue="" name="object_tree_id" nullable="0" physicalName="object_tree_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB433" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB432" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB434" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX47" populated="true" UUID="08ab2f46-357b-4910-b25d-0255f0a54b18" clustered="false" name="peakeldb_file_object_tree_mapping_pk" physicalName="map_object_tree_mapping_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC48" populated="true" UUID="44b798f9-4348-4ea5-a382-cffb167e5583" ascendingOrDescending="UNSPECIFIED" column-ref="COL44" name="peakeldb_file_id" physicalName="peakeldb_file_id" />
+     <index-column id="IDC49" populated="true" UUID="a631f7ce-4897-4a6d-b79e-6cc9bcec683d" ascendingOrDescending="UNSPECIFIED" column-ref="COL45" name="schema_name" physicalName="schema_name" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB50" populated="true" UUID="54043c75-ce99-49a9-acba-c11eefe2089a" name="peakel" objectType="TABLE" physicalName="peakel" >
+   <remarks>TODO: add same indexes than those of the feature table</remarks>
+   <folder id="FOLTAB501" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL51" populated="true" UUID="a8f96a14-b139-46c0-a775-3e0bca2e4a90" autoIncrement="false" autoIncrementSequenceName="peakel_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="-5" userDefinedTypeUUID="433cc8af-284d-4abb-8ef7-08ebcb34dbf1" >
+     <remarks>Long value primary key to be provided.</remarks>
+    </column>
+    <column id="COL52" populated="true" UUID="728fdbb3-0d6f-46b5-8b6f-d4b957cc5692" autoIncrement="false" autoIncrementSequenceName="peakel_moz_seq" defaultValue="" name="moz" nullable="0" physicalName="moz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks>A m over z value associated to the peakel. May be determined as the median/mean of peaks. May also be the m/z of the apex.</remarks>
+    </column>
+    <column id="COL53" populated="true" UUID="97e8e529-d41a-4135-9ff1-59a963a40060" autoIncrement="false" autoIncrementSequenceName="peakel_elution_time_seq" defaultValue="" name="elution_time" nullable="0" physicalName="elution_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL54" populated="true" UUID="3ce6fe67-a81c-4a90-9884-ee675e68f6c1" autoIncrement="false" autoIncrementSequenceName="peakel_duration_seq" defaultValue="" name="duration" nullable="0" physicalName="duration" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>The elution duration in seconds of this peakel.</remarks>
+    </column>
+    <column id="COL55" populated="true" UUID="459902c6-d5e3-4e26-a4fc-8133bb985151" autoIncrement="false" autoIncrementSequenceName="peakel_gap_count_seq" defaultValue="" name="gap_count" nullable="0" physicalName="gap_count" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL56" populated="true" UUID="fb2291d2-caee-473a-a48c-62b3e6f3e352" autoIncrement="false" autoIncrementSequenceName="peakel_apex_intensity_seq" defaultValue="" name="apex_intensity" nullable="0" physicalName="apex_intensity" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Maximum intensity of this peakel. This intensity may also be a normalized value from a value stored in another map.</remarks>
+    </column>
+    <column id="COL57" populated="true" UUID="3cd6f06e-86b0-476e-a878-bba4c7494f3d" autoIncrement="false" autoIncrementSequenceName="peakel_area_seq" defaultValue="" name="area" nullable="0" physicalName="area" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Integrated area for this peakel. This area may also be a normalized value from a value stored in another map.</remarks>
+    </column>
+    <column id="COL58" populated="true" UUID="70d8c6c7-2e6c-42d7-a8c3-1f12f5388695" autoIncrement="false" autoIncrementSequenceName="peakel_amplitude_seq" defaultValue="" name="amplitude" nullable="0" physicalName="amplitude" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Amplitude of the peakel defined as the ratio of apex_intensity/minimum value.</remarks>
+    </column>
+    <column id="COL59" populated="true" UUID="259cffa1-392a-4214-a27b-64a0ba4e101c" autoIncrement="false" autoIncrementSequenceName="peakel_moz_cv_seq" defaultValue="" name="moz_cv" nullable="0" physicalName="moz_cv" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Coefficient of varation of m/z values.</remarks>
+    </column>
+    <column id="COL60" populated="true" UUID="917a6073-19c8-4e7d-ab6a-42eb9d50ca44" autoIncrement="false" autoIncrementSequenceName="peakel_intensity_cv_seq" defaultValue="" name="intensity_cv" nullable="0" physicalName="intensity_cv" precision="0" referenceCount="1" scale="0" source-column-ref="COL59" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Coefficient of varation of intensity values.</remarks>
+    </column>
+    <column id="COL61" populated="true" UUID="3ce5467b-1fbf-4c2a-9fa6-cc05378e541c" autoIncrement="false" autoIncrementSequenceName="peakel_left_hwhm_mean_seq" defaultValue="" name="left_hwhm_mean" nullable="1" physicalName="left_hwhm_mean" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL62" populated="true" UUID="1a0c8197-7b01-45d5-9b7c-a5fc56d34c9f" autoIncrement="false" autoIncrementSequenceName="peakel_left_hwhm_cv_seq" defaultValue="" name="left_hwhm_cv" nullable="1" physicalName="left_hwhm_cv" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL63" populated="true" UUID="563cb5fc-a0cc-4f30-8c11-cb0062cf1db9" autoIncrement="false" autoIncrementSequenceName="peakel_right_hwhm_mean_seq" defaultValue="" name="right_hwhm_mean" nullable="1" physicalName="right_hwhm_mean" precision="0" referenceCount="1" scale="0" source-column-ref="COL61" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL64" populated="true" UUID="f33dcf0c-89ef-44b2-ad12-a0c9bd5e2ee5" autoIncrement="false" autoIncrementSequenceName="peakel_right_hwhm_cv_seq" defaultValue="" name="right_hwhm_cv" nullable="1" physicalName="right_hwhm_cv" precision="0" referenceCount="1" scale="0" source-column-ref="COL61" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL65" populated="true" UUID="0574e98f-ea4d-481f-ae98-240b410c9157" autoIncrement="false" autoIncrementSequenceName="peakel_is_interfering_seq" defaultValue="" name="is_interfering" nullable="0" physicalName="is_interfering" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="16" userDefinedTypeUUID="a26374aa-3026-4bb8-b564-eb2e186dfa5d" >
+     <remarks></remarks>
+    </column>
+    <column id="COL66" populated="true" UUID="f591ae07-4deb-4238-b0b6-b2b7b171ffea" autoIncrement="false" autoIncrementSequenceName="peakel_peak_count_seq" defaultValue="" name="peak_count" nullable="0" physicalName="peak_count" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL67" populated="true" UUID="601ecb93-5a1c-4975-859e-095ec01d2a51" autoIncrement="false" autoIncrementSequenceName="peakel_peaks_seq" defaultValue="" name="peaks" nullable="0" physicalName="peaks" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2004" userDefinedTypeUUID="5c50e616-a448-40e1-abcd-5bfc04dcc607" >
+     <remarks></remarks>
+    </column>
+    <column id="COL68" populated="true" UUID="de9d4421-e3e8-44e8-ac29-d3ec4ab42ca0" autoIncrement="false" autoIncrementSequenceName="peakel_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    <column id="COL69" populated="true" UUID="6fc227b6-0f4f-4599-9916-62d16290160c" autoIncrement="false" autoIncrementSequenceName="peakel_first_spectrum_id_seq" defaultValue="" name="first_spectrum_id" nullable="0" physicalName="first_spectrum_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL70" populated="true" UUID="c63eb8ae-5368-47e9-a38e-99c97745056e" autoIncrement="false" autoIncrementSequenceName="peakel_apex_spectrum_id_seq" defaultValue="" name="apex_spectrum_id" nullable="0" physicalName="apex_spectrum_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL71" populated="true" UUID="cc69b25d-d7a4-4138-9851-80cc759db6e7" autoIncrement="false" autoIncrementSequenceName="peakel_last_spectrum_id_seq" defaultValue="" name="last_spectrum_id" nullable="0" physicalName="last_spectrum_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL72" populated="true" UUID="f11dff55-7792-450c-874f-2b43e35b640d" autoIncrement="false" autoIncrementSequenceName="peakel_map_id_seq" defaultValue="" name="map_id" nullable="0" physicalName="map_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB503" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB502" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB504" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX73" populated="true" UUID="b2557587-589f-4299-a2ab-efb0012f04eb" clustered="false" name="peakel_pk" physicalName="peakel_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC74" populated="true" UUID="b4c02525-0d30-4668-9024-98a8ae064fc1" ascendingOrDescending="UNSPECIFIED" column-ref="COL51" name="id" physicalName="id" />
+    </index>
+    <index id="IDX75" populated="true" UUID="2e22603c-29cf-499b-b52c-fc9c4f19f314" clustered="true" name="peakel_map_idx" physicalName="peakel_map_idx" primaryKeyIndex="false" unique="false" >
+     <index-column id="IDC76" populated="true" UUID="6571ef4c-9746-4b36-80c0-ba2823d34f67" ascendingOrDescending="UNSPECIFIED" column-ref="COL72" name="map_id" physicalName="map_id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB77" populated="true" UUID="4b58a435-c0ef-4ad9-a957-1cd586978ed5" name="peakel_ms2_event" objectType="TABLE" physicalName="peakel_ms2_event" >
+   <remarks></remarks>
+   <folder id="FOLTAB771" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL78" populated="true" UUID="18e21292-b905-4309-bab2-0dc4915da2d2" autoIncrement="false" autoIncrementSequenceName="peakel_ms2_event_peakel_id_seq" defaultValue="" name="peakel_id" nullable="0" physicalName="peakel_id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="-5" userDefinedTypeUUID="433cc8af-284d-4abb-8ef7-08ebcb34dbf1" >
+     <remarks></remarks>
+    </column>
+    <column id="COL79" populated="true" UUID="5635555f-d40b-447c-9242-76dd65d4dab7" autoIncrement="false" autoIncrementSequenceName="spectrum_ms2_event_id_seq" defaultValue="" name="ms2_event_id" nullable="0" physicalName="ms2_event_id" precision="0" primaryKeySeq="1" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB773" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB772" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB774" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX80" populated="true" UUID="4da54581-c786-412d-9eee-e75096b85006" clustered="false" name="peakel_ms2_event_pk" physicalName="peakel_ms2_event_pk" primaryKeyIndex="true" unique="false" >
+     <index-column id="IDC81" populated="true" UUID="78b36f94-08d4-4a4f-9c37-bf43d8708e0b" ascendingOrDescending="UNSPECIFIED" column-ref="COL78" name="peakel_id" physicalName="peakel_id" />
+     <index-column id="IDC82" populated="true" UUID="b0affd2b-ae72-48ca-8090-7d16eb8ff718" ascendingOrDescending="UNSPECIFIED" column-ref="COL79" name="ms2_event_id" physicalName="ms2_event_id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB83" populated="true" UUID="ed55f494-1d08-43e6-b257-cbd3b96f658f" name="lcms_map_relation" objectType="TABLE" physicalName="lcms_map_relation" >
+   <remarks>Used to represent the hierarchy of LC-MS and LC-MS/MS maps when dealing with DIA experiments. It also provides information about the corresponding isolation window (min_parent_mz, max_parent_mz). This table should be empty for DDA experiments.</remarks>
+   <folder id="FOLTAB831" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL84" populated="true" UUID="fa4e2dce-ac57-4594-8fbd-68d50ca02113" autoIncrement="false" autoIncrementSequenceName="lcms_map_relation_parent_lcms_map_id_seq" defaultValue="" name="parent_lcms_map_id" nullable="0" physicalName="parent_lcms_map_id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL85" populated="true" UUID="e3d54c8c-7b3a-429b-bab9-47222e2d65a8" autoIncrement="false" autoIncrementSequenceName="lcms_map_relation_child_lcms_map_id_seq" defaultValue="" name="child_lcms_map_id" nullable="0" physicalName="child_lcms_map_id" precision="0" primaryKeySeq="1" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL86" populated="true" UUID="240a0f32-2cd4-461f-91b6-3111bd0bfa2f" autoIncrement="false" autoIncrementSequenceName="lcms_map_relation_min_parent_mz_seq" defaultValue="" name="min_parent_mz" nullable="0" physicalName="min_parent_mz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>The minimum parent m/z of the DIA isolation window used to produce this map.</remarks>
+    </column>
+    <column id="COL87" populated="true" UUID="683b86f1-4f80-42cc-92db-341e1a6eef9c" autoIncrement="false" autoIncrementSequenceName="lcms_map_relation_max_parent_mz_seq" defaultValue="" name="max_parent_mz" nullable="0" physicalName="max_parent_mz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>The maximum parent m/z of the DIA isolation window used to produce this map.</remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB833" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB832" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB834" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX88" populated="true" UUID="acc1d5a9-ac46-4af0-a986-dbd954ea1927" clustered="false" name="lcms_map_relation_pk" physicalName="lcms_map_relation_pk" primaryKeyIndex="true" unique="false" >
+     <index-column id="IDC89" populated="true" UUID="fd73a530-3cf0-4a55-b9bb-13221c235300" ascendingOrDescending="UNSPECIFIED" column-ref="COL84" name="parent_lcms_map_id" physicalName="parent_lcms_map_id" />
+     <index-column id="IDC90" populated="true" UUID="e02c112d-a5af-4bae-9fe3-5780c3e39ac9" ascendingOrDescending="UNSPECIFIED" column-ref="COL85" name="child_lcms_map_id" physicalName="child_lcms_map_id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB91" populated="true" UUID="8645a7ad-c1ac-424c-9d3f-915ea10a5b0f" name="peakel_rtree" objectType="TABLE" physicalName="peakel_rtree" >
+   <remarks></remarks>
+   <folder id="FOLTAB911" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL92" populated="true" UUID="a89e0bf7-9fda-412e-bc3a-1d28fa50fad5" autoIncrement="false" autoIncrementSequenceName="peakel_rtree_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="-5" userDefinedTypeUUID="433cc8af-284d-4abb-8ef7-08ebcb34dbf1" >
+     <remarks>Long value primary key to be provided.</remarks>
+    </column>
+    <column id="COL93" populated="true" UUID="43a531ff-8cd9-47a5-aae1-e67b2d45126e" autoIncrement="false" autoIncrementSequenceName="peakel_rtree_min_lcms_map_id_seq" defaultValue="" name="min_lcms_map_id" nullable="0" physicalName="min_lcms_map_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL94" populated="true" UUID="bcf938ed-8e74-4252-9c56-9999d7fc090a" autoIncrement="false" autoIncrementSequenceName="peakel_rtree_max_lcms_map_id_seq" defaultValue="" name="max_lcms_map_id" nullable="0" physicalName="max_lcms_map_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL95" populated="true" UUID="87e2203b-fd9e-4116-a170-b9b7fa5a2ca9" autoIncrement="false" autoIncrementSequenceName="peakel_rtree_min_mz_seq" defaultValue="" name="min_mz" nullable="0" physicalName="min_mz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL96" populated="true" UUID="6121fa73-3961-465c-9010-ae0465a50212" autoIncrement="false" autoIncrementSequenceName="peakel_rtree_max_mz_seq" defaultValue="" name="max_mz" nullable="0" physicalName="max_mz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL97" populated="true" UUID="2cce1656-258e-401c-b5f3-b6e6cdc97dff" autoIncrement="false" autoIncrementSequenceName="peakel_rtree_min_time_seq" defaultValue="" name="min_time" nullable="0" physicalName="min_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL98" populated="true" UUID="38f3c02b-8139-47af-ac00-d19cfe5f7337" autoIncrement="false" autoIncrementSequenceName="peakel_rtree_max_time_seq" defaultValue="" name="max_time" nullable="0" physicalName="max_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB913" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB912" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB914" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX99" populated="true" UUID="d550279c-b7a7-48ea-af5c-804890a3af81" clustered="false" name="peakel_rtree_pk" physicalName="peakel_rtree_pk" primaryKeyIndex="true" unique="false" >
+     <index-column id="IDC100" populated="true" UUID="370f17ef-ab0a-42c5-bb94-e68431e602e6" ascendingOrDescending="UNSPECIFIED" column-ref="COL92" name="id" physicalName="id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB101" populated="true" UUID="df0c6ad4-df41-425d-b61c-ea199ab1eec1" name="peakeldb_file" objectType="TABLE" physicalName="peakeldb_file" >
+   <remarks>Main table of the peakelDB containing some meta-data about the file creaion.</remarks>
+   <folder id="FOLTAB1011" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL102" populated="true" UUID="e7ca0f2e-6351-48a0-aa1a-d0f46afcbba5" autoIncrement="true" autoIncrementSequenceName="peakeldb_file_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL103" populated="true" UUID="2fbe7781-cda6-4bb0-8a51-f3f454c9c29b" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_name_seq" defaultValue="" name="name" nullable="0" physicalName="name" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>The name of the peakelDB file.</remarks>
+    </column>
+    <column id="COL104" populated="true" UUID="ab27a779-a3f1-4ea2-a17c-bc44690906d0" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_description_seq" defaultValue="" name="description" nullable="1" physicalName="description" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>A free text description of this peakelDB file.</remarks>
+    </column>
+    <column id="COL105" populated="true" UUID="c06f7293-86ba-4502-900f-6b53acad770b" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_raw_file_name_seq" defaultValue="" name="raw_file_name" nullable="0" physicalName="raw_file_name" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>The name of raw acquisition file which has been processed to obtain this peakelDB.</remarks>
+    </column>
+    <column id="COL106" populated="true" UUID="a9e356a8-9f96-47e2-a119-5439f6554fbe" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_is_dia_experiment_seq" defaultValue="" name="is_dia_experiment" nullable="0" physicalName="is_dia_experiment" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="16" userDefinedTypeUUID="a26374aa-3026-4bb8-b564-eb2e186dfa5d" >
+     <remarks>True if the analyzed experiment is a DIA one. False if the analyzed experiment is a DDA one.</remarks>
+    </column>
+    <column id="COL107" populated="true" UUID="f70f880c-88db-4042-ba6e-8339ec52809f" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_creation_timestamp_seq" defaultValue="" name="creation_timestamp" nullable="0" physicalName="creation_timestamp" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="93" userDefinedTypeUUID="6497d8de-0e00-40d6-a42e-e2adca83be64" >
+     <remarks>The create date and time of this peakelDB.</remarks>
+    </column>
+    <column id="COL108" populated="true" UUID="20a25e02-6091-4b3a-b583-209ec949d417" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_modification_timestamp_seq" defaultValue="" name="modification_timestamp" nullable="0" physicalName="modification_timestamp" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="93" userDefinedTypeUUID="6497d8de-0e00-40d6-a42e-e2adca83be64" >
+     <remarks>The last modification date and time of this peakelDB.</remarks>
+    </column>
+    <column id="COL109" populated="true" UUID="c4224b61-a613-4b33-9919-e08367582274" autoIncrement="false" autoIncrementSequenceName="peakeldb_file_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1013" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1012" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1014" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX110" populated="true" UUID="2688f719-3817-4410-98d4-8d4318564a63" clustered="false" name="peakeldb_file_pk" physicalName="map_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC111" populated="true" UUID="002ab713-cadc-408c-9550-d5c51b75917d" ascendingOrDescending="UNSPECIFIED" column-ref="COL102" name="id" physicalName="id" />
+    </index>
+    <index id="IDX112" populated="true" UUID="bcfc0ec0-79b1-485d-8616-b56d1cab6ab7" clustered="false" name="lcms_map_raw_file_name_idx" physicalName="lcms_map_raw_file_name_idx" primaryKeyIndex="false" unique="true" >
+     <index-column id="IDC113" populated="true" UUID="358430ad-1c26-43db-8c81-47be1ad4671e" ascendingOrDescending="UNSPECIFIED" column-ref="COL105" name="raw_file_name" physicalName="raw_file_name" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB114" populated="true" UUID="a664fec3-cc2c-4ebe-a9f7-d3b5d05d510d" name="feature" objectType="TABLE" physicalName="feature" >
+   <remarks></remarks>
+   <folder id="FOLTAB1141" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL115" populated="true" UUID="06b2186b-eb94-416a-955c-fba5142e5d65" autoIncrement="true" autoIncrementSequenceName="feature_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL116" populated="true" UUID="b6e329f3-b707-47be-8e5b-f147982be2a7" autoIncrement="false" autoIncrementSequenceName="feature_moz_seq" defaultValue="" name="moz" nullable="0" physicalName="moz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks>A m/z value associated to the feature. May be determined as the median/mean of the isotopic pattern m/z. May also be the m/z of the apex.</remarks>
+    </column>
+    <column id="COL117" populated="true" UUID="bf6ab778-d448-41b0-aa17-2fb35c4ad1e5" autoIncrement="false" autoIncrementSequenceName="feature_charge_seq" defaultValue="" name="charge" nullable="0" physicalName="charge" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL118" populated="true" UUID="e1425b62-6653-4744-aacd-3980d10ff50f" autoIncrement="false" autoIncrementSequenceName="feature_elution_time_seq" defaultValue="" name="elution_time" nullable="0" physicalName="elution_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL119" populated="true" UUID="c2c1d241-fee9-4c05-a009-9b80dd16ddc7" autoIncrement="false" autoIncrementSequenceName="feature_apex_intensity_seq" defaultValue="" name="apex_intensity" nullable="0" physicalName="apex_intensity" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Maximum intensity of this feature. This intensity may also be a normalized value from a value stored in another map.</remarks>
+    </column>
+    <column id="COL120" populated="true" UUID="7c8be8d2-4a8c-41d5-a948-76e815d1d81f" autoIncrement="false" autoIncrementSequenceName="feature_intensity_seq" defaultValue="" name="intensity" nullable="0" physicalName="intensity" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Integrated intensity for this feature. Computed using the peakels areas or max intensities. The function used to produce this value may take only a limited number of peakels. This intensity may also be a normalized value from a value stored in another map.</remarks>
+    </column>
+    <column id="COL121" populated="true" UUID="c0510675-cb79-4615-a199-db7a36cf7772" autoIncrement="false" autoIncrementSequenceName="feature_duration_seq" defaultValue="0" name="duration" nullable="0" physicalName="duration" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>The elution duration in seconds of this feature.</remarks>
+    </column>
+    <column id="COL122" populated="true" UUID="3d72e63f-c9e1-4c49-b961-c94b05dd63ee" autoIncrement="false" autoIncrementSequenceName="feature_quality_score_seq" defaultValue="" name="quality_score" nullable="1" physicalName="quality_score" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>A score reflecting the quality of the extracted signal for this feature.</remarks>
+    </column>
+    <column id="COL123" populated="true" UUID="abcf85ab-f406-4ba9-bd16-0a199b0c1754" autoIncrement="false" autoIncrementSequenceName="feature_ms1_count_seq" defaultValue="" name="ms1_count" nullable="0" physicalName="ms1_count" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL124" populated="true" UUID="edc7491f-ce84-47e3-8f3b-1dc34b9b0256" autoIncrement="false" autoIncrementSequenceName="feature_ms2_count_seq" defaultValue="" name="ms2_count" nullable="0" physicalName="ms2_count" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL125" populated="true" UUID="a65fbb5a-4433-48bf-99b8-9ab1b7586055" autoIncrement="false" autoIncrementSequenceName="feature_peakel_count_seq" defaultValue="" name="peakel_count" nullable="0" physicalName="peakel_count" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL126" populated="true" UUID="d8fd7bbd-fb55-4e42-a601-ee0bbbc2974a" autoIncrement="false" autoIncrementSequenceName="feature_is_interfering_seq" defaultValue="" name="is_interfering" nullable="0" physicalName="is_interferring" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="16" userDefinedTypeUUID="a26374aa-3026-4bb8-b564-eb2e186dfa5d" >
+     <remarks></remarks>
+    </column>
+    <column id="COL127" populated="true" UUID="8248d0f3-e9d6-4a4c-83e1-131ccb489cb5" autoIncrement="false" autoIncrementSequenceName="feature_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL128" populated="true" UUID="7ddf7092-2c1d-4f97-959d-1d99dacdb51d" autoIncrement="false" autoIncrementSequenceName="feature_spectrum_id_seq" defaultValue="" name="first_spectrum_id" nullable="0" physicalName="first_spectrum_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL129" populated="true" UUID="a9943009-903a-4733-8079-37bb2a57e670" autoIncrement="false" autoIncrementSequenceName="feature_spectrum_id_seq" defaultValue="" name="apex_spectrum_id" nullable="0" physicalName="apex_spectrum_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL130" populated="true" UUID="c6be8520-3ec8-491d-9d4e-0d19586d22c1" autoIncrement="false" autoIncrementSequenceName="feature_spectrum_id_seq" defaultValue="" name="last_spectrum_id" nullable="0" physicalName="last_spectrum_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL131" populated="true" UUID="a56972d0-bcb0-46aa-9f73-f238fdb47989" autoIncrement="false" autoIncrementSequenceName="feature_putative_feature_id_seq" defaultValue="" name="putative_feature_id" nullable="0" physicalName="putative_feature_id" precision="0" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL132" populated="true" UUID="849260fb-ba79-417c-bacf-009e0da132df" autoIncrement="false" autoIncrementSequenceName="feature_compound_id_seq" defaultValue="" name="compound_id" nullable="0" physicalName="compound_id" precision="0" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL133" populated="true" UUID="7f8ef17e-55dc-4566-81ed-24093b477de3" autoIncrement="false" autoIncrementSequenceName="feature_map_layer_id_seq" defaultValue="" name="map_layer_id" nullable="0" physicalName="map_layer_id" precision="0" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL134" populated="true" UUID="11301b15-6ee1-43d9-8226-0522ba9ede77" autoIncrement="false" autoIncrementSequenceName="lcms_map_lcms_map_id_seq" defaultValue="" name="lcms_map_id" nullable="0" physicalName="lcms_map_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1143" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1142" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1144" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX135" populated="true" UUID="f3f90d29-8086-4ba9-a4ad-f52bfb21b86c" clustered="false" name="feature_pk" physicalName="feature_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC136" populated="true" UUID="f495ecd4-5443-45e3-9c3d-70211b2d7328" ascendingOrDescending="UNSPECIFIED" column-ref="COL115" name="id" physicalName="id" />
+    </index>
+    <index id="IDX137" populated="true" UUID="1daac586-76d7-4286-a478-ab84e34b2619" clustered="false" name="feature_charge_time_moz_idx" physicalName="feature_charge_time_moz_idx" primaryKeyIndex="false" unique="false" >
+     <index-column id="IDC138" populated="true" UUID="2790da04-4740-4e9e-890f-938830f12070" ascendingOrDescending="UNSPECIFIED" column-ref="COL117" name="charge" physicalName="charge" />
+     <index-column id="IDC139" populated="true" UUID="914209c2-516b-4a17-84dc-d06486239aa5" ascendingOrDescending="UNSPECIFIED" column-ref="COL118" name="elution_time" physicalName="elution_time" />
+     <index-column id="IDC140" populated="true" UUID="36612648-d61a-4e6b-aac7-f1e0122f8a5c" ascendingOrDescending="UNSPECIFIED" column-ref="COL116" name="moz" physicalName="moz" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB141" populated="true" UUID="243e8b88-1b6f-4ac4-9ef2-b5462148cd60" name="compound" objectType="TABLE" physicalName="compound" >
+   <remarks>Describes molecules that are or may be (theoretical) in the map.</remarks>
+   <folder id="FOLTAB1411" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL142" populated="true" UUID="3823d72b-f89c-4e74-988b-8e16ad7498e6" autoIncrement="true" autoIncrementSequenceName="compound_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL143" populated="true" UUID="01ec7329-4555-4781-9318-fdd8cfafa958" autoIncrement="false" autoIncrementSequenceName="compound_molecule_identifier_seq" defaultValue="" name="molecule_identifier" nullable="0" physicalName="molecule_identifier" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>A string identifying this compound. In example, the identifier of a peptide may be its amino acid sequence.</remarks>
+    </column>
+    <column id="COL144" populated="true" UUID="f8a4cd8f-d94f-43ae-b91f-5085241229ff" autoIncrement="false" autoIncrementSequenceName="compound_formula_seq" defaultValue="" name="formula" nullable="1" physicalName="formula" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>The molecular formula of this compound.</remarks>
+    </column>
+    <column id="COL145" populated="true" UUID="2edb650a-65e7-4609-91c9-f33baa3cf40d" autoIncrement="false" autoIncrementSequenceName="compound_experimental_mass_seq" defaultValue="" name="experimental_mass" nullable="0" physicalName="experimental_mass" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks></remarks>
+    </column>
+    <column id="COL146" populated="true" UUID="cac7f500-2f3e-4561-9d19-b3bb0e70bce6" autoIncrement="false" autoIncrementSequenceName="compound_theoretical_mass_seq" defaultValue="" name="theoretical_mass" nullable="1" physicalName="theoretical_mass" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks></remarks>
+    </column>
+    <column id="COL147" populated="true" UUID="4de6131d-0b6a-4dc8-98b4-b456b1293bd9" autoIncrement="false" autoIncrementSequenceName="compound_elution_time_seq" defaultValue="" name="elution_time" nullable="0" physicalName="elution_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL148" populated="true" UUID="4462a13e-528c-4483-8fe8-e8a8d98b36e7" autoIncrement="false" autoIncrementSequenceName="compound_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    <column id="COL149" populated="true" UUID="277de20c-4e63-4288-82d5-54afc34c9b49" autoIncrement="false" autoIncrementSequenceName="feature_id_seq" defaultValue="" name="best_feature_id" nullable="0" physicalName="best_feature_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL150" populated="true" UUID="4597fcac-b4ef-4ff2-9dcc-6f0c1209f998" autoIncrement="false" autoIncrementSequenceName="compound_map_layer_id_seq" defaultValue="" name="map_layer_id" nullable="0" physicalName="map_layer_id" precision="0" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1413" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1412" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1414" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX151" populated="true" UUID="d327b1c5-a2d4-4c1e-a4df-f5a4ed979109" clustered="false" name="compound_pk" physicalName="compound_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC152" populated="true" UUID="7f0b1120-9228-4128-bfcb-bb55c8f08f11" ascendingOrDescending="UNSPECIFIED" column-ref="COL142" name="id" physicalName="id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB153" populated="true" UUID="dbf2745c-ede0-452b-a81b-90be07d93ee5" name="putative_feature" objectType="TABLE" physicalName="putative_feature" >
+   <remarks>Putatuive features retrieved from an identification database or features cross-assignment between runs.</remarks>
+   <folder id="FOLTAB1531" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL154" populated="true" UUID="1aa3dc32-5ef7-4b69-8238-b4d46e14e536" autoIncrement="true" autoIncrementSequenceName="putative_feature_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL155" populated="true" UUID="bde534ff-9051-475f-840f-32da06e865f9" autoIncrement="false" autoIncrementSequenceName="putative_feature_moz_seq" defaultValue="" name="moz" nullable="0" physicalName="moz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="8" userDefinedTypeUUID="4fc90970-b2e5-41dd-911c-cc605d87e7a8" >
+     <remarks></remarks>
+    </column>
+    <column id="COL156" populated="true" UUID="2a28a51c-32ee-4d1b-865f-a8671fb1e575" autoIncrement="false" autoIncrementSequenceName="putative_feature_charge_seq" defaultValue="" name="charge" nullable="0" physicalName="charge" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL157" populated="true" UUID="f37a85fa-b810-40aa-8c3f-73c52053840a" autoIncrement="false" autoIncrementSequenceName="putative_feature_elution_time_seq" defaultValue="" name="elution_time" nullable="0" physicalName="elution_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks>Time in seconds</remarks>
+    </column>
+    <column id="COL158" populated="true" UUID="24fb890b-f27b-4ff7-acd9-2930bd7e96e6" autoIncrement="false" autoIncrementSequenceName="putative_feature_source_type_seq" defaultValue="" name="source_type" nullable="0" physicalName="source_type" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>IDENTIFICATION, CROSS-ASSIGNMENT</remarks>
+    </column>
+    <column id="COL159" populated="true" UUID="ba031c53-4c1e-4bec-b53d-a079cb96bb09" autoIncrement="false" autoIncrementSequenceName="putative_feature_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    <column id="COL160" populated="true" UUID="1cc3b390-5bcd-43f7-8e22-7f5db211abfe" autoIncrement="false" autoIncrementSequenceName="putative_feature_compound_id_seq" defaultValue="" name="compound_id" nullable="0" physicalName="compound_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL161" populated="true" UUID="7707fa76-59d1-431b-9d9a-0078215fb7b4" autoIncrement="false" autoIncrementSequenceName="putative_feature_id_seq" defaultValue="" name="map_layer_id" nullable="0" physicalName="map_layer_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1533" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1532" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1534" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX162" populated="true" UUID="2560ef2e-cc48-4fac-bad4-1d04eef1eace" clustered="false" name="putative_feature_pk" physicalName="theoretical_feature_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC163" populated="true" UUID="cb561e93-b0d3-460b-ae0e-0b6f24314ac6" ascendingOrDescending="UNSPECIFIED" column-ref="COL154" name="id" physicalName="id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB164" populated="true" UUID="31303d28-354d-4975-8095-cef61cd7b50f" name="map_layer" objectType="TABLE" physicalName="map_layer" >
+   <remarks>Minimum information for labeling strategies.</remarks>
+   <folder id="FOLTAB1641" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL165" populated="true" UUID="26aa2992-3751-49ae-ac43-951559e91bc0" autoIncrement="true" autoIncrementSequenceName="map_layer_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL166" populated="true" UUID="92f411b6-7979-458b-97c8-0a44923f122d" autoIncrement="false" autoIncrementSequenceName="map_layer_number_seq" defaultValue="" name="number" nullable="0" physicalName="number" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Each conditon must be numbered (from 1 to n) for each associated map.</remarks>
+    </column>
+    <column id="COL167" populated="true" UUID="819e6f79-f669-42f2-bb66-47fcdb545f17" autoIncrement="false" autoIncrementSequenceName="map_layer_name_seq" defaultValue="" name="name" nullable="0" physicalName="name" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="12" userDefinedTypeUUID="831ac2d4-0e65-47ec-a0b7-62b7f6b8760a" >
+     <remarks>An optional name which describes this condition.</remarks>
+    </column>
+    <column id="COL168" populated="true" UUID="0e0bf4bf-1b88-4f97-9292-56c952c2ebae" autoIncrement="false" autoIncrementSequenceName="map_layer_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1643" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1642" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1644" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX169" populated="true" UUID="e0a633f4-825d-49c3-b80e-21c43509fe70" clustered="false" name="map_layer_pk" physicalName="map_layer_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC170" populated="true" UUID="8ecedc7d-334a-47f3-a89a-1286fbd8a563" ascendingOrDescending="UNSPECIFIED" column-ref="COL165" name="id" physicalName="id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB171" populated="true" UUID="c202a166-45ed-424f-b8c9-b2ec1593859c" name="feature_ms2_event" objectType="TABLE" physicalName="feature_ms2_event" >
+   <remarks></remarks>
+   <folder id="FOLTAB1711" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL172" populated="true" UUID="456d8111-4525-4f1a-be24-4da3a300c27e" autoIncrement="false" autoIncrementSequenceName="feature_ms2_event_feature_id_seq" defaultValue="" name="feature_id" nullable="0" physicalName="feature_id" precision="0" primaryKeySeq="0" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL173" populated="true" UUID="7d68742c-64fa-4339-971c-9947c82c4103" autoIncrement="false" autoIncrementSequenceName="feature_ms2_event_ms2_event_id_seq" defaultValue="" name="ms2_event_id" nullable="0" physicalName="ms2_event_id" precision="0" primaryKeySeq="1" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1713" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1712" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1714" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX174" populated="true" UUID="f627a882-7967-4ec7-8d1e-499ac188d929" clustered="false" name="feature_ms2_event_pk" physicalName="feature_ms2_event_pk" primaryKeyIndex="true" unique="true" >
+     <index-column id="IDC175" populated="true" UUID="d827e38b-1515-46f6-a15e-8fb2cd406fee" ascendingOrDescending="UNSPECIFIED" column-ref="COL172" name="feature_id" physicalName="feature_id" />
+     <index-column id="IDC176" populated="true" UUID="ae47b51c-5567-40f9-a15a-092d32525e06" ascendingOrDescending="UNSPECIFIED" column-ref="COL173" name="ms2_event_id" physicalName="ms2_event_id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB177" populated="true" UUID="1f4d645b-af85-49d8-a042-314653435546" name="feature_peakel_item" objectType="TABLE" physicalName="feature_peakel_item" >
+   <remarks></remarks>
+   <folder id="FOLTAB1771" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL178" populated="true" UUID="9f8b9eba-8393-4ad6-965a-9e882093d4b6" autoIncrement="false" autoIncrementSequenceName="feature_peakel_item_feature_id_seq" defaultValue="" name="feature_id" nullable="0" physicalName="feature_id" precision="0" primaryKeySeq="0" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL179" populated="true" UUID="61e26ad1-a9dc-4dbc-9b79-29ac2df6b740" autoIncrement="false" autoIncrementSequenceName="feature_peakel_item_peakel_id_seq" defaultValue="" name="peakel_id" nullable="0" physicalName="peakel_id" precision="0" primaryKeySeq="1" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="-5" userDefinedTypeUUID="433cc8af-284d-4abb-8ef7-08ebcb34dbf1" >
+     <remarks></remarks>
+    </column>
+    <column id="COL180" populated="true" UUID="ecbf96e4-6e44-4723-a345-a914a018fc62" autoIncrement="false" autoIncrementSequenceName="feature_peakel_item_isotope_index_seq" defaultValue="" name="isotope_index" nullable="0" physicalName="isotope_index" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL181" populated="true" UUID="9bb9e7cd-35d0-4c04-9925-7bc4fdc93306" autoIncrement="false" autoIncrementSequenceName="feature_peakel_item_is_base_peakel_seq" defaultValue="" name="is_base_peakel" nullable="0" physicalName="is_base_peakel" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="16" userDefinedTypeUUID="a26374aa-3026-4bb8-b564-eb2e186dfa5d" >
+     <remarks></remarks>
+    </column>
+    <column id="COL182" populated="true" UUID="60b5bcbc-5dc7-4aba-9a54-6dcd61d15a62" autoIncrement="false" autoIncrementSequenceName="feature_peakel_item_serialized_properties_seq" defaultValue="" name="serialized_properties" nullable="1" physicalName="serialized_properties" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="2005" userDefinedTypeUUID="9c22ed40-2868-4d9e-96ca-789234a53c8f" >
+     <remarks>An optional set of properties seialized as a JSON string.</remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1773" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1772" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1774" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX183" populated="true" UUID="8102b321-f358-405b-809a-6f06e29ba35e" clustered="false" name="feature_peakel_item_pk" physicalName="feature_peakel_item_pk" primaryKeyIndex="true" unique="false" >
+     <index-column id="IDC184" populated="true" UUID="ae3ce765-906c-4a81-bdd6-f0cdf0bb860f" ascendingOrDescending="UNSPECIFIED" column-ref="COL178" name="feature_id" physicalName="feature_id" />
+     <index-column id="IDC185" populated="true" UUID="fbb117f1-2beb-4d48-91f6-7dcdca9b0950" ascendingOrDescending="UNSPECIFIED" column-ref="COL179" name="peakel_id" physicalName="peakel_id" />
+    </index>
+    <index id="IDX186" populated="true" UUID="8d8d27c6-d200-426c-8518-ad37dda59492" clustered="false" name="feature_peakel_item_peakel_idx" physicalName="feature_peakel_item_peakel_idx" primaryKeyIndex="false" unique="false" >
+     <index-column id="IDC187" populated="true" UUID="e096d5f1-c1d4-46ac-b5d5-2e1e67c2c38b" ascendingOrDescending="UNSPECIFIED" column-ref="COL179" name="peakel_id" physicalName="peakel_id" />
+    </index>
+   </folder>
+  </table>
+  <table id="TAB188" populated="true" UUID="cc5e30c5-2f2e-4557-912c-f88db7fe2baf" name="feature_rtree" objectType="TABLE" physicalName="feature_rtree" >
+   <remarks></remarks>
+   <folder id="FOLTAB1881" populated="true" name="Columns" physicalName="Columns" type="1">
+    <column id="COL189" populated="true" UUID="a9b5b13a-01e2-4a91-8ff4-58a347c1a402" autoIncrement="true" autoIncrementSequenceName="feature_rtree_id_seq" defaultValue="" name="id" nullable="0" physicalName="id" precision="0" primaryKeySeq="0" referenceCount="2" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks>Automatically incremented primary key.</remarks>
+    </column>
+    <column id="COL190" populated="true" UUID="bf9936de-289a-44ee-8b9e-d7ab6abef118" autoIncrement="false" autoIncrementSequenceName="feature_rtree_min_lcms_map_id_seq" defaultValue="" name="min_lcms_map_id" nullable="0" physicalName="min_lcms_map_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL191" populated="true" UUID="c2e9cc99-3aff-4116-9744-3c4307325520" autoIncrement="false" autoIncrementSequenceName="feature_rtree_max_lcms_map_id_seq" defaultValue="" name="max_lcms_map_id" nullable="0" physicalName="max_lcms_map_id" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="4" userDefinedTypeUUID="63b011c7-c81f-4c75-8271-632b3c87f727" >
+     <remarks></remarks>
+    </column>
+    <column id="COL192" populated="true" UUID="721f49af-a249-4934-8d21-191ae4b49af9" autoIncrement="false" autoIncrementSequenceName="feature_rtree_min_mz_seq" defaultValue="" name="min_mz" nullable="0" physicalName="min_mz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL193" populated="true" UUID="1477ba09-2400-4784-b718-7d8b77e44343" autoIncrement="false" autoIncrementSequenceName="feature_rtree_max_mz_seq" defaultValue="" name="max_mz" nullable="0" physicalName="max_mz" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL194" populated="true" UUID="ab6c97bd-2a24-4c3d-93e6-c8b403f2a968" autoIncrement="false" autoIncrementSequenceName="feature_rtree_min_time_seq" defaultValue="" name="min_time" nullable="0" physicalName="min_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    <column id="COL195" populated="true" UUID="ab1c08d4-e91f-4af4-b891-5903f72dcad6" autoIncrement="false" autoIncrementSequenceName="feature_rtree_max_time_seq" defaultValue="" name="max_time" nullable="0" physicalName="max_time" precision="0" referenceCount="1" scale="0" sourceDataTypeName="UserDefinedSQLType" type="7" userDefinedTypeUUID="8fe516a5-9833-4170-9572-50e78bbf221f" >
+     <remarks></remarks>
+    </column>
+    </folder>
+    <folder id="FOLTAB1883" populated="true" name="Exported Keys" physicalName="Exported Keys" type="3">
+    </folder>
+    <folder id="FOLTAB1882" populated="true" name="Imported Keys" physicalName="Imported Keys" type="2">
+    </folder>
+    <folder id="FOLTAB1884" populated="true" name="Indices" physicalName="Indices" type="4">
+    <index id="IDX196" populated="true" UUID="fdd35471-6cf4-4fbc-a7a2-4acd0f0b3861" clustered="false" name="feature_rtree_pk" physicalName="peakel_rtree_pk" primaryKeyIndex="true" unique="false" >
+     <index-column id="IDC197" populated="true" UUID="6a8e786e-eedd-48c5-9b0d-95ffcf9d47f1" ascendingOrDescending="UNSPECIFIED" column-ref="COL189" name="id" physicalName="id" />
+    </index>
+   </folder>
+  </table>
+  <relationships>
+   <relationship id="REL198" populated="true" UUID="a4026204-c432-49e5-ad79-2cbc408ae588" deferrability="7" deleteRule="3" fk-table-ref="TAB50" fkCardinality="7" identifying="false" name="first_spectrum_peakel_fk" physicalName="first_spectrum_peakel_fk" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP199" populated="true" UUID="4adf8082-8d84-4c4a-8633-d029ebeb3b24" fk-column-ref="COL69" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL200" populated="true" UUID="9bfbbbb9-0251-4df0-a5ee-4285bfbf5d91" deferrability="7" deleteRule="3" fk-table-ref="TAB50" fkCardinality="7" identifying="false" name="last_spectrum__peakel_fk" physicalName="last_spectrum__peakel_fk" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP201" populated="true" UUID="00eb5524-f247-4d28-af34-a3c38f7ab67c" fk-column-ref="COL71" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL202" populated="true" UUID="728ea737-55c4-4880-99ad-23bbfe828572" deferrability="7" deleteRule="3" fk-table-ref="TAB50" fkCardinality="7" identifying="false" name="apex_spectrum__peakel_fk" physicalName="apex_spectrum__peakel_fk" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP203" populated="true" UUID="ccaa36db-05c3-4079-b0b1-7b3c4441cffd" fk-column-ref="COL70" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL204" populated="true" UUID="dfe379d0-a5fe-4b56-b236-7188c33dd1fb" deferrability="7" deleteRule="3" fk-table-ref="TAB77" fkCardinality="7" identifying="true" name="spectrum_peakel_ms2_event_fk" physicalName="spectrum_peakel_ms2_event_fk" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP205" populated="true" UUID="3e5d068f-0c30-4f9b-a674-c90ceab46029" fk-column-ref="COL79" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL206" populated="true" UUID="b68f3ba4-34a7-402d-82db-607d8ef3d688" deferrability="7" deleteRule="3" fk-table-ref="TAB171" fkCardinality="7" identifying="true" name="spectrum_feature_ms2_event_fk" physicalName="spectrum_feature_ms2_event_fk" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP207" populated="true" UUID="f4b0a1df-e15a-4396-9f93-3b65f18a944c" fk-column-ref="COL173" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL208" populated="true" UUID="e0807fa2-8e6f-45c3-ac33-26eb307aac26" deferrability="7" deleteRule="3" fk-table-ref="TAB114" fkCardinality="7" identifying="false" name="spectrum_feature_fk" physicalName="spectrum_feature_fk" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP209" populated="true" UUID="7da9b584-841b-428f-b9a6-939313060b5b" fk-column-ref="COL128" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL210" populated="true" UUID="293e3aba-1082-4e9f-a792-23f52e8ee4d3" deferrability="7" deleteRule="3" fk-table-ref="TAB114" fkCardinality="7" identifying="false" name="spectrum_feature_fk1" physicalName="spectrum_feature_fk1" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP211" populated="true" UUID="66397bfe-91d5-4500-823a-15dcdfd1b84d" fk-column-ref="COL129" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL212" populated="true" UUID="2c3655e0-e97b-45b7-921a-54d7e120662f" deferrability="7" deleteRule="3" fk-table-ref="TAB114" fkCardinality="7" identifying="false" name="spectrum_feature_fk2" physicalName="spectrum_feature_fk2" pk-table-ref="TAB1" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP213" populated="true" UUID="d482e418-fb55-41ef-af71-adf64ecceed6" fk-column-ref="COL130" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL2" />
+   </relationship>
+   <relationship id="REL214" populated="true" UUID="ed729e35-9b43-4cf0-8409-e6d1ad92332e" deferrability="7" deleteRule="3" fk-table-ref="TAB43" fkCardinality="7" identifying="false" name="object_tree_peakeldb_file_object_tree_mapping_fk" physicalName="object_tree_peakeldb_file_object_tree_mapping_fk" pk-table-ref="TAB17" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP215" populated="true" UUID="60235d3d-8bc0-4930-932f-351199d7ea59" fk-column-ref="COL46" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL18" />
+   </relationship>
+   <relationship id="REL216" populated="true" UUID="1f00d0c5-7cc7-487e-8b72-7979375126db" deferrability="7" deleteRule="1" fk-table-ref="TAB17" fkCardinality="7" identifying="false" name="object_tree_schema_object_tree_fk" physicalName="object_tree_schema_object_tree_fk" pk-table-ref="TAB25" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP217" populated="true" UUID="8b54c949-7796-4407-abb5-c85d31d14a6c" fk-column-ref="COL22" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL26" />
+   </relationship>
+   <relationship id="REL218" populated="true" UUID="7779907f-ce4d-47df-a1ee-eee307f0aee8" deferrability="7" deleteRule="1" fk-table-ref="TAB43" fkCardinality="7" identifying="true" name="object_tree_schema_peakeldb_file_object_tree_mapping_fk" physicalName="object_tree_schema_peakeldb_file_object_tree_mapping_fk" pk-table-ref="TAB25" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP219" populated="true" UUID="d3e7eb1d-631a-4100-88e7-3b184ba705db" fk-column-ref="COL45" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL26" />
+   </relationship>
+   <relationship id="REL220" populated="true" UUID="db509562-df4d-459b-be35-609f4caed9de" deferrability="7" deleteRule="3" fk-table-ref="TAB50" fkCardinality="7" identifying="false" name="lcms_map_peakel_fk" physicalName="lcms_map_peakel_fk" pk-table-ref="TAB35" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP221" populated="true" UUID="1f3db309-fd14-4667-9e3e-3965ea3b202a" fk-column-ref="COL72" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL36" />
+   </relationship>
+   <relationship id="REL222" populated="true" UUID="89f4b520-29a7-49bb-a9c9-6122f696c86f" deferrability="7" deleteRule="3" fk-table-ref="TAB83" fkCardinality="7" identifying="true" name="lcms_map_lcms_map_relation_fk" physicalName="lcms_map_lcms_map_relation_fk" pk-table-ref="TAB35" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP223" populated="true" UUID="6ada6fae-43d1-49b3-b241-a098bec4bd21" fk-column-ref="COL84" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL36" />
+   </relationship>
+   <relationship id="REL224" populated="true" UUID="be1064d0-8a6f-4be0-8f91-1f602d8759fb" deferrability="7" deleteRule="3" fk-table-ref="TAB83" fkCardinality="7" identifying="true" name="lcms_map_lcms_map_relation_fk1" physicalName="lcms_map_lcms_map_relation_fk1" pk-table-ref="TAB35" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP225" populated="true" UUID="78fdf29d-3c51-4bf1-b5b6-375a9aec00a8" fk-column-ref="COL85" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL36" />
+   </relationship>
+   <relationship id="REL226" populated="true" UUID="8f7d5b97-08e7-46ea-93d5-7a01dd98fbf6" deferrability="7" deleteRule="3" fk-table-ref="TAB114" fkCardinality="7" identifying="false" name="lcms_map_feature_fk" physicalName="lcms_map_feature_fk" pk-table-ref="TAB35" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP227" populated="true" UUID="863f5e38-19ba-4ab6-8d15-e62fc83a4de6" fk-column-ref="COL134" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL36" />
+   </relationship>
+   <relationship id="REL228" populated="true" UUID="37d8de61-0a7a-4eaa-8d74-8eec190f4101" deferrability="7" deleteRule="3" fk-table-ref="TAB77" fkCardinality="7" identifying="true" name="peakel_peakel_ms2_event_fk" physicalName="peakel_peakel_ms2_event_fk" pk-table-ref="TAB50" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP229" populated="true" UUID="a54a0851-47d0-4b95-82de-d6b86f672f11" fk-column-ref="COL78" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL51" />
+   </relationship>
+   <relationship id="REL230" populated="true" UUID="b72f5d68-7b79-4ec7-a850-da4d526a1664" deferrability="7" deleteRule="3" fk-table-ref="TAB91" fkCardinality="7" identifying="true" name="peakel_peakel_rtree_fk" physicalName="peakel_peakel_rtree_fk" pk-table-ref="TAB50" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP231" populated="true" UUID="1edcf75c-20f5-41c7-8344-6f6b6ef84194" fk-column-ref="COL92" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL51" />
+   </relationship>
+   <relationship id="REL232" populated="true" UUID="1841ee49-cb20-4278-ade6-67d5b6c4d662" deferrability="7" deleteRule="3" fk-table-ref="TAB177" fkCardinality="7" identifying="true" name="peakel_feature_peakel_item_fk" physicalName="peakel_feature_peakel_item_fk" pk-table-ref="TAB50" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP233" populated="true" UUID="6fdfd76b-8d49-480d-801c-160f3583c643" fk-column-ref="COL179" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL51" />
+   </relationship>
+   <relationship id="REL234" populated="true" UUID="f85f82ce-af02-4c72-8ae2-d3d5903a22dd" deferrability="7" deleteRule="3" fk-table-ref="TAB43" fkCardinality="7" identifying="true" name="peakeldb_file_peakeldb_file_object_tree_mapping_fk" physicalName="peakeldb_file_peakeldb_file_object_tree_mapping_fk" pk-table-ref="TAB101" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP235" populated="true" UUID="77f57835-0c89-40d1-b9c6-63fd4a70d8ef" fk-column-ref="COL44" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL102" />
+   </relationship>
+   <relationship id="REL236" populated="true" UUID="aba38640-a2db-43a7-a3d1-8e275267c375" deferrability="7" deleteRule="3" fk-table-ref="TAB35" fkCardinality="7" identifying="false" name="peakeldb_file_lcms_map_fk" physicalName="peakeldb_file_lcms_map_fk" pk-table-ref="TAB101" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP237" populated="true" UUID="412d8756-d1fe-466f-beea-9421b4b65f92" fk-column-ref="COL40" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL102" />
+   </relationship>
+   <relationship id="REL238" populated="true" UUID="b27c8268-0277-4836-912d-06abc1cf42fd" deferrability="7" deleteRule="3" fk-table-ref="TAB171" fkCardinality="7" identifying="true" name="feature_feature_ms2_event_fk" physicalName="feature_feature_ms2_event_fk" pk-table-ref="TAB114" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP239" populated="true" UUID="8e670b6b-9c71-45b4-b91a-f444123fd8e6" fk-column-ref="COL172" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL115" />
+   </relationship>
+   <relationship id="REL240" populated="true" UUID="e64d4936-55a0-4fa1-90e7-eceeebe3c865" deferrability="7" deleteRule="3" fk-table-ref="TAB177" fkCardinality="7" identifying="true" name="feature_feature_peakel_item_fk" physicalName="feature_feature_peakel_item_fk" pk-table-ref="TAB114" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP241" populated="true" UUID="9c9338ac-5d43-4e5c-976e-0e4224373bef" fk-column-ref="COL178" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL115" />
+   </relationship>
+   <relationship id="REL242" populated="true" UUID="37e1f775-04d5-400c-9c37-978f3692723b" deferrability="7" deleteRule="3" fk-table-ref="TAB141" fkCardinality="7" identifying="false" name="feature_compound_fk" physicalName="feature_compound_fk" pk-table-ref="TAB114" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP243" populated="true" UUID="4287d124-9689-43ad-8bda-d275a061615c" fk-column-ref="COL149" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL115" />
+   </relationship>
+   <relationship id="REL244" populated="true" UUID="8d58d145-5ec8-42b6-bf68-1693b1db478e" deferrability="7" deleteRule="3" fk-table-ref="TAB188" fkCardinality="7" identifying="false" name="feature_feature_rtree_fk" physicalName="feature_feature_rtree_fk" pk-table-ref="TAB114" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP245" populated="true" UUID="5eb83c1f-9a52-4053-864f-748af5bddaa2" fk-column-ref="COL189" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL115" />
+   </relationship>
+   <relationship id="REL246" populated="true" UUID="a157466d-1d95-4d9f-abe4-d7181d485470" deferrability="7" deleteRule="3" fk-table-ref="TAB114" fkCardinality="7" identifying="false" name="compound_feature_fk" physicalName="compound_feature_fk" pk-table-ref="TAB141" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP247" populated="true" UUID="2e89fbf5-258d-49ed-933a-1dd0502042c8" fk-column-ref="COL132" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL142" />
+   </relationship>
+   <relationship id="REL248" populated="true" UUID="ad2709dc-7d4b-4ede-b468-a5c0f4948dd8" deferrability="7" deleteRule="3" fk-table-ref="TAB153" fkCardinality="7" identifying="false" name="compound_putative_feature_fk" physicalName="compound_putative_feature_fk" pk-table-ref="TAB141" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP249" populated="true" UUID="4814ec9d-b7a9-40c0-ae4a-97b0217b0ded" fk-column-ref="COL160" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL142" />
+   </relationship>
+   <relationship id="REL250" populated="true" UUID="77c6c292-6a3e-42d1-9fb1-cde304c610a2" deferrability="7" deleteRule="3" fk-table-ref="TAB114" fkCardinality="7" identifying="false" name="theoretical_feature_feature_fk" physicalName="theoretical_feature_feature_fk" pk-table-ref="TAB153" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP251" populated="true" UUID="2996c5e1-48a5-4b3b-822d-b5c2f459df47" fk-column-ref="COL131" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL154" />
+   </relationship>
+   <relationship id="REL252" populated="true" UUID="bd641c2d-bf25-4f17-9297-63f6d7828fab" deferrability="7" deleteRule="3" fk-table-ref="TAB114" fkCardinality="7" identifying="false" name="map_layer_feature_fk" physicalName="map_layer_feature_fk" pk-table-ref="TAB164" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP253" populated="true" UUID="f4c061c6-86b1-4cc8-965f-e2a811ca0ba2" fk-column-ref="COL133" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL165" />
+   </relationship>
+   <relationship id="REL254" populated="true" UUID="eed7ea38-beb1-4fd4-bb0d-458471b07b5c" deferrability="7" deleteRule="3" fk-table-ref="TAB141" fkCardinality="7" identifying="false" name="map_layer_compound_fk" physicalName="map_layer_compound_fk" pk-table-ref="TAB164" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP255" populated="true" UUID="efb183a4-b476-49de-a936-90c33d909ff7" fk-column-ref="COL150" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL165" />
+   </relationship>
+   <relationship id="REL256" populated="true" UUID="0f9beb60-cd96-47fe-8636-5c114a1a4b6c" deferrability="7" deleteRule="3" fk-table-ref="TAB153" fkCardinality="7" identifying="false" name="map_layer_putative_feature_fk" physicalName="map_layer_putative_feature_fk" pk-table-ref="TAB164" pkCardinality="2" updateRule="3" >
+    <column-mapping id="CMP257" populated="true" UUID="f3703569-4121-4226-8b47-bcf485681754" fk-column-ref="COL161" name="Column Mapping" physicalName="Column Mapping" pk-column-ref="COL165" />
+   </relationship>
+  </relationships>
+ </target-database>
+ <ddl-generator type="ca.sqlpower.architect.ddl.PostgresDDLGenerator" allow-connection="true" target-schema="public"> </ddl-generator>
+ <liquibase-settings useSeparateChangeSets="false" generateId="false" idStart="1"/>
+ <compare-dm-settings  ddlGenerator="ca.sqlpower.architect.ddl.H2DDLGenerator"  outputFormatAsString="SQL"  saveFlag="true" >
+  <source-stuff   datastoreTypeAsString="FILE"   filePath="E:\eclipse\workspace\proline-core-v2\Proline-Databases\diagrams\v0.1\LCMS-DB.architect"  />
+  <target-stuff   datastoreTypeAsString="PROJECT"   filePath=""  />
+  <liquibase-settings useSeparateChangeSets="false" generateId="false" idStart="1"/>
+ </compare-dm-settings>
+ <create-kettle-job-settings filePath="" jobName="" schemaName="" kettleJoinType="0" savingToFile="true" />
+ <play-pen zoom="0.8408964152537147" viewportX="0" viewportY="0" relationship-style="rectilinear" names-displayLogicalNames="true" showPrimaryTag="true" showForeignTag="true" showAlternateTag="true" columnVisibility="ALL" relationshipLabelVisibility="true">
+  <table-pane table-ref="TAB1" x="1196" y="153" bgColor="0xbfd6ff" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB17" x="286" y="516" bgColor="0xe4e4b8" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB25" x="23" y="484" bgColor="0xe4e4b8" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB35" x="339" y="91" bgColor="0xc8dccc" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB43" x="80" y="344" bgColor="0xc8dccc" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB50" x="608" y="36" bgColor="0xc7d0df" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB77" x="923" y="93" bgColor="0xc7d0df" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB83" x="260" y="240" bgColor="0xc8dccc" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB91" x="369" y="374" bgColor="0xc7d0df" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB101" x="20" y="91" bgColor="0xc8dccc" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB114" x="881" y="247" bgColor="0xc7d0df" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB141" x="1188" y="501" bgColor="0xc8b7ea" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB153" x="710" y="671" bgColor="0xc8b7ea" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB164" x="997" y="625" bgColor="0xc8dccc" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB171" x="1177" y="406" bgColor="0xc7d0df" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB177" x="619" y="424" bgColor="0xc7d0df" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-pane table-ref="TAB188" x="582" y="532" bgColor="0xc7d0df" fgColor="0x000000" rounded="true" dashed="false"/>
+  <table-link relationship-ref="REL216" pkConnection="0.7086614173228346" fkConnection="0.5757575757575758" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="33"/>
+  <table-link relationship-ref="REL214" pkConnection="0.2782258064516129" fkConnection="0.6535433070866141" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="72"/>
+  <table-link relationship-ref="REL218" pkConnection="0.50625" fkConnection="0.35714285714285715" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="72"/>
+  <table-link relationship-ref="REL198" pkConnection="0.11475409836065574" fkConnection="0.4875444839857651" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL200" pkConnection="0.273224043715847" fkConnection="0.597864768683274" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL202" pkConnection="0.20765027322404372" fkConnection="0.5444839857651246" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL220" pkConnection="0.5555555555555556" fkConnection="0.3264094955489614" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="33"/>
+  <table-link relationship-ref="REL228" pkConnection="0.11743772241992882" fkConnection="0.4126984126984127" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="33"/>
+  <table-link relationship-ref="REL204" pkConnection="0.4166666666666667" fkConnection="0.4444444444444444" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="24"/>
+  <table-link relationship-ref="REL222" pkConnection="0.4114285714285714" fkConnection="0.6600985221674877" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="132"/>
+  <table-link relationship-ref="REL224" pkConnection="0.28" fkConnection="0.5320197044334976" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="132"/>
+  <table-link relationship-ref="REL230" pkConnection="0.13306451612903225" fkConnection="0.33858267716535434" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="20"/>
+  <table-link relationship-ref="REL234" pkConnection="0.5174129353233831" fkConnection="0.26811594202898553" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="132"/>
+  <table-link relationship-ref="REL236" pkConnection="0.3937007874015748" fkConnection="0.5555555555555556" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="33"/>
+  <table-link relationship-ref="REL246" pkConnection="0.12903225806451613" fkConnection="0.889967637540453" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL250" pkConnection="0.6748466257668712" fkConnection="0.193717277486911" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="72"/>
+  <table-link relationship-ref="REL252" pkConnection="0.2411764705882353" fkConnection="0.7859922178988327" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="72"/>
+  <table-link relationship-ref="REL254" pkConnection="0.6941176470588235" fkConnection="0.47257383966244726" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="65"/>
+  <table-link relationship-ref="REL248" pkConnection="0.567741935483871" fkConnection="0.425531914893617" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL256" pkConnection="0.5529411764705883" fkConnection="0.6312056737588653" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="20"/>
+  <table-link relationship-ref="REL238" pkConnection="0.598705501618123" fkConnection="0.45614035087719296" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="33"/>
+  <table-link relationship-ref="REL240" pkConnection="0.6470588235294118" fkConnection="0.20202020202020202" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL232" pkConnection="0.4798387096774194" fkConnection="0.5" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="132"/>
+  <table-link relationship-ref="REL206" pkConnection="0.5128205128205128" fkConnection="0.5734265734265734" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="132"/>
+  <table-link relationship-ref="REL242" pkConnection="0.9611650485436893" fkConnection="0.2645161290322581" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="33"/>
+  <table-link relationship-ref="REL226" pkConnection="0.95" fkConnection="0.44660194174757284" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="36"/>
+  <table-link relationship-ref="REL208" pkConnection="0.6721311475409836" fkConnection="0.09597523219814241" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL210" pkConnection="0.7868852459016393" fkConnection="0.15789473684210525" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL212" pkConnection="0.8633879781420765" fkConnection="0.20743034055727555" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+  <table-link relationship-ref="REL244" pkConnection="0.9721362229102167" fkConnection="0.11811023622047244" rLineColor="0x000000" pkLabelText="" fkLabelText="" orientation="18"/>
+ </play-pen>
+ <critic-manager>
+  <critic-grouping platformType="Generic" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.PrimaryKeyCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.RelationshipMappingTypeCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.EmptyRelationshipCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.AlphaNumericNameCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.AlphaNumericSequenceNameCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.SetDefaultOnColumnWithNoDefaultCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.SetNullOnNonNullableColumnCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.DuplicateNameCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="DB2" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.DB2UnsupportedFeaturesCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="H2" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.H2UnsupportedFeaturesCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="HSQLDB" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.HSQLDBUnsupportedFeaturesCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="MySQL" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.MySQLCommentCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.MySQLReservedWordsCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.MySQLUnsupportedFeaturesCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="Oracle" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.OraclePhysicalNameCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.OracleReservedWordsCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.OracleUnsupportedFeaturesCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="PostgreSQL" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.PostgreSQLReservedWordsCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="SQL Server" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.SQLServerUnsupportedFeaturesCritic" severity="ERROR"/>
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.SQLServerReservedWordsCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="SQL Server 2000" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.SQLServer2000UnsupportedFeaturesCritic" severity="ERROR"/>
+  </critic-grouping>
+  <critic-grouping platformType="SQL Server 2005" enabled="true">
+   <critic-settings class="ca.sqlpower.architect.ddl.critic.impl.SQLServer2005UnsupportedFeaturesCritic" severity="ERROR"/>
+  </critic-grouping>
+ </critic-manager>
+ <profiles topNCount="10">
+  </profiles>
+  <olap>
+  </olap>
+  <olap-gui>
+  </olap-gui>
+</architect-project>
