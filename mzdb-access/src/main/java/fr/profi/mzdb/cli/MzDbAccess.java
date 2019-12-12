@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import fr.profi.mzdb.util.patch.DIAIsolationWindowsPatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +80,14 @@ public class MzDbAccess {
 		private Float maxTime = 0.0f;
 	}
 
+	public static class PatchDIAWindowsCommand {
+		@Parameter
+		private List<String> parameters = new ArrayList<String>();
+
+		@Parameter(names = { "-mzdb", "--mzdb_file_path" }, description = "mzDB file to patch", required = true)
+		private String mzdbFile = "";
+	}
+
 	public static class CreateMgfCommand {
 
 		@Parameter
@@ -127,9 +136,11 @@ public class MzDbAccess {
 		JCommander jc = new JCommander();
 		ExtractPeaksCommand xicCmd = new MzDbAccess.ExtractPeaksCommand();
 		CreateMgfCommand mgfCmd = new MzDbAccess.CreateMgfCommand();
+		PatchDIAWindowsCommand patchDIACmd = new MzDbAccess.PatchDIAWindowsCommand();
 		DebugCommand dbgCmd = new MzDbAccess.DebugCommand();
 		jc.addCommand("extract_peaks", xicCmd);
 		jc.addCommand("create_mgf", mgfCmd);
+		jc.addCommand("patch_dia_windows", patchDIACmd);
 		jc.addCommand("debug", dbgCmd);
 
 		try {
@@ -148,6 +159,8 @@ public class MzDbAccess {
 				createMgf(mgfCmd);
 			} else if (parsedCommand.equals("debug")) {
 				debug(dbgCmd);
+			} else if (parsedCommand.equals("patch_dia_windows")) {
+				patchDIA(patchDIACmd);
 			} else {
 				println("Unknown command: "+ parsedCommand);
 				printAvailableCommands(jc);
@@ -158,6 +171,11 @@ public class MzDbAccess {
 			e.printStackTrace();
 			System.exit(1);
 		}
+	}
+
+	private static void patchDIA(PatchDIAWindowsCommand pc) {
+		String dbPath = pc.mzdbFile;
+		DIAIsolationWindowsPatch.patchDIAWindows(dbPath);
 	}
 
 	public static void printAvailableCommands(JCommander jc) {
