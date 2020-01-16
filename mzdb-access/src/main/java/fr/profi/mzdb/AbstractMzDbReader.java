@@ -780,7 +780,7 @@ public abstract class AbstractMzDbReader {
 	 */
 	protected Peak[] getMsXicInMzRange(double minMz, double maxMz, XicMethod method, SQLiteConnection connection)
 			throws SQLiteException, StreamCorruptedException {
-		return this.getMsXic(minMz, maxMz, -1, -1, method, connection);
+		return this.getMsXicInMzRtRanges(minMz, maxMz, -1, -1, method, connection);
 	}
 
 	protected Peak[] getMsXicInMzRtRanges(double minMz, double maxMz, float minRt, float maxRt, XicMethod method, SQLiteConnection connection)
