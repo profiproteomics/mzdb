@@ -4,13 +4,13 @@
   <parent>
     <artifactId>profi-pom</artifactId>
     <groupId>fr.proline</groupId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.6.0-SNAPSHOT</version>
     <relativePath />
   </parent>
 
   <groupId>fr.profi</groupId>
   <artifactId>mzdb-access_${scala.version}</artifactId> <!-- scala version from profipom-->
-  <version>0.10.0-SNAPSHOT</version>
+  <version>0.11.0-SNAPSHOT</version>
 
   <description>The mzDB access Java library</description>
 
@@ -18,9 +18,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
-  <scm>
-    <connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/trunk</connection>
-  </scm>
+  <!--<scm>-->
+    <!--<connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/trunk</connection>-->
+  <!--</scm>-->
 
   <dependencies>
 
