@@ -2,25 +2,15 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>profi-pom</artifactId>
-    <groupId>fr.proline</groupId>
-    <version>0.6.0-SNAPSHOT</version>
-    <relativePath />
+    <artifactId>mzdb-pom</artifactId>
+    <groupId>fr.profi</groupId>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>fr.profi</groupId>
   <artifactId>mzdb-access_${scala.version}</artifactId> <!-- scala version from profipom-->
-  <version>0.11.0-SNAPSHOT</version>
 
   <description>The mzDB access Java library</description>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-
-  <!--<scm>-->
-    <!--<connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-access/trunk</connection>-->
-  <!--</scm>-->
 
   <dependencies>
 
@@ -46,7 +36,6 @@
     <dependency>
       <groupId>io.reactivex</groupId>
       <artifactId>rxjava</artifactId>
-      <version>1.3.0</version>
     </dependency>
 
     <!-- SQLite Jar then native libraries -->

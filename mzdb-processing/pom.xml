@@ -2,23 +2,16 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>profi-pom</artifactId>
-    <groupId>fr.proline</groupId>
-    <version>0.6.0-SNAPSHOT</version>
-    <relativePath />
+    <artifactId>mzdb-pom</artifactId>
+    <groupId>fr.profi</groupId>
+    <version>1.0.0-SNAPSHOT</version>
   </parent>
 
-  <groupId>fr.profi</groupId>
   <artifactId>mzdb-processing_${scala.version}</artifactId>
-  <version>0.11.0-SNAPSHOT</version>
 
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <sqlite4java.version>1.0.392</sqlite4java.version>
-  </properties>
 
 	<!--<scm>-->
 	  <!--<connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/trunk</connection>-->
@@ -30,26 +23,26 @@
     <dependency>
       <groupId>fr.profi.util</groupId>
       <artifactId>profi-commons-scala_${scala.version}</artifactId>
-      <version>0.10.0-SNAPSHOT</version>
+      <version>${commons.version}</version>
     </dependency>
     <dependency>
       <groupId>fr.profi.util</groupId>
       <artifactId>profi-commons-java</artifactId>
-      <version>0.9.0-SNAPSHOT</version>
+      <version>${commons.version}</version>
     </dependency>
 
     <!-- ProFi Proteomics -->
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>profi-proteomics_${scala.version}</artifactId>
-      <version>0.6.0-SNAPSHOT</version>
+      <version>${commons.version}</version>
     </dependency>
 
     <!-- mzdb-access -->
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>mzdb-access_${scala.version}</artifactId>
-      <version>0.11.0-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
 
     <!-- Scala -->
@@ -142,7 +135,6 @@
     <dependency>
       <groupId>io.reactivex</groupId>
       <artifactId>rxjava</artifactId>
-      <version>1.3.0</version>
     </dependency>
     <dependency>
       <groupId>io.reactivex</groupId>
