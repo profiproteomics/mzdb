@@ -29,6 +29,7 @@
     <modules>
         <module>mzdb-access</module>
         <module>mzdb-processing</module>
+        <module>timstof-access</module>
     </modules>
     <dependencyManagement>
         <dependencies>

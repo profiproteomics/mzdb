@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+  <contextName>TimsTof Data Access</contextName>
+
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%-5level: [%thread] +%-4relative ms  %date{dd MMM yyyy - HH:mm:ss.SSS} %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+
+  <appender name="fileAppender" class="ch.qos.logback.core.FileAppender">
+    <append>true</append>
+    <file>timstof_access.txt</file>
+
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+
+    <encoder>
+      <!-- TTCCLayout -->
+      <pattern>%date{dd MMM yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} %mdc - %msg%n</pattern>
+    </encoder>
+
+  </appender>
+
+  <appender name="debugFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <append>true</append>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>timstof_access_debug_%d{yyyy-MM-dd}.txt</fileNamePattern>
+    </rollingPolicy>
+
+    <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+      <maxFileSize>50MB</maxFileSize>
+    </triggeringPolicy>
+
+    <encoder>
+      <!-- TTCCLayout -->
+      <pattern>%date{dd MMM yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} %mdc - %msg%n</pattern>
+    </encoder>
+
+  </appender>
+
+  <logger name="fr.proline" level="DEBUG" />
+  <logger name="fr.profi" level="DEBUG" />
+
+  <root level="WARN">
+    <appender-ref ref="STDOUT" /> 
+    <appender-ref ref="debugFileAppender" />
+    <appender-ref ref="fileAppender" />
+  </root>
+
+</configuration>
