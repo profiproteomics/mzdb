@@ -175,7 +175,7 @@
                     <configuration>
                         <outputDirectory>${project.build.directory}/lib</outputDirectory>
                         <includeTypes>jar</includeTypes>
-                        <excludeArtifactIds>tims-tof-reader</excludeArtifactIds>
+                        <excludeArtifactIds>timstof-access</excludeArtifactIds>
                         <overWriteReleases>false</overWriteReleases>
                         <overWriteSnapshots>false</overWriteSnapshots>
                         <overWriteIfNewer>true</overWriteIfNewer>
@@ -191,7 +191,7 @@
                     <configuration>
                         <outputDirectory>${project.build.directory}</outputDirectory>
                         <includeTypes>jar</includeTypes>
-                        <includeArtifactIds>tims-tof-reader</includeArtifactIds>
+                        <includeArtifactIds>timstof-access</includeArtifactIds>
                         <overWriteReleases>false</overWriteReleases>
                         <overWriteSnapshots>false</overWriteSnapshots>
                         <overWriteIfNewer>true</overWriteIfNewer>
