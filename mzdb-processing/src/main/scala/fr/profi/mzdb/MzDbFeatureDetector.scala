@@ -51,6 +51,8 @@ case class FeatureDetectorConfig(
   msLevel: Int = 1,
   mzTolPPM: Float = 10,
   minNbOverlappingIPs: Int = 3,
+  intensityPercentile: Float = 0.9f,
+  maxConsecutiveGaps: Int = 3,
   peakelFinderConfig: PeakelFinderConfig = SmartPeakelFinderConfig()
 )
 
@@ -404,6 +406,8 @@ class MzDbFeatureDetector(
         spectrumHeaderById = spectrumHeaderById,
         nfBySpectrumId = LongMap.empty[Float],
         mzTolPPM = ftDetectorConfig.mzTolPPM,
+        maxConsecutiveGaps = ftDetectorConfig.maxConsecutiveGaps,
+        intensityPercentile = ftDetectorConfig.intensityPercentile,
         peakelFinder = BuildPeakelFinder(ftDetectorConfig.peakelFinderConfig)
       )
       

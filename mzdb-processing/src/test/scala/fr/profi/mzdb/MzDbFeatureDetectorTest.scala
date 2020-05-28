@@ -98,7 +98,12 @@ class MzDbFeatureDetectorTest extends StrictLogging {
       mzDb = new MzDbReader(new File("C:/Local/bruley/Data/mzDB/Wiff TTOF/TTOF2_01832.mzdb"), true ) 
       val mzDbFts = try {
         
-      val ftDetectorConfig = FeatureDetectorConfig(2, mzTolPPM = 50.0f, 5, new SmartPeakelFinderConfig(5, 3, 0.66f, false, 10, false, false))
+      val ftDetectorConfig = FeatureDetectorConfig(
+        msLevel = 2,
+        mzTolPPM = 50.0f,
+        minNbOverlappingIPs = 5,
+        intensityPercentile = 0.9f,
+        peakelFinderConfig = new SmartPeakelFinderConfig(5, 3, 0.66f, false, 10, false, false))
       val mzdbDetector = new MzDbFeatureDetector(mzDb, ftDetectorConfig)
       // detect peakels
       var rsIter = mzDb.getLcMsnRunSliceIterator(606.59,606.612)

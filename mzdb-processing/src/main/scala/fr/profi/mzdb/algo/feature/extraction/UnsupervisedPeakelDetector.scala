@@ -72,7 +72,7 @@ class UnsupervisedPeakelDetector(
   val mzTolPPM: Float,
   val maxConsecutiveGaps: Int = 3,
   val maxTimeWindow: Float = 1200f,
-  val minPercentageOfMaxInt: Float = 0.01f,
+  val intensityPercentile: Float = 0.9f,
   val peakelFinder: IPeakelFinder = new SmartPeakelFinder()
 ) extends LazyLogging {
   
@@ -107,16 +107,8 @@ class UnsupervisedPeakelDetector(
     val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newDetectionProgressPlan() )
     val curStep = progressComputer.resetStepStartingTime(UnsupervisedPeakelDetector.DETECTION_STEP1)
     curStep.setMaxCount(nbPeaks)
-    
-    // Determine an intensity threshold based on quartiles
-    //val q3 = math.log10( intensityDescPeaks( (nbPeaks * 0.25).toInt ).getIntensity )
-    //val q2 = math.log10( intensityDescPeaks( (nbPeaks * 0.5).toInt ).getIntensity )
-    //val q1 = math.log10( intensityDescPeaks( (nbPeaks * 0.75).toInt ).getIntensity )
-    //val iqr = (q3 - q2) * 2
-    //val intensityThreshold = math.pow(10, q1 - (1 * iqr) )
-    
-    // TODO: put the relative intensity threshold (0.9) in the config
-    val lowestPeakCoords = intensityDescPeakCoords( (nbPeaks * 0.9).toInt )
+
+    val lowestPeakCoords = intensityDescPeakCoords( Math.min(nbPeaks-1, (nbPeaks * intensityPercentile).toInt) )
     val lowestPeakListIdx = lowestPeakCoords(0)
     val lowestPeakIdx = lowestPeakCoords(1)
     val intensityThreshold = curRsPklColl.getPeakAt(lowestPeakListIdx, lowestPeakIdx).getIntensity
@@ -148,7 +140,6 @@ class UnsupervisedPeakelDetector(
         val peakList = curRsPeakLists(peakListIdx)
         
         // Stop if we reach the lowest acceptable peak
-        //if( peak.getIntensity < intensityThreshold ) {
         if (peakListIdx == lowestPeakListIdx && peakIdx == lowestPeakIdx) {
           break
         } else if( usedPeakMap(peakList).get(peakIdx) == false ) {
@@ -197,8 +188,8 @@ class UnsupervisedPeakelDetector(
   ): Option[Peakel] = {
     
     // Set up the progress computer
-    //val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newExtractionProgressPlan() )
-    //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP1)
+    // val progressComputer = new ProgressComputer( UnsupervisedPeakelDetector.newExtractionProgressPlan() )
+    // progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP1)
     
     val pklTripletBySpectrumId = pklTree.pklTripletBySpectrumId
     val sharedPeakLists = sharedPeakelCoordinates.peakLists
@@ -218,13 +209,13 @@ class UnsupervisedPeakelDetector(
     
     //println("apexMz "+ apexMz)
     //println("apexIntensity "+ apexIntensity)
+
     val apexTime = apexSpectrumHeader.getTime
     val apexShPklTreeIdx = pklTreeShMap.getSpectrumHeaderIndex(apexSpectrumHeader.getId) //apexSpectrumHeader.getCycle    
     
     // Compute the m/z tolerance in Daltons
     val mzTolDa = MsUtils.ppmToDa( apexMz, mzTolPPM )
-    val intensityThreshold = apexIntensity * minPercentageOfMaxInt
-    
+
     // Define some vars
     var peakelPeaksCount = 0
     var numOfAnalyzedDirections = 0
@@ -381,9 +372,9 @@ class UnsupervisedPeakelDetector(
     //progressComputer.beginStep(UnsupervisedPeakelDetector.EXTRACTION_STEP3)
     
     // Check that apex is not the first or last peak
-    if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.spectrumIds.length - 1) ) {
-      return None
-    }
+//    if( peakel.apexIndex == 0 || peakel.apexIndex == (peakel.spectrumIds.length - 1) ) {
+//      return None
+//    }
     
     // Check peakel amplitude is big enough
     val minIntensity = peakel.intensityValues.min
