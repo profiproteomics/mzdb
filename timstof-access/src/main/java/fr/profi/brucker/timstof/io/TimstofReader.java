@@ -113,18 +113,28 @@ public class TimstofReader {
         metaDataReader.readPasefMsMsInfo(frames);
     }
 
+    //-> VDS-TIME: For timing logs
+    public static long time_readScans = 0;
+    public static long time_extractPeaks =0;
+    public static long time_indiceToMass =0;
+    public static long time_indiceToMassStep2 =0;
+
+    public static long time_indiceToMassMap =0;
+    public static long time_indiceToMassMapS1 =0;
+    public static long time_indiceToMassMapS2 =0;
+    public static long time_indiceToMassMapS3 =0;
+    public static int nbrRead =0;
 
     public  void fillFramesWithSpectrumData(Long fileHandle, List<TimsFrame> frames){
         checkFileHandle(fileHandle);
         //--- VDS TODO check or Force fillFramesWithMsMsInfo
-        //-> VDS For timing logs
-//        long time1 =0;
-//        long time2 =0;
-//        long time3 =0;
 
         // --- read scans/msms data
         for(TimsFrame frame : frames){
-//            long start = System.currentTimeMillis();//-> VDS For timing logs
+            //-> VDS-TIME: For timing logs
+            nbrRead++;
+            long start = System.currentTimeMillis();
+
             long frameId = frame.getId();
             int nbrScans = frame.getNbrScans();
 
@@ -140,14 +150,13 @@ public class TimstofReader {
                 buffer = new byte[newSize];
                 m_tdfLib.tims_read_scans_v2(fileHandle, frameId, 0, nbrScans, buffer, newSize);
             }
-            //LOG.trace("reading frame {}, buffer length: {}", frameId, buf_len);
 
             IntBuffer intBuf = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
             int[] scanBuffer = new int[intBuf.remaining()];
             intBuf.get(scanBuffer);
-            //-> VDS For timing logs
-//            long step1 = System.currentTimeMillis();
-//            time1 += step1-start;
+            //-> VDS-TIME: For timing logs
+            long step1 = System.currentTimeMillis();
+            time_readScans += step1-start;
 
             // check out the layout of scanBuffer:
             // - the first numScan integers specify the number of peaks for each scan
@@ -156,6 +165,8 @@ public class TimstofReader {
             List<Integer> indicesToSearch  = new ArrayList<>();
             long error_stat = 0;
             int d = nbrScans;
+//            int totalNbrPeaks =0;
+//            int totalNbrScans =0;
             for (int i = 0; i < nbrScans; ++i) {
 
                 int numberPeaks = scanBuffer[i];
@@ -164,28 +175,11 @@ public class TimstofReader {
                     d += numberPeaks;
                     int[] scanIntensities = Arrays.copyOfRange(scanBuffer, d, d + numberPeaks);
                     d += numberPeaks;
-
-                    // you are not really interested in index values for x-axis but masses
-//                    long s1 = System.currentTimeMillis();
-//                    double[] scanMasses = new double[indices.length];
-//                    error_stat = m_tdfLib.tims_index_to_mz(fileHandle, frameId, ArraysUtil.copyFromIntArray(indices), scanMasses, scanMasses.length);
-//                    for(int inde = 0; inde<scanMasses.length; inde++) {
-//                        LOG.debug("\t" +indices[inde]+"\t"+scanMasses[inde]);
-//                    }
-//                    if (0 == error_stat) {
-//                        LOG.error(" !!! could not convert indices to masses for frame {} scan {}.", frameId, i);
-//                    }
-                    //-> VDS For timing logs
-//                    long s2 = System.currentTimeMillis();
-//                    time3 += s2-s1;
-//                    System.out.printf("scan %d has %d peaks", i, numberPeaks).println();
-//                    System.out.println(Arrays.toString(scanMasses));
-//                    System.out.println(Arrays.toString(scanIntensities));
-//                    Map<Double, Float> massInstensityMap = new HashMap<>();
+//                    totalNbrPeaks += numberPeaks;
+//                    totalNbrScans += 1;
                     Map<Integer, Float> indiceInstensityMap = new HashMap<>();
                     for(int peakIndex =0; peakIndex < numberPeaks; peakIndex++){
                         indicesToSearch.add(indices[peakIndex]);
-//                        massInstensityMap.put(scanMasses[peakIndex], new Float(String.valueOf(scanIntensities[peakIndex])) );
                         indiceInstensityMap.put(indices[peakIndex],new Float(String.valueOf(scanIntensities[peakIndex])) );
                     }
                     scanIndices2IntensityMap.put(i, indiceInstensityMap);
@@ -193,16 +187,21 @@ public class TimstofReader {
             } // End for all scans
 
             //-> VDS For timing logs
-//            long step2 = System.currentTimeMillis();
-//            time2 += step2- step1;
-            //LOG.trace( "Read {} peaks for frame {} ",totalNbrPeaks, frameId);
+            long step2 = System.currentTimeMillis();
+            time_extractPeaks += step2-step1;
+//            LOG.debug( "\tRead frame:\t{}\tnbr Scans:\t{}\tnbr peaks:\t{}", frameId, totalNbrScans, totalNbrPeaks);
 
             //convert indices to masses and create spectra data
-            double[] scanMasses = new double[indicesToSearch.size()];
-            error_stat = m_tdfLib.tims_index_to_mz(fileHandle, frameId, ArraysUtil.copyFromIntList(indicesToSearch), scanMasses, scanMasses.length);
+            double[] scanMasses =  new double[indicesToSearch.size()];
+            error_stat = m_tdfLib.tims_index_to_mz(fileHandle, frameId, ArraysUtil.convertToDoubleArray(indicesToSearch), scanMasses, scanMasses.length);
             if (0 == error_stat) {
                 LOG.error(" !!! could not convert indices to masses for frame {}.", frameId);
             }
+
+            //-> VDS For timing logs
+            long step21 = System.currentTimeMillis();
+            time_indiceToMass += step21-step2;
+
             //Create Indice to Mass Map
             Map<Integer,Double> indiceToMassMap = new HashMap<>();
             for(int indiceIndex =0; indiceIndex < scanMasses.length; indiceIndex++)
@@ -210,15 +209,28 @@ public class TimstofReader {
 
             //Convert indice,intensity tuple to mass,intensity
             Map<Integer, Map<Double,Float>> scanMsMsDataMap = new HashMap<>();
+            //-> VDS For timing logs
+            long step22 = System.currentTimeMillis();
+            time_indiceToMassMapS1 += step22-step21;
+
             for(Map.Entry<Integer, Map<Integer, Float>> entry: scanIndices2IntensityMap.entrySet()){
+                long startWh = System.currentTimeMillis();
+                Integer scanId = entry.getKey();
                 Map<Integer, Float> indiceToIntensity = entry.getValue();
                 Map<Double,Float> massIntentisyMap = new HashMap<>();
-                for(Map.Entry<Integer,Float> nextIndiceToIntensity : indiceToIntensity.entrySet())
-                    massIntentisyMap.put(indiceToMassMap.get(nextIndiceToIntensity.getKey()), nextIndiceToIntensity.getValue());
-                scanMsMsDataMap.put(entry.getKey(),massIntentisyMap);
+                long step23 = System.currentTimeMillis();
+                time_indiceToMassMapS2 += step23-startWh;
+
+                for(Map.Entry<Integer, Float> e : indiceToIntensity.entrySet()){
+                    Integer nextIndice =  e.getKey();
+                    massIntentisyMap.put(indiceToMassMap.get(nextIndice), e.getValue());
+                }
+                long step24 = System.currentTimeMillis();
+                time_indiceToMassMapS3 += step24-step23;
+                scanMsMsDataMap.put(scanId,massIntentisyMap);
             }
-//            long end = System.currentTimeMillis();
-//            time3 += end- step2;
+            long end = System.currentTimeMillis();
+            time_indiceToMassMap += end- step22;
             frame.setMassIntensityByScan(scanMsMsDataMap);
 
             //VDS: test to get IonMobility Value
@@ -239,9 +251,18 @@ public class TimstofReader {
 //
 //                }
 //            }
-
-        }//End for all Frames
-//        LOG.debug(" TIME for read Frame. read scans "+time1+ "; go throw scans  "+time2+" to get masses from index "+time3);
+            //-> VDS For timing logs
+            if(nbrRead % 100 == 0){
+                LOG.debug(" TIME reading "+nbrRead+" frame(s):\tScans data read\t"+time_readScans+ "\tExtract peaks from buffer \t"+time_extractPeaks+"\tGet masses from indexes\t"+time_indiceToMass+"\tmap from indexes to mass\t"+time_indiceToMassMapS1+" - "+time_indiceToMassMapS2+" - "+time_indiceToMassMapS3+" - "+time_indiceToMassMap);
+                time_readScans = 0;
+                time_extractPeaks = 0;
+                time_indiceToMass=0;
+                time_indiceToMassMap=0;
+                time_indiceToMassMapS1=0;
+                time_indiceToMassMapS2=0;
+                time_indiceToMassMapS3=0;
+            }
+        }   //End for all Frames
     }
 
     public TDFLibrary getTDFLib() {
