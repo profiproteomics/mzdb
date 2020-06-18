@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 public class TimsTofApp {
 
     private static final String DEFAULT_SAMPLE_DIR = "target\\test-classes\\samples_data.d";
+    static String MY_SAMPLE_DIR =  "C:\\vero\\DEV\\TimsTof\\example_data\\100ngHela_snippet\\HeLa_default_100ng_Slot1-7_01_531_snippet.d";
     private static Logger LOG = LoggerFactory.getLogger(TimsTofApp.class);
 
     public static void readSeqFrame(Long fileHdl, List<TimsFrame> frames){
@@ -49,7 +50,7 @@ public class TimsTofApp {
         }
     }
 
-    public static void readMSFrame(Long fileHdl, List<TimsFrame> frames){
+    public static void readMSFrameInfo(Long fileHdl, List<TimsFrame> frames){
 
         List<TimsFrame> msFrame = frames.stream().filter(f -> f.getMsmsType().equals(TimsFrame.MsMsType.MS)).collect(Collectors.toList());
         for(TimsFrame fr : msFrame) {
@@ -57,9 +58,10 @@ public class TimsTofApp {
         }
     }
 
-    public static void readMSMSinfoFromPrecursors(Long fileHdl, int ms1Index){
+    public static void readMSMSDataFromPrecursors(Long fileHdl, int ms1Index){
         //For MS Frame 1...
-        TimstofReader reader = TimstofReader.getTimstofReader();
+        TimstofReader reader =TimstofReader.getTimstofReader();
+
         List<Precursor> frame1Precs = reader.readPrecursorInfo(fileHdl).stream().filter(p -> p.getParentMsFrame().equals(ms1Index)).collect(Collectors.toList());
         long[] precIds = new long[frame1Precs.size()];
         for(int i =0 ;i <frame1Precs.size();i++)
@@ -84,58 +86,74 @@ public class TimsTofApp {
         }
     }
 
-    public static void readMSMSinfoFromFrames(Long fileHdl, List<TimsFrame> msFrames){
+    public static void readMSMSDataFromFrames(Long fileHdl, List<TimsFrame> msFrames){
+        long start = System.currentTimeMillis();
+        //For Frame associated to MS Frame 2...
+        long step2 =0l;
 
-        //For Frame associated to MS Frame 1...
         TimstofReader reader = TimstofReader.getTimstofReader();
         reader.fillFramesWithMsMsInfo(fileHdl, msFrames);
+        long step1 = System.currentTimeMillis();
+        LOG.info("End MS2  fillFramesWithMsMsInfo: " +(step1-start));
         //Read MSMS for these ms2Frames
-        reader.fillFramesWithSpectrumData(fileHdl,msFrames);
+        reader.fillFramesWithSpectrumData(fileHdl, msFrames);
+        step2 = System.currentTimeMillis();
+        LOG.info("End MS2  fillFramesWithSpectrumData: " +(step2-step1));
 
-        for( TimsFrame fr : msFrames) {
-
-            System.out.printf("ms/ms data, frame %d, msmsType %d, number of peaks %d", fr.getId(), fr.getMsmsType().getMsMsTypeCode(), fr.getNbrPeaks()).println();
-            List<PasefMsMsData>  data = fr.getPasefMsMSData();
-            List<Double> masses = new ArrayList<>();
-            List<Float> intensities = new ArrayList<>();
-            boolean b = fr.isPasef();
-            LOG.info(" Frame {}, {} PasefMsMS : ",fr.getId(), data.size());
-            data.forEach(pasefInfo -> {
-                double isolMz = pasefInfo.getIsolationMz();
-                int startSc = pasefInfo.getStartScan();
-                int endSc = pasefInfo.getEndScan();
-                Spectrum sp = pasefInfo.getPasefSpectrum();
-                LOG.info(" PasefMsMS mz {}, start {}, end {}, masses/intensities: ",pasefInfo.getIsolationWidth(), pasefInfo.getStartScan(), pasefInfo.getEndScan());
-                fillArrayFromSpectra(sp, masses, intensities);
-            });
-            LOG.info(" Frame {}, all peaks : ",fr.getId());
-            System.out.println(masses);
-            System.out.println(intensities);
-        }
+//        for( TimsFrame fr : msFrames) {
+//
+//            System.out.printf("ms/ms data, frame %d, msmsType %d, number of peaks %d", fr.getId(), fr.getMsmsType().getMsMsTypeCode(), fr.getNbrPeaks()).println();
+//            List<PasefMsMsData>  data = fr.getPasefMsMSData();
+//            List<Double> masses = new ArrayList<>();
+//            List<Float> intensities = new ArrayList<>();
+//            boolean b = fr.isPasef();
+////            LOG.info(" Frame {}, {} PasefMsMS : ",fr.getId(), data.size());
+////            data.forEach(pasefInfo -> {
+////                double isolMz = pasefInfo.getIsolationMz();
+////                Spectrum sp = pasefInfo.getPasefSpectrum();
+////                LOG.info(" PasefMsMS mz {}, start {}, end {}, masses/intensities: ",pasefInfo.getIsolationWidth(), pasefInfo.getStartScan(), pasefInfo.getEndScan());
+////                if(sp !=null)
+////                    fillArrayFromSpectra(sp, masses, intensities);
+////            });
+////            LOG.info(" Frame {}, all peaks : ",fr.getId());
+////            System.out.println(masses);
+////            System.out.println(intensities);
+//        }
+        long end = System.currentTimeMillis();
+        LOG.info("End gal MS2  readMSMSDataFromFrames " +(end-step2));
     }
 
-    public static void readMSinfoFromFrames(Long fileHdl, List<TimsFrame> msFrames){
+    public static void readMSDataFromFrames(Long fileHdl, List<TimsFrame> msFrames){
+        long start = System.currentTimeMillis();
+
+        long step2 =0l;
 
         //For Frame associated to MS Frame 1...
         TimstofReader reader = TimstofReader.getTimstofReader();
         reader.fillFramesWithMsMsInfo(fileHdl, msFrames);
+        long step1 = System.currentTimeMillis();
+        LOG.info("End MS1  fillFramesWithMsMsInfo: " +(step1-start));
         //Read MSMS for these ms2Frames
-        reader.fillFramesWithSpectrumData(fileHdl,msFrames);
+        reader.fillFramesWithSpectrumData(fileHdl, msFrames);
+        step2 = System.currentTimeMillis();
+        LOG.info("End MS1  fillFramesWithSpectrumData: " +(step2-step1));
 
-        for( TimsFrame fr : msFrames) {
-
-            System.out.printf("ms data, frame %d, msmsType %d, number of peaks %d", fr.getId(), fr.getMsmsType().getMsMsTypeCode(), fr.getNbrPeaks()).println();
-            List<Spectrum>  data = fr.getAllSpectra();
-            List<Double> masses = new ArrayList<>();
-            List<Float> intensities = new ArrayList<>();
-            LOG.info(" Frame {}, {} Spectrum : ",fr.getId(), data.size());
-            data.forEach(sp-> {
-                fillArrayFromSpectra(sp, masses, intensities);
-            });
-            LOG.info(" Frame {}, all peaks : ",fr.getId());
-            System.out.println(masses);
-            System.out.println(intensities);
-        }
+//        for( TimsFrame fr : msFrames) {
+//
+//            System.out.printf("ms data, frame %d, msmsType %d, number of peaks %d", fr.getId(), fr.getMsmsType().getMsMsTypeCode(), fr.getNbrPeaks()).println();
+//            List<Spectrum>  data = fr.getAllSpectra();
+//            List<Double> masses = new ArrayList<>();
+//            List<Float> intensities = new ArrayList<>();
+//            LOG.info(" Frame {}, {} Spectrum : ",fr.getId(), data.size());
+//            data.forEach(sp-> {
+//                fillArrayFromSpectra(sp, masses, intensities);
+//            });
+//            LOG.info(" Frame {}, all peaks : ",fr.getId());
+//            System.out.println(masses);
+//            System.out.println(intensities);
+//        }
+        long end = System.currentTimeMillis();
+        LOG.info("End gal MS1  readMSDataFromFrames " +(end-step2));
     }
 
     private static void fillArrayFromSpectra(Spectrum sp,List<Double> masses, List<Float> intensities ){
@@ -149,17 +167,27 @@ public class TimsTofApp {
             intensities.add(spInten[i]);
         }
     }
-
-    public static void readFullFrameInfo(Long fileHdl, List<TimsFrame> frames ){
-        TimstofReader reader = TimstofReader.getTimstofReader();
-        LOG.info(" START Read FrameMsMsInfo ");
-        reader.fillFramesWithMsMsInfo(fileHdl,frames);
-        LOG.info(" END Read FrameMsMsInfo ");
-    }
+//
+//    public static void readFullFrameInfo(Long fileHdl, List<TimsFrame> frames ){
+//
+//        if(m_useJNR) {
+//            TimstofReaderJNR readerJNR = TimstofReaderJNR.getTimstofReader();
+//            LOG.info(" START Read FrameMsMsInfo ");
+//            readerJNR.fillFramesWithMsMsInfo(fileHdl,frames);
+//            LOG.info(" END Read FrameMsMsInfo ");
+//        } else {
+//            TimstofReader reader = TimstofReader.getTimstofReader();
+//            LOG.info(" START Read FrameMsMsInfo ");
+//            reader.fillFramesWithMsMsInfo(fileHdl,frames);
+//            LOG.info(" END Read FrameMsMsInfo ");
+//        }
+//    }
 
     public static void readPrecursorInfo(Long fileHdl){
-        TimstofReader reader = TimstofReader.getTimstofReader();
-        List<Precursor> allPrec =  reader.readPrecursorInfo(fileHdl);
+
+        TimstofReader reader =  TimstofReader.getTimstofReader();
+
+        List<Precursor> allPrec = reader.readPrecursorInfo(fileHdl);
         Map<Integer, List<Precursor>> precByFrame = allPrec.stream().collect(Collectors.groupingBy(Precursor::getParentMsFrame));
         List<Integer> parentMsFr = new ArrayList<>(precByFrame.keySet());
         parentMsFr.sort(Comparator.naturalOrder());
@@ -176,19 +204,13 @@ public class TimsTofApp {
         }
     }
 
-    //D:\DEV\TimsTof\example_data\Ecoli10ng60minLCGrad_nanoElute_Slot1-46_01_2715.d //
+    //C:\vero\DEV\TimsTof\example_data\Ecoli10ng60minLCGrad_nanoElute_Slot1-46_01_2715.d //
     public static void  main(String[] argv){
-      /* String d =  "2018-11-13T19:08:36.038+01:00";
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-        try {
-            Date dd = sdf.parse(d) ;
-            System.out.println(" Read "+d+ " ===> "+d.toString());
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }*/
-        String filePath = DEFAULT_SAMPLE_DIR;
-        String cmd ="msFrame";
-        if(argv != null && argv.length>2) {
+
+        //TimsTofApp.m_useJNR = true;
+        String filePath = MY_SAMPLE_DIR;//DEFAULT_SAMPLE_DIR;
+        String cmd ="msmsFrame";
+        if(argv != null && argv.length>=2) {
             filePath = argv[0];
             cmd = argv[1];
         } else if(argv != null && argv.length==1) {
@@ -210,32 +232,32 @@ public class TimsTofApp {
             case "ms": // Read only MS Frame info
                 frames  = TimstofReader.getTimstofReader().getTimsFrames(fileHdl);
                 LOG.info(" END Read Frame Info ");
-                TimsTofApp.readMSFrame(fileHdl,frames);
+                TimsTofApp.readMSFrameInfo(fileHdl,frames);
                 break;
             case "precursor": //read Precursor info
                 TimsTofApp.readPrecursorInfo(fileHdl);
                 break;
             case "msmsPrecursor": //Read MSMS referencing specific precursor... hard coded
-                TimsTofApp.readMSMSinfoFromPrecursors(fileHdl,1);
+                TimsTofApp.readMSMSDataFromPrecursors(fileHdl,1);
                 break;
             case "msmsFrame": //Read MSMS between 2 first Ms
                 frames  = TimstofReader.getTimstofReader().getTimsFrames(fileHdl);
                 LOG.info(" END Read Frame Info ");
-                List<TimsFrame> ms2Frames = frames.stream().filter(fr -> fr.getId()>1&&fr.getId()<7).collect(Collectors.toList());
-                TimsTofApp.readMSMSinfoFromFrames(fileHdl,ms2Frames);
+//                List<TimsFrame> ms2Frames = frames.stream().filter(fr -> fr.getId() ==812).collect(Collectors.toList());
+                List<TimsFrame> ms2Frames = frames.stream().filter(fr -> fr.getMsmsType().equals(TimsFrame.MsMsType.PASEF)).collect(Collectors.toList());
+                TimsTofApp.readMSMSDataFromFrames(fileHdl,ms2Frames);
                 break;
             case "msFrame": //Read third MS Frame ... hard coded
                 frames  = TimstofReader.getTimstofReader().getTimsFrames(fileHdl);
                 LOG.info(" END Read Frame Info ");
                 List<TimsFrame> msFr = frames.stream().filter(fr -> fr.getMsmsType().equals(TimsFrame.MsMsType.MS)).collect(Collectors.toList());
-                List<TimsFrame> l = new ArrayList();
-                l.add(msFr.get(0));
-                TimsTofApp.readMSinfoFromFrames(fileHdl,l);
+//                List<TimsFrame> l = new ArrayList();
+//                l.add(msFr.get(0));
+                TimsTofApp.readMSDataFromFrames(fileHdl,msFr);
                 break;
             case "fullFrame":
                 frames  = TimstofReader.getTimstofReader().getFullTimsFrames(fileHdl);
                 LOG.info(" END Read Full Frame Info ");
-                TimsTofApp.readFullFrameInfo(fileHdl,frames);
                 break;
 
         }

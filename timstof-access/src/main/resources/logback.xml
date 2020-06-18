@@ -10,13 +10,19 @@
   </appender>
 
 
-  <appender name="fileAppender" class="ch.qos.logback.core.FileAppender">
+  <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <append>true</append>
     <file>timstof_access.txt</file>
 
     <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
       <level>INFO</level>
     </filter>
+
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>logs/timstof_access.%d{yyyy-MM-dd}.txt</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>1GB</totalSizeCap>
+    </rollingPolicy>
 
     <encoder>
       <!-- TTCCLayout -->

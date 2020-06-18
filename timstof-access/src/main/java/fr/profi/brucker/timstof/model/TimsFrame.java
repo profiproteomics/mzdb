@@ -1,10 +1,12 @@
 package fr.profi.brucker.timstof.model;
 
-import fr.profi.brucker.timstof.util.ArraysUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -263,35 +265,25 @@ public class TimsFrame implements Comparable<TimsFrame> {
         if(m_singleSpectrum ==null) {
             List<Spectrum> allSp = getAllSpectra();
             //VDS TODO If list allSp empty: create empty unique Spectra or return null ?
-            Map<Double, List<Float>> masses2Intensities = new HashMap<>();
-            int nbrPeak = 0;
+            Map<Double, Float> retainedMasses2Intensity = new HashMap<>();
+            //   int nbrPeak = 0;
             for (Spectrum sp : allSp) {
                 double[] spMasses = sp.getMasses();
                 float[] spInstensities = sp.getIntensities();
-                nbrPeak += spMasses.length;
+                //  nbrPeak += spMasses.length;
                 for (int i = 0; i < spMasses.length; i++) {
                     double nextMass =spMasses[i];
-                    List<Float> intensities = masses2Intensities.getOrDefault(nextMass, new ArrayList<Float>());
-                    intensities.add(spInstensities[i]);
-                    masses2Intensities.put(nextMass,intensities);
+                    Float currentIntensity = retainedMasses2Intensity.getOrDefault(nextMass, 0f);
+                    Float newIntensity = spInstensities[i];
+                    if(currentIntensity.compareTo(newIntensity) <0)
+                        retainedMasses2Intensity.put(nextMass, newIntensity);
                 }
             }
             int msLevel = m_msmsType.equals(MsMsType.MS) ? 1 : 2;
-            List<Double> noneDuplicatedMassesKeys = new ArrayList<>(masses2Intensities.keySet());
-            List<Float> retainedIntensityForMass = new ArrayList<>(noneDuplicatedMassesKeys.size());
-
-            noneDuplicatedMassesKeys.sort(Double::compareTo);
-            for (int i = 0; i< noneDuplicatedMassesKeys.size(); i++){
-                Double nextMass = noneDuplicatedMassesKeys.get(i);
-                List<Float> massIntensities = masses2Intensities.get(nextMass);
-                int nbrIntensities =  massIntensities.size();
-                if(nbrIntensities>1)
-                    massIntensities.sort(Float::compareTo);
-                retainedIntensityForMass.add(massIntensities.get(nbrIntensities-1));
-            }
-            LOG.trace("Frame_" + m_id+" has "+nbrPeak+" peaks, reduced to "+retainedIntensityForMass.size());
-            m_singleSpectrum = new Spectrum("Frame_" + m_id, msLevel, m_time.floatValue(), ArraysUtil.doubleListToArray(noneDuplicatedMassesKeys), ArraysUtil.floatListToArray(retainedIntensityForMass));
+            // LOG.trace("Frame_" + m_id+" has "+nbrPeak+" peaks, reduced to "+retainedMasses2Intensity.size());
+            m_singleSpectrum = new Spectrum("Frame_" + m_id, msLevel, m_time.floatValue(), retainedMasses2Intensity);
         }
+
         return m_singleSpectrum;
     }
 
