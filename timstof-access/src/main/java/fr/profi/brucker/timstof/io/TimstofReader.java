@@ -131,7 +131,7 @@ public class TimstofReader {
 
         // --- read scans/msms data
         for(TimsFrame frame : frames){
-            //-> VDS-TIME: For timing logs
+            //--> VDS-TIME: For timing logs
             nbrRead++;
             long start = System.currentTimeMillis();
 
@@ -156,7 +156,7 @@ public class TimstofReader {
             intBuf.get(scanBuffer);
             //-> VDS-TIME: For timing logs
             long step1 = System.currentTimeMillis();
-            time_readScans += step1-start;
+            time_readScans += step1-start; //--> VDS-TIME: Ecoli (10Go).  ~4.5min
 
             // check out the layout of scanBuffer:
             // - the first numScan integers specify the number of peaks for each scan
@@ -188,7 +188,7 @@ public class TimstofReader {
 
             //-> VDS For timing logs
             long step2 = System.currentTimeMillis();
-            time_extractPeaks += step2-step1;
+            time_extractPeaks += step2-step1; //--> VDS-TIME: Ecoli (10Go)   In "Timstof2MzDB" entre 5 et 6min
 //            LOG.debug( "\tRead frame:\t{}\tnbr Scans:\t{}\tnbr peaks:\t{}", frameId, totalNbrScans, totalNbrPeaks);
 
             //convert indices to masses and create spectra data
@@ -200,7 +200,7 @@ public class TimstofReader {
 
             //-> VDS For timing logs
             long step21 = System.currentTimeMillis();
-            time_indiceToMass += step21-step2;
+            time_indiceToMass += step21-step2; //--> VDS-TIME: Ecoli (10Go) ~1min
 
             //Create Indice to Mass Map
             Map<Integer,Double> indiceToMassMap = new HashMap<>();
@@ -211,7 +211,7 @@ public class TimstofReader {
             Map<Integer, Map<Double,Float>> scanMsMsDataMap = new HashMap<>();
             //-> VDS For timing logs
             long step22 = System.currentTimeMillis();
-            time_indiceToMassMapS1 += step22-step21;
+            time_indiceToMassMapS1 += step22-step21; //--> VDS-TIME: Ecoli (10Go) ~4-5min
 
             for(Map.Entry<Integer, Map<Integer, Float>> entry: scanIndices2IntensityMap.entrySet()){
                 long startWh = System.currentTimeMillis();
@@ -219,17 +219,18 @@ public class TimstofReader {
                 Map<Integer, Float> indiceToIntensity = entry.getValue();
                 Map<Double,Float> massIntentisyMap = new HashMap<>();
                 long step23 = System.currentTimeMillis();
-                time_indiceToMassMapS2 += step23-startWh;
+                time_indiceToMassMapS2 += step23-startWh;//--> VDS-TIME: Ecoli (10Go) <1s
 
                 for(Map.Entry<Integer, Float> e : indiceToIntensity.entrySet()){
                     Integer nextIndice =  e.getKey();
                     massIntentisyMap.put(indiceToMassMap.get(nextIndice), e.getValue());
                 }
                 long step24 = System.currentTimeMillis();
-                time_indiceToMassMapS3 += step24-step23;
+                time_indiceToMassMapS3 += step24-step23;//--> VDS-TIME: Ecoli (10Go) ~6-7mins
                 scanMsMsDataMap.put(scanId,massIntentisyMap);
             }
             long end = System.currentTimeMillis();
+            //--> VDS-TIME:  Ecoli (10Go). FROM step2 In "Timstof2MzDB" ~15.2min // = time_indiceToMassMapS2 +  time_indiceToMassMapS3 + scanMsMsDataMap.put: ~ 6-7min
             time_indiceToMassMap += end- step22;
             frame.setMassIntensityByScan(scanMsMsDataMap);
 

@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
 public class Timstof2Mzdb {
 
     private final static Logger LOG = LoggerFactory.getLogger(Timstof2Mzdb.class);
-    //static String filepath =  "c:\\vero\\DEV\\TimsTof\\example_data\\Ecoli10ng_2715\\Ecoli10ng60minLCGrad_nanoElute_Slot1-46_01_2715.d";
-    static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\100ngHela_snippet\\HeLa_default_100ng_Slot1-7_01_531_snippet.d";
+    static String filepath =  "c:\\vero\\DEV\\TimsTof\\example_data\\Ecoli10ng_2715\\Ecoli10ng60minLCGrad_nanoElute_Slot1-46_01_2715.d";
+   // static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\100ngHela_snippet\\HeLa_default_100ng_Slot1-7_01_531_snippet.d";
     scala.Option noneOp = scala.None$.MODULE$;
 
     static {
@@ -248,7 +248,7 @@ public class Timstof2Mzdb {
 
                 //--> VDS-TIME: to get duration debug info
                 long step1 = System.currentTimeMillis();
-                time_readFrame += step1-start;
+                time_readFrame += step1-start; //--> VDS-TIME: Ecoli (10Go) ~30min
                 long step2;
 
                 float rtInSec = timsFrame.getTime().floatValue();
@@ -264,7 +264,7 @@ public class Timstof2Mzdb {
 
                         //--> VDS-TIME: to get duration debug info
                         step2 = System.currentTimeMillis();
-                        time_ms1 += step2 - step1;
+                        time_ms1 += step2 - step1;  //--> VDS-TIME: Ecoli (10Go) ~10min
                         break;
 
                     case PASEF:
@@ -306,7 +306,7 @@ public class Timstof2Mzdb {
                                  }
                                 //--> VDS-TIME: to get duration debug info
                                 step2 = System.currentTimeMillis();
-                                time_ms2 += step2 - step1;
+                                time_ms2 += step2 - step1; //--> VDS-TIME: Ecoli (10Go) ~1.5s
                             }
                         } else {
                             LOG.warn("#### WARNING ####  UNSUPPORTED Frame type. Only MS1 and PASEF are supported actually. Frame "+timsFrame.getId()+" is getMsmsType "+timsFrame.getMsmsType());
@@ -357,7 +357,7 @@ public class Timstof2Mzdb {
 
                     //VDS: times to get duration debug info
                     long step4 = System.currentTimeMillis();
-                    time_write += step4 - step2;
+                    time_write += step4 - step2;//--> VDS-TIME: Ecoli (10Go) ~4.5min
                 }
 
 
