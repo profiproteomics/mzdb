@@ -1,1 +1,4 @@
 /timstof-access/target/
+/mzdb-access/target/
+/mzdb-processing/target/
+/.idea/
