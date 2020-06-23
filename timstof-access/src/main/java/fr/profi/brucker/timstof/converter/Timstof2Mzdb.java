@@ -10,6 +10,7 @@ import com.github.mzdb4s.msdata.*;
 import com.github.sqlite4s.SQLiteFactory$;
 import fr.profi.brucker.timstof.io.TimstofReader;
 import fr.profi.brucker.timstof.model.TimsFrame;
+import it.unimi.dsi.fastutil.ints.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -21,12 +22,12 @@ import java.nio.ByteOrder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
+
 
 public class Timstof2Mzdb {
 
     private final static Logger LOG = LoggerFactory.getLogger(Timstof2Mzdb.class);
-    static String filepath =  "c:\\vero\\DEV\\TimsTof\\example_data\\Ecoli10ng_2715\\Ecoli10ng60minLCGrad_nanoElute_Slot1-46_01_2715.d";
+    static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\Ecoli_2716\\Ecoli10ng60minLCGrad_nanoElute_Slot1-46_01_2716.d";
    // static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\100ngHela_snippet\\HeLa_default_100ng_Slot1-7_01_531_snippet.d";
     scala.Option noneOp = scala.None$.MODULE$;
 
@@ -45,13 +46,14 @@ public class Timstof2Mzdb {
     private TimstofReader m_ttReader;
 
     //For all Spectra Index, map to associated Frame Index
-    private Map<Integer, Integer> m_spectra2FrameIndex;
+    private Int2IntMap m_spectra2FrameIndex;
     //Memorize first Spectra Index for each Frame (index)
-    private Map<Integer, Integer> m_frame2FirstSpectraIndex;
-    private Map<Integer, Integer> m_frame2ReadSpectraCount;
+    private Int2IntMap m_frame2FirstSpectraIndex;
+    private Int2IntMap m_frame2ReadSpectraCount;
 
     private List<TimsFrame>  m_frames;
-    private Map<Integer, fr.profi.brucker.timstof.model.Precursor> m_precursorByIds;
+    private Int2ObjectMap<TimsFrame> m_frameById;
+    private Int2ObjectMap<fr.profi.brucker.timstof.model.Precursor> m_precursorByIds;
     DataEncoding m_profileDataEnconding;
     DataEncoding m_centroidDataEnconding;
     DataEncoding m_fittedDataEnconding;
@@ -75,9 +77,10 @@ public class Timstof2Mzdb {
         Collections.sort(m_frames);
 
         //Init indexes map
-        Integer spectrumIndex =1;
-        m_spectra2FrameIndex = new HashMap<>();
-        m_frame2FirstSpectraIndex = new HashMap<>();
+        int spectrumIndex =1;
+        m_spectra2FrameIndex = new Int2IntOpenHashMap();
+        m_frame2FirstSpectraIndex = new Int2IntOpenHashMap(m_frames.size()*4/3+1);
+        m_frameById = new Int2ObjectOpenHashMap<>(m_frames.size()*4/3+1);
         for(TimsFrame tf : m_frames){
             int nbrSpectrum = (!tf.isPasef()) ? 1 : tf.getPasefMsMSData().size(); //VDS TODO For now 1 spectrum for MS ==> May have one per scans groups!!
 
@@ -86,10 +89,10 @@ public class Timstof2Mzdb {
                 m_spectra2FrameIndex.put(spectrumIndex, tf.getId());
                 spectrumIndex++;
             }
+            m_frameById.put(tf.getId(), tf);
         }
-        m_frame2ReadSpectraCount = new HashMap<>();
-        List<fr.profi.brucker.timstof.model.Precursor> m_precursors = m_ttReader.readPrecursorInfo(m_fileHdl);
-        m_precursorByIds = m_precursors.stream().collect(Collectors.toMap(fr.profi.brucker.timstof.model.Precursor::getId, precursor ->precursor));
+        m_frame2ReadSpectraCount = new Int2IntOpenHashMap(m_frames.size()*4/3+1);
+        m_precursorByIds = m_ttReader.getPrecursorInfoById(m_fileHdl);
 
         long end  = System.currentTimeMillis();
         LOG.info("Read meta data for "+m_frames.size()+ " frames and "+m_spectra2FrameIndex.size()+" spectrum. Duration : "+ (end-start) +" ms");
@@ -219,7 +222,7 @@ public class Timstof2Mzdb {
             while(spId <= nbrSp) { //Assume spectrum id start at 1 and are incremental => done in initFrameData above
                 long start = System.currentTimeMillis();  //--> VDS-TIME: to get duration debug info
 
-                Integer frameId = m_spectra2FrameIndex.get(spId);
+                int frameId = m_spectra2FrameIndex.get(spId);
 
                 //increment nbr spectrum read for specific frameId
                 int nbrScanForFrame  = m_frame2ReadSpectraCount.getOrDefault(frameId,0);
@@ -227,14 +230,12 @@ public class Timstof2Mzdb {
                 m_frame2ReadSpectraCount.put(frameId,nbrScanForFrame);
 
                 //get TimsFrame with specific id
-                Optional<TimsFrame> opFrame = m_frames.stream().filter(frame -> frame.getId().equals(frameId)).findFirst();
-                if (!opFrame.isPresent()) {
+                TimsFrame timsFrame = m_frameById.get(frameId);
+                if (timsFrame == null ) {
                     LOG.warn("#### NO FRAME " + frameId+" for spectra "+spId);
                     spId++;
                     continue;
                 }
-
-                TimsFrame timsFrame = opFrame.get();
                 if (!timsFrame.spectrumRead()) {
                     //get spectrum information if not read yet
                     List<TimsFrame> tfs = Collections.singletonList(timsFrame);
@@ -251,7 +252,7 @@ public class Timstof2Mzdb {
                 time_readFrame += step1-start; //--> VDS-TIME: Ecoli (10Go) ~30min
                 long step2;
 
-                float rtInSec = timsFrame.getTime().floatValue();
+                float rtInSec = (float) timsFrame.getTime();
                 int mslevel = 0;
                 boolean errFound = false;
                 switch (timsFrame.getMsmsType()) {
@@ -269,8 +270,8 @@ public class Timstof2Mzdb {
 
                     case PASEF:
                         mslevel = 2;
-                        if( timsFrame.getPrecursorId() != null){
-                            List<Integer> precursorIds = timsFrame.getPrecursorId();
+                        if( timsFrame.getPrecursorIds() != null){
+                            List<Integer> precursorIds = timsFrame.getPrecursorIds();
                             Collections.sort(precursorIds);
                             //-- Read spectrum corresponding to index...
                             int indexInFrameSpectra = spId - m_frame2FirstSpectraIndex.get(timsFrame.getId()); //Index relative to frame
@@ -344,7 +345,7 @@ public class Timstof2Mzdb {
                         }
                     }
 
-                    float spTIC = timsFrame.getSummedIntensity().floatValue();
+                    float spTIC = (float) timsFrame.getSummedIntensity();
 //                    LOG.debug("write sp id " + spId + " of frame " + timsFrame.getId() + " Msl " + msl + " found in spectra max intensity " + intensities[maxIndex] + " in frame info " + timsFrame.getMaxIntensity());
 
                     SpectrumHeader spH = new SpectrumHeader(mzDBSpId, mzDBSpId, ttSpectrum.getTitle(), cycle, rtInSec, mslevel, noneOp, nbPeaks, false, spTIC, ttSpectrum.getMasses()[maxIndex], intensities[maxIndex], preMz, preCharge, mzDBSpId, (ScanList) null, mzdbPrecursor, noneOp);
@@ -402,7 +403,7 @@ public class Timstof2Mzdb {
         long start = System.currentTimeMillis();//-> VDS For timing logs
         IsolationWindowParamTree isolationParams = new IsolationWindowParamTree();
         List<CVParam> isolationParamsList = new ArrayList<>();
-        isolationParamsList.add(new CVParam(PsiMsCV.ISOLATION_WINDOW_TARGET_MZ().getAccession(), "isolation window target m/z", timstofPrecursor.getMonoIsotopicMz().toString(), "MS", Some.apply("MS"), Some.apply("MS:1000040"), Some.apply("m/z")));
+        isolationParamsList.add(new CVParam(PsiMsCV.ISOLATION_WINDOW_TARGET_MZ().getAccession(), "isolation window target m/z", String.valueOf(timstofPrecursor.getMonoIsotopicMz()), "MS", Some.apply("MS"), Some.apply("MS:1000040"), Some.apply("m/z")));
         isolationParams.setCVParams(JavaConverters.asScalaIteratorConverter(isolationParamsList.iterator()).asScala().toSeq());
         mzdbPrecursor.isolationWindow_$eq(isolationParams);
 
@@ -420,9 +421,9 @@ public class Timstof2Mzdb {
         SelectedIon ion = new SelectedIon();
         List<SelectedIon> selectedIons = new ArrayList<>();
         List<CVParam> ionParams = new ArrayList<>();
-        ionParams.add(new CVParam(PsiMsCV.SELECTED_ION_MZ().getAccession(), "selected ion m/z", timstofPrecursor.getMonoIsotopicMz().toString(), "MS", Some.apply("MS"), Some.apply("MS:1000040"), Some.apply("m/z")));
-        ionParams.add(new CVParam("MS:1000041", "charge state", timstofPrecursor.getCharge().toString(), "MS", noneOp, noneOp, noneOp));
-        ionParams.add(new CVParam("MS:1000042", "peak intensity", timstofPrecursor.getIntensity().toString(), "MS", Some.apply("MS"), Some.apply("MS:1000131"), Some.apply("number of counts")));
+        ionParams.add(new CVParam(PsiMsCV.SELECTED_ION_MZ().getAccession(), "selected ion m/z", String.valueOf(timstofPrecursor.getMonoIsotopicMz()), "MS", Some.apply("MS"), Some.apply("MS:1000040"), Some.apply("m/z")));
+        ionParams.add(new CVParam("MS:1000041", "charge state", String.valueOf(timstofPrecursor.getCharge()), "MS", noneOp, noneOp, noneOp));
+        ionParams.add(new CVParam("MS:1000042", "peak intensity", String.valueOf(timstofPrecursor.getIntensity()), "MS", Some.apply("MS"), Some.apply("MS:1000131"), Some.apply("number of counts")));
         ion.setCVParams(JavaConverters.asScalaIteratorConverter(ionParams.iterator()).asScala().toSeq());
         selectedIons.add(ion);
         ionList.selectedIons_$eq(JavaConverters.asScalaIteratorConverter(selectedIons.iterator()).asScala().toSeq());

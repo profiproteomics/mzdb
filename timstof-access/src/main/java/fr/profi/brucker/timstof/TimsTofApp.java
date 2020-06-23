@@ -64,7 +64,7 @@ public class TimsTofApp {
         //For MS Frame 1...
         TimstofReader reader =TimstofReader.getTimstofReader();
 
-        List<Precursor> frame1Precs = reader.readPrecursorInfo(fileHdl).stream().filter(p -> p.getParentMsFrame().equals(ms1Index)).collect(Collectors.toList());
+        List<Precursor> frame1Precs = reader.getPrecursorInfoById(fileHdl).values().stream().filter(p -> p.getParentMsFrame() == ms1Index).collect(Collectors.toList());
         long[] precIds = new long[frame1Precs.size()];
         for(int i =0 ;i <frame1Precs.size();i++)
             precIds[i] = frame1Precs.get(i).getId();
@@ -217,7 +217,7 @@ public class TimsTofApp {
 
         TimstofReader reader =  TimstofReader.getTimstofReader();
 
-        List<Precursor> allPrec = reader.readPrecursorInfo(fileHdl);
+        Collection<Precursor> allPrec = reader.getPrecursorInfoById(fileHdl).values();
         Map<Integer, List<Precursor>> precByFrame = allPrec.stream().collect(Collectors.groupingBy(Precursor::getParentMsFrame));
         List<Integer> parentMsFr = new ArrayList<>(precByFrame.keySet());
         parentMsFr.sort(Comparator.naturalOrder());

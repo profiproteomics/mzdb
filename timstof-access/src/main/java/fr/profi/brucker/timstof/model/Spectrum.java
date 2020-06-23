@@ -1,13 +1,16 @@
 package fr.profi.brucker.timstof.model;
 
-import java.util.ArrayList;
+import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.doubles.DoubleComparators;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
+
 import java.util.Arrays;
-import java.util.Map;
 
 public class Spectrum {
 
     private String m_title;
-    private Integer index;
+    private int index;
     private int msLevel;
 
     private float retentionTime;
@@ -22,16 +25,16 @@ public class Spectrum {
         this.m_intensities = intensities;
     }
 
-    public Spectrum(String title, int msLevel, float retentionTime, Map<Double, Float> masses2Intensities) {
+    public Spectrum(String title, int msLevel, float retentionTime, Double2FloatMap masses2Intensities) {
         this.m_title = title;
         this.msLevel = msLevel;
         this.retentionTime = retentionTime;
-        ArrayList<Double> masses =new ArrayList<>(masses2Intensities.keySet());
-        masses.sort(Double::compareTo);
+        DoubleArrayList masses =new DoubleArrayList(masses2Intensities.keySet());
+        masses.sort(DoubleComparators.NATURAL_COMPARATOR);
         this.m_masses = new double[masses.size()];
         this.m_intensities = new float[masses.size()];
         int i = 0;
-        for(Double mass: masses){
+        for(double mass: masses){
             m_masses[i] = mass;
             m_intensities[i] = masses2Intensities.get(mass);
             i++;

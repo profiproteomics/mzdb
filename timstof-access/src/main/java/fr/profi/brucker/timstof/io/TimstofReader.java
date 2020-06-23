@@ -6,6 +6,10 @@ import fr.profi.brucker.timstof.TDFNativeLibrariesFactory;
 import fr.profi.brucker.timstof.model.Precursor;
 import fr.profi.brucker.timstof.model.TimsFrame;
 import fr.profi.brucker.timstof.util.ArraysUtil;
+import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
+import it.unimi.dsi.fastutil.doubles.Double2FloatOpenHashMap;
+import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +91,7 @@ public class TimstofReader {
         TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
 
         Integer nbrFrames = metaDataReader.getFrameCount();
-        List<Integer> framesIds = new ArrayList<>();
+        IntArrayList framesIds = new IntArrayList();
         for (int i = 1; i <= nbrFrames; i++) {
             framesIds.add(i);
         }
@@ -117,8 +121,6 @@ public class TimstofReader {
     public static long time_readScans = 0;
     public static long time_extractPeaks =0;
     public static long time_indiceToMass =0;
-    public static long time_indiceToMassStep2 =0;
-
     public static long time_indiceToMassMap =0;
     public static long time_indiceToMassMapS1 =0;
     public static long time_indiceToMassMapS2 =0;
@@ -161,27 +163,50 @@ public class TimstofReader {
             // check out the layout of scanBuffer:
             // - the first numScan integers specify the number of peaks for each scan
             // - the next integers are pairs of (x,y) values for the scans. The x values are not masses but index values
-            Map<Integer, Map<Integer,Float>> scanIndices2IntensityMap = new HashMap<>();
-            List<Integer> indicesToSearch  = new ArrayList<>();
+//            Map<Integer, Map<Integer,Float>> scanIndices2IntensityMap = new HashMap<>();
+            Int2ObjectMap<Int2FloatMap> scanIndices2IntensityMap = new Int2ObjectOpenHashMap<>(nbrScans*4/3+1);
+            int[] indicesToSearch;
             long error_stat = 0;
             int d = nbrScans;
 //            int totalNbrPeaks =0;
 //            int totalNbrScans =0;
+            int nbPeaksTotal = 0;
+            for (int i = 0; i < nbrScans; ++i) {
+                nbPeaksTotal += scanBuffer[i];
+            }
+            indicesToSearch = new int[nbPeaksTotal];
+            int indicesToSearchIndex = 0;
+
+
             for (int i = 0; i < nbrScans; ++i) {
 
                 int numberPeaks = scanBuffer[i];
                 if(numberPeaks != 0) {
-                    int[] indices = Arrays.copyOfRange(scanBuffer, d, d + numberPeaks);
+
+                    int startIndices = d;
                     d += numberPeaks;
-                    int[] scanIntensities = Arrays.copyOfRange(scanBuffer, d, d + numberPeaks);
+
+                    int startScanIntensities = d;
                     d += numberPeaks;
+
+                    Int2FloatMap indiceInstensityMap = new Int2FloatOpenHashMap(numberPeaks*4/3+1);
+                    for(int peakIndex =0; peakIndex < numberPeaks; peakIndex++){
+                        int indix = scanBuffer[startIndices+peakIndex];
+                        indicesToSearch[indicesToSearchIndex++] = indix;
+                        indiceInstensityMap.put(indix, (float)scanBuffer[startScanIntensities+peakIndex]);
+                    }
+
+                    //int[] indices = Arrays.copyOfRange(scanBuffer, d, d + numberPeaks);
+//                    d += numberPeaks;
+//                    int[] scanIntensities = Arrays.copyOfRange(scanBuffer, d, d + numberPeaks);
+//                    d += numberPeaks;
 //                    totalNbrPeaks += numberPeaks;
 //                    totalNbrScans += 1;
-                    Map<Integer, Float> indiceInstensityMap = new HashMap<>();
-                    for(int peakIndex =0; peakIndex < numberPeaks; peakIndex++){
-                        indicesToSearch.add(indices[peakIndex]);
-                        indiceInstensityMap.put(indices[peakIndex],new Float(String.valueOf(scanIntensities[peakIndex])) );
-                    }
+//                    Map<Integer, Float> indiceInstensityMap = new HashMap<>();
+//                    for(int peakIndex =0; peakIndex < numberPeaks; peakIndex++){
+//                        indicesToSearch.add(indices[peakIndex]);
+//                        indiceInstensityMap.put(indices[peakIndex],new Float(String.valueOf(scanIntensities[peakIndex])) );
+//                    }
                     scanIndices2IntensityMap.put(i, indiceInstensityMap);
                 } //End at least 1 peak in scan
             } // End for all scans
@@ -192,8 +217,8 @@ public class TimstofReader {
 //            LOG.debug( "\tRead frame:\t{}\tnbr Scans:\t{}\tnbr peaks:\t{}", frameId, totalNbrScans, totalNbrPeaks);
 
             //convert indices to masses and create spectra data
-            double[] scanMasses =  new double[indicesToSearch.size()];
-            error_stat = m_tdfLib.tims_index_to_mz(fileHandle, frameId, ArraysUtil.convertToDoubleArray(indicesToSearch), scanMasses, scanMasses.length);
+            double[] scanMasses =  new double[nbPeaksTotal];
+            error_stat = m_tdfLib.tims_index_to_mz(fileHandle, frameId, ArraysUtil.copyFromIntArray(indicesToSearch), scanMasses, scanMasses.length);
             if (0 == error_stat) {
                 LOG.error(" !!! could not convert indices to masses for frame {}.", frameId);
             }
@@ -203,27 +228,42 @@ public class TimstofReader {
             time_indiceToMass += step21-step2; //--> VDS-TIME: Ecoli (10Go) ~1min
 
             //Create Indice to Mass Map
-            Map<Integer,Double> indiceToMassMap = new HashMap<>();
+          Int2DoubleMap indiceToMassMap = new Int2DoubleOpenHashMap(nbPeaksTotal*4/3+1);
+//            Map<Integer,Double> indiceToMassMap = new HashMap<>();
             for(int indiceIndex =0; indiceIndex < scanMasses.length; indiceIndex++)
-                indiceToMassMap.put(indicesToSearch.get(indiceIndex), scanMasses[indiceIndex]);
+                indiceToMassMap.put(indicesToSearch[indiceIndex], scanMasses[indiceIndex]);
 
             //Convert indice,intensity tuple to mass,intensity
-            Map<Integer, Map<Double,Float>> scanMsMsDataMap = new HashMap<>();
+          Int2ObjectMap<Double2FloatMap> scanMsMsDataMap = new Int2ObjectOpenHashMap<Double2FloatMap>(nbrScans*4/3+1);
+//            Map<Integer, Map<Double,Float>> scanMsMsDataMap = new HashMap<>();
             //-> VDS For timing logs
             long step22 = System.currentTimeMillis();
             time_indiceToMassMapS1 += step22-step21; //--> VDS-TIME: Ecoli (10Go) ~4-5min
 
-            for(Map.Entry<Integer, Map<Integer, Float>> entry: scanIndices2IntensityMap.entrySet()){
+            ObjectIterator<Int2ObjectMap.Entry<Int2FloatMap>> scansIter = scanIndices2IntensityMap.int2ObjectEntrySet().iterator();
+            Int2ObjectMap.Entry<Int2FloatMap> scansEntry;
+            while (scansIter.hasNext()) {
+//            for(Map.Entry<Integer, Map<Integer, Float>> entry: scanIndices2IntensityMap.entrySet()){
                 long startWh = System.currentTimeMillis();
-                Integer scanId = entry.getKey();
-                Map<Integer, Float> indiceToIntensity = entry.getValue();
-                Map<Double,Float> massIntentisyMap = new HashMap<>();
+                scansEntry = scansIter.next();
+                int scanId = scansEntry.getIntKey();
+                Int2FloatMap indiceToIntensity = scansEntry.getValue();
+                Double2FloatMap massIntentisyMap = new Double2FloatOpenHashMap(indiceToIntensity.size()*4/3+1);
+//                Integer scanId = entry.getKey();
+//                Map<Integer, Float> indiceToIntensity = entry.getValue();
+//                Map<Double,Float> massIntentisyMap = new HashMap<>();
                 long step23 = System.currentTimeMillis();
                 time_indiceToMassMapS2 += step23-startWh;//--> VDS-TIME: Ecoli (10Go) <1s
 
-                for(Map.Entry<Integer, Float> e : indiceToIntensity.entrySet()){
-                    Integer nextIndice =  e.getKey();
-                    massIntentisyMap.put(indiceToMassMap.get(nextIndice), e.getValue());
+                ObjectIterator<Int2FloatMap.Entry> indiceToIntensityIt = indiceToIntensity.int2FloatEntrySet().iterator();
+                Int2FloatMap.Entry nextInd2IntensityEntry;
+                while (indiceToIntensityIt.hasNext()){
+                  nextInd2IntensityEntry = indiceToIntensityIt.next();
+                  int nextIndice = nextInd2IntensityEntry.getIntKey();
+                  massIntentisyMap.put(indiceToMassMap.get(nextIndice), nextInd2IntensityEntry.getFloatValue());
+//                for(Map.Entry<Integer, Float> e : indiceToIntensity.entrySet()){
+//                    Integer nextIndice =  e.getKey();
+//                    massIntentisyMap.put(indiceToMassMap.get(nextIndice), e.getValue());
                 }
                 long step24 = System.currentTimeMillis();
                 time_indiceToMassMapS3 += step24-step23;//--> VDS-TIME: Ecoli (10Go) ~6-7mins
@@ -270,12 +310,12 @@ public class TimstofReader {
         return m_tdfLib;
     }
 
-    public List<Precursor> readPrecursorInfo(Long fileHandle){
+    public Int2ObjectMap<Precursor> getPrecursorInfoById(Long fileHandle){
         if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
         TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
 
-        return metaDataReader.readPrecursorInfo();
+        return metaDataReader.getPrecursorInfoById();
     }
 
     public Map<String, String> readGlobalProperties(Long fileHandle){

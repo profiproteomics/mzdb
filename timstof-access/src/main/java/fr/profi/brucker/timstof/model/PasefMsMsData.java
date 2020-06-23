@@ -2,11 +2,11 @@ package fr.profi.brucker.timstof.model;
 
 public class PasefMsMsData {
 
-    private Integer m_frameId;
+    private int m_frameId;
     private float m_frameRT;
-    private Integer m_startScan;
-    private Integer m_endScan;
-    private Integer m_precursorId;
+    private int m_startScan;
+    private int m_endScan;
+    private int m_precursorId;
     private Spectrum m_pasefMsMs;
     private double m_collisionEnergy;
     private Precursor m_precursor;
@@ -15,15 +15,15 @@ public class PasefMsMsData {
     /*
     * The isolation m/z
     */
-    private Double m_isolationMz;
+    private double m_isolationMz;
 
     /*
      * Specifies the total 3-dB width of the isolation window (in m/z units)
      * The center of which is given by 'IsolationMz'.
      */
-    private Double m_isolationWidth;
+    private double m_isolationWidth;
 
-    public PasefMsMsData(Integer frId, Integer startScan, Integer endScan, Double isolationMz, Double isolationWidth, double collisionEnergy, Integer precursorId, float frameRT){
+    public PasefMsMsData(int frId, int startScan, int endScan, double isolationMz, double isolationWidth, double collisionEnergy, int precursorId, float frameRT){
         this.m_frameId = frId;
         this.m_startScan = startScan;
         this.m_endScan = endScan;
@@ -38,27 +38,27 @@ public class PasefMsMsData {
         return m_collisionEnergy;
     }
 
-    public Integer getFrameId() {
+    public int getFrameId() {
         return m_frameId;
     }
 
-    public Integer getStartScan() {
+    public int getStartScan() {
         return m_startScan;
     }
 
-    public Integer getEndScan() {
+    public int getEndScan() {
         return m_endScan;
     }
 
-    public Integer getPrecursorId() {
+    public int getPrecursorId() {
         return m_precursorId;
     }
 
-    public Double getIsolationMz() {
+    public double getIsolationMz() {
         return m_isolationMz;
     }
 
-    public Double getIsolationWidth() {
+    public double getIsolationWidth() {
         return m_isolationWidth;
     }
 

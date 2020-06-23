@@ -3,6 +3,8 @@ package fr.profi.brucker.timstof.io;
 import fr.profi.brucker.timstof.model.PasefMsMsData;
 import fr.profi.brucker.timstof.model.Precursor;
 import fr.profi.brucker.timstof.model.TimsFrame;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +20,7 @@ import java.util.stream.Collectors;
 public class TDFMetadataReader {
 
     private static Logger LOG = LoggerFactory.getLogger(TDFMetadataReader.class);
-    private List<Precursor> m_allPrecursors;
+    private Int2ObjectMap<Precursor> m_allPrecursors;
     private File m_ttDirFile;
     static {
         try {
@@ -59,10 +61,16 @@ public class TDFMetadataReader {
         }
     }
 
-    List<Precursor> readPrecursorInfo(){
+    Int2ObjectMap<Precursor> getPrecursorInfoById (){
+        if(m_allPrecursors == null)
+            readPrecursorInfo();
+        return m_allPrecursors;
+    }
+
+    private  void readPrecursorInfo(){
         if(m_allPrecursors == null) {
             Connection connection = getConnection();
-            m_allPrecursors = new ArrayList<>();
+            m_allPrecursors = new Int2ObjectOpenHashMap<>();
             try {
                 if (connection != null) {
                     Statement statement = connection.createStatement();
@@ -79,19 +87,15 @@ public class TDFMetadataReader {
                         double intensity = rsFrames.getDouble(7);
                         int parentFr = rsFrames.getInt(8);
                         Precursor prec = new Precursor(precId, largestPeakMz, avgMz, monoIsotopMz, charge, scanNbr, intensity, parentFr);
-                        m_allPrecursors.add(prec);
+                        m_allPrecursors.put(precId, prec);
                     }
                     rsFrames.close();
                 }
-                return m_allPrecursors;
             } catch (SQLException e) {
                 e.printStackTrace();
                 LOG.error(e.getMessage());
-                return m_allPrecursors;
             }
-        } else
-            return m_allPrecursors;
-
+        }
     }
 
     List<TimsFrame> readFramesInfo(List<Integer> frameIds){
@@ -136,12 +140,18 @@ public class TDFMetadataReader {
 
    void readPasefMsMsInfo(List<TimsFrame> frames){
 
-        Map<Integer, List<PasefMsMsData>> pasefsMsMsInfoByFrId = new HashMap<>();
-        Map<Integer, TimsFrame> framesById = frames.stream().collect(Collectors.toMap(TimsFrame::getId,frame -> frame));
-        String frIdsAsStr = frames.stream().map(f -> f.getId().toString()).collect(Collectors.joining(","));
+        Int2ObjectMap<List<PasefMsMsData>> pasefsMsMsInfoByFrId = new Int2ObjectOpenHashMap<>();
+        Int2ObjectMap<TimsFrame> framesById = new Int2ObjectOpenHashMap<>();
+        StringBuilder sb = new StringBuilder();
+        for(int i=0; i<frames.size(); i++){
+            int fid = frames.get(i).getId();
+            framesById.put(fid, frames.get(i));
+            sb.append(fid);
+            if(i < (frames.size()-1))
+                sb.append(',');
+        }
+        String frIdsAsStr = sb.toString();
         this.readPrecursorInfo();
-        Map<Integer, Precursor> precursorById = new HashMap<>();
-        m_allPrecursors.stream().forEach(p-> precursorById.put(p.getId(),p));
         Connection connection =getConnection();
         try{
             if(connection != null) {
@@ -158,8 +168,8 @@ public class TDFMetadataReader {
                     double isolationWidth = rsFrames.getDouble(5);
                     double collisionEnergy = rsFrames.getDouble(6);
                     int precursorId = rsFrames.getInt(7);
-                    PasefMsMsData msmsInfo = new PasefMsMsData(frId, startScan, endScan, isolationmz, isolationWidth,collisionEnergy, precursorId,framesById.get(frId).getTime().floatValue());
-                    msmsInfo.setPrecursor(precursorById.get(precursorId));
+                    PasefMsMsData msmsInfo = new PasefMsMsData(frId, startScan, endScan, isolationmz, isolationWidth,collisionEnergy, precursorId, (float)framesById.get(frId).getTime());
+                    msmsInfo.setPrecursor(m_allPrecursors.get(precursorId));
                     List<PasefMsMsData> frameMsMsInfos = pasefsMsMsInfoByFrId.getOrDefault(frId, new ArrayList<>());
                     frameMsMsInfos.add(msmsInfo);
                     pasefsMsMsInfoByFrId.put(frId, frameMsMsInfos);
@@ -167,7 +177,6 @@ public class TDFMetadataReader {
                 rsFrames.close();
                 for(TimsFrame fr : frames){
                     fr.setPasefMsMsData(pasefsMsMsInfoByFrId.getOrDefault(fr.getId(), new ArrayList<>()));
-
                 }
             }
         }catch (SQLException e) {

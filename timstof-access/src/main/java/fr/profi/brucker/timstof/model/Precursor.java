@@ -2,25 +2,25 @@ package fr.profi.brucker.timstof.model;
 
 public class Precursor {
 
-    private Integer m_id;
+    private int m_id;
     /*
      *  m/z of the largest (most intensive) peak in this precursor's isotope pattern.
      */
-    private Double m_largestPeakMz;
+    private double m_largestPeakMz;
 
-    private Double m_averageMz;
-    private Double m_monoIsotopicMz;
-    private Integer m_charge;
+    private double m_averageMz;
+    private double m_monoIsotopicMz;
+    private int m_charge;
     /*
     * Mobility (in scan-number units) of this precursor in the corresponding MS^1 frame.
      */
-    private Double m_scanNumber;
+    private double m_scanNumber;
 
-    private Double m_intensity;
+    private double m_intensity;
 
-    private Integer m_parentMsFrame;
+    private int m_parentMsFrame;
 
-    public Precursor(Integer id, Double largestPeakMz, Double averageMz, Double monoIsotopicMz, Integer charge, Double scanNumber, Double intensity, Integer parentMsFrame) {
+    public Precursor(int id, double largestPeakMz, double averageMz, double monoIsotopicMz, int charge, double scanNumber, double intensity, int parentMsFrame) {
         this.m_id = id;
         this.m_largestPeakMz = largestPeakMz;
         this.m_averageMz =  averageMz;
@@ -31,35 +31,35 @@ public class Precursor {
         this.m_parentMsFrame = parentMsFrame;
     }
 
-    public Integer getId() {
+    public int getId() {
         return m_id;
     }
 
-    public Double getLargestPeakMz() {
+    public double getLargestPeakMz() {
         return m_largestPeakMz;
     }
 
-    public Double getAverageMz() {
+    public double getAverageMz() {
         return m_averageMz;
     }
 
-    public Double getMonoIsotopicMz() {
+    public double getMonoIsotopicMz() {
         return m_monoIsotopicMz;
     }
 
-    public Integer getCharge() {
+    public int getCharge() {
         return m_charge;
     }
 
-    public Double getScanNumber() {
+    public double getScanNumber() {
         return m_scanNumber;
     }
 
-    public Double getIntensity() {
+    public double getIntensity() {
         return m_intensity;
     }
 
-    public Integer getParentMsFrame() {
+    public int getParentMsFrame() {
         return m_parentMsFrame;
     }
 }
