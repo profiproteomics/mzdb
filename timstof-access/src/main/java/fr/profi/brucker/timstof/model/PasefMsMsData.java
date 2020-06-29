@@ -1,5 +1,7 @@
 package fr.profi.brucker.timstof.model;
 
+import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
+
 public class PasefMsMsData {
 
     private int m_frameId;
@@ -64,6 +66,14 @@ public class PasefMsMsData {
 
     protected void setSpectrumData(double[] masses, float[] intensities){
         m_pasefMsMs = new Spectrum("Frame_"+m_frameId+"-Precursor_"+m_precursor.getScanNumber(), 2, m_frameRT, masses, intensities);
+    }
+
+    protected void addSpectrumData(Double2FloatMap massInt){
+        if(m_pasefMsMs == null)
+            m_pasefMsMs = new Spectrum("Frame_"+m_frameId+"-Precursor_"+m_precursor.getScanNumber(), 2, m_frameRT, massInt);
+        else {
+            m_pasefMsMs.addPeaks(massInt);
+        }
     }
 
     protected void addSpectrumData(double[] masses, float[] intensities){

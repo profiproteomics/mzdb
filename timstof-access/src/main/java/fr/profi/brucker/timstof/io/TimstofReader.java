@@ -9,6 +9,8 @@ import fr.profi.brucker.timstof.util.ArraysUtil;
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.doubles.Double2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +28,16 @@ public class TimstofReader {
     private static TDFLibrary m_tdfLib;
     private static TimstofReader m_instance = null;
 
-    private static HashMap<Long,File> m_ttFilesByHandle;
-    private static HashMap<Long, TDFMetadataReader> m_cachedMetaReaderByHandle;
+    //VDS: keep these map or suppose only one file will be read...
+    private static Long2ObjectMap<File> m_ttFilesByHandle;
+    private static Long2ObjectMap<TDFMetadataReader> m_cachedMetaReaderByHandle;
 
     public static TimstofReader getTimstofReader() {
         if(m_instance == null) {
             m_tdfLib = TDFNativeLibrariesFactory.loadAndGetNativeLibraries();
             m_instance = new TimstofReader();
-            m_ttFilesByHandle = new HashMap<>();
-            m_cachedMetaReaderByHandle= new HashMap<>();
+            m_ttFilesByHandle = new Long2ObjectOpenHashMap<>();
+            m_cachedMetaReaderByHandle= new Long2ObjectOpenHashMap<>();
         }
         return m_instance;
     }
@@ -44,11 +47,11 @@ public class TimstofReader {
 
     public Long openTimstofFile(File f) throws IllegalArgumentException{
         long handle = m_tdfLib.tims_open(f.getAbsolutePath(), 0);
-        LOG.info(" Open file handle " + handle);
+        LOG.info(" Open file "+ f.getAbsolutePath()+ ", handle= " + handle);
         if (handle == 0) {
             byte[] errorBuffer = new byte[64];
             long len = m_tdfLib.tims_get_last_error_string(errorBuffer, errorBuffer.length);
-            StringBuffer errMsg = new StringBuffer(new String(errorBuffer, StandardCharsets.UTF_8));
+            StringBuilder errMsg = new StringBuilder(new String(errorBuffer, StandardCharsets.UTF_8));
             if (len > 64)
                 errMsg.append("...");
             LOG.error("TimsToff errorBuffer " + errMsg.toString());
@@ -59,13 +62,13 @@ public class TimstofReader {
         }
     }
 
-    public void closeTimstofFile(Long fileHandle){
+    public void closeTimstofFile(long fileHandle){
         m_ttFilesByHandle.remove(fileHandle);
         m_cachedMetaReaderByHandle.remove(fileHandle);
         m_tdfLib.tims_close(fileHandle);
     }
 
-    private void checkFileHandle(Long fileHandle){
+    private void checkFileHandle(long fileHandle){
         if (!m_ttFilesByHandle.containsKey(fileHandle))
             throw new IllegalArgumentException(" No Timstof file associated to handle " + fileHandle);
     }
@@ -74,24 +77,24 @@ public class TimstofReader {
      * This method will read and create TimsFrame as well as it will
      * fill these TimsFrame with MSMS Frame Info. It is equivalent to
      * call getTimsFrames then fillFramesWithMsMsInfo
-     * @param fileHandle
-     * @return
+     * @param fileHandle handle to identify TimsTof file to read from
+     * @return List of frame in specified file with associated MSMS info
      */
-    public List<TimsFrame> getFullTimsFrames(Long fileHandle) {
+    public List<TimsFrame> getFullTimsFrames(long fileHandle) {
         List<TimsFrame> timsFrames = getTimsFrames(fileHandle);
         fillFramesWithMsMsInfo(fileHandle,timsFrames);
         return  timsFrames;
    }
 
-    public List<TimsFrame> getTimsFrames(Long fileHandle) {
+    public List<TimsFrame> getTimsFrames(long fileHandle) {
         checkFileHandle(fileHandle);
 
         if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
         TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
 
-        Integer nbrFrames = metaDataReader.getFrameCount();
-        IntArrayList framesIds = new IntArrayList();
+        int nbrFrames = metaDataReader.getFrameCount();
+        IntArrayList framesIds = new IntArrayList(nbrFrames*4/3+1);
         for (int i = 1; i <= nbrFrames; i++) {
             framesIds.add(i);
         }
@@ -104,9 +107,8 @@ public class TimstofReader {
      * Only implemented for PASEF MsMsInfo
      * @param fileHandle: Timstof analysis file
      * @param frames: List of frame to get info for
-     * @return filled frames
      */
-    public void fillFramesWithMsMsInfo(Long fileHandle, List<TimsFrame> frames){
+    public void fillFramesWithMsMsInfo(long fileHandle, List<TimsFrame> frames){
         checkFileHandle(fileHandle);
 
         // --- read msms info
@@ -118,14 +120,14 @@ public class TimstofReader {
     }
 
     //-> VDS-TIME: For timing logs
-    public static long time_readScans = 0;
-    public static long time_extractPeaks =0;
-    public static long time_indiceToMass =0;
-    public static long time_indiceToMassMap =0;
-    public static long time_indiceToMassMapS1 =0;
-    public static long time_indiceToMassMapS2 =0;
-    public static long time_indiceToMassMapS3 =0;
-    public static int nbrRead =0;
+//    public static long time_readScans = 0;
+//    public static long time_extractPeaks =0;
+//    public static long time_indiceToMass =0;
+//    public static long time_indiceToMassMap =0;
+//    public static long time_indiceToMassMapS1 =0;
+//    public static long time_indiceToMassMapS2 =0;
+//    public static long time_indiceToMassMapS3 =0;
+//    public static int nbrRead =0;
 
     public  void fillFramesWithSpectrumData(Long fileHandle, List<TimsFrame> frames){
         checkFileHandle(fileHandle);
@@ -134,8 +136,8 @@ public class TimstofReader {
         // --- read scans/msms data
         for(TimsFrame frame : frames){
             //--> VDS-TIME: For timing logs
-            nbrRead++;
-            long start = System.currentTimeMillis();
+//            nbrRead++;
+//            long start = System.currentTimeMillis();
 
             long frameId = frame.getId();
             int nbrScans = frame.getNbrScans();
@@ -157,16 +159,15 @@ public class TimstofReader {
             int[] scanBuffer = new int[intBuf.remaining()];
             intBuf.get(scanBuffer);
             //-> VDS-TIME: For timing logs
-            long step1 = System.currentTimeMillis();
-            time_readScans += step1-start; //--> VDS-TIME: Ecoli (10Go).  ~4.5min
+//            long step1 = System.currentTimeMillis();
+//            time_readScans += step1-start; //--> VDS-TIME: Ecoli (10Go).  ~4.5min
 
             // check out the layout of scanBuffer:
             // - the first numScan integers specify the number of peaks for each scan
             // - the next integers are pairs of (x,y) values for the scans. The x values are not masses but index values
-//            Map<Integer, Map<Integer,Float>> scanIndices2IntensityMap = new HashMap<>();
             Int2ObjectMap<Int2FloatMap> scanIndices2IntensityMap = new Int2ObjectOpenHashMap<>(nbrScans*4/3+1);
             int[] indicesToSearch;
-            long error_stat = 0;
+            long error_stat;
             int d = nbrScans;
 //            int totalNbrPeaks =0;
 //            int totalNbrScans =0;
@@ -196,24 +197,14 @@ public class TimstofReader {
                         indiceInstensityMap.put(indix, (float)scanBuffer[startScanIntensities+peakIndex]);
                     }
 
-                    //int[] indices = Arrays.copyOfRange(scanBuffer, d, d + numberPeaks);
-//                    d += numberPeaks;
-//                    int[] scanIntensities = Arrays.copyOfRange(scanBuffer, d, d + numberPeaks);
-//                    d += numberPeaks;
-//                    totalNbrPeaks += numberPeaks;
-//                    totalNbrScans += 1;
-//                    Map<Integer, Float> indiceInstensityMap = new HashMap<>();
-//                    for(int peakIndex =0; peakIndex < numberPeaks; peakIndex++){
-//                        indicesToSearch.add(indices[peakIndex]);
-//                        indiceInstensityMap.put(indices[peakIndex],new Float(String.valueOf(scanIntensities[peakIndex])) );
-//                    }
                     scanIndices2IntensityMap.put(i, indiceInstensityMap);
                 } //End at least 1 peak in scan
             } // End for all scans
 
             //-> VDS For timing logs
-            long step2 = System.currentTimeMillis();
-            time_extractPeaks += step2-step1; //--> VDS-TIME: Ecoli (10Go)   In "Timstof2MzDB" entre 5 et 6min
+//            long step2 = System.currentTimeMillis();
+//            time_extractPeaks += step2-step1; //--> VDS-TIME: Ecoli (10Go)   In "Timstof2MzDB" entre 5 et 6min
+
 //            LOG.debug( "\tRead frame:\t{}\tnbr Scans:\t{}\tnbr peaks:\t{}", frameId, totalNbrScans, totalNbrPeaks);
 
             //convert indices to masses and create spectra data
@@ -224,55 +215,46 @@ public class TimstofReader {
             }
 
             //-> VDS For timing logs
-            long step21 = System.currentTimeMillis();
-            time_indiceToMass += step21-step2; //--> VDS-TIME: Ecoli (10Go) ~1min
+//            long step21 = System.currentTimeMillis();
+//            time_indiceToMass += step21-step2; //--> VDS-TIME: Ecoli (10Go) ~1min
 
             //Create Indice to Mass Map
           Int2DoubleMap indiceToMassMap = new Int2DoubleOpenHashMap(nbPeaksTotal*4/3+1);
-//            Map<Integer,Double> indiceToMassMap = new HashMap<>();
-            for(int indiceIndex =0; indiceIndex < scanMasses.length; indiceIndex++)
-                indiceToMassMap.put(indicesToSearch[indiceIndex], scanMasses[indiceIndex]);
+          for(int indiceIndex =0; indiceIndex < scanMasses.length; indiceIndex++)
+            indiceToMassMap.put(indicesToSearch[indiceIndex], scanMasses[indiceIndex]);
 
-            //Convert indice,intensity tuple to mass,intensity
-          Int2ObjectMap<Double2FloatMap> scanMsMsDataMap = new Int2ObjectOpenHashMap<Double2FloatMap>(nbrScans*4/3+1);
-//            Map<Integer, Map<Double,Float>> scanMsMsDataMap = new HashMap<>();
-            //-> VDS For timing logs
-            long step22 = System.currentTimeMillis();
-            time_indiceToMassMapS1 += step22-step21; //--> VDS-TIME: Ecoli (10Go) ~4-5min
+          //Convert indice,intensity tuple to mass,intensity
+          Int2ObjectMap<Double2FloatMap> scanMsMsDataMap = new Int2ObjectOpenHashMap<>(nbrScans * 4 / 3 + 1);
+          //-> VDS For timing logs
+//          long step22 = System.currentTimeMillis();
+//          time_indiceToMassMapS1 += step22-step21; //--> VDS-TIME: Ecoli (10Go) ~4-5min
 
-            ObjectIterator<Int2ObjectMap.Entry<Int2FloatMap>> scansIter = scanIndices2IntensityMap.int2ObjectEntrySet().iterator();
-            Int2ObjectMap.Entry<Int2FloatMap> scansEntry;
-            while (scansIter.hasNext()) {
-//            for(Map.Entry<Integer, Map<Integer, Float>> entry: scanIndices2IntensityMap.entrySet()){
-                long startWh = System.currentTimeMillis();
-                scansEntry = scansIter.next();
-                int scanId = scansEntry.getIntKey();
-                Int2FloatMap indiceToIntensity = scansEntry.getValue();
-                Double2FloatMap massIntentisyMap = new Double2FloatOpenHashMap(indiceToIntensity.size()*4/3+1);
-//                Integer scanId = entry.getKey();
-//                Map<Integer, Float> indiceToIntensity = entry.getValue();
-//                Map<Double,Float> massIntentisyMap = new HashMap<>();
-                long step23 = System.currentTimeMillis();
-                time_indiceToMassMapS2 += step23-startWh;//--> VDS-TIME: Ecoli (10Go) <1s
+          ObjectIterator<Int2ObjectMap.Entry<Int2FloatMap>> scansIter = scanIndices2IntensityMap.int2ObjectEntrySet().iterator();
+          Int2ObjectMap.Entry<Int2FloatMap> scansEntry;
+          while (scansIter.hasNext()) {
+//              long startWh = System.currentTimeMillis();
+              scansEntry = scansIter.next();
+              int scanId = scansEntry.getIntKey();
+              Int2FloatMap indiceToIntensity = scansEntry.getValue();
+              Double2FloatMap massIntentisyMap = new Double2FloatOpenHashMap(indiceToIntensity.size()*4/3+1);
+//              long step23 = System.currentTimeMillis();
+//              time_indiceToMassMapS2 += step23-startWh;//--> VDS-TIME: Ecoli (10Go) <1s
 
-                ObjectIterator<Int2FloatMap.Entry> indiceToIntensityIt = indiceToIntensity.int2FloatEntrySet().iterator();
-                Int2FloatMap.Entry nextInd2IntensityEntry;
-                while (indiceToIntensityIt.hasNext()){
-                  nextInd2IntensityEntry = indiceToIntensityIt.next();
-                  int nextIndice = nextInd2IntensityEntry.getIntKey();
-                  massIntentisyMap.put(indiceToMassMap.get(nextIndice), nextInd2IntensityEntry.getFloatValue());
-//                for(Map.Entry<Integer, Float> e : indiceToIntensity.entrySet()){
-//                    Integer nextIndice =  e.getKey();
-//                    massIntentisyMap.put(indiceToMassMap.get(nextIndice), e.getValue());
-                }
-                long step24 = System.currentTimeMillis();
-                time_indiceToMassMapS3 += step24-step23;//--> VDS-TIME: Ecoli (10Go) ~6-7mins
-                scanMsMsDataMap.put(scanId,massIntentisyMap);
-            }
-            long end = System.currentTimeMillis();
-            //--> VDS-TIME:  Ecoli (10Go). FROM step2 In "Timstof2MzDB" ~15.2min // = time_indiceToMassMapS2 +  time_indiceToMassMapS3 + scanMsMsDataMap.put: ~ 6-7min
-            time_indiceToMassMap += end- step22;
-            frame.setMassIntensityByScan(scanMsMsDataMap);
+              ObjectIterator<Int2FloatMap.Entry> indiceToIntensityIt = indiceToIntensity.int2FloatEntrySet().iterator();
+              Int2FloatMap.Entry nextInd2IntensityEntry;
+              while (indiceToIntensityIt.hasNext()){
+                nextInd2IntensityEntry = indiceToIntensityIt.next();
+                int nextIndice = nextInd2IntensityEntry.getIntKey();
+                massIntentisyMap.put(indiceToMassMap.get(nextIndice), nextInd2IntensityEntry.getFloatValue());
+              }
+//              long step24 = System.currentTimeMillis();
+//              time_indiceToMassMapS3 += step24-step23;//--> VDS-TIME: Ecoli (10Go) ~6-7mins
+              scanMsMsDataMap.put(scanId,massIntentisyMap);
+          }
+//          long end = System.currentTimeMillis();
+          //--> VDS-TIME:  Ecoli (10Go). FROM step2 In "Timstof2MzDB" ~15.2min // = time_indiceToMassMapS2 +  time_indiceToMassMapS3 + scanMsMsDataMap.put: ~ 6-7min
+//          time_indiceToMassMap += end- step22;
+          frame.setMassIntensityByScan(scanMsMsDataMap);
 
             //VDS: test to get IonMobility Value
 //            double[] scanAsDbl = new double [scanMsMsDataMap.size()];
@@ -292,17 +274,17 @@ public class TimstofReader {
 //
 //                }
 //            }
-            //-> VDS For timing logs
-            if(nbrRead % 100 == 0){
-                LOG.debug(" TIME reading "+nbrRead+" frame(s):\tScans data read\t"+time_readScans+ "\tExtract peaks from buffer \t"+time_extractPeaks+"\tGet masses from indexes\t"+time_indiceToMass+"\tmap from indexes to mass\t"+time_indiceToMassMapS1+" - "+time_indiceToMassMapS2+" - "+time_indiceToMassMapS3+" - "+time_indiceToMassMap);
-                time_readScans = 0;
-                time_extractPeaks = 0;
-                time_indiceToMass=0;
-                time_indiceToMassMap=0;
-                time_indiceToMassMapS1=0;
-                time_indiceToMassMapS2=0;
-                time_indiceToMassMapS3=0;
-            }
+          //-> VDS For timing logs
+//          if(nbrRead % 100 == 0){
+//              LOG.debug(" TIME reading "+nbrRead+" frame(s):\tScans data read\t"+time_readScans+ "\tExtract peaks from buffer \t"+time_extractPeaks+"\tGet masses from indexes\t"+time_indiceToMass+"\tmap from indexes to mass\t"+time_indiceToMassMapS1+" - "+time_indiceToMassMapS2+" - "+time_indiceToMassMapS3+" - "+time_indiceToMassMap);
+//              time_readScans = 0;
+//              time_extractPeaks = 0;
+//              time_indiceToMass=0;
+//              time_indiceToMassMap=0;
+//              time_indiceToMassMapS1=0;
+//              time_indiceToMassMapS2=0;
+//              time_indiceToMassMapS3=0;
+//          }
         }   //End for all Frames
     }
 
@@ -310,7 +292,7 @@ public class TimstofReader {
         return m_tdfLib;
     }
 
-    public Int2ObjectMap<Precursor> getPrecursorInfoById(Long fileHandle){
+    public Int2ObjectMap<Precursor> getPrecursorInfoById(long fileHandle){
         if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
         TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
@@ -318,7 +300,7 @@ public class TimstofReader {
         return metaDataReader.getPrecursorInfoById();
     }
 
-    public Map<String, String> readGlobalProperties(Long fileHandle){
+    public Map<String, String> readGlobalProperties(long fileHandle){
         if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
         TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
