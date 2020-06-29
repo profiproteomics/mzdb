@@ -3,7 +3,6 @@ package fr.profi.brucker.timstof.model;
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleComparators;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
 
 import java.util.Arrays;
 
@@ -55,12 +54,29 @@ public class Spectrum {
         m_intensities = newIntensities;
     }
 
+    void  addPeaks(Double2FloatMap masses2Intensities){
+        DoubleArrayList masses =new DoubleArrayList(masses2Intensities.keySet());
+        masses.sort(DoubleComparators.NATURAL_COMPARATOR);
+        double[] newMasses = Arrays.copyOf(m_masses, m_masses.length + masses.size());
+        float[] newIntensities = Arrays.copyOf(m_intensities, m_intensities.length + masses.size());
+        int i = m_masses.length;
+        for(double mass: masses){
+            newMasses[i] = mass;
+            newIntensities[i] = masses2Intensities.get(mass);
+            i++;
+        }
+        m_masses = newMasses;
+        m_intensities = newIntensities;
+    }
+
     public double[] getMasses(){
-        return Arrays.copyOf(m_masses, m_masses.length);
+        //return Arrays.copyOf(m_masses, m_masses.length);
+        return m_masses;
     }
 
     public float[] getIntensities(){
-        return Arrays.copyOf(m_intensities, m_intensities.length);
+//        return Arrays.copyOf(m_intensities, m_intensities.length);
+        return m_intensities;
     }
 
     public String getTitle(){

@@ -5,6 +5,8 @@ import fr.profi.brucker.timstof.model.Precursor;
 import fr.profi.brucker.timstof.model.TimsFrame;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class TDFMetadataReader {
 
@@ -35,7 +36,7 @@ public class TDFMetadataReader {
         m_ttDirFile = timsTofDataDir;
     }
 
-    Integer getFrameCount(){
+    int getFrameCount(){
         Connection connection;
         try {
 
@@ -98,14 +99,14 @@ public class TDFMetadataReader {
         }
     }
 
-    List<TimsFrame> readFramesInfo(List<Integer> frameIds){
-        List<TimsFrame> frames = new ArrayList<>();
+    List<TimsFrame> readFramesInfo(IntList frameIds){
+        List<TimsFrame> frames = new ObjectArrayList<>();
         Connection connection =getConnection();
         try{
             if(connection != null) {
 
                 StringBuilder sqlQuery = new StringBuilder("SELECT Id, NumScans, NumPeaks, ScanMode, MsMsType, MaxIntensity, SummedIntensities,  Time FROM Frames WHERE Id in (");
-                for(Integer id : frameIds){
+                for(int id : frameIds){
                     sqlQuery.append(id).append(",");
                 }
                 sqlQuery.replace(sqlQuery.length()-1, sqlQuery.length(),")");

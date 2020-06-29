@@ -182,27 +182,27 @@ public class TimsFrame implements Comparable<TimsFrame> {
         while (scansIdIt.hasNext()){
             int scId = scansIdIt.nextInt();
             Double2FloatMap massInt = massIntByScan.get(scId);
-            double[] scanMasses = new double[massInt.size()];
-            float[] scanIntensities = new float[massInt.size()];
-            ObjectIterator<Double2FloatMap.Entry> entries = massInt.double2FloatEntrySet().iterator();
-            Double2FloatMap.Entry dataEntry;
-            final AtomicInteger index = new AtomicInteger();
-            while (entries.hasNext()){
-                dataEntry = entries.next();
-                double massVal = dataEntry.getDoubleKey();
-                float intensityVal = dataEntry.getFloatValue();
-                scanMasses[index.get()] = massVal;
-                scanIntensities[index.getAndIncrement()] = intensityVal;
-            }
 
             if(m_isPasef) {  //VDS : To see for MsMs Data !
                 for (PasefMsMsData msmsData : m_pasefMsMsInfoByPrecursor.values()) {
                     if (msmsData.containsScan(scId)) {
                         //Found PasefMsMs for current scan
-                        msmsData.addSpectrumData(scanMasses, scanIntensities);
+                        msmsData.addSpectrumData(massInt);
                     }
                 }
             } else {
+                double[] scanMasses = new double[massInt.size()];
+                float[] scanIntensities = new float[massInt.size()];
+                ObjectIterator<Double2FloatMap.Entry> entries = massInt.double2FloatEntrySet().iterator();
+                Double2FloatMap.Entry dataEntry;
+                int index = 0;
+                while (entries.hasNext()){
+                    dataEntry = entries.next();
+                    double massVal = dataEntry.getDoubleKey();
+                    float intensityVal = dataEntry.getFloatValue();
+                    scanMasses[index] = massVal;
+                    scanIntensities[index++] = intensityVal;
+                }
                 m_spectrumByScan.put(scId, new Spectrum("Frame_"+m_id+"-scan_"+scId,1, (float)getTime(), scanMasses, scanIntensities));
             }
         }
@@ -266,14 +266,14 @@ public class TimsFrame implements Comparable<TimsFrame> {
             return null;
 
         if(m_isPasef) {
-            ObjectList<Spectrum> allSp = new ObjectArrayList<Spectrum>();
+            ObjectList<Spectrum> allSp = new ObjectArrayList<>();
             ObjectIterator<PasefMsMsData> pasefMsMsDataIt = m_pasefMsMsInfoByPrecursor.values().iterator();
             while (pasefMsMsDataIt.hasNext()) {
                 allSp.add(pasefMsMsDataIt.next().getPasefSpectrum());
             }
             return allSp;
         } else
-            return new ObjectArrayList<Spectrum>(m_spectrumByScan.values());
+            return new ObjectArrayList<>(m_spectrumByScan.values());
     }
 
     /**
@@ -298,11 +298,11 @@ public class TimsFrame implements Comparable<TimsFrame> {
             ObjectList<Spectrum> allSp = getAllSpectra();
             //VDS TODO If list allSp empty: create empty unique Spectra or return null ?
             Double2FloatMap retainedMasses2Intensity = new Double2FloatOpenHashMap();
-            //   int nbrPeak = 0;
+               int nbrPeak = 0;
             for (Spectrum sp : allSp) {
                 double[] spMasses = sp.getMasses();
                 float[] spInstensities = sp.getIntensities();
-                //  nbrPeak += spMasses.length;
+              nbrPeak += spMasses.length;
                 for (int i = 0; i < spMasses.length; i++) {
                     double nextMass =spMasses[i];
                     float currentIntensity = retainedMasses2Intensity.getOrDefault(nextMass, 0f);
@@ -312,7 +312,7 @@ public class TimsFrame implements Comparable<TimsFrame> {
                 }
             }
             int msLevel = m_msmsType.equals(MsMsType.MS) ? 1 : 2;
-            // LOG.trace("Frame_" + m_id+" has "+nbrPeak+" peaks, reduced to "+retainedMasses2Intensity.size());
+            LOG.trace("Frame_" + m_id+" has "+nbrPeak+" peaks, reduced to "+retainedMasses2Intensity.size());
             m_singleSpectrum = new Spectrum("Frame_" + m_id, msLevel, (float)m_time, retainedMasses2Intensity);
         }
 
