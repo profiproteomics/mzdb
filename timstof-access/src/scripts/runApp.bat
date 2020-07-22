@@ -1,1 +1,0 @@
-java -Xmx4G -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=30 -cp "config;timstof-access-${pom.version}.jar;lib/*" -Dlogback.configurationFile=config/logback.xml fr.profi.brucker.timstof.TimsTofApp %*
