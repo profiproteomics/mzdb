@@ -4,7 +4,8 @@ package fr.profi.brucker.timstof.io;
 import fr.profi.brucker.timstof.TDFLibrary;
 import fr.profi.brucker.timstof.TDFNativeLibrariesFactory;
 import fr.profi.brucker.timstof.model.Precursor;
-import fr.profi.brucker.timstof.model.TimsFrame;
+import fr.profi.brucker.timstof.model.AbstractTimsFrame;
+import fr.profi.brucker.timstof.model.TimsPASEFFrame;
 import fr.profi.brucker.timstof.util.ArraysUtil;
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.doubles.Double2FloatOpenHashMap;
@@ -80,13 +81,18 @@ public class TimstofReader {
      * @param fileHandle handle to identify TimsTof file to read from
      * @return List of frame in specified file with associated MSMS info
      */
-    public List<TimsFrame> getFullTimsFrames(long fileHandle) {
-        List<TimsFrame> timsFrames = getTimsFrames(fileHandle);
-        fillFramesWithMsMsInfo(fileHandle,timsFrames);
+    public List<AbstractTimsFrame> getFullTimsFrames(long fileHandle) {
+        List<AbstractTimsFrame> timsFrames = getTimsFrames(fileHandle);
+        List<TimsPASEFFrame> pasefFrames = new ArrayList<>();
+        timsFrames.forEach( f -> {
+            if(f.getMsmsType().equals(AbstractTimsFrame.MsMsType.PASEF))
+                pasefFrames.add((TimsPASEFFrame)f);
+        });
+        fillFramesWithMsMsInfo(fileHandle,pasefFrames);
         return  timsFrames;
    }
 
-    public List<TimsFrame> getTimsFrames(long fileHandle) {
+    public List<AbstractTimsFrame> getTimsFrames(long fileHandle) {
         checkFileHandle(fileHandle);
 
         if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
@@ -108,7 +114,7 @@ public class TimstofReader {
      * @param fileHandle: Timstof analysis file
      * @param frames: List of frame to get info for
      */
-    public void fillFramesWithMsMsInfo(long fileHandle, List<TimsFrame> frames){
+    public void fillFramesWithMsMsInfo(long fileHandle, List<TimsPASEFFrame> frames){
         checkFileHandle(fileHandle);
 
         // --- read msms info
@@ -129,12 +135,12 @@ public class TimstofReader {
 //    public static long time_indiceToMassMapS3 =0;
 //    public static int nbrRead =0;
 
-    public  void fillFramesWithSpectrumData(Long fileHandle, List<TimsFrame> frames){
+    public  void fillFramesWithSpectrumData(Long fileHandle, List<? extends AbstractTimsFrame> frames){
         checkFileHandle(fileHandle);
         //--- VDS TODO check or Force fillFramesWithMsMsInfo
 
         // --- read scans/msms data
-        for(TimsFrame frame : frames){
+        for(AbstractTimsFrame frame : frames){
             //--> VDS-TIME: For timing logs
 //            nbrRead++;
 //            long start = System.currentTimeMillis();
@@ -142,7 +148,7 @@ public class TimstofReader {
             long frameId = frame.getId();
             int nbrScans = frame.getNbrScans();
 
-            int inputBufferLen = (frame.isPasef()) ?  200000 : 3000000; //OK for PASEF frames
+            int inputBufferLen = (frame.getMsmsType().equals(AbstractTimsFrame.MsMsType.PASEF)) ?  200000 : 3000000; //OK for PASEF frames
             byte[] buffer = new byte[inputBufferLen];
             long buf_len = m_tdfLib.tims_read_scans_v2(fileHandle, frameId, 0, nbrScans, buffer, inputBufferLen);
             if (buf_len == 0) {

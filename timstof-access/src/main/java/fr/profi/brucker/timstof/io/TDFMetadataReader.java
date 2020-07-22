@@ -1,8 +1,6 @@
 package fr.profi.brucker.timstof.io;
 
-import fr.profi.brucker.timstof.model.PasefMsMsData;
-import fr.profi.brucker.timstof.model.Precursor;
-import fr.profi.brucker.timstof.model.TimsFrame;
+import fr.profi.brucker.timstof.model.*;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -99,8 +97,8 @@ public class TDFMetadataReader {
         }
     }
 
-    List<TimsFrame> readFramesInfo(IntList frameIds){
-        List<TimsFrame> frames = new ObjectArrayList<>();
+    List<AbstractTimsFrame> readFramesInfo(IntList frameIds){
+        List<AbstractTimsFrame> frames = new ObjectArrayList<>();
         Connection connection =getConnection();
         try{
             if(connection != null) {
@@ -124,8 +122,18 @@ public class TDFMetadataReader {
                     int maxInt = rsFrames.getInt(6);
                     int summedInt = rsFrames.getInt(7);
                     double time= rsFrames.getDouble(8);
-                    TimsFrame frame = new TimsFrame(frId, nbScans, nbPeak, scanMode, msmsType, maxInt, summedInt, time);
-                    frames.add(frame);
+                    AbstractTimsFrame.MsMsType msmsTypeVal = AbstractTimsFrame.MsMsType.findByCode(msmsType);
+                    AbstractTimsFrame frame = null;
+                    switch (msmsTypeVal){
+                        case PASEF:
+                            frame = new TimsPASEFFrame(frId, nbScans, nbPeak, scanMode, maxInt, summedInt, time);
+                            break;
+                        case MS:
+                            frame = new TimsMSFrame(frId, nbScans, nbPeak, scanMode, maxInt, summedInt, time);
+                            break;
+                    }
+                    if(frame != null)
+                        frames.add(frame);
                 }
                 rsFrames.close();
             }
@@ -139,10 +147,10 @@ public class TDFMetadataReader {
         }
     }
 
-   void readPasefMsMsInfo(List<TimsFrame> frames){
+   void readPasefMsMsInfo(List<TimsPASEFFrame> frames){
 
         Int2ObjectMap<List<PasefMsMsData>> pasefsMsMsInfoByFrId = new Int2ObjectOpenHashMap<>();
-        Int2ObjectMap<TimsFrame> framesById = new Int2ObjectOpenHashMap<>();
+        Int2ObjectMap<AbstractTimsFrame> framesById = new Int2ObjectOpenHashMap<>();
         StringBuilder sb = new StringBuilder();
         for(int i=0; i<frames.size(); i++){
             int fid = frames.get(i).getId();
@@ -176,7 +184,7 @@ public class TDFMetadataReader {
                     pasefsMsMsInfoByFrId.put(frId, frameMsMsInfos);
                 }
                 rsFrames.close();
-                for(TimsFrame fr : frames){
+                for(TimsPASEFFrame fr : frames){
                     fr.setPasefMsMsData(pasefsMsMsInfoByFrId.getOrDefault(fr.getId(), new ArrayList<>()));
                 }
             }
