@@ -14,9 +14,9 @@
         <fileSet>
             <directory>${project.build.directory}</directory>
             <includes>
-                <include>*.jar</include> <!-- Proline-Cortex Jar itself -->
-                <include>runApp.sh</include>
-                <include>runApp.bat</include>
+                <include>*.jar</include> <!-- timstof-access Jar itself -->
+                <include>timstof2mzdb.sh</include>
+                <include>timstof2mzdb.bat</include>
             </includes>
             <outputDirectory>/</outputDirectory>
         </fileSet>
