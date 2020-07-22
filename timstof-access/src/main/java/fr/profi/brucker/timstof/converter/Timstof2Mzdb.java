@@ -1,5 +1,7 @@
 package fr.profi.brucker.timstof.converter;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
 import com.github.mzdb4s.db.model.*;
 import com.github.mzdb4s.db.model.params.*;
 import com.github.mzdb4s.db.model.params.param.CVParam;
@@ -9,7 +11,8 @@ import com.github.mzdb4s.io.writer.MzDbWriter;
 import com.github.mzdb4s.msdata.*;
 import com.github.sqlite4s.SQLiteFactory$;
 import fr.profi.brucker.timstof.io.TimstofReader;
-import fr.profi.brucker.timstof.model.TimsFrame;
+import fr.profi.brucker.timstof.model.AbstractTimsFrame;
+import fr.profi.brucker.timstof.model.TimsPASEFFrame;
 import it.unimi.dsi.fastutil.ints.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +30,15 @@ import java.util.*;
 public class Timstof2Mzdb {
 
     private final static Logger LOG = LoggerFactory.getLogger(Timstof2Mzdb.class);
-    static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\200ngHela_compressed\\200ngHeLaPASEF_2min_compressed.d";
-//    static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\20200527_essais\\2022002-1_eColi-10ng-30min_Slot1-10_1_313.d";
+//    static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\200ngHela_compressed\\200ngHeLaPASEF_2min_compressed.d";
+    static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\20200527_essais\\2022002-1_eColi-10ng-30min_Slot1-10_1_304.d";
+//    static String filepath =  "C:\\vero\\DEV\\TimsTof\\example_data\\Ecoli10ng_2715\\Ecoli10ng60minLCGrad_nanoElute_Slot1-46_01_2715.d";
+
     scala.Option noneOp = scala.None$.MODULE$;
 
 
     private File m_ttFile;
+    private SpectrumGeneratingMethod m_ms1Method;
     private long m_fileHdl;
     private TimstofReader m_ttReader;
 
@@ -42,14 +48,15 @@ public class Timstof2Mzdb {
     private Int2IntMap m_frame2FirstSpectraIndex;
     private Int2IntMap m_frame2ReadSpectraCount;
 
-    private Int2ObjectMap<TimsFrame> m_frameById;
+    private Int2ObjectMap<AbstractTimsFrame> m_frameById;
     private Int2ObjectMap<fr.profi.brucker.timstof.model.Precursor> m_precursorByIds;
     DataEncoding m_profileDataEnconding;
     DataEncoding m_centroidDataEnconding;
     DataEncoding m_fittedDataEnconding;
 
-    public Timstof2Mzdb(File ttFile){
+    public Timstof2Mzdb(File ttFile, SpectrumGeneratingMethod ms1Method){
         this.m_ttFile = ttFile;
+        this.m_ms1Method = ms1Method;
         this.m_ttReader = TimstofReader.getTimstofReader();
         this.m_fileHdl = m_ttReader.openTimstofFile(m_ttFile);
         initFramesData();
@@ -65,16 +72,16 @@ public class Timstof2Mzdb {
     private void initFramesData(){
         long start = System.currentTimeMillis();
         //Read TimsFrames with associated MetaData
-        List<TimsFrame> m_frames = m_ttReader.getFullTimsFrames(m_fileHdl);
-        Collections.sort(m_frames);
+        List<AbstractTimsFrame> frames = m_ttReader.getFullTimsFrames(m_fileHdl);
+        Collections.sort(frames);
 
         //Init indexes map
         int spectrumIndex =1;
         m_spectra2FrameIndex = new Int2IntOpenHashMap();
-        m_frame2FirstSpectraIndex = new Int2IntOpenHashMap(m_frames.size()*4/3+1);
-        m_frameById = new Int2ObjectOpenHashMap<>(m_frames.size()*4/3+1);
-        for(TimsFrame tf : m_frames){
-            int nbrSpectrum = (!tf.isPasef()) ? 1 : tf.getPasefMsMSData().size(); //VDS TODO For now 1 spectrum for MS ==> May have one per scans groups!!
+        m_frame2FirstSpectraIndex = new Int2IntOpenHashMap(frames.size()*4/3+1);
+        m_frameById = new Int2ObjectOpenHashMap<>(frames.size()*4/3+1);
+        for(AbstractTimsFrame tf : frames){
+            int nbrSpectrum = tf.getSpectrumCount(); //VDS TODO For now 1 spectrum for MS ==> May have one per scans groups!!
 
             m_frame2FirstSpectraIndex.put(tf.getId(),spectrumIndex);
             for(int i=0;i<nbrSpectrum; i++){
@@ -83,11 +90,11 @@ public class Timstof2Mzdb {
             }
             m_frameById.put(tf.getId(), tf);
         }
-        m_frame2ReadSpectraCount = new Int2IntOpenHashMap(m_frames.size()*4/3+1);
+        m_frame2ReadSpectraCount = new Int2IntOpenHashMap(frames.size()*4/3+1);
         m_precursorByIds = m_ttReader.getPrecursorInfoById(m_fileHdl);
 
         long end  = System.currentTimeMillis();
-        LOG.info("Read meta data for "+ m_frames.size()+ " frames and "+m_spectra2FrameIndex.size()+" spectrum. Duration : "+ (end-start) +" ms");
+        LOG.info("Read meta data for "+ frames.size()+ " frames and "+m_spectra2FrameIndex.size()+" spectrum. Duration : "+ (end-start) +" ms");
     }
 
     private MzDbMetaData createMzDbMetaData(){
@@ -205,14 +212,14 @@ public class Timstof2Mzdb {
             int nbrSp  = m_spectra2FrameIndex.size();
 
             //--> VDS-TIME: to get duration debug info
-//            long time_readFrame = 0;
-//            long time_ms2 = 0;
-////            long time_fillPrec = 0;
-//            long time_ms1 = 0;
-//            long time_write = 0;
+            long time_readFrame = 0;
+            long time_ms2 = 0;
+//            long time_fillPrec = 0;
+            long time_ms1 = 0;
+            long time_write = 0;
 
             while(spId <= nbrSp) { //Assume spectrum id start at 1 and are incremental => done in initFrameData above
-//                long start = System.currentTimeMillis();  //--> VDS-TIME: to get duration debug info
+                long start = System.currentTimeMillis();  //--> VDS-TIME: to get duration debug info
 
                 int frameId = m_spectra2FrameIndex.get(spId);
 
@@ -222,7 +229,7 @@ public class Timstof2Mzdb {
                 m_frame2ReadSpectraCount.put(frameId,nbrScanForFrame);
 
                 //get TimsFrame with specific id
-                TimsFrame timsFrame = m_frameById.get(frameId);
+                AbstractTimsFrame timsFrame = m_frameById.get(frameId);
                 if (timsFrame == null ) {
                     LOG.warn("#### NO FRAME " + frameId+" for spectra "+spId);
                     spId++;
@@ -230,7 +237,7 @@ public class Timstof2Mzdb {
                 }
                 if (!timsFrame.spectrumRead()) {
                     //get spectrum information if not read yet
-                    List<TimsFrame> tfs = Collections.singletonList(timsFrame);
+                    List<AbstractTimsFrame> tfs = Collections.singletonList(timsFrame);
                     m_ttReader.fillFramesWithSpectrumData(m_fileHdl, tfs);
                 }
 
@@ -240,9 +247,9 @@ public class Timstof2Mzdb {
                 Option preCharge = noneOp;
 
                 //--> VDS-TIME: to get duration debug info
-//                long step1 = System.currentTimeMillis();
-//                time_readFrame += step1-start; //--> VDS-TIME: Ecoli (10Go) ~30min
-//                long step2;
+                long step1 = System.currentTimeMillis();
+                time_readFrame += step1-start; //--> VDS-TIME: Ecoli (10Go) ~30min
+                long step2;
 
                 float rtInSec = (float) timsFrame.getTime();
                 int mslevel = 0;
@@ -253,17 +260,17 @@ public class Timstof2Mzdb {
                         mslevel = 1;
                         cycle++;
                         //Read 'single' spectrum ==> TODO change to read all Scans Spectrum or use groups ??
-                        ttSpectrum = timsFrame.getSingleSpectrum();
+                        ttSpectrum = timsFrame.getSingleSpectrum(m_ms1Method);
 
                         //--> VDS-TIME: to get duration debug info
-//                        step2 = System.currentTimeMillis();
-//                        time_ms1 += step2 - step1;  //--> VDS-TIME: Ecoli (10Go) ~10min
+                        step2 = System.currentTimeMillis();
+                        time_ms1 += step2 - step1;  //--> VDS-TIME: Ecoli (10Go) ~10min
                         break;
 
                     case PASEF:
                         mslevel = 2;
-                        if( timsFrame.getPrecursorIds() != null){
-                            List<Integer> precursorIds = timsFrame.getPrecursorIds();
+                        if( ((TimsPASEFFrame)timsFrame).getPrecursorIds() != null){
+                            List<Integer> precursorIds = ((TimsPASEFFrame)timsFrame).getPrecursorIds();
                             Collections.sort(precursorIds);
                             //-- Read spectrum corresponding to index...
                             int indexInFrameSpectra = spId - m_frame2FirstSpectraIndex.get(timsFrame.getId()); //Index relative to frame
@@ -277,7 +284,7 @@ public class Timstof2Mzdb {
 
                                 //Get spectrum relative to index and specific to precursor
                                 int precursorId = precursorIds.get(indexInFrameSpectra);
-                                ttSpectrum = timsFrame.getPrecursorSpectrum(precursorId);
+                                ttSpectrum = ((TimsPASEFFrame)timsFrame).getPrecursorSpectrum(precursorId);
                                 if (ttSpectrum == null) {
                                     LOG.warn("#### WARNING #### No precursor spectrum was defined for frame  " + timsFrame.getId() + "; precursorId : " + precursorId + ". Spectrum index " + spId);
                                     errFound = true;
@@ -299,8 +306,8 @@ public class Timstof2Mzdb {
                                     }
                                  }
 //                                //--> VDS-TIME: to get duration debug info
-//                                step2 = System.currentTimeMillis();
-//                                time_ms2 += step2 - step1; //--> VDS-TIME: Ecoli (10Go) ~1.5s
+                                step2 = System.currentTimeMillis();
+                                time_ms2 += step2 - step1; //--> VDS-TIME: Ecoli (10Go) ~1.5s
                             }
                         } else {
                             LOG.warn("#### WARNING ####  UNSUPPORTED Frame type. Only MS1 and PASEF are supported actually. Frame "+timsFrame.getId()+" is getMsmsType "+timsFrame.getMsmsType());
@@ -317,13 +324,13 @@ public class Timstof2Mzdb {
 
                 if(errFound){
                     //All spectrum of current frame has been written. Can remove data for memory purpose
-                    if(timsFrame.getPasefMsMSData() != null && timsFrame.getPasefMsMSData().size() == nbrScanForFrame){
+                    if(timsFrame.getSpectrumCount() == nbrScanForFrame){
                         timsFrame.clearSpectraData();
                     }
                     spId++;
                     continue;
                 }
-//                step2 = System.currentTimeMillis();//In case wasn't set...should not occur ?!
+                step2 = System.currentTimeMillis();//In case wasn't set...should not occur ?!
 
                 float[] intensities = ttSpectrum.getIntensities();
                 int nbPeaks = intensities.length;
@@ -346,12 +353,12 @@ public class Timstof2Mzdb {
                     com.github.mzdb4s.msdata.Spectrum mzdb4sSp = new com.github.mzdb4s.msdata.Spectrum(spH, spData);
                     SpectrumXmlMetaData spectrumMetaData = new SpectrumXmlMetaData(mzDBSpId, "", "", scala.Option.empty(), scala.Option.empty());
 
-//                    DataEncoding spectrumDE = (timsFrame.getMsmsType().equals(TimsFrame.MsMsType.MS)) ? m_profileDataEnconding : m_centroidDataEnconding;
-                    writer.insertSpectrum(mzdb4sSp, spectrumMetaData, m_centroidDataEnconding);
+                    DataEncoding spectrumDE = (timsFrame.getMsmsType().equals(AbstractTimsFrame.MsMsType.MS)) ? m_profileDataEnconding : m_centroidDataEnconding;
+                    writer.insertSpectrum(mzdb4sSp, spectrumMetaData, spectrumDE);
 
 //                    //VDS: times to get duration debug info
-//                    long step4 = System.currentTimeMillis();
-//                    time_write += step4 - step2;//--> VDS-TIME: Ecoli (10Go) ~4.5min
+                    long step4 = System.currentTimeMillis();
+                    time_write += step4 - step2;//--> VDS-TIME: Ecoli (10Go) ~4.5min
                 }
 
 
@@ -366,16 +373,16 @@ public class Timstof2Mzdb {
                 //--> VDS-TIME: to get duration debug info
                 if (spId % 1000 == 0 || spId == nbrSp) {
                     LOG.info("Already writed " + spId + " spectra on " + nbrSp);
-//                    LOG.info("Time used to read Frame: " + time_readFrame);
-//                    LOG.info("Time used to create MS2: " + time_ms2);
-////                    LOG.info("Time used to create FILLPred: " + time_fillPrec);
-//                    LOG.info("Time used to create MS1: " + time_ms1);
-//                    LOG.info("Time used to write data: " + time_write);
-//                    time_readFrame = 0;
-//                    time_ms2 = 0;
-//                    time_ms1 = 0;
-////                    time_fillPrec = 0;
-//                    time_write = 0;
+                    LOG.debug("Time used to read Frame: " + time_readFrame);
+                    LOG.debug("Time used to create MS2: " + time_ms2);
+//                    LOG.info("Time used to create FILLPred: " + time_fillPrec);
+                    LOG.debug("Time used to create MS1: " + time_ms1);
+                    LOG.debug("Time used to write data: " + time_write);
+                    time_readFrame = 0;
+                    time_ms2 = 0;
+                    time_ms1 = 0;
+//                    time_fillPrec = 0;
+                    time_write = 0;
                 }
             }//End go through all spectra
          } catch(Exception e){
@@ -386,7 +393,7 @@ public class Timstof2Mzdb {
             t.printStackTrace();
         }
         finally {
-            LOG.info("Finally  "+writer.loggerName()+" close ");
+            LOG.debug("Finally  "+writer.loggerName()+" close ");
             writer.close();
         }
 
@@ -425,27 +432,45 @@ public class Timstof2Mzdb {
 
     public static void main(String[] args) {
         Timstof2Mzdb inst = null;
+        ConverterArguments convertArgs = new ConverterArguments();
+        JCommander cmd =  JCommander.newBuilder().addObject(convertArgs).build();
+
         try {
+            cmd.parse(args);
             String fileToConvert = filepath;
-            if(args.length > 0)
-                fileToConvert = args[0];
+            SpectrumGeneratingMethod ms1Method = SpectrumGeneratingMethod.SMOOTH;
+            if(convertArgs.filename != null) {
+                LOG.info(" Got file name " + convertArgs.filename);
+                fileToConvert = convertArgs.filename;
+            } else
+                LOG.info(" DO NOT got file name, use "+filepath);
+
+            if(convertArgs.ms1 != null) {
+                LOG.info(" Got ms1 " + convertArgs.ms1);
+                ms1Method = convertArgs.ms1;
+            } else
+                LOG.info(" DO NOT got ms1, use smooth");
+
             File ttDir = new File(fileToConvert);
             if(!ttDir.exists()){
                 LOG.error(" File "+fileToConvert+" does not exist !! ");
                 System.exit(1);
             }
 
-            inst = new Timstof2Mzdb(ttDir);
+            inst = new Timstof2Mzdb(ttDir, ms1Method);
             inst.createMZdBData();
-            LOG.info("close file."  );
-            inst.closeFile();
 
+        } catch (ParameterException pe) {
+            LOG.info(" Error parsing arguments: "+pe.getMessage());
+            cmd.usage();
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } finally {
-            if(inst != null)
+            if(inst != null) {
+                LOG.info("close file." );
                 inst.closeFile();
+            }
         }
     }
 }

@@ -1,6 +1,9 @@
 package fr.profi.brucker.timstof.model;
 
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
+import scala.Predef;
+
+import java.text.DecimalFormat;
 
 public class PasefMsMsData {
 
@@ -13,6 +16,7 @@ public class PasefMsMsData {
     private double m_collisionEnergy;
     private Precursor m_precursor;
 
+   private static DecimalFormat df = new DecimalFormat("#.##");
 
     /*
     * The isolation m/z
@@ -65,21 +69,24 @@ public class PasefMsMsData {
     }
 
     protected void setSpectrumData(double[] masses, float[] intensities){
-        m_pasefMsMs = new Spectrum("Frame_"+m_frameId+"-Precursor_"+m_precursor.getScanNumber(), 2, m_frameRT, masses, intensities);
+      String avMzStr = PasefMsMsData.df.format(m_precursor.getAverageMz());
+      m_pasefMsMs = new Spectrum("Frame_"+m_frameId+"-Precursor_"+avMzStr, 2, m_frameRT, masses, intensities);
     }
 
     protected void addSpectrumData(Double2FloatMap massInt){
-        if(m_pasefMsMs == null)
-            m_pasefMsMs = new Spectrum("Frame_"+m_frameId+"-Precursor_"+m_precursor.getScanNumber(), 2, m_frameRT, massInt);
-        else {
+        if(m_pasefMsMs == null) {
+          String avMzStr = PasefMsMsData.df.format(m_precursor.getAverageMz());
+          m_pasefMsMs = new Spectrum("Frame_" + m_frameId + "-Precursor_" + avMzStr, 2, m_frameRT, massInt);
+        } else {
             m_pasefMsMs.addPeaks(massInt);
         }
     }
 
     protected void addSpectrumData(double[] masses, float[] intensities){
-        if(m_pasefMsMs == null)
-            m_pasefMsMs = new Spectrum("Frame_"+m_frameId+"-Precursor_"+m_precursor.getScanNumber(), 2, m_frameRT, masses, intensities);
-        else {
+        if(m_pasefMsMs == null) {
+          String avMzStr = PasefMsMsData.df.format(m_precursor.getAverageMz());
+          m_pasefMsMs = new Spectrum("Frame_" + m_frameId + "-Precursor_" + avMzStr, 2, m_frameRT, masses, intensities);
+        } else {
             m_pasefMsMs.addPeaks(masses, intensities);
         }
     }

@@ -79,7 +79,7 @@ public class Spectrum {
         return m_intensities;
     }
 
-    public String getTitle(){
+    public String  getTitle(){
         return  m_title;
     }
 }
