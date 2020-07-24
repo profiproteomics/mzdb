@@ -353,7 +353,14 @@ public class Timstof2Mzdb {
                     com.github.mzdb4s.msdata.Spectrum mzdb4sSp = new com.github.mzdb4s.msdata.Spectrum(spH, spData);
                     SpectrumXmlMetaData spectrumMetaData = new SpectrumXmlMetaData(mzDBSpId, "", "", scala.Option.empty(), scala.Option.empty());
 
-                    DataEncoding spectrumDE = (timsFrame.getMsmsType().equals(AbstractTimsFrame.MsMsType.MS)) ? m_profileDataEnconding : m_centroidDataEnconding;
+                    DataEncoding spectrumDE = m_centroidDataEnconding;
+                    if(timsFrame.getMsmsType().equals(AbstractTimsFrame.MsMsType.MS)) {
+                        switch (m_ms1Method){
+                            case FULL:
+                            case MERGED:
+                                spectrumDE = m_profileDataEnconding;
+                        }
+                    }
                     writer.insertSpectrum(mzdb4sSp, spectrumMetaData, spectrumDE);
 
 //                    //VDS: times to get duration debug info
