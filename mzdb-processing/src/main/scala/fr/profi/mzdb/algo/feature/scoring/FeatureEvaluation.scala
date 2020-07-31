@@ -81,36 +81,36 @@ case class FeatureEvaluation(
  * Min and Max allowed values for each metric, min and max are FeatureQualityVector
  */
 class QualityVectorThresholds(min:FeatureQualityVector,
-                              max:FeatureQualityVector) extends Tuple2[FeatureQualityVector, FeatureQualityVector](min, max) {
+                              max:FeatureQualityVector) {
   
   
   
-  def getMzPrecisionMinMax(): Pair[Float, Float] = (min.mzPrecision, max.mzPrecision)
+  def getMzPrecisionMinMax(): (Float, Float) = (min.mzPrecision, max.mzPrecision)
   
-  def getIsotopesRatios(): Pair[Float, Float] = (min.isotopesPattern, max.isotopesPattern)
+  def getIsotopesRatios(): (Float, Float) = (min.isotopesPattern, max.isotopesPattern)
   //def getPeakelsAmplitude(): Pair[Float, Float] = (min.peakelsAmplitude, max.peakelsAmplitude)
   
   //def getPeakelsVelocity(): Pair[Float, Float] = (min.peakelsVelocity, max.peakelsVelocity)
   
-  def getMs1CountMinMax(): Pair[Int, Int] = (min.ms1Count,max.ms1Count)
+  def getMs1CountMinMax(): (Int, Int) = (min.ms1Count,max.ms1Count)
   
-  def getIsotopesCountMinMax(): Pair[Int,Int] = (min.isotopesCount,max.isotopesCount)
+  def getIsotopesCountMinMax(): (Int,Int) = (min.isotopesCount,max.isotopesCount)
   
-  def getIstopesPatternMinMax(): Pair[Float,Float] = (min.isotopesPattern,max.isotopesPattern)
+  def getIstopesPatternMinMax(): (Float,Float) = (min.isotopesPattern,max.isotopesPattern)
   
-  def getShapeMinMax(): Pair[Float,Float] = (min.shape,max.shape)
+  def getShapeMinMax(): (Float,Float) = (min.shape,max.shape)
   
   //def getSignalFluctuationMinMax(): Pair[Float, Float] = (min.signalFluctuation, max.signalFluctuation)
   
-  def getPeakelsWidthMinMax(): Pair[Float,Float] = (min.peakelsWidth,max.peakelsWidth)
+  def getPeakelsWidthMinMax(): (Float,Float) = (min.peakelsWidth,max.peakelsWidth)
   
-  def getPeakelsCorrelationtMinMax(): Pair[Float, Float] = (min.peakelsCorrelation,max.peakelsCorrelation)
+  def getPeakelsCorrelationtMinMax(): (Float,Float) = (min.peakelsCorrelation,max.peakelsCorrelation)
   
-  def getOverlappingFactorMinMax(): Pair[Float, Float] = (min.overlappingFactor,max.overlappingFactor)
+  def getOverlappingFactorMinMax(): (Float,Float) = (min.overlappingFactor,max.overlappingFactor)
   
-  def getOverlappingPeakelsCorrelationMinMax(): Pair[Float, Float] = (min.overlappingPeakelsCorrelation,max.overlappingPeakelsCorrelation)
+  def getOverlappingPeakelsCorrelationMinMax(): (Float,Float) = (min.overlappingPeakelsCorrelation,max.overlappingPeakelsCorrelation)
   
-  def getPeakelsApexDeviationMinMax(): Pair[Float, Float] = (min.peakelsApexDeviation, max.peakelsApexDeviation)
+  def getPeakelsApexDeviationMinMax(): (Float,Float) = (min.peakelsApexDeviation, max.peakelsApexDeviation)
 
 }
 
@@ -206,7 +206,7 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
                                                             overlappingFactorMax))
   }
   
-  private def _calcFeatureQ1Q3Indexes( values: Seq[Any] ): Pair[Int,Int] = {
+  private def _calcFeatureQ1Q3Indexes( values: Seq[Any] ): (Int,Int) = {
     
     val N = values.length
     val iq1 = N * 0.25 toInt
@@ -216,7 +216,7 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
     (iq1,iq3)
   }
   
-  private def _calcBounds( values: Array[Int] ): Pair[Int,Int] = {    
+  private def _calcBounds( values: Array[Int] ): (Int,Int) = {
     val sortedValues = values.sorted
     val q1q3Indexes = _calcFeatureQ1Q3Indexes(sortedValues)
     
@@ -227,7 +227,7 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
     ((iq1v - fullIqr).toInt ,(iq3v + fullIqr).toInt)
   }
   
-  private def _calcBounds( values: Array[Float] ): Pair[Float,Float] = {    
+  private def _calcBounds( values: Array[Float] ): (Float,Float) = {
     val sortedValues = values.sorted
     val q1q3Indexes = _calcFeatureQ1Q3Indexes(sortedValues)
     
@@ -239,20 +239,20 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
   }
 
   
-  private def _getMS1CountBounds(features : Array[FeatureQualityVector]): Pair[Int, Int] = {
+  private def _getMS1CountBounds(features : Array[FeatureQualityVector]): (Int, Int) = {
     val values = features.map( f => f.ms1Count )    
     _calcBounds(values)
   }
   
-  private def  _getIsotopesCountBounds (features : Array[FeatureQualityVector]) : Pair[Int, Int] ={
+  private def  _getIsotopesCountBounds (features : Array[FeatureQualityVector]) : (Int, Int) ={
      val values = features.map( f => f.isotopesCount )    
      _calcBounds(values)
   }
-  private def  _getIsotopesPatternBounds (features : Array[FeatureQualityVector]) : Pair[Float, Float] = {
+  private def  _getIsotopesPatternBounds (features : Array[FeatureQualityVector]) : (Float, Float) = {
      val values = features.map( f => f.isotopesPattern )    
      _calcBounds(values)
   }
-  private def  _getShapeBounds (features : Array[FeatureQualityVector]): Pair[Float, Float] = {
+  private def  _getShapeBounds (features : Array[FeatureQualityVector]): (Float, Float) = {
      val values = features.map( f => f.shape )    
      _calcBounds(values)
 
@@ -261,18 +261,18 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
         (0f, 0f)
 
   }*/
-  private def  _getPeakelsWidthBounds (features : Array[FeatureQualityVector]): Pair[Float, Float] = {
+  private def  _getPeakelsWidthBounds (features : Array[FeatureQualityVector]): (Float, Float) = {
      val values = features.map( f => f.peakelsWidth )    
      _calcBounds(values)
 
   }
-  private def _getMzPrecisionBounds (features : Array[FeatureQualityVector]): Pair[Float, Float] = {
+  private def _getMzPrecisionBounds (features : Array[FeatureQualityVector]): (Float, Float) = {
      val values = features.map( f => f.mzPrecision )    
      _calcBounds(values)
 
   }
   
-  private def _getPeakelsApexDeviationBounds(features : Array[FeatureQualityVector]): Pair[Float, Float] = {
+  private def _getPeakelsApexDeviationBounds(features : Array[FeatureQualityVector]): (Float, Float) = {
       val values = features.map( f => f.peakelsApexDeviation )    
      _calcBounds(values)
 
@@ -292,19 +292,18 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
 
   }*/
   
-  private def  _getPeakelsCorrelationBounds (features : Array[FeatureQualityVector]): Pair[Float, Float] = {
+  private def  _getPeakelsCorrelationBounds (features : Array[FeatureQualityVector]): (Float, Float) = {
      val values = features.map( f => f.peakelsCorrelation )    
      _calcBounds(values)
   }
-  private def  _getOverlappingFactorBounds (features : Array[FeatureQualityVector]): Pair[Float, Float] = {
+  private def  _getOverlappingFactorBounds (features : Array[FeatureQualityVector]): (Float, Float) = {
      val values = features.map( f => f.overlappingFactor )    
      _calcBounds(values)
 
   }
-  private def  _getOverlappingPeakelsCorrelationBounds (features : Array[FeatureQualityVector]): Pair[Float, Float] = {
+  private def  _getOverlappingPeakelsCorrelationBounds (features : Array[FeatureQualityVector]): (Float, Float) = {
      val values = features.map( f => f.overlappingPeakelsCorrelation )    
      _calcBounds(values)
-
   }
   
 }
@@ -337,11 +336,11 @@ object FeatureQualityEvaluator {
 
   }
   
-  def checkParam( param: Float, minMax: Pair[Float,Float] ): Boolean = {
+  def checkParam( param: Float, minMax: (Float,Float) ): Boolean = {
     param <= minMax._2 && param >= minMax._1
   }
   
-  def checkParam( param: Int, minMax: Pair[Int,Int] ): Boolean = {
+  def checkParam( param: Int, minMax: (Int,Int) ): Boolean = {
      param <= minMax._2 && param >= minMax._1
   }
   
