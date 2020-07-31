@@ -110,10 +110,10 @@
       <artifactId>jackson-annotations</artifactId>
     </dependency>
 
-<!--    <dependency>-->
-<!--      <groupId>org.msgpack</groupId>-->
-<!--      <artifactId>jackson-dataformat-msgpack</artifactId>-->
-<!--    </dependency>-->
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.msgpack</groupId>
@@ -126,6 +126,23 @@
       <artifactId>rtree</artifactId>
       <version>0.8.7</version>
     </dependency>
+    <dependency>
+      <groupId>com.github.davidmoten</groupId>
+      <artifactId>guava-mini</artifactId>
+      <version>0.1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.davidmoten</groupId>
+      <artifactId>rxjava-extras</artifactId>
+      <version>0.8.0.8</version>
+      <version>0.8.7</version>
+    </dependency>
+
+<!--    <dependency>-->
+<!--      <groupId>com.vividsolutions</groupId>-->
+<!--      <artifactId>jts-core</artifactId>-->
+<!--      <version>[1.14.0,)</version>-->
+<!--    </dependency>-->
 <!--    <dependency>-->
 <!--      <groupId>com.github.davidmoten</groupId>-->
 <!--      <artifactId>guava-mini</artifactId>-->
@@ -142,7 +159,7 @@
 <!--      <artifactId>jts-core</artifactId>-->
 <!--      <version>[1.14.0,)</version>-->
 <!--    </dependency>-->
-    
+
     <!-- RxJava & RxScala -->
     <dependency>
       <groupId>io.reactivex</groupId>
