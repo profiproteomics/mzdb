@@ -7,7 +7,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
 
-import org.jfree.chart.ChartUtilities
+import org.jfree.chart.ChartUtils
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.axis.NumberAxis
 import org.jfree.chart.plot.XYPlot
@@ -578,7 +578,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
     val plot = new XYPlot(dataset, xAxis, yAxis, renderer)
     plot.setBackgroundPaint(Color.lightGray);
     val chart = new JFreeChart("XYBlockChartDemo1", plot)
-    ChartUtilities.saveChartAsJPEG(new java.io.File(file), chart, 600, 400)//ydata.length);
+    ChartUtils.saveChartAsJPEG(new java.io.File(file), chart, 600, 400)//ydata.length);
   }
 
   def maximaToImage(f: (Array[Array[Double]], Int) => Array[Array[Int]], file: String = "maxima.jpg") {
@@ -608,7 +608,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
     var plot = new XYPlot(dataset, xAxis, yAxis, renderer)
     plot.setBackgroundPaint(Color.lightGray);
     var chart = new JFreeChart("XYBlockChartDemo1", plot)
-    ChartUtilities.saveChartAsJPEG(new java.io.File(file), chart, ydata.length, ydata.length);*/
+    ChartUtils.saveChartAsJPEG(new java.io.File(file), chart, ydata.length, ydata.length);*/
 
   }
 
@@ -658,7 +658,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
     var plot = new XYPlot(dataset, xAxis, yAxis, renderer)
     plot.setBackgroundPaint(Color.lightGray);
     var chart = new JFreeChart("XYBlockChartDemo1", plot)
-    ChartUtilities.saveChartAsJPEG(new java.io.File("zerocross.jpg"), chart, ydata.length, ydata.length);*/
+    ChartUtils.saveChartAsJPEG(new java.io.File("zerocross.jpg"), chart, ydata.length, ydata.length);*/
   }
 
 }//end class
