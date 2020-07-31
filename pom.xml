@@ -5,22 +5,22 @@
     <parent>
         <artifactId>profi-pom</artifactId>
         <groupId>fr.proline</groupId>
-        <version>1.0.0-SNAPSHOT</version>  <!-- Snapshot Trunk version -->
+        <version>1.0.0_jdk11-SNAPSHOT</version>  <!-- Snapshot Trunk version -->
     </parent>
 
     <groupId>fr.profi</groupId>
-    <artifactId>mzdb-pom</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>mzdb-parent</artifactId>
+    <version>1.0.0_jdk11-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>mzDB-POM</name>
+    <name>mzDB-Parent</name>
     <description>Parent pom for mzDB file format projects</description>
 
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sqlite4java.version>1.0.392</sqlite4java.version>
-        <commons.version>1.0.0-SNAPSHOT</commons.version>
+        <commons.version>1.0.0_jdk11-SNAPSHOT</commons.version>
     </properties>
     <scm>
         <connection>scm:git:https://github.com/profiproteomics/mzdb.git</connection>

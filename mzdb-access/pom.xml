@@ -2,12 +2,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>mzdb-pom</artifactId>
+    <artifactId>mzdb-parent</artifactId>
     <groupId>fr.profi</groupId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0_jdk11-SNAPSHOT</version>
   </parent>
 
-  <artifactId>mzdb-access_${scala.version}</artifactId> <!-- scala version from profipom-->
+  <artifactId>mzdb-access_${scala.compat.version}</artifactId> <!-- scala version from profipom-->
 
   <description>The mzDB access Java library</description>
 
@@ -18,18 +18,17 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
+
     <!-- Commons -->
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
     
     <!-- Reactive streams -->
@@ -44,19 +43,40 @@
       <artifactId>sqlite4java</artifactId>
       <version>${sqlite4java.version}</version>
     </dependency>
+
     <dependency>
       <groupId>com.almworks.sqlite4java</groupId>
       <artifactId>sqlite4java-win32-x64</artifactId>
       <version>${sqlite4java.version}</version>
       <type>dll</type>
     </dependency>
+
     <dependency>
       <groupId>com.almworks.sqlite4java</groupId>
       <artifactId>libsqlite4java-linux-amd64</artifactId>
       <version>${sqlite4java.version}</version>
       <type>so</type>
     </dependency>
-    
+
+    <dependency>
+      <groupId>xml-apis</groupId>
+      <artifactId>xml-apis</artifactId>
+      <version>1.4.01</version>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.xml.bind</groupId>
+      <artifactId>jakarta.xml.bind-api</artifactId>
+      <version>2.3.3</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sun.xml.bind</groupId>
+      <artifactId>jaxb-impl</artifactId>
+      <version>2.3.3</version>
+      <scope>runtime</scope>
+    </dependency>
+
     <!-- XML parsing -->
     <dependency>
       <groupId>xerces</groupId>
@@ -68,15 +88,12 @@
     <dependency>
       <groupId>com.beust</groupId>
       <artifactId>jcommander</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
     <!-- JUnit testing -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
-      <scope>test</scope>
     </dependency>
     
   </dependencies>
@@ -95,11 +112,18 @@
             <goals>
               <goal>copy-dependencies</goal>
             </goals>
-            
             <configuration>
-            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
               <artifactItems>
-
                 <artifactItem>
                   <groupId>com.almworks.sqlite4java</groupId>
                   <artifactId>sqlite4java-win32-x64</artifactId>
@@ -161,26 +185,6 @@
           </execution>
         </executions>
       </plugin>
-      
-      <!-- <plugin>
-        <groupId>com.igormaznitsa</groupId>
-        <artifactId>uber-pom</artifactId>
-        <version>1.0.1</version>
-        <configuration>
-          <remove>
-            <section>parent</section>
-          </remove>
-          <removeSiblingDuplications>true</removeSiblingDuplications>
-          <deleteOnExit>false</deleteOnExit>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>upom</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin> -->
 
     </plugins>
 
