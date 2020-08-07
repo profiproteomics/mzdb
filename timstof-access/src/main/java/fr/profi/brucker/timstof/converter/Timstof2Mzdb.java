@@ -218,6 +218,9 @@ public class Timstof2Mzdb {
             long time_ms1 = 0;
             long time_write = 0;
 
+            // For test only: allows to test / debug the process of a single scan
+            //testFrameAndQuit(177555);
+
             while(spId <= nbrSp) { //Assume spectrum id start at 1 and are incremental => done in initFrameData above
                 long start = System.currentTimeMillis();  //--> VDS-TIME: to get duration debug info
 
@@ -349,6 +352,9 @@ public class Timstof2Mzdb {
 //                    LOG.debug("write sp id " + spId + " of frame " + timsFrame.getId() + " Msl " + msl + " found in spectra max intensity " + intensities[maxIndex] + " in frame info " + timsFrame.getMaxIntensity());
 
                     SpectrumHeader spH = new SpectrumHeader(mzDBSpId, mzDBSpId, ttSpectrum.getTitle(), cycle, rtInSec, mslevel, noneOp, nbPeaks, false, spTIC, ttSpectrum.getMasses()[maxIndex], intensities[maxIndex], preMz, preCharge, mzDBSpId, (ScanList) null, mzdbPrecursor, noneOp);
+//                    if ((mzDBSpId == 177555) || (spId == 177555)) {
+//                        LOG.info("Writing mzdb scan id {} (spId {} in original data) with {} peaks", mzDBSpId, spId, nbPeaks);
+//                    }
                     com.github.mzdb4s.msdata.SpectrumData spData = new com.github.mzdb4s.msdata.SpectrumData(ttSpectrum.getMasses(), ttSpectrum.getIntensities());
                     com.github.mzdb4s.msdata.Spectrum mzdb4sSp = new com.github.mzdb4s.msdata.Spectrum(spH, spData);
                     SpectrumXmlMetaData spectrumMetaData = new SpectrumXmlMetaData(mzDBSpId, "", "", scala.Option.empty(), scala.Option.empty());
@@ -366,6 +372,11 @@ public class Timstof2Mzdb {
 //                    //VDS: times to get duration debug info
                     long step4 = System.currentTimeMillis();
                     time_write += step4 - step2;//--> VDS-TIME: Ecoli (10Go) ~4.5min
+
+                } else {
+
+                    LOG.info("mzdb scan id {} has no peaks ! It will not be written in the mzdb outputfile", mzDBSpId);
+
                 }
 
 
@@ -379,7 +390,7 @@ public class Timstof2Mzdb {
 
                 //--> VDS-TIME: to get duration debug info
                 if (spId % 1000 == 0 || spId == nbrSp) {
-                    LOG.info("Already writed " + spId + " spectra on " + nbrSp);
+                    LOG.info("Already written {} ({} in mzdb) spectra over {} ", spId, mzDBSpId, nbrSp);
                     LOG.debug("Time used to read Frame: " + time_readFrame);
                     LOG.debug("Time used to create MS2: " + time_ms2);
 //                    LOG.info("Time used to create FILLPred: " + time_fillPrec);
@@ -404,6 +415,29 @@ public class Timstof2Mzdb {
             writer.close();
         }
 
+    }
+
+    private void testFrameAndQuit(int spId) {
+
+        int frameId = m_spectra2FrameIndex.get(spId);
+        int nbrScanForFrame  = m_frame2ReadSpectraCount.getOrDefault(frameId,0);
+        nbrScanForFrame++;
+
+        //get TimsFrame with specific id
+        AbstractTimsFrame timsFrame = m_frameById.get(frameId);
+        if (timsFrame != null ) {
+            if (!timsFrame.spectrumRead()) {
+                //get spectrum information if not read yet
+                List<AbstractTimsFrame> tfs = Collections.singletonList(timsFrame);
+                m_ttReader.fillFramesWithSpectrumData(m_fileHdl, tfs);
+            }
+        } else {
+            LOG.warn("#### NO FRAME " + frameId+" for spectra "+spId);
+        }
+
+        fr.profi.brucker.timstof.model.Spectrum ttSpectrum = timsFrame.getSingleSpectrum(m_ms1Method);
+        LOG.info("spectrum {}  contains {} peaks", spId, ttSpectrum.getMasses().length);
+        System.exit(0);
     }
 
     private void fillmzDBPrecursor(Precursor mzdbPrecursor, fr.profi.brucker.timstof.model.Precursor timstofPrecursor, String collEnergy ){
@@ -447,20 +481,20 @@ public class Timstof2Mzdb {
             String fileToConvert = filepath;
             SpectrumGeneratingMethod ms1Method = SpectrumGeneratingMethod.SMOOTH;
             if(convertArgs.filename != null) {
-                LOG.info(" Got file name " + convertArgs.filename);
+                LOG.info("File name set to " + convertArgs.filename);
                 fileToConvert = convertArgs.filename;
             } else
-                LOG.info(" DO NOT got file name, use "+filepath);
+                LOG.info("NO File name set, use "+filepath);
 
             if(convertArgs.ms1 != null) {
-                LOG.info(" Got ms1 " + convertArgs.ms1);
+                LOG.info("Ms1 set to " + convertArgs.ms1);
                 ms1Method = convertArgs.ms1;
             } else
-                LOG.info(" DO NOT got ms1, use smooth");
+                LOG.info("NO ms1 set, use SMOOTH");
 
             File ttDir = new File(fileToConvert);
             if(!ttDir.exists()){
-                LOG.error(" File "+fileToConvert+" does not exist !! ");
+                LOG.error("File "+fileToConvert+" does not exist !! ");
                 System.exit(1);
             }
 
@@ -468,14 +502,14 @@ public class Timstof2Mzdb {
             inst.createMZdBData();
 
         } catch (ParameterException pe) {
-            LOG.info(" Error parsing arguments: "+pe.getMessage());
+            LOG.info("Error parsing arguments: "+pe.getMessage());
             cmd.usage();
         } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
         } finally {
             if(inst != null) {
-                LOG.info("close file." );
+                LOG.info("Close file" );
                 inst.closeFile();
             }
         }
