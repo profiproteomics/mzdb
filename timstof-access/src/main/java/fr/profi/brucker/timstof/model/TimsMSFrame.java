@@ -26,6 +26,10 @@ import java.util.Collections;
 
 public class TimsMSFrame extends AbstractTimsFrame{
 
+  private static Boolean SMOOTH_SUM = Boolean.valueOf(System.getProperty("smooth.sum", "FALSE"));
+  private static Boolean SMOOTH_SUM_BOUNDED = Boolean.valueOf(System.getProperty("smooth.sum.bounded", "FALSE"));
+
+
   private Int2ObjectMap<Spectrum> m_spectrumByScan;
   private Float2ObjectMap<DoubleArrayList> m_allIntensity2Masses; //Used to test create SingleSpectrum grouping nearest massed and using higher intensity
   private Double2FloatMap m_mass2retainedIntensityMap; // keep all masses and higher intensity. USe Smoother and max point to create SingleSpectrum
@@ -54,6 +58,7 @@ public class TimsMSFrame extends AbstractTimsFrame{
 
   public void setMassIntensityByScan(Int2ObjectMap<Double2FloatMap> massIntByScan){
     IntIterator scansIdIt= massIntByScan.keySet().iterator();
+    int totalIndex = 0;
     while (scansIdIt.hasNext()){
       int scId = scansIdIt.nextInt();
       Double2FloatMap massInt = massIntByScan.get(scId);
@@ -86,9 +91,15 @@ public class TimsMSFrame extends AbstractTimsFrame{
 
           //for smooth method
           float retainedIntensity = m_mass2retainedIntensityMap.getOrDefault(massVal, 0);
-          if(retainedIntensity < intensityVal)
-            m_mass2retainedIntensityMap.put(massVal, intensityVal);
+          if (!SMOOTH_SUM) {
+            if (retainedIntensity < intensityVal) {
+              m_mass2retainedIntensityMap.put(massVal, intensityVal);
+            }
+          } else {
+            m_mass2retainedIntensityMap.put(massVal, retainedIntensity + intensityVal);
+          }
         }
+        totalIndex += index;
         //Keep m_spectrumByScan for MS ?
         m_spectrumByScan.put(scId, new Spectrum("Frame_"+m_id+"-scan_"+scId,1, (float)getTime(), scanMasses, scanIntensities));
       }
@@ -147,11 +158,11 @@ public class TimsMSFrame extends AbstractTimsFrame{
       long s1 = System.currentTimeMillis();
       time0 = s1-start;
 
-      Tuple2[] param = new Tuple2[allMasses.size()];
+      Tuple2[] allPeaks = new Tuple2[allMasses.size()];
       for (int index = 0; index < allMasses.size(); index++) {
         double nextmass = allMasses.getDouble(index);
         float nextIntensity = m_mass2retainedIntensityMap.get(nextmass);
-        param[index] = new Tuple2(nextmass, (double) nextIntensity);
+        allPeaks[index] = new Tuple2(nextmass, (double) nextIntensity);
       }//end go through masses
       //-- VDS For Duration LOG
       long s2 = System.currentTimeMillis();
@@ -159,15 +170,15 @@ public class TimsMSFrame extends AbstractTimsFrame{
 
       //Smooth Signal : same nbr peaks than original spectrum
       SavitzkyGolaySmoother smoother = new SavitzkyGolaySmoother(new SavitzkyGolaySmoothingConfig(3, 2, 1));
-      Tuple2[] smoothedSpectrum = smoother.smoothTimeIntensityPairs(param);
+      Tuple2[] smoothedSpectrum = smoother.smoothTimeIntensityPairs(allPeaks);
       //-- VDS For Duration LOG
       long s3 = System.currentTimeMillis();
       time02 = s3-s2;
 
-      int resultLenght = smoothedSpectrum.length;
-      double[] smoothedMasses = new double[resultLenght];
-      double[]  smoothedIntensities = new double[resultLenght];
-      for (int k = 0; k < resultLenght; k++) {
+      int resultLength = smoothedSpectrum.length;
+      double[] smoothedMasses = new double[resultLength];
+      double[]  smoothedIntensities = new double[resultLength];
+      for (int k = 0; k < resultLength; k++) {
         smoothedMasses[k] = (Double)smoothedSpectrum[k]._1;
         smoothedIntensities[k] = (Double)smoothedSpectrum[k]._2;
       }
@@ -183,10 +194,27 @@ public class TimsMSFrame extends AbstractTimsFrame{
       newSpIntensities = new float[mm.length];
       for (int k = 0; k < mm.length; k++) {
         if(mm[k].isMaximum()){
-          double massIdx = smoothedMasses[mm[k].index()];
-          double intensityIdx =(Double) param[mm[k].index()]._2;
-          newSpMasses[realLenght] = massIdx;
-          newSpIntensities[realLenght] = (float) intensityIdx;
+          double mass = smoothedMasses[mm[k].index()];
+          double intensity =(Double) allPeaks[mm[k].index()]._2;
+
+          if (SMOOTH_SUM) {
+            int shift = mm[k].index() - 1;
+            int mmPrevIndex = ((k > 0) && SMOOTH_SUM_BOUNDED) ? mm[k - 1].index() : 0;
+            while (shift > 0 && shift >= mmPrevIndex && (Math.abs(smoothedMasses[shift] - mass) / mass * 1000000) < 10) {
+              intensity += (Double) allPeaks[shift]._2;
+              shift--;
+            }
+            shift = mm[k].index() + 1;
+            int mmNextIndex = (k < (mm.length - 1) && SMOOTH_SUM_BOUNDED) ? mm[k + 1].index() : allPeaks.length - 1;
+            while (shift < allPeaks.length && shift <= mmNextIndex && (Math.abs(smoothedMasses[shift] - mass) / mass * 1000000) < 10) {
+              intensity += (Double) allPeaks[shift]._2;
+              shift++;
+            }
+          }
+
+
+          newSpMasses[realLenght] = mass;
+          newSpIntensities[realLenght] = (float) intensity;
           realLenght++;
         }
       }
@@ -196,7 +224,10 @@ public class TimsMSFrame extends AbstractTimsFrame{
       long s5 = System.currentTimeMillis();
       time04 = s5-s4;
     }
-//        LOG.debug("SingleSpectrum >>> Frame_" + m_id + " has\t" + nbrPeakMS + "\tpeaks, reduced to\t" + newSpMasses.length);
+
+    if (newSpMasses.length == 0)
+      LOG.debug("SingleSpectrum >>> Frame_" + m_id + " has\t" + nbrPeakMS + "\tpeaks, reduced to\t" + newSpMasses.length);
+
     m_singleSpectrum = new Spectrum("Frame_" + m_id, 1, (float) m_time, newSpMasses, newSpIntensities);
     //-- VDS For Duration LOG
     if(nbrSp%100 == 0){
@@ -255,7 +286,7 @@ public class TimsMSFrame extends AbstractTimsFrame{
                             //found nearest mass, test if < than 10 ppm
                             double nearestMass = keyMasses.get(index);
                             double asPpm = Math.abs(nearestMass - nextMass) / nextMass * 1000000;
-                            if (asPpm > 10.0) { // new mass. insert it.Otherwize merge mass and previously entered intensity should ne the best.
+                            if (asPpm > 10.0) { // new mass. insert it. Otherwise merge mass and previously entered intensity should be the best.
                                 keyMasses.add(idxToInsert, nextMass);
                                 retainedMasses2Intensity.put(nextMass, nextIntensity);
                                 long s4 = System.currentTimeMillis();

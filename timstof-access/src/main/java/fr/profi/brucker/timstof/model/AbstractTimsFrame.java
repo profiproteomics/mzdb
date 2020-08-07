@@ -245,7 +245,7 @@ public abstract class AbstractTimsFrame implements Comparable<AbstractTimsFrame>
         if(!m_spectrumDataSet)
             return null;
 
-        if(m_singleSpectrum ==null)
+        if(m_singleSpectrum == null)
             createSingleSpectrum(msCreateMethod);
 
         return m_singleSpectrum;
