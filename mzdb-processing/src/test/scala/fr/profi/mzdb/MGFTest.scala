@@ -2,6 +2,7 @@ package fr.profi.mzdb
 
 import com.typesafe.scalalogging.StrictLogging
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator
+import fr.profi.mzdb.io.writer.mgf.{AnnotatedMgfPrecursor, IsolationWindowPrecursorExtractor2, MgfPrecursor}
 import fr.profi.util.metrics.Metric
 import org.junit.{Ignore, Test}
 
