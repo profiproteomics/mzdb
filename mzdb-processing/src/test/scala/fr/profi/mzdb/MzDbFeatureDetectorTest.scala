@@ -121,5 +121,5 @@ class MzDbFeatureDetectorTest extends StrictLogging {
     }
     
   }
-  
+
 }
