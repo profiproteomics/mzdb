@@ -91,12 +91,16 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	/**
 	 * Loads the param tree.
 	 * 
-	 * @param paramTree the new param tree
+	 *
 	 */
 	protected void loadParamTree(SQLiteConnection mzDbConnection) throws SQLiteException {
+		this.paramTree = ParamTreeParser.parseParamTree(getParamTreeAsString(mzDbConnection));
+	}
+
+	public String getParamTreeAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
 		String sqlString = "SELECT param_tree FROM " + TABLE_NAME;
 		String paramTreeAsStr = new SQLiteQuery(mzDbConnection, sqlString).extractSingleString();
-		this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
+		return paramTreeAsStr;
 	}
 
 	/*

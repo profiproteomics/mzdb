@@ -33,4 +33,7 @@ public class ComponentList extends AbstractParamTree {
 	public ComponentList() {
 	}
 
+	public List<Component> getComponents() {
+		return components;
+	}
 }

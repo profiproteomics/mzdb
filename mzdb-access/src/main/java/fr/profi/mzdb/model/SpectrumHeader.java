@@ -374,29 +374,43 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	@Override
 	public void loadParamTree(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (!this.hasParamTree()) {
-			String sqlString = "SELECT param_tree FROM spectrum WHERE id = ?";
-			String paramTreeAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
-				this.getId()).extractSingleString();
+			String paramTreeAsStr = getParamTreeAsString(mzDbConnection);
 			this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
 		}
 	}
 
+	@Override
+	public String getParamTreeAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
+		String sqlString = "SELECT param_tree FROM spectrum WHERE id = ?";
+		return new SQLiteQuery(mzDbConnection, sqlString).bind(1,
+			this.getId()).extractSingleString();
+	}
+
 	public void loadScanList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (scanList == null) {
-			String sqlString = "SELECT scan_list FROM spectrum WHERE id = ?";
-			String scanListAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
-				this.getId()).extractSingleString();
+			String scanListAsStr = getScanListAsString(mzDbConnection);
 			this.scanList = ParamTreeParser.parseScanList(scanListAsStr);
 		}
 	}
 
+	public String getScanListAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
+		String sqlString = "SELECT scan_list FROM spectrum WHERE id = ?";
+		return new SQLiteQuery(mzDbConnection, sqlString).bind(1,
+			this.getId()).extractSingleString();
+	}
+
 	public void loadPrecursorList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (precursor == null) {
-			String sqlString = "SELECT precursor_list FROM spectrum WHERE id = ?";
-			String precursorListAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
-				this.getId()).extractSingleString();
+			String precursorListAsStr = getPrecursorListAsString(mzDbConnection);
 			this.precursor = ParamTreeParser.parsePrecursor(precursorListAsStr);
 		}
+	}
+
+	public String getPrecursorListAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
+		String sqlString = "SELECT precursor_list FROM spectrum WHERE id = ?";
+		String precursorListAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
+			this.getId()).extractSingleString();
+		return precursorListAsStr;
 	}
 
 }
