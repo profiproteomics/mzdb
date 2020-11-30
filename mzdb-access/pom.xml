@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>mzdb-access_${scala.version}</artifactId> <!-- scala version from profipom-->
-
+  <version>1.0.0.llc-SNAPSHOT</version>
   <description>The mzDB access Java library</description>
 
 

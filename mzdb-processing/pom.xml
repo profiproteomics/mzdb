@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>mzdb-processing_${scala.version}</artifactId>
-
+  <version>1.0.0.llc-SNAPSHOT</version>
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
   <properties>
