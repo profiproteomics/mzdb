@@ -261,7 +261,7 @@
           <systemProperties>
             <property>
               <name>sqlite4java.library.path</name>
-              <value>C:/vero/DEV</value>
+              <value>${project.build.directory}/lib</value>
             </property>
           </systemProperties>
         </configuration>
