@@ -4,11 +4,9 @@ import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.ArrayBuilder
 import scala.collection.mutable.LongMap
-
 import com.fasterxml.jackson.annotation.JsonFormat
-
+import fr.profi.mzdb.Settings
 import org.apache.commons.math3.stat.StatUtils
-
 import fr.profi.mzdb.util.misc.InMemoryIdGen
 
 trait IPeakelCursorProvider {
@@ -269,7 +267,7 @@ case class Peakel(
   
   // ILcContext java interface implementation 
   def getSpectrumId() : Long = getApexSpectrumId()
-  def getElutionTime(): Float = getApexElutionTime()
+  def getElutionTime(): Float = if (Settings.peakelElutionTime.equals("apex")) { getApexElutionTime() } else { calcWeightedAverageTime() }
   
   // Access to data of a peak at a given index
   def getPeakElutionTime(pIdx: Int): Float = elutionTimes(pIdx)

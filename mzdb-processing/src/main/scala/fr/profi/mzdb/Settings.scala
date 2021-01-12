@@ -15,15 +15,18 @@ object Settings {
     val usePartialSGSmoother = _smartPeakelFinderConfig.getBoolean("usePartialSGSmoother")
     val useBaselineRemover = _smartPeakelFinderConfig.getBoolean("useBaselineRemover")
     val useSmoothing = _smartPeakelFinderConfig.getBoolean("useSmoothing")
+    val sgSmoothingWidth = _smartPeakelFinderConfig.getInt("sgSmoothingWidth")
   }
 
   object FeatureDetectorConfig {
     val msLevel = _featureDetectorConfig.getInt("msLevel")
-    val mzTolPPM = _featureDetectorConfig.getInt("mzTolPPM").toFloat
+    val mzTolPPM = _featureDetectorConfig.getDouble("mzTolPPM").toFloat
     val minNbOverlappingIPs = _featureDetectorConfig.getInt("minNbOverlappingIPs")
     val intensityPercentile = _featureDetectorConfig.getDouble("intensityPercentile").toFloat
     val maxConsecutiveGaps = _featureDetectorConfig.getInt("maxConsecutiveGaps")
   }
+
+  val peakelElutionTime = config.getString("peakelElutionTime")
 
   private val _smartPeakelFinderConfig = config.getConfig("SmartPeakelFinderConfig")
   private val _featureDetectorConfig = config.getConfig("FeatureDetectorConfig")
