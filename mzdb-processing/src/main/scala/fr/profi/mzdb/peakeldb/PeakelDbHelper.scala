@@ -27,6 +27,7 @@ object PeakelDbHelper {
   private val SQLITE_RTREE_UB_CORR = 1.0 + 0.00000012
   private val SQLITE_RTREE_LB_CORR = 1.0 - 0.00000012
 
+  private val MIN_CORRELATION_THRESHOLD = 0.5
   private val PEARSON = new PearsonsCorrelation()
   
 
@@ -82,10 +83,10 @@ object PeakelDbHelper {
       _computeCorrelation(ref,peakel) -> peakel
     }
     val (correlation, bestPeakel) = correlations.maxBy(_._1)
-    
-    // TODO: DBO => I don't like the result of the pearson correlation, 
+
+    // TODO: DBO => I don't like the result of the pearson correlation,
     // I think we should not apply a filter based on this metric
-    if (correlation > 0.6) Some(bestPeakel)
+    if (correlation > MIN_CORRELATION_THRESHOLD) Some(bestPeakel)
     else None
   }
 

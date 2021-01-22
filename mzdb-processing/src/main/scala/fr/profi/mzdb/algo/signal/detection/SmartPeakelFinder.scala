@@ -3,6 +3,7 @@ package fr.profi.mzdb.algo.signal.detection
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging.LazyLogging
+import fr.profi.mzdb.Settings
 import fr.profi.mzdb.algo.signal.filtering._
 import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.util.math.DerivativeAnalysis
@@ -53,7 +54,7 @@ class SmartPeakelFinder(
         if (usePartialSGSmoother) {
           new PartialSavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 1))
         } else {
-          val nbSmoothingPoints = { if (peaksCount <= 20) 5 else if (peaksCount <=50) 7 else 11}
+          val nbSmoothingPoints = Settings.SmartPeakelFinderConfig.sgSmoothingWidth // { if (peaksCount <= 20) 5 else if (peaksCount <=50) 7 else 11}
           new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(nbPoints = nbSmoothingPoints, polyOrder = 2, iterationCount = 1))
         }
       }
