@@ -11,7 +11,9 @@
 
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
-
+  <properties>
+    <version.path>${basedir}/src/main/scala/fr/profi/mzdb/algo</version.path>
+  </properties>
 
 	<!--<scm>-->
 	  <!--<connection>scm:svn:https://bioproj.extra.cea.fr/svn/proline/mzDB/mzDB-processing/trunk</connection>-->
@@ -261,6 +263,23 @@
             </property>
           </systemProperties>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.google.code.maven-replacer-plugin</groupId>
+        <artifactId>replacer</artifactId>
+        <!-- Version inherited from ProFI-Pom -->
+
+        <executions>
+          <execution>
+            <id>scala-version-generation</id>
+            <phase>generate-sources</phase>
+            <!-- Execution and configuration inherited from ProFI-Pom -->
+            <configuration>
+              <skip>false</skip>
+            </configuration>
+          </execution>
+        </executions>
+
       </plugin>
 
     </plugins>
