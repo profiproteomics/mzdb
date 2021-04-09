@@ -10,9 +10,8 @@
 
     <groupId>fr.profi</groupId>
     <artifactId>mzdb-pom</artifactId>
-    <version>1.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-
+    <version>1.1.0.llc-SNAPSHOT</version>
     <name>mzDB-POM</name>
     <description>Parent pom for mzDB file format projects</description>
 
@@ -39,7 +38,11 @@
                 <artifactId>rxjava</artifactId>
                 <version>1.3.0</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.typesafe</groupId>
+                <artifactId>config</artifactId>
+                <version>1.3.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
