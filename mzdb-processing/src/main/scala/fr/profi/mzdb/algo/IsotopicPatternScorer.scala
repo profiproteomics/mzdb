@@ -157,4 +157,17 @@ def calcIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : 
     if ((sumExpected == 0) || (sumObserved == 0)) 0.0
     else product / (Math.sqrt(sumExpected) * Math.sqrt(sumObserved))
   }
+
+  def selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
+
+    // for DotProduct scoring
+        val refScore = putativePatterns.head._1
+        val patterns = putativePatterns.filter(p => math.abs(p._1 - refScore) < deltaScore)
+        patterns.maxBy(p => p._2.charge)
+
+    // for Proline legacy scoring
+    //putativePatterns.head
+
+  }
+
 }

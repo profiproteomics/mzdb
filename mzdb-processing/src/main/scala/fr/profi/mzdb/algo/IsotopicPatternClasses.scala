@@ -22,20 +22,11 @@ trait IIsotopicPatternPredictor extends LazyLogging {
   ): Boolean = {
 
     val putativePatterns = IsotopicPatternScorer.calcIsotopicPatternHypotheses(spectrumData, moz, ppm)
-    val bestPattern = _selectBestPatternHypothese(putativePatterns)
+    val bestPattern = IsotopicPatternScorer.selectBestPatternHypothese(putativePatterns)
     
     (bestPattern._2.charge == charge) && (math.abs(bestPattern._2.monoMz - moz) <= mozTolInDa)
   }
 
-  def _selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
-
-    val refScore = putativePatterns.head._1
-    val patterns = putativePatterns.filter(p => math.abs(p._1 - refScore) < deltaScore)
-    patterns.maxBy(p => p._2.charge)
-
-//    putativePatterns.head
-
-  }
 
 }
 
@@ -68,7 +59,7 @@ object MzDbPatternPredictor extends IIsotopicPatternPredictor {
       peakel.getApexMz(),
       ppmTol
     )
-    _selectBestPatternHypothese(putativePatterns)
+    IsotopicPatternScorer.selectBestPatternHypothese(putativePatterns)
   }
 
   def assessReliability(
@@ -117,7 +108,7 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
     val(mzList, intensityList) = this.slicePeakels(coelutingPeakels, peakel.getApexSpectrumId())
     val spectrumData = new SpectrumData(mzList.toArray, intensityList.toArray)
     val putativePatterns = IsotopicPatternScorer.calcIsotopicPatternHypotheses(spectrumData, peakel.getApexMz(), mozTolPPM)
-    _selectBestPatternHypothese(putativePatterns)
+    IsotopicPatternScorer.selectBestPatternHypothese(putativePatterns)
   }
 
   def assessReliability(

@@ -294,7 +294,19 @@ case class Peakel(
     
     weightedTimeSum / intensitySum
   }
-  
+
+  def calcWeightedMz(): Double = {
+    var intensitySum = 0f
+
+    val weightedMzSum = intensityValues.zipWithIndex.foldLeft(0.0) { (mzSum,intensityWithIdx) =>
+      val(intensity,index) = intensityWithIdx
+      intensitySum += intensity
+      mzSum + (mzValues(index) * intensity)
+    }
+
+    weightedMzSum / intensitySum
+  }
+
   /*def calcPeakelsIntersection( otherPeakel: Peakel ): Pair[Array[Peak],Array[Peak]] = {
     val thisPeakByTime = this.peakByElutionTime
     val otherPeakByTime = otherPeakel.peakByElutionTime
