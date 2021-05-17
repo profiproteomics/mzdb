@@ -37,7 +37,7 @@ def calcIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : 
 
      var result = ArrayBuffer[(Double, TheoreticalIsotopePattern)]()
      for (charge <- 1 to MAX_CHARGE) {
-         val (score, theoreticalIP) = getIPHypothesisDotProduct(spectrum, mz, 0, charge, ppmTol)
+         val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, 0, charge, ppmTol)
          result += (score -> theoreticalIP)
 
          var j = 1
@@ -46,7 +46,7 @@ def calcIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : 
          var existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
 
          while ( existBackward && j <= theoreticalIP.theoreticalMaxPeakelIndex+1 ) {
-           val (score, theoreticalIP) = getIPHypothesisDotProduct(spectrum, mz, j, charge, ppmTol)
+           val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, j, charge, ppmTol)
            result += (score -> theoreticalIP)
            j = j+1
            backwardMz = mz - j*IsotopePatternEstimator.avgIsoMassDiff / charge
@@ -161,12 +161,12 @@ def calcIsotopicPatternHypotheses(spectrum : SpectrumData, mz: Double, ppmTol : 
   def selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
 
     // for DotProduct scoring
-        val refScore = putativePatterns.head._1
-        val patterns = putativePatterns.filter(p => math.abs(p._1 - refScore) < deltaScore)
-        patterns.maxBy(p => p._2.charge)
+//        val refScore = putativePatterns.head._1
+//        val patterns = putativePatterns.filter(p => math.abs(p._1 - refScore) < deltaScore)
+//        patterns.maxBy(p => p._2.charge)
 
     // for Proline legacy scoring
-    //putativePatterns.head
+    putativePatterns.head
 
   }
 
