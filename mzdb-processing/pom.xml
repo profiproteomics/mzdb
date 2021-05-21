@@ -37,7 +37,7 @@
     <dependency>
       <groupId>fr.profi</groupId>
       <artifactId>profi-proteomics_${scala.version}</artifactId>
-      <version>${project.version}</version>
+      <version>${commons.version}</version>
     </dependency>
 
     <!-- mzdb-access -->
@@ -130,7 +130,7 @@
     <dependency>
       <groupId>com.vividsolutions</groupId>
       <artifactId>jts-core</artifactId>
-      <version>[1.14.0,)</version>
+      <version>1.14.0</version>
     </dependency>
     
     <!-- RxJava & RxScala -->
