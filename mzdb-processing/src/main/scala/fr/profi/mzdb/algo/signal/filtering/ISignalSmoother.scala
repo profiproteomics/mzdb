@@ -22,14 +22,9 @@ trait ISignalSmoother {
       smoothedRtIntPairs.length == peakel.spectrumIds.length,
       "can't use the smoothPeakel method with a smoother algo returning different number of values"
     )
-    
-    val tmpPeakel = new PeakelBuilder( peakel.toPeakelDataMatrix ).result(peakel.id)
-    
-    tmpPeakel.copy(
-      leftHwhmMean = peakel.leftHwhmMean,
-      leftHwhmCv = peakel.leftHwhmCv,
-      rightHwhmMean= peakel.rightHwhmMean,
-      rightHwhmCv= peakel.rightHwhmCv
+
+    peakel.copy(
+      intensityValues = smoothedRtIntPairs.map(_._2.toFloat)
     )
   }
   
