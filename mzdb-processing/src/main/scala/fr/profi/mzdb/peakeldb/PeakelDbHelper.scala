@@ -80,21 +80,19 @@ object PeakelDbHelper {
    def findCorrelatingPeakel(ref: Peakel, peakels: Array[Peakel]): Option[Peakel] = {
     
     val correlations = peakels.map { peakel => 
-      _computeCorrelation(ref,peakel) -> peakel
+      computeCorrelation(ref,peakel) -> peakel
     }
     val (correlation, bestPeakel) = correlations.maxBy(_._1)
 
-    // TODO: DBO => I don't like the result of the pearson correlation,
-    // I think we should not apply a filter based on this metric
     if (correlation > MIN_CORRELATION_THRESHOLD) Some(bestPeakel)
     else None
   }
 
- private def _computeCorrelation(p1: Peakel, p2: Peakel): Double = {
+  def computeCorrelation(p1: Peakel, p2: Peakel): Double = {
 
     val (y1, y2) = zipPeakelIntensities(p1, p2)
-    math.abs(PEARSON.correlation(y1, y2))
-    
+    PEARSON.correlation(y1, y2)
+
   }
  
   private def zipPeakelIntensities(p1: Peakel, p2: Peakel): (Array[Double], Array[Double]) = {
