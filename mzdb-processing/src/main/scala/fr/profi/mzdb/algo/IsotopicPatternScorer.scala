@@ -175,3 +175,62 @@ object DotProductPatternScorer extends IIsotopicPatternScorer {
   }
 
 }
+
+object DotProductPatternScorerV1 extends IIsotopicPatternScorer {
+
+  def getIPHypothesis(spectrum: SpectrumData, initialMz: Double, isotopicShift: Int, charge: Int, ppmTol: Double): (Double, TheoreticalIsotopePattern) = {
+    var score = 0.0
+    val mz = initialMz - isotopicShift * IsotopePatternEstimator.avgIsoMassDiff / charge
+    val pattern = IsotopePatternEstimator.getTheoreticalPattern(mz, charge)
+
+    val scale = spectrum.getIntensityList()(spectrum.getNearestPeakIndex(initialMz)).toDouble / pattern.mzAbundancePairs(isotopicShift)._2
+
+    var ipMoz = mz
+    val observed = new Array[Double](pattern.mzAbundancePairs.length)
+    val expected = new Array[Double](pattern.mzAbundancePairs.length)
+    for (rank <- 0 until pattern.mzAbundancePairs.length) {
+      ipMoz = if (rank == 0) ipMoz
+      else ipMoz + IsotopePatternEstimator.avgIsoMassDiff / charge
+      val nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
+      if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
+        observed(rank) = spectrum.getIntensityList()(nearestPeakIdx)
+      }
+      else { //  minus expected abundance to penalise signal absence
+        observed(rank) = -pattern.mzAbundancePairs(rank)._2 * scale
+      }
+      expected(rank) = pattern.mzAbundancePairs(rank)._2
+    }
+
+    score = dotProduct(observed, expected)
+    score = 1.0 - score
+    (score, pattern)
+  }
+
+  def dotProduct(observed: Array[Double], expected: Array[Double]): Double = {
+    var sumObserved = 0.0
+    var sumExpected = 0.0
+    var product = 0.0
+    var k = 0
+
+    val weights = Array(0.25, 0.25, 0.25, 0.08, 0.06, 0.05, 0.04, 0.02)
+
+    while ( (k < observed.length) && (expected(k) > 0.1) ) {
+      val weight = if (k < weights.size) { weights(k) } else { 0.0 }
+      product += weight * observed(k) * expected(k)
+      sumExpected += weight * expected(k) * expected(k)
+      sumObserved += weight * observed(k) * observed(k)
+
+      k += 1
+    }
+    if ((sumExpected == 0) || (sumObserved == 0)) 0.0
+    else product / (Math.sqrt(sumExpected) * Math.sqrt(sumObserved))
+  }
+
+
+  def selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
+    val refScore = putativePatterns.head._1
+    val patterns = putativePatterns.filter(p => math.abs(p._1 - refScore) < deltaScore)
+    patterns.maxBy(p => p._2.charge)
+  }
+
+}
