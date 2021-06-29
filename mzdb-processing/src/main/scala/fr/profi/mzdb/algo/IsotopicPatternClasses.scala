@@ -13,7 +13,7 @@ import java.util
 
 trait IIsotopicPatternPredictor extends LazyLogging {
 
-  val isotopicPatternScorer = LegacyIsotopicPatternScorer
+  val isotopicPatternScorer = DotProductPatternScorerV1
 
   def isMatchReliable(
     spectrumData: SpectrumData,

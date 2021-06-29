@@ -91,7 +91,7 @@ object PeakelDbHelper {
   def computeCorrelation(p1: Peakel, p2: Peakel): Double = {
 
     val (y1, y2) = zipPeakelIntensities(p1, p2)
-    PEARSON.correlation(y1, y2)
+    math.abs(PEARSON.correlation(y1, y2))
 
   }
  
