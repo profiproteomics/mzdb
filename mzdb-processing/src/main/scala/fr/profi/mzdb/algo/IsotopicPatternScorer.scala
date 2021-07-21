@@ -1,15 +1,26 @@
 package fr.profi.mzdb.algo
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.ms.algo.IsotopePatternEstimator
 import fr.profi.ms.model.TheoreticalIsotopePattern
+import fr.profi.mzdb.Settings
 import fr.profi.mzdb.model.SpectrumData
+
+object IsotopicPatternScorer {
+
+  def apply(methodName: String): IIsotopicPatternScorer = {
+    methodName match {
+      case "Legacy" => LegacyIsotopicPatternScorer
+      case "DotProductV1" => DotProductPatternScorerV1
+      case "DotProduct" => DotProductPatternScorer
+    }
+  }
+}
 
 trait IIsotopicPatternScorer extends LazyLogging {
 
-  private val MAX_CHARGE = 8
+  private val MAX_CHARGE = Settings.maxIsotopicChargeState
 
   /**
    * Tries to explain a peak at the specified mz value by testing different isotopic pattern explanations.

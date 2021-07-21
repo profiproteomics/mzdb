@@ -54,7 +54,9 @@ class SmartPeakelFinder(
         if (usePartialSGSmoother) {
           new PartialSavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(iterationCount = 1))
         } else {
-          val nbSmoothingPoints = Settings.SmartPeakelFinderConfig.sgSmoothingWidth // { if (peaksCount <= 20) 5 else if (peaksCount <=50) 7 else 11}
+          val nbSmoothingPoints = if (Settings.SmartPeakelFinderConfig.useAdaptativeSgSmoothing) {
+              if (peaksCount <= 20) 5 else if (peaksCount <=50) 7 else 11
+            } else { Settings.SmartPeakelFinderConfig.sgSmoothingWidth }
           new SavitzkyGolaySmoother(SavitzkyGolaySmoothingConfig(nbPoints = nbSmoothingPoints, polyOrder = 2, iterationCount = 1))
         }
       }

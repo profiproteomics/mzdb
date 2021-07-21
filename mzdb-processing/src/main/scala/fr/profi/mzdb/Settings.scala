@@ -15,6 +15,7 @@ object Settings {
     val usePartialSGSmoother = _smartPeakelFinderConfig.getBoolean("usePartialSGSmoother")
     val useBaselineRemover = _smartPeakelFinderConfig.getBoolean("useBaselineRemover")
     val useSmoothing = _smartPeakelFinderConfig.getBoolean("useSmoothing")
+    val useAdaptativeSgSmoothing = _smartPeakelFinderConfig.getBoolean("useAdaptativeSgSmoothing")
     val sgSmoothingWidth = _smartPeakelFinderConfig.getInt("sgSmoothingWidth")
   }
 
@@ -27,6 +28,10 @@ object Settings {
   }
 
   val peakelElutionTime = config.getString("peakelElutionTime")
+  val peakelsSlicingSpan = config.getInt("peakelsSlicingSpan")
+  val maxIsotopicChargeState = config.getInt("maxIsotopicChargeState")
+  val isotopicPatternScorer = config.getString("isotopicPatternScorer")
+  val isotopicPeakelsCorrelationThreshold = config.getDouble("isotopicPeakelsCorrelationThreshold")
 
   private val _smartPeakelFinderConfig = config.getConfig("SmartPeakelFinderConfig")
   private val _featureDetectorConfig = config.getConfig("FeatureDetectorConfig")

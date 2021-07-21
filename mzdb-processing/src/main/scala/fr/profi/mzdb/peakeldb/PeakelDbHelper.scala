@@ -1,20 +1,18 @@
 package fr.profi.mzdb.peakeldb
 
 import java.io.File
-
 import scala.collection.mutable.ArrayBuffer
-
 import com.almworks.sqlite4java.SQLiteConnection
 import com.almworks.sqlite4java.SQLiteStatement
 import com.github.davidmoten.rtree.RTree
 import com.github.davidmoten.rtree.geometry
-
+import fr.profi.mzdb.Settings
 import fr.profi.mzdb.peakeldb.io.PeakelDbReader
 import fr.profi.mzdb.peakeldb.io.PeakelDbWriter
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.model.PeakelDataMatrix
-
 import rx.lang.scala.Observable
+
 import java.util.Arrays
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
 
@@ -27,7 +25,7 @@ object PeakelDbHelper {
   private val SQLITE_RTREE_UB_CORR = 1.0 + 0.00000012
   private val SQLITE_RTREE_LB_CORR = 1.0 - 0.00000012
 
-  private val MIN_CORRELATION_THRESHOLD = 0.5
+  private val MIN_CORRELATION_THRESHOLD = Settings.isotopicPeakelsCorrelationThreshold
   private val PEARSON = new PearsonsCorrelation()
   
 
@@ -91,7 +89,7 @@ object PeakelDbHelper {
   def computeCorrelation(p1: Peakel, p2: Peakel): Double = {
 
     val (y1, y2) = zipPeakelIntensities(p1, p2)
-    math.abs(PEARSON.correlation(y1, y2))
+    PEARSON.correlation(y1, y2)
 
   }
  
