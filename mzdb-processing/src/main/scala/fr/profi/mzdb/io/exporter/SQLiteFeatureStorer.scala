@@ -102,7 +102,7 @@ object SQLiteIsolationWindowStorer extends LazyLogging {
     )
                 
     val bi = chartToImage(chart, 800, 600)
-    ChartUtilities.encodeAsPNG( bi )
+    ChartUtils.encodeAsPNG( bi )
   }
   
   protected def chartToImage( chart: JFreeChart, width: Int, height: Int): BufferedImage = { 
@@ -263,7 +263,7 @@ object SQLitePeakelStorer {
     )
                 
     val bi = chartToImage(chart, 400, 300)
-    ChartUtilities.encodeAsPNG( bi )
+    ChartUtils.encodeAsPNG( bi )
   }
   
   protected def chartToImage( chart: JFreeChart, width: Int, height: Int): BufferedImage = { 
@@ -615,7 +615,7 @@ object SQLiteFeatureStorer {
                 )
                 
     val bi = chartToImage(chart, 400, 300)
-    ChartUtilities.encodeAsPNG( bi )
+    ChartUtils.encodeAsPNG( bi )
   }
   
   protected def chartToImage( chart: JFreeChart, width: Int, height: Int):  BufferedImage = { 
