@@ -31,12 +31,8 @@ public class SampleReader extends AbstractTableModelReader<Sample> {
 				int id = r.columnInt(SampleTable.ID);
 				String name = r.columnString(SampleTable.NAME);
 				String paramTreeAsStr = r.columnString(SampleTable.PARAM_TREE);
-				
-				if (paramTreeAsStr != null) {
-					return new Sample(id, name, ParamTreeParser.parseParamTree(paramTreeAsStr));
-				} else {
-					return new Sample(id, name);
-				}
+
+				return new Sample(id, name, ParamTreeParser.parseParamTree(paramTreeAsStr));
 			}
 		};
 	}
