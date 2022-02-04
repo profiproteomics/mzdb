@@ -1,32 +1,20 @@
 package fr.profi.mzdb.io.writer.mgf;
 
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StreamCorruptedException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-//import org.apache.commons.math3.stat.descriptive.rank.Percentile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.almworks.sqlite4java.SQLiteException;
-
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.table.SpectrumTable;
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
-import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.PeakEncoding;
-import fr.profi.mzdb.model.Spectrum;
-import fr.profi.mzdb.model.SpectrumData;
-import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.model.*;
 import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * @author MDB
@@ -171,7 +159,6 @@ public class MgfWriter {
 		} else { // We assume high resolution m/z for fragments
 			mzFragFormat = "%.3f";
 		}
-
 		// Unpack data
 		final SpectrumHeader spectrumHeader = spectrum.getHeader();
 		String title;
@@ -189,34 +176,48 @@ public class MgfWriter {
 				mzDbReader.getFirstSourceFileName().split("\\.")[0]);
 		}
 
-		MgfHeader mgfSpectrumHeader = precComp.getMgfHeader(mzDbReader, spectrumHeader, title);
+//		MgfHeader mgfSpectrumHeader = precComp.getMgfHeader(mzDbReader, spectrumHeader, title);
 
 		StringBuilder spectrumStringBuilder = new StringBuilder();
-		mgfSpectrumHeader.appendToStringBuilder(spectrumStringBuilder);
 
-		// Spectrum Data
-		final SpectrumData data = spectrum.getData();
-		final double[] mzs = data.getMzList();
-		final float[] ints = data.getIntensityList();
-		//final float[] leftHwhms = data.getLeftHwhmList();
-		//final float[] rightHwhms = data.getRightHwhmList();
+		MgfPrecursor[] precursors = precComp.getMgfPrecursors(mzDbReader, spectrumHeader);
+		int index = 0;
 
-		final int intsLength = ints.length;
+		for (MgfPrecursor mgfPrecursor : precursors) {
 
-		//final double[] intsAsDouble = new double[intsLength];
-		//for (int i = 0; i < intsLength; ++i) {
-		//	intsAsDouble[i] = (double) ints[i];
-		//}
-		//final double intensityCutOff = 0.0; // new Percentile().evaluate(intsAsDouble, 5.0);
+			if (spectrumStringBuilder.length() > 0) spectrumStringBuilder.append(MgfWriter.LINE_SPERATOR).append(MgfWriter.LINE_SPERATOR);
 
-		for (int i = 0; i < intsLength; ++i) {
+			spectrumStringBuilder.append(MgfField.BEGIN_IONS).append(MgfWriter.LINE_SPERATOR);
+			spectrumStringBuilder.append(MgfField.TITLE).append("=").append(title);
+			if(index > 0)
+				spectrumStringBuilder.append("; alt:").append(index++);
 
-			float intensity = ints[i];
+			spectrumStringBuilder.append(MgfWriter.LINE_SPERATOR);
+			mgfPrecursor.appendToStringBuilder(spectrumStringBuilder);
 
-			// DBO: here we tried boost intensities (but this should be optional)
-			// The benefit is not the same for all instruments
-			// TODO: take into account the width of the peaks
-			//float intensity = (float) Math.pow(ints[i], 1.5 ); // ^ 3/2
+			// Spectrum Data
+			final SpectrumData data = spectrum.getData();
+			final double[] mzs = data.getMzList();
+			final float[] ints = data.getIntensityList();
+			//final float[] leftHwhms = data.getLeftHwhmList();
+			//final float[] rightHwhms = data.getRightHwhmList();
+
+			final int intsLength = ints.length;
+
+			//final double[] intsAsDouble = new double[intsLength];
+			//for (int i = 0; i < intsLength; ++i) {
+			//	intsAsDouble[i] = (double) ints[i];
+			//}
+			//final double intensityCutOff = 0.0; // new Percentile().evaluate(intsAsDouble, 5.0);
+
+			for (int i = 0; i < intsLength; ++i) {
+
+				float intensity = ints[i];
+
+				// DBO: here we tried boost intensities (but this should be optional)
+				// The benefit is not the same for all instruments
+				// TODO: take into account the width of the peaks
+				//float intensity = (float) Math.pow(ints[i], 1.5 ); // ^ 3/2
 
 			/*if( dataEnc.getMode().equals(DataMode.FITTED) ) {
 			  float peakIntensity = ints[i];
@@ -234,19 +235,19 @@ public class MgfWriter {
 			  intensity = ints[i];
 			}*/
 
-			if (intensity >= intensityCutoff) {
-				double mz = mzs[i];
+				if (intensity >= intensityCutoff) {
+					double mz = mzs[i];
 
-				spectrumStringBuilder
-					.append(String.format(mzFragFormat, mz))
-					.append(" ")
-					.append(String.format("%.0f", intensity))
-					.append(LINE_SPERATOR);
+					spectrumStringBuilder
+									.append(String.format(mzFragFormat, mz))
+									.append(" ")
+									.append(String.format("%.0f", intensity))
+									.append(LINE_SPERATOR);
+				}
 			}
+
+			spectrumStringBuilder.append(MgfField.END_IONS);
 		}
-
-		spectrumStringBuilder.append(MgfField.END_IONS);
-
 		return spectrumStringBuilder.toString();
 	}
 

@@ -1,11 +1,9 @@
 package fr.profi.mzdb.io.writer.mgf
 
-import fr.profi.mzdb.MzDbReader
-import fr.profi.mzdb.model.SpectrumHeader
-import fr.profi.mzdb.algo.LegacyIsotopicPatternScorer
 import fr.profi.ms.model.TheoreticalIsotopePattern
-import com.typesafe.scalalogging.LazyLogging
-import fr.profi.mzdb.db.model.params.Precursor
+import fr.profi.mzdb.MzDbReader
+import fr.profi.mzdb.algo.LegacyIsotopicPatternScorer
+import fr.profi.mzdb.model.SpectrumHeader
 
 
 /**
@@ -25,8 +23,8 @@ class IsolationWindowPrecursorExtractor(mzTolPPM: Float)  extends DefaultPrecurs
     val bestPattern = getBestIsotopicPatternMatch(reader, spectrumHeader, precMz, time)
     if (bestPattern.isDefined) {
       lastPrediction = (spectrumHeader, bestPattern.get)
-      if (math.abs(precMz - bestPattern.get.monoMz) > 1e-3)
-        logger.info(s"scan ${spectrumHeader.getInitialId} : change predicted precursorMz from $precMz to ${bestPattern.get.monoMz}")
+//      if (math.abs(precMz - bestPattern.get.monoMz) > 1e-3)
+//        logger.info(s"scan ${spectrumHeader.getInitialId} : change predicted precursorMz from $precMz to ${bestPattern.get.monoMz}")
       bestPattern.get.monoMz
     } else {
       logger.info("no prediction : returns precursorMz")
@@ -39,7 +37,8 @@ class IsolationWindowPrecursorExtractor(mzTolPPM: Float)  extends DefaultPrecurs
     if (!slices.isEmpty) {
       val slice = slices.minBy { x => Math.abs(x.getHeader.getElutionTime-time) }
       val putativePatterns = LegacyIsotopicPatternScorer.calcIsotopicPatternHypotheses(slice.getData(), precMz, mzTolPPM)
-      Some(putativePatterns.head._2)
+      val bestPattern = LegacyIsotopicPatternScorer.selectBestPatternHypothese(putativePatterns)
+      Some(bestPattern._2)
     } else None
   }
 

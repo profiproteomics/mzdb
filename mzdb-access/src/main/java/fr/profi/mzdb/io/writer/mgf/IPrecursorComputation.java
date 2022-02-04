@@ -1,7 +1,6 @@
 package fr.profi.mzdb.io.writer.mgf;
 
 import com.almworks.sqlite4java.SQLiteException;
-
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.model.SpectrumHeader;
 
@@ -30,5 +29,7 @@ public interface IPrecursorComputation {
 	public String getParamName();
 	
 	public MgfHeader getMgfHeader(MzDbReader mzDbReader, SpectrumHeader spectrumHeader, String title) throws SQLiteException;
-	
+
+	public MgfPrecursor[] getMgfPrecursors(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException;
+
 }
