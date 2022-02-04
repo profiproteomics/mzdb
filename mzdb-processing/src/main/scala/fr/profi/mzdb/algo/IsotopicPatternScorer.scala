@@ -1,11 +1,12 @@
 package fr.profi.mzdb.algo
 
-import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.ms.algo.IsotopePatternEstimator
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.mzdb.Settings
 import fr.profi.mzdb.model.SpectrumData
+
+import scala.collection.mutable.ArrayBuffer
 
 object IsotopicPatternScorer {
 
@@ -34,28 +35,46 @@ trait IIsotopicPatternScorer extends LazyLogging {
 
     var result = ArrayBuffer[(Double, TheoreticalIsotopePattern)]()
     for (charge <- 1 to MAX_CHARGE) {
-      val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, 0, charge, ppmTol)
-      result += (score -> theoreticalIP)
-
-      var j = 1
-      var backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
-      var nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
-      var existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
-
-      while (existBackward && j <= theoreticalIP.theoreticalMaxPeakelIndex + 1) {
-        val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, j, charge, ppmTol)
-        result += (score -> theoreticalIP)
-        j = j + 1
-        backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
-        nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
-        existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
-      }
+      result ++= calcIsotopicPatternHypothesesFromCharge(spectrum, mz, charge, ppmTol)
     }
 
     result = result.sortWith { (p1, p2) =>
       ((p1._1 == p2._1) && (p1._2.charge < p2._2.charge)) ||
         ((p1._1 != p2._1) && (p1._1 < p2._1))
     }
+    result.toArray
+  }
+
+  /**
+   * Tries to explain a peak at the specified mz value by testing different isotopic pattern explanations.
+   *
+   * @param spectrum the MS data (mz, intensities) signal around the peak to explain
+   * @param mz       the mz of the peak that must be explained
+   * @param ppmTol
+   * @return a list of isotopic patterns tested, ordered by score (better = higher score first).
+   */
+  def calcIsotopicPatternHypothesesFromCharge(spectrum: SpectrumData, mz: Double, charge: Int, ppmTol: Double): Array[(Double, TheoreticalIsotopePattern)] = {
+
+    var result = ArrayBuffer[(Double, TheoreticalIsotopePattern)]()
+    val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, 0, charge, ppmTol)
+    result += (score -> theoreticalIP)
+
+    var j = 1
+    var backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
+    var nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
+    var existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
+
+    while (existBackward && j <= theoreticalIP.theoreticalMaxPeakelIndex + 1) {
+      val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, j, charge, ppmTol)
+      result += (score -> theoreticalIP)
+      j = j + 1
+      backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
+      nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
+      existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
+    }
+
+    result = result.sortWith { (p1, p2) => (p1._1 < p2._1) }
+
     result.toArray
   }
 
