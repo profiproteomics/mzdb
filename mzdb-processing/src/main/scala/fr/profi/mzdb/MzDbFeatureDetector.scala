@@ -37,22 +37,22 @@ import rx.lang.scala.subjects.PublishSubject
 abstract class PeakelFinderConfig
 
 case class SmartPeakelFinderConfig(
-  minPeaksCount: Int = 5,
-  miniMaxiDistanceThresh: Int = 3,
-  maxIntensityRelThresh: Float = 0.66f,
-  useOscillationFactor: Boolean = false,
-  maxOscillationFactor: Int = 10,
-  usePartialSGSmoother: Boolean = false,
-  useBaselineRemover: Boolean = false,
-  useSmoothing: Boolean = true
+  minPeaksCount: Int = Settings.SmartPeakelFinderConfig.minPeaksCount,
+  miniMaxiDistanceThresh: Int = Settings.SmartPeakelFinderConfig.miniMaxiDistanceThresh,
+  maxIntensityRelThresh: Float = Settings.SmartPeakelFinderConfig.maxIntensityRelThresh,
+  useOscillationFactor: Boolean = Settings.SmartPeakelFinderConfig.useOscillationFactor,
+  maxOscillationFactor: Int = Settings.SmartPeakelFinderConfig.maxOscillationFactor,
+  usePartialSGSmoother: Boolean = Settings.SmartPeakelFinderConfig.usePartialSGSmoother,
+  useBaselineRemover: Boolean = Settings.SmartPeakelFinderConfig.useBaselineRemover,
+  useSmoothing: Boolean = Settings.SmartPeakelFinderConfig.useSmoothing
 ) extends PeakelFinderConfig
 
 case class FeatureDetectorConfig(
-  msLevel: Int = 1,
-  mzTolPPM: Float = 10,
-  minNbOverlappingIPs: Int = 3,
-  intensityPercentile: Float = 0.9f,
-  maxConsecutiveGaps: Int = 3,
+  msLevel: Int = Settings.FeatureDetectorConfig.msLevel,
+  mzTolPPM: Float = Settings.FeatureDetectorConfig.mzTolPPM,
+  minNbOverlappingIPs: Int = Settings.FeatureDetectorConfig.minNbOverlappingIPs,
+  intensityPercentile: Float = Settings.FeatureDetectorConfig.intensityPercentile,
+  maxConsecutiveGaps: Int = Settings.FeatureDetectorConfig.maxConsecutiveGaps,
   peakelFinderConfig: PeakelFinderConfig = SmartPeakelFinderConfig()
 )
 

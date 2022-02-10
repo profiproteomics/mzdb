@@ -476,12 +476,13 @@ public class Timstof2Mzdb {
         ConverterArguments convertArgs = new ConverterArguments();
         JCommander cmd =  JCommander.newBuilder().addObject(convertArgs).build();
 
+        filepath = ""; //to comment to use local file by default... Dev mode only !
         try {
             cmd.parse(args);
             String fileToConvert = filepath;
             SpectrumGeneratingMethod ms1Method = SpectrumGeneratingMethod.SMOOTH;
             if(convertArgs.filename != null) {
-                LOG.info("File name set to " + convertArgs.filename);
+                LOG.info("File to convert: " + convertArgs.filename);
                 fileToConvert = convertArgs.filename;
             } else
                 LOG.info("NO File name set, use "+filepath);
@@ -490,7 +491,7 @@ public class Timstof2Mzdb {
                 LOG.info("Ms1 set to " + convertArgs.ms1);
                 ms1Method = convertArgs.ms1;
             } else
-                LOG.info("NO ms1 set, use SMOOTH");
+                LOG.info("NO specific ms1 convertion mode set, use default SMOOTH mode.");
 
             File ttDir = new File(fileToConvert);
             if(!ttDir.exists()){

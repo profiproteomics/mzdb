@@ -23,8 +23,7 @@ case class PutativeFeature(
 
   @BeanProperty var spectrumId: Long = 0
   @BeanProperty var elutionTime: Float = 0
-  @BeanProperty var elutionStartTime: Float = 0
-  @BeanProperty var elutionStopTime: Float = 0
+  @BeanProperty var elutionTimeTolerance: Float = 0
   @BeanProperty var firstSpectrumId: Long = 0
   @BeanProperty var lastSpectrumId: Long = 0
   @BeanProperty var evidenceMsLevel: Int = 0 // TODO: comment this attribute
@@ -34,24 +33,18 @@ case class PutativeFeature(
   var durations: Array[Float] = null
   var areas : Array[Float] = null
   var mozs : Array[Double] = null
-  
-  def this( id: Int, mz: Double, charge: Int, firstSpectrumId: Long, lastSpectrumId: Long, evidenceMsLevel: Int ) = {
-    this( id, mz, charge )
-    this.firstSpectrumId = firstSpectrumId
-    this.lastSpectrumId = lastSpectrumId
-    this.evidenceMsLevel = evidenceMsLevel
-  }
-  
+
   def this( id: Int, mz: Double, charge: Int, spectrumId: Long, evidenceMsLevel: Int ) = {
     this( id, mz, charge )
     this.spectrumId = spectrumId
     this.evidenceMsLevel = evidenceMsLevel
   }
   
-  def this( id: Int, mz: Double, charge: Int, elutionTime: Float, evidenceMsLevel: Int ) = {
+  def this( id: Int, mz: Double, charge: Int, elutionTime: Float, evidenceMsLevel: Int, isPredicted: Boolean) = {
     this( id, mz, charge )
     this.elutionTime = elutionTime
     this.evidenceMsLevel = evidenceMsLevel
+    this.isPredicted = isPredicted
   }
   
 }

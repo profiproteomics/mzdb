@@ -2,3 +2,7 @@
 /mzdb-access/target/
 /mzdb-processing/target/
 /.idea/
+/mzdb-pom.iml
+/mzdb-access/mzdb-access_2.11.iml
+/mzdb-processing/mzdb-processing_2.11.iml
+/timstof-access/timstof-access.iml

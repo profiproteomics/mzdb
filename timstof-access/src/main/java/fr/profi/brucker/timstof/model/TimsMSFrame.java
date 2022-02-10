@@ -12,9 +12,7 @@ import it.unimi.dsi.fastutil.floats.Float2ObjectMap;
 import it.unimi.dsi.fastutil.floats.Float2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.floats.FloatComparators;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.ints.IntIterator;
+import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -106,6 +104,13 @@ public class TimsMSFrame extends AbstractTimsFrame{
 
     m_spectrumDataSet = true;
   }
+
+  public Spectrum getScanSpectrum(int scanId){
+    if(!m_spectrumDataSet ||!m_spectrumByScan.containsKey(scanId))
+      return null;
+
+      return m_spectrumByScan.get(scanId);
+    }
 
   public ObjectList<Spectrum> getAllSpectra(){
     if(!m_spectrumDataSet)

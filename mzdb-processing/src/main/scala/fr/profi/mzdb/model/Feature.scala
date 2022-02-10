@@ -197,7 +197,7 @@ case class Feature(
   def getBasePeakelIndex() = _basePeakelIndex
   def getFirstPeakel() = indexedPeakels.head._1
   // TODO: use base or first peakel ???
-  def getElutionTime() = getBasePeakel.getApexElutionTime()
+  def getElutionTime() = getBasePeakel.getElutionTime()
   def getIntensitySum() = _ftIntensitySum
   def getMs1Count() = getSpectrumIds.length
   def getMs2Count(): Int = if (ms2SpectrumIds != null) ms2SpectrumIds.length else 0
