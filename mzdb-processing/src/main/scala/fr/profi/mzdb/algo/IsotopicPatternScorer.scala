@@ -165,8 +165,7 @@ object DotProductPatternScorer extends IIsotopicPatternScorer {
         val nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
         if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
           observed(rank) = spectrum.getIntensityList()(nearestPeakIdx)
-        }
-        else { //  minus expected abundance to penalise signal absence
+        } else { //  minus expected abundance to penalise signal absence
           observed(rank) = -pattern.mzAbundancePairs(rank)._2 * scale
         }
         expected(rank) = pattern.mzAbundancePairs(rank)._2
@@ -224,8 +223,7 @@ object DotProductPatternScorerV1 extends IIsotopicPatternScorer {
       val nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
       if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
         observed(rank) = spectrum.getIntensityList()(nearestPeakIdx)
-      }
-      else { //  minus expected abundance to penalise signal absence
+      } else { //  minus expected abundance to penalise signal absence
         observed(rank) = -pattern.mzAbundancePairs(rank)._2 * scale
       }
       expected(rank) = pattern.mzAbundancePairs(rank)._2

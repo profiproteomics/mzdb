@@ -8,6 +8,8 @@ import fr.profi.mzdb.db.model.params.param.CVEntry
 import fr.profi.mzdb.model.{Peak, SpectrumHeader, SpectrumSlice}
 import fr.profi.util.metrics.Metric
 
+import scala.util.control.Breaks.{break, breakable}
+
 /**
  * @author CB205360
  */
@@ -191,6 +193,7 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
     if (!slices.isEmpty) {
       val sliceOpt = slices.find(x => x.getHeader.getCycle == spectrumHeader.getCycle)
       if (!sliceOpt.isDefined) {
+        logger.warn("Strange missing slice !!!!")
         Some(slices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) })
       } else {
         sliceOpt
@@ -199,6 +202,7 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
   }
 
   private def getBestIsotopicPatternMatch(spectrumSlice: SpectrumSlice, precMz: Double): Option[(Double, TheoreticalIsotopePattern)] = {
+
     var putativePatterns = DotProductPatternScorer.calcIsotopicPatternHypotheses(spectrumSlice.getData, precMz, mzTolPPM)
     var bestPattern = DotProductPatternScorer.selectBestPatternHypothese(putativePatterns)
     var targetMz = precMz
@@ -209,6 +213,12 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
       putativePatterns = DotProductPatternScorer.calcIsotopicPatternHypothesesFromCharge(spectrumSlice.getData, targetMz, bestPattern._2.charge, mzTolPPM)
       bestPattern = DotProductPatternScorer.selectBestPatternHypothese(putativePatterns, 0.1)
     }
+
+//    val pattern = bestPattern._2
+//    val p0 = spectrumSlice.getNearestPeak(pattern.monoMz, mzTolPPM)
+//    val p1 = spectrumSlice.getNearestPeak(pattern.mzAbundancePairs(1)._1, mzTolPPM)
+
+
     Some(bestPattern)
   }
 
@@ -283,7 +293,7 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
 
   def extractPrecursorStats(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, mzTolPPM: Float): Map[String, Any] = {
     var result = Map.empty[String, Any]
-    result += ("found" -> false)
+    result += ("found" -> "false")
 
     // similar to _extractPrecMzFromIsolationWindow
 
@@ -297,8 +307,10 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
       return result
     }
 
-    result += ("header.moz" -> _getHeaderPrecursorMz(spectrumHeader))
+    val headerMoz = _getHeaderPrecursorMz(spectrumHeader)
+    result += ("header.moz" -> headerMoz)
     result += ("header.charge" -> spectrumHeader.getPrecursorCharge)
+    result += ("header.found" -> "false") // default value that will be updated later
     val iw = precursor.getIsolationWindow
     val sw_center = iw.getCVParam(CVEntry.ISOLATION_WINDOW_TARGET_MZ).getValue.toFloat
     result += ("sw_center.moz" -> sw_center)
@@ -307,57 +319,107 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
     if (!spectrumSlices.isEmpty) {
       val closestSlice = spectrumSlices.filter(_.getHeader.getCycle == spectrumHeader.getCycle)
       val allPeaks = closestSlice.flatMap(_.toPeaks)
+
       if (!allPeaks.isEmpty) {
+
 
         val maxPeak = allPeaks.maxBy(_.getIntensity)
         val swPrecMzArray = allPeaks.sortBy(_.getIntensity).reverse // allPeaks.filter(_.getIntensity > 0.2 * maxPeak.getIntensity).sortBy(_.getIntensity).reverse
 
         var rank = 0
-        for (swPrecMz <- swPrecMzArray) {
+        breakable {
+          for (swPrecMz <- swPrecMzArray) {
 
-          if (rank == 0) {
-            result += ("rank0.intensity" -> swPrecMz.getIntensity)
-            result += ("rank0.moz" -> swPrecMz.getMz)
+            // prediction from the rank 0 peak
+            if (rank == 0) {
+              result += ("rank0.initial.intensity" -> swPrecMz.getIntensity)
+              result += ("rank0.initial.moz" -> swPrecMz.getMz)
 
-            val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, swPrecMz.getMz, 0)
-            result += ("rank0.prediction.note" -> altPredictionNote)
-            if (altPredictionOpt.isDefined) {
-              val altprecMz = altPredictionOpt.get._1
-              result += ("rank0.prediction.moz" -> altprecMz)
-              result += ("rank0.prediction.charge" -> altPredictionOpt.get._2)
-              val altprecursor =  allPeaks.zipWithIndex.find { case(peak, index) => math.abs(1e6*(peak.getMz - altprecMz)/altprecMz) <= mzTolPPM }
-              if (altprecursor.isDefined) {
-                result += ("rank0.prediction.intensity" -> altprecursor.get._1.getIntensity)
-                result += ("rank0.prediction.rank" -> altprecursor.get._2)
+              val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, swPrecMz.getMz, 0)
+              result += ("rank0.prediction.note" -> altPredictionNote)
+              if (altPredictionOpt.isDefined) {
+                val altprecMz = altPredictionOpt.get._1
+                result += ("rank0.prediction.moz" -> altprecMz)
+                result += ("rank0.prediction.charge" -> altPredictionOpt.get._2)
+                val altprecursors = allPeaks.sortBy(_.getIntensity).reverse.zipWithIndex.filter{ case (peak, index) => math.abs(1e6 * (peak.getMz - altprecMz) / altprecMz) <= mzTolPPM }
+                if (!altprecursors.isEmpty) {
+                  val altprecursor = altprecursors.minBy{case(peak, index) => math.abs(peak.getMz - altprecMz) }
+                  result += ("rank0.prediction.intensity" -> altprecursor._1.getIntensity)
+                  result += ("rank0.prediction.rank" -> altprecursor._2)
+                }
               }
             }
-          }
 
 
-          if (Math.abs(1e6 * (precMz - swPrecMz.getMz) / precMz) < mzTolPPM) {
-            result += ("found" -> true)
-            result += ("rank" -> rank)
-            result += ("intensity" -> swPrecMz.getIntensity)
-            result += ("intensity.ratio" -> swPrecMz.getIntensity / maxPeak.getIntensity)
+            // prediction from the peak matching the ident.moz value (the precMz argument)
+            if (Math.abs(1e6 * (precMz - swPrecMz.getMz) / precMz) < mzTolPPM) {
+              result += ("found" -> "true")
+              result += ("ident.initial.moz" -> precMz)
+              result += ("ident.initial.rank" -> rank)
+              result += ("ident.initial.intensity" -> swPrecMz.getIntensity)
 
-            val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, swPrecMz.getMz, 0)
-            result += ("prediction.note" -> altPredictionNote)
-            if (altPredictionOpt.isDefined) {
-              val altprecMz = altPredictionOpt.get._1
-              result += ("prediction.moz" -> altprecMz)
-              result += ("prediction.charge" -> altPredictionOpt.get._2)
-              val altprecursor =  allPeaks.zipWithIndex.find { case(peak, index) => math.abs(1e6*(peak.getMz - altprecMz)/altprecMz) < mzTolPPM }
-              if (altprecursor.isDefined) {
-                result += ("prediction.intensity" -> altprecursor.get._1.getIntensity)
-                result += ("prediction.rank" -> altprecursor.get._2)
+              val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, swPrecMz.getMz, 0)
+              result += ("ident.prediction.note" -> altPredictionNote)
+              if (altPredictionOpt.isDefined) {
+                val altprecMz = altPredictionOpt.get._1
+                result += ("ident.prediction.moz" -> altprecMz)
+                result += ("ident.prediction.charge" -> altPredictionOpt.get._2)
+                val altprecursors = allPeaks.sortBy(_.getIntensity).reverse.zipWithIndex.filter{ case (peak, index) => math.abs(1e6 * (peak.getMz - altprecMz) / altprecMz) <= mzTolPPM }
+                if (!altprecursors.isEmpty) {
+                  val altprecursor = altprecursors.minBy{case(peak, index) => math.abs(peak.getMz - altprecMz) }
+                  result += ("ident.prediction.intensity" -> altprecursor._1.getIntensity)
+                  result += ("ident.prediction.rank" -> altprecursor._2)
+                }
+
               }
-
+              break
             }
-
-            return result
+            rank = rank + 1
           }
-          rank = rank + 1
         }
+
+        //prediction from the 20% top peak  closest to the selection window center
+        val precMzArray = allPeaks.filter(_.getIntensity > 0.2 * maxPeak.getIntensity).sortBy(_.getIntensity).reverse
+        val swPrecMz = precMzArray.zipWithIndex.minBy{ case(p, index) => math.abs(p.getMz - sw_center) }
+
+        val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, swPrecMz._1.getMz, 0)
+        result += ("swcenter.prediction.note" -> altPredictionNote)
+        result += ("swcenter.initial.moz" -> swPrecMz._1.getMz)
+        result += ("swcenter.initial.intensity" -> swPrecMz._1.getIntensity)
+        result += ("swcenter.initial.rank" -> swPrecMz._2)
+        if (altPredictionOpt.isDefined) {
+          val altprecMz = altPredictionOpt.get._1
+          result += ("swcenter.prediction.moz" -> altprecMz)
+          result += ("swcenter.prediction.charge" -> altPredictionOpt.get._2)
+          val altprecursors = allPeaks.sortBy(_.getIntensity).reverse.zipWithIndex.filter{ case (peak, index) => math.abs(1e6 * (peak.getMz - altprecMz) / altprecMz) <= mzTolPPM }
+          if (!altprecursors.isEmpty) {
+            val altprecursor = altprecursors.minBy{case(peak, index) => math.abs(peak.getMz - altprecMz) }
+            result += ("swcenter.prediction.intensity" -> altprecursor._1.getIntensity)
+            result += ("swcenter.prediction.rank" -> altprecursor._2)
+          }
+        }
+
+        // + rechercher les found = false pour voir si on les trouve dans le scan MS1 !!
+        var spectrumSlice = getMS1SpectrumSlice(mzDbReader, spectrumHeader, precMz, time)
+        if (spectrumSlice.isDefined) {
+
+          if(result("found") != "true") {
+              val nearestPeak = spectrumSlice.get.getNearestPeak(precMz, mzTolPPM)
+              if (nearestPeak != null) {
+                result += ("found" -> "outside")
+              }
+          }
+
+          spectrumSlice = getMS1SpectrumSlice(mzDbReader, spectrumHeader, headerMoz, time)
+          val nearestPeak = spectrumSlice.get.getNearestPeak(headerMoz, mzTolPPM)
+          if (nearestPeak != null) {
+            result += ("header.found" -> "true")
+          }
+
+        }
+
+
+
       } else {
         result += ("cause" -> "no peaks in MS1")
       }
