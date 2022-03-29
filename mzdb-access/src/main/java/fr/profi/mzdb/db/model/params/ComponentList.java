@@ -2,28 +2,17 @@ package fr.profi.mzdb.db.model.params;
 
 import java.util.List;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlElements;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlSchemaType;
+import javax.xml.bind.annotation.*;
 
 /**
  * @author Marco
  * 
  */
+@XmlRootElement(name = "componentList")
 public class ComponentList extends AbstractParamTree {
 
-	@XmlElements({
-		@XmlElement(name = "detector", required = true, type = DetectorComponent.class),
-		@XmlElement(name = "analyzer", required = true, type = AnalyzerComponent.class),
-		@XmlElement(name = "source", required = true, type = SourceComponent.class)
-	})
-	@XmlElementWrapper
 	protected List<Component> components;
 
-	@XmlAttribute(required = true)
-	@XmlSchemaType(name = "nonNegativeInteger")
 	protected int count;
 
 	public ComponentList(int c) {
@@ -33,7 +22,27 @@ public class ComponentList extends AbstractParamTree {
 	public ComponentList() {
 	}
 
+	@XmlElements({
+					@XmlElement(name = "detector", required = true, type = DetectorComponent.class),
+					@XmlElement(name = "analyzer", required = true, type = AnalyzerComponent.class),
+					@XmlElement(name = "source", required = true, type = SourceComponent.class)
+	})
+
 	public List<Component> getComponents() {
 		return components;
+	}
+
+	@XmlAttribute(required = true)
+	@XmlSchemaType(name = "nonNegativeInteger")
+	public int getCount(){
+		return  count;
+	}
+
+	public void setCount(int c){
+		count = c;
+	}
+
+	public void setComponents(List<Component> components){
+		this.components = components;
 	}
 }

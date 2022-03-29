@@ -8,31 +8,35 @@ import fr.profi.mzdb.db.model.params.param.CVEntry;
 
 @XmlRootElement(name = "precursor")
 public class Precursor {
-  
-  @XmlAttribute(required=true)
+
   protected String spectrumRef;
-  
-  @XmlElement(name="isolationWindow")
+
   protected IsolationWindowParamTree isolationWindow;
-  
-  @XmlElement(name="selectedIonList")
+
   protected SelectedIonList selectedIonList;
-  
-  @XmlElement(name="activation")
+
   protected Activation activation;
-  
+
+  public void setSpectrumRef(String spectrumRef) {
+    this.spectrumRef = spectrumRef;
+  }
+
+  @XmlAttribute(required=true)
   public String getSpectrumRef() {
       return spectrumRef;
   }
-  
+
+  @XmlElement(name="isolationWindow")
   public IsolationWindowParamTree getIsolationWindow() {
       return isolationWindow;
   }
-  
+
+  @XmlElement(name="activation")
   public Activation getActivation() {
       return activation;
   }
-  
+
+  @XmlElement(name="selectedIonList")
   public SelectedIonList getSelectedIonList() {
       return selectedIonList;
   }

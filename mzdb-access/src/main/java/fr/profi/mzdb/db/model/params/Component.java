@@ -11,7 +11,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 public class Component extends AbstractParamTree {
 
     /** The order. */
-    @XmlAttribute
+
     protected int order;
 
     /**
@@ -19,8 +19,12 @@ public class Component extends AbstractParamTree {
      * 
      * @return the order
      */
+    @XmlAttribute
     public int getOrder() {
-	return order;
+	      return order;
     }
 
+    public void setOrder(int order){
+        this.order = order;
+    }
 }

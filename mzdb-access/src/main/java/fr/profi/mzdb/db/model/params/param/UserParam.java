@@ -21,7 +21,18 @@ public class UserParam {
 
 	@XmlAttribute
 	protected String type;// ="xsd:float"/>;
-	
+
+	public  UserParam(){
+	}
+
+	public UserParam( String cvRef, String accession, String name, String value, String type){
+		this.cvRef = cvRef;
+		this.accession = accession;
+		this.name = name;
+		this.value = value;
+		this. type = type;
+	}
+
 	public String getCvRef() {
 		return cvRef;
 	}
