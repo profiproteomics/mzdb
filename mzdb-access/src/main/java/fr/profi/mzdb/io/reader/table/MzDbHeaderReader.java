@@ -3,6 +3,7 @@ package fr.profi.mzdb.io.reader.table;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
+import fr.profi.mzdb.db.model.FileContentParams;
 import fr.profi.mzdb.db.model.MzDbHeader;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.table.MzdbTable;
@@ -35,9 +36,11 @@ public class MzDbHeaderReader extends AbstractTableModelReader<MzDbHeader> {
 				String version = r.columnString(MzdbTable.VERSION);
 				int creationTimestamp = r.columnInt(MzdbTable.CREATION_TIMESTAMP);
 				String paramTreeAsStr = r.columnString(MzdbTable.PARAM_TREE);
+				String fileContentAsStr = r.columnString(MzdbTable.FILE_CONTENT);
 				ParamTree paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
+				FileContentParams fileContent = ParamTreeParser.parseFileContent(fileContentAsStr);
 
-				return new MzDbHeader(version, creationTimestamp, paramTree);
+				return new MzDbHeader(version, creationTimestamp, paramTree, fileContent);
 			}
 		};
 	}

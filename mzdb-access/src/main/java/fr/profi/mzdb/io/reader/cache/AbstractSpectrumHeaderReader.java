@@ -11,12 +11,14 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
+import fr.profi.mzdb.model.ActivationType;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.PeakEncoding;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author David Bouyssie
@@ -45,7 +47,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	private static String _spectrumHeaderQueryStr = 
 		"SELECT id, initial_id, cycle, time, ms_level, tic, "+
 		"base_peak_mz, base_peak_intensity, main_precursor_mz, main_precursor_charge, " +
-		"data_points_count, param_tree, scan_list, precursor_list, data_encoding_id, bb_first_spectrum_id FROM spectrum";
+		"data_points_count, param_tree, scan_list, precursor_list, data_encoding_id, bb_first_spectrum_id,activation_type, title FROM spectrum";
 	
 	private static String _ms1SpectrumHeaderQueryStr = _spectrumHeaderQueryStr + " WHERE ms_level = 1";
 	private static String _ms2SpectrumHeaderQueryStr = _spectrumHeaderQueryStr + " WHERE ms_level = 2";
@@ -68,7 +70,10 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 		SCAN_LIST("scan_list"),
 		PRECURSOR_LIST("precursor_list"),
 		DATA_ENCODING_ID("data_encoding_id"),
-		BB_FIRST_SPECTRUM_ID("bb_first_spectrum_id");
+		BB_FIRST_SPECTRUM_ID("bb_first_spectrum_id"),
+		ACTIVATION_TYPE("activation_type"),
+		TITLE("title")
+		;
 
 		@SuppressWarnings("unused")
 		protected final String columnName;
@@ -96,6 +101,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 		static int precursorList = SpectrumHeaderCol.PRECURSOR_LIST.ordinal();
 		static int dataEncodingId = SpectrumHeaderCol.DATA_ENCODING_ID.ordinal();
 		static int bbFirstSpectrumId = SpectrumHeaderCol.BB_FIRST_SPECTRUM_ID.ordinal();
+		static int activationType =  SpectrumHeaderCol.ACTIVATION_TYPE.ordinal();
+		static  int title =  SpectrumHeaderCol.TITLE.ordinal();
 	}
 	
 	private ISQLiteRecordExtraction<SpectrumHeader> _getSpectrumHeaderExtractor(SQLiteConnection connection) throws SQLiteException {
@@ -124,13 +131,15 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 				DataEncoding dataEnc = _dataEncodingReader.getDataEncoding(stmt.columnInt(SpectrumHeaderColIdx.dataEncodingId), connection);
 	
 				boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
-	
+				String activationTypeAsStr =  stmt.columnString(SpectrumHeaderColIdx.activationType);
+				ActivationType activationType = (StringUtils.isEmpty(activationTypeAsStr))? null : ActivationType.valueOf(activationTypeAsStr);
 				SpectrumHeader sh = new SpectrumHeader(
 					stmt.columnLong(SpectrumHeaderColIdx.id),
 					stmt.columnInt(SpectrumHeaderColIdx.initialId),
 					stmt.columnInt(SpectrumHeaderColIdx.cycleCol),
 					(float) stmt.columnDouble(SpectrumHeaderColIdx.time),
 					msLevel,
+					stmt.columnString(SpectrumHeaderColIdx.title),
 					stmt.columnInt(SpectrumHeaderColIdx.dataPointsCount),
 					isHighRes,
 					(float) stmt.columnDouble(SpectrumHeaderColIdx.tic),
@@ -138,8 +147,8 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 					(float) stmt.columnDouble(SpectrumHeaderColIdx.basePeakIntensity),
 					precursorMz,
 					precursorCharge,
-					bbFirstSpectrumId
-				);
+					bbFirstSpectrumId,
+					activationType);
 				
 				if (mzDbReader.isParamTreeLoadingEnabled()) {
 					sh.setParamTree( ParamTreeParser.parseParamTree(stmt.columnString(SpectrumHeaderColIdx.paramTree)) );
@@ -503,9 +512,6 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 
 	/**
 	 * Gets the spectrum ids by time index.
-	 *
-	 * @param msLevel
-	 *            the ms level
 	 * @param connection
 	 *            the connection
 	 * @return hashmap of key time index value array of spectrumIds

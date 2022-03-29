@@ -4,6 +4,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.sax.SAXSource;
 
+import fr.profi.mzdb.db.model.FileContentParams;
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.Precursor;
@@ -20,6 +21,7 @@ public class ParamTreeParser {
 	
 	/** The xml mappers. */
 	public static Unmarshaller paramTreeUnmarshaller = null;
+	public static Unmarshaller fileContentUnmarshaller = null;
 	public static Unmarshaller componentListUnmarshaller = null;
 	public static Unmarshaller scanListUnmarshaller = null;
 	public static Unmarshaller precursorUnmarshaller = null;
@@ -33,7 +35,8 @@ public class ParamTreeParser {
 	synchronized public static ParamTree parseParamTree(String paramTreeAsStr) {
 		
 		ParamTree paramTree = null;
-		
+		if(paramTreeAsStr == null)
+			return null;
 		try {
 			if( paramTreeUnmarshaller == null ) {
 				paramTreeUnmarshaller = JAXBContext.newInstance(ParamTree.class).createUnmarshaller();
@@ -49,10 +52,31 @@ public class ParamTreeParser {
 		return paramTree;
 	}
 
+	synchronized public static FileContentParams parseFileContent(String paramTreeAsStr) {
+
+		FileContentParams paramTree = null;
+		if(paramTreeAsStr == null)
+			return null;
+		try {
+			if( fileContentUnmarshaller == null ) {
+				fileContentUnmarshaller = JAXBContext.newInstance(FileContentParams.class).createUnmarshaller();
+			}
+
+			SAXSource source = XercesSAXParser.getSAXSource( paramTreeAsStr );
+			paramTree = (FileContentParams) fileContentUnmarshaller.unmarshal(source);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return paramTree;
+	}
+
 	synchronized public static ScanList parseScanList(String scanListAsStr) {
 
 		ScanList scanList = null;
-		
+		if(scanListAsStr == null)
+			return null;
 		try {
 			if( scanListUnmarshaller == null ) {
 				scanListUnmarshaller = JAXBContext.newInstance(ScanList.class).createUnmarshaller();
@@ -70,7 +94,8 @@ public class ParamTreeParser {
 
 	synchronized public static Precursor parsePrecursor(String precursorAsStr) {
 		Precursor prec = null;
-		
+		if(precursorAsStr == null)
+			return null;
 		try {
 			if( precursorUnmarshaller == null ) {
 				precursorUnmarshaller = JAXBContext.newInstance(Precursor.class).createUnmarshaller();
@@ -89,6 +114,8 @@ public class ParamTreeParser {
 	synchronized public static ComponentList parseComponentList(String paramTreeAsStr) {
 
 		ComponentList paramTree = null;
+		if(paramTreeAsStr == null)
+			return null;
 		
 		try {
 			if( componentListUnmarshaller == null ) {
