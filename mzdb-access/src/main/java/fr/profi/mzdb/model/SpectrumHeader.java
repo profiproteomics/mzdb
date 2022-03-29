@@ -43,6 +43,8 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	/** The ms level. */
 	protected final int msLevel;
 
+	protected final String title;
+
 	/** The peaks count. */
 	protected final int peaksCount;
 
@@ -58,11 +60,15 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	/** The base peak intensity. */
 	protected final float basePeakIntensity;
 
+	protected final ActivationType activationType;
+
+	protected IsolationWindow isolationWindow;
+
 	/** The precursor mz. */
-	protected final double precursorMz; // TODO: set as Double
+	protected final Double precursorMz;
 
 	/** The precursor charge. */
-	protected final int precursorCharge; // TODO: set as Integer
+	protected final Integer precursorCharge;
 
 	/** The bounding box first spectrum id. */
 	protected final int bbFirstSpectrumId;
@@ -75,51 +81,50 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
 	/**
 	 * Instantiates a new spectrum header.
-	 * 
 	 * @param id
 	 *            the id
 	 * @param initialId
 	 *            the initial id
 	 * @param cycle
-	 *            the cycle
+*            the cycle
 	 * @param time
-	 *            the time
+*            the time
 	 * @param msLevel
-	 *            the ms level
+*            the ms level
+	 * @param title
 	 * @param peaksCount
-	 *            the peaks count
-	 * @param dataMode
-	 *            the data mode
+*            the peaks count
 	 * @param basePeakMz
-	 *            the base peak mz
+*            the base peak mz
 	 * @param basePeakIntensity
-	 *            the base peak intensity
+*            the base peak intensity
 	 * @param precursorMz
-	 *            the precursor mz
+*            the precursor mz
 	 * @param precursorCharge
-	 *            the precursor charge
+	 * @param activationType
 	 */
 	public SpectrumHeader(
-		long id,
-		int initialId,
-		int cycle,
-		float time,
-		int msLevel,
-		int peaksCount,
-		boolean isHighResolution,
-		float tic,
-		double basePeakMz,
-		float basePeakIntensity,
-		double precursorMz,
-		int precursorCharge,
-		int firstBBSpectrumId
-	) {
+					long id,
+					int initialId,
+					int cycle,
+					float time,
+					int msLevel,
+					String title, int peaksCount,
+					boolean isHighResolution,
+					float tic,
+					double basePeakMz,
+					float basePeakIntensity,
+					Double precursorMz,
+					Integer precursorCharge,
+					int firstBBSpectrumId,
+					ActivationType activationType) {
 		super(id, null);
 		this.id = id;
 		this.initialId = initialId;
 		this.cycle = cycle;
 		this.time = time;
 		this.msLevel = msLevel;
+		this.title = title;
 		this.peaksCount = peaksCount;
 		this.isHighResolution = isHighResolution;
 		this.tic = tic;
@@ -128,6 +133,8 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		this.precursorMz = precursorMz;
 		this.precursorCharge = precursorCharge;
 		this.bbFirstSpectrumId = firstBBSpectrumId;
+		this.activationType = activationType;
+		isolationWindow = null;
 	}
 
 	/**
@@ -237,7 +244,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	 * 
 	 * @return the precursor mz
 	 */
-	public double getPrecursorMz() {
+	public Double getPrecursorMz() {
 		return precursorMz;
 	}
 
@@ -246,7 +253,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	 * 
 	 * @return the precursor charge
 	 */
-	public int getPrecursorCharge() {
+	public Integer getPrecursorCharge() {
 		return precursorCharge;
 	}
 
@@ -266,6 +273,22 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	 */
 	public float getElutionTime() {
 		return this.time;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public ActivationType getActivationType() {
+		return activationType;
+	}
+
+	public IsolationWindow getIsolationWindow() {
+		return isolationWindow;
+	}
+
+	public void setIsolationWindow(IsolationWindow isolationWindow) {
+		this.isolationWindow = isolationWindow;
 	}
 
 	public int getBBFirstSpectrumId() {

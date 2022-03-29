@@ -10,8 +10,8 @@ public class IsolationWindow {
     private final double maxMz;
     
     public IsolationWindow(double minMz, double maxMz) {
-	this.minMz = minMz;
-	this.maxMz = maxMz;
+			this.minMz = minMz;
+			this.maxMz = maxMz;
     }
     
     public double getMinMz() {

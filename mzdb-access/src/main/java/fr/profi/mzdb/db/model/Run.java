@@ -18,8 +18,12 @@ public class Run extends AbstractTableModel {
 	protected String name;
 
 	/** The location. */
-	//protected Instant startTimestamp;
 	protected Date startTimestamp;
+
+	//Other properties which may be null
+	protected Integer sampleId;
+	protected Integer instrumentConfigId;
+	protected Integer sourceFileId;
 
 	/**
 	 * Instantiates a new source file.
@@ -33,7 +37,6 @@ public class Run extends AbstractTableModel {
 	 * @param paramTree
 	 *            the param tree
 	 */
-	//public Run(int id, String name, Instant startTimestamp, ParamTree paramTree) {
 	public Run(int id, String name, Date startTimestamp, ParamTree paramTree) {
 		super(id, paramTree);
 		this.name = name;
@@ -50,7 +53,6 @@ public class Run extends AbstractTableModel {
 	 * @param startTimestamp
 	 *            the startTimestamp
 	 */
-	//public Run(int id, String name, Instant startTimestamp) {
 	public Run(int id, String name, Date startTimestamp) {
 		this(id, name, startTimestamp, null);
 	}
@@ -73,4 +75,27 @@ public class Run extends AbstractTableModel {
 		return startTimestamp;
 	}
 
+	public Integer getSampleId() {
+		return sampleId;
+	}
+
+	public void setSampleId(Integer sampleId) {
+		this.sampleId = sampleId;
+	}
+
+	public Integer getInstrumentConfigId() {
+		return instrumentConfigId;
+	}
+
+	public void setInstrumentConfigId(Integer instrumentConfigId) {
+		this.instrumentConfigId = instrumentConfigId;
+	}
+
+	public Integer getSourceFileId() {
+		return sourceFileId;
+	}
+
+	public void setSourceFileId(Integer sourceFileId) {
+		this.sourceFileId = sourceFileId;
+	}
 }

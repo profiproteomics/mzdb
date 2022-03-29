@@ -607,16 +607,14 @@ public class MzDbReader extends AbstractMzDbReader {
 	/**
 	 * Gets the spectrum slices. Each returned spectrum slice corresponds to a single spectrum.
 	 *
-	 * @param minmz
+	 * @param minMz
 	 *            the minMz
-	 * @param maxmz
+	 * @param maxMz
 	 *            the maxMz
-	 * @param minrt
+	 * @param minRt
 	 *            the minRt
-	 * @param maxrt
+	 * @param maxRt
 	 *            the maxRt
-	 * @param msLevel
-	 *            the ms level
 	 * @return the spectrum slices
 	 * @throws SQLiteException
 	 *             the sQ lite exception
@@ -813,9 +811,9 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *            the min mz
 	 * @param maxMz
 	 *            the max mz
-	 * @param msLevel
-	 *            the ms level
-	 * @return the xic
+	 * @param method
+	 *            the Xic method
+	 * @return Peak
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */

@@ -19,15 +19,7 @@ public class SpectrumSlice extends Spectrum {
 
 	/**
 	 * Instantiates a new spectrum slice.
-	 * 
-	 * @param spectrumId
-	 *            the spectrum id
-	 * @param runSliceId
-	 *            the run slice id
-	 * @param mzList
-	 *            the mz list
-	 * @param intensityList
-	 *            the intensity list
+	 *
 	 */
 	public SpectrumSlice(SpectrumHeader header, SpectrumData spectrumData) {
 		super(header, spectrumData);
