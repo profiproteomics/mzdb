@@ -53,9 +53,6 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 		_blob.dispose();
 	}
 
-	/**
-	 * @see IBlobReader#getBlobSize()
-	 */
 	public int getBlobSize() {
 		try {
 			return _blob.getSize();
@@ -124,7 +121,7 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	}
 
 	/**
-	 * @see IBlobReader#idOfSpectrumAt(int)
+	 * @see IBlobReader#getSpectrumIdAt(int)
 	 */
 	public long getSpectrumIdAt(final int idx) {
 		this.checkSpectrumIndexRange(idx);
@@ -185,7 +182,7 @@ public class SQLiteBlobReader extends AbstractBlobReader {
 	}
 
 	/**
-	 * @see IBlobReader#spectrumSliceOfSpectrumAt(int)
+	 * @see IBlobReader#readFilteredSpectrumSliceDataAt(int, double, double)
 	 */
 	// TODO: factorize this code with the one from BytesReader
 	private SpectrumData _readFilteredSpectrumSliceDataAt(final int idx, final long spectrumId, final double minMz, final double maxMz) {

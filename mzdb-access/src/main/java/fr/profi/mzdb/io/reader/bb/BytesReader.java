@@ -29,8 +29,8 @@ public class BytesReader extends AbstractBlobReader {
 	/**
 	 * Constructor
 	 * 
-	 * @param dataEncodings, DataEncoding object for each spectrum, usually given by a mzDbReaderInstance
-	 * @param data, array of byte of the blob
+	 * @param dataEncodingBySpectrumId, DataEncoding object for each spectrum, usually given by a mzDbReaderInstance
+	 * @param bytes, array of byte of the blob
 	 * @throws StreamCorruptedException 
 	 * @see MzDbReader
 	 * @see DataEncoding
@@ -59,7 +59,6 @@ public class BytesReader extends AbstractBlobReader {
 	 * @throws StreamCorruptedException 
 	 * 
 	 * @see AbstractBlobReader
-	 * @see AbstractBlobReader._buildMpaPositions()
 	 */
 	protected void _indexSpectrumSlices(final int estimatedSpectraCount) throws StreamCorruptedException {
 		
@@ -104,12 +103,6 @@ public class BytesReader extends AbstractBlobReader {
 	 */
 	public void disposeBlob() {}
 
-	/**
-	 * @see IBlobReader#getBlobSize()
-	 */
-	public int getBlobSize() {
-		return _blobSize;
-	}
 
 	/**
 	 * @see IBlobReader#getSpectraCount()
@@ -119,7 +112,7 @@ public class BytesReader extends AbstractBlobReader {
 	}
 
 	/**
-	 * @see IBlobReader#idOfSpectrumAt(int)
+	 * @see IBlobReader#getSpectrumIdAt(int)
 	 */
 	public long getSpectrumIdAt(final int idx) {
 		this.checkSpectrumIndexRange(idx);
@@ -130,16 +123,6 @@ public class BytesReader extends AbstractBlobReader {
 		return (long) _bbByteBuffer.getInt(_spectrumSliceStartPositions[idx]);
 	}
 
-	/**
-	 * @see IBlobReader#nbPeaksOfSpectrumAt(int)
-	 */
-	/*public int nbPeaksOfSpectrumAt(int idx) {
-		if (idx < 0 || idx >= _spectraCount) {
-			throw new IndexOutOfBoundsException("nbPeaksOfSpectrumAt: index out of bounds (i="+idx+"), index counting starts at 0");
-		}
-		
-		return _peaksCounts[idx];
-	}*/
 
 	/**
 	 * @see IBlobReader#readSpectrumSliceAt(int)

@@ -42,7 +42,7 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	 * Abstract constructor
 	 * 
 	 * @param spectrumHeaderById SpectrumHeader by spectrum id
-	 * @param dataEncById DataEncoding by spectrum id
+	 * @param dataEncodingBySpectrumId DataEncoding by spectrum id
 	 * @see DataEncoding
 	 */
 	protected AbstractBlobReader(
@@ -77,7 +77,6 @@ public abstract class AbstractBlobReader implements IBlobReader {
 	 * @param bbByteBuffer array of bytes containing the SpectrumSlices of interest
 	 * @param spectrumSliceStartPos, the starting position
 	 * @param peaksBytesLength, length of bytes used by peaks
-	 * @param structSize, size of the struct for a given peak
 	 * @param de, the corresponding DataEncoding
 	 * @param minMz, the minimum m/z value
 	 * @param maxMz, the maximum m/z value
