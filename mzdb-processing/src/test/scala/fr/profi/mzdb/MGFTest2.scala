@@ -1,7 +1,7 @@
 package fr.profi.mzdb
 
 import com.typesafe.scalalogging.StrictLogging
-import fr.profi.mzdb.io.writer.mgf.IsolationWindowPrecursorExtractor2
+import fr.profi.mzdb.io.writer.mgf.IsolationWindowPrecursorExtractor_v3_6
 import fr.profi.util.metrics.Metric
 import org.junit.{Ignore, Test}
 
@@ -51,7 +51,7 @@ class MGFTest2 extends StrictLogging {
     fw.write(annotations.mkString("\t"))
     fw.newLine()
 
-    val precComputer = new IsolationWindowPrecursorExtractor2(mzTol)
+    val precComputer = new IsolationWindowPrecursorExtractor_v3_6(mzTol)
 
     val mzDbReader = new MzDbReader(mzdbFilePath, true)
     mzDbReader.enablePrecursorListLoading()

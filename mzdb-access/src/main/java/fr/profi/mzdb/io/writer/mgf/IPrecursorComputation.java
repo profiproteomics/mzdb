@@ -9,8 +9,8 @@ public interface IPrecursorComputation {
 	/**
 	 * Returns the precursor m/z value of the specified SpectrumHeader.
 	 * 
-	 * @param header : the MS2 SpectrumHeader 
-	 * @param reader : the mzdbReader considered
+	 * @param spectrumHeader : the MS2 SpectrumHeader
+	 * @param mzDbReader : the mzdbReader considered
 	 * @return the precursor m/z value of the specified SpectrumHeader
 	 */
 	
@@ -19,8 +19,8 @@ public interface IPrecursorComputation {
 	/**
 	 * Returns the precursor m/z value of the specified SpectrumHeader.
 	 * 
-	 * @param header : the MS2 SpectrumHeader 
-	 * @param reader : the mzdbReader considered
+	 * @param spectrumHeader : the MS2 SpectrumHeader
+	 * @param mzDbReader : the mzdbReader considered
 	 * @return the precursor m/z value of the specified SpectrumHeader
 	 */
 	

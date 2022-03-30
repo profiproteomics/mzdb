@@ -2,7 +2,7 @@ package fr.profi.mzdb
 
 import com.typesafe.scalalogging.StrictLogging
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator
-import fr.profi.mzdb.io.writer.mgf.{AnnotatedMgfPrecursor, IsolationWindowPrecursorExtractor2, MgfPrecursor}
+import fr.profi.mzdb.io.writer.mgf.{AnnotatedMgfPrecursor, IsolationWindowPrecursorExtractor_v3_7, MgfPrecursor}
 import fr.profi.util.metrics.Metric
 import org.junit.{Ignore, Test}
 
@@ -49,7 +49,7 @@ class MGFTest extends StrictLogging {
 
 //    val fw = new BufferedWriter(new FileWriter(new File((new File(mzdbFilePath)).getParentFile, "precursors.txt" )))
 
-    val precComputer = new IsolationWindowPrecursorExtractor2(mzTol)
+    val precComputer = new IsolationWindowPrecursorExtractor_v3_7(mzTol)
 
     val mzDbReader = new MzDbReader(mzdbFilePath, true)
     mzDbReader.enablePrecursorListLoading()
@@ -148,7 +148,7 @@ class MGFTest extends StrictLogging {
 
             if (ident.status.equals(CONCORDANT) || ident.status.equals(UP_MZDB)) {
               metric.incr("lost matches")
-              if (Math.abs(1e6 * (ident.moz - spectrumHeader.getPrecursorMz) / ident.moz) < mzTol) {
+              if (Math.abs(1e6 * (ident.moz - spectrumHeader.getPrecursorMz) / spectrumHeader.getPrecursorMz) < mzTol) {
                 metric.incr("lost_matches.header_prec_mz_was_correct")
 //                if (ident.charge == spectrumHeader.getPrecursorCharge) {
 //                  logger.info("exemple of lost match: {}, {}, {}", ident.scan, ident.moz, ident.charge)
@@ -170,8 +170,8 @@ class MGFTest extends StrictLogging {
             // there is a match for this prec
             val matchingPrec = matching.get
             if (matchingPrec == mgfPrecursors.head) {
-              // the first one is matching
-              val unused = mgfPrecursors.tail
+//              // the first one is matching
+//              val unused = mgfPrecursors.tail
 //              unused.foreach{ mgfPrecursor =>
 //                val peak = mgfPrecursor.asInstanceOf[AnnotatedMgfPrecursor].getAnnotation("initialPeak").asInstanceOf[Peak]
 //                val maxPeak = mgfPrecursor.asInstanceOf[AnnotatedMgfPrecursor].getAnnotation("maxPeak").asInstanceOf[Peak]

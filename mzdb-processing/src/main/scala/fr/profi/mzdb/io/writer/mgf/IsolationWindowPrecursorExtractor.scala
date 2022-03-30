@@ -10,7 +10,7 @@ import fr.profi.mzdb.model.SpectrumHeader
  * @author CB205360
  */
 
-class IsolationWindowPrecursorExtractor(mzTolPPM: Float)  extends DefaultPrecursorComputer(mzTolPPM) { 
+class IsolationWindowPrecursorExtractor(mzTolPPM: Float) extends DefaultPrecursorComputer(mzTolPPM)  {
   
   private var lastPrediction: (SpectrumHeader, TheoreticalIsotopePattern) = _
   

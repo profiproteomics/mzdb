@@ -7,6 +7,7 @@ import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
 import fr.profi.mzdb.io.exporter.SQLiteFeatureStorer
 import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
+import fr.profi.mzdb.io.writer.mgf._
 import fr.profi.mzdb.model._
 import fr.profi.util.stat.EntityHistogramComputer
 import mr.go.sgfilter.SGFilterMath3
@@ -385,22 +386,25 @@ object Commands extends LazyLogging {
   def createMgf(): Unit = {
     
     import fr.profi.mzdb.cli.MzDbProcessing.CreateMgfCommand
-    import fr.profi.mzdb.io.writer.mgf._
 
     logger.info("Creating MGF File for mzDB at: " + CreateMgfCommand.mzdbFile)
     logger.info("Precursor m/z values will be defined using the method: " + CreateMgfCommand.precMzComputation)
 
     val writer = new MgfWriter(CreateMgfCommand.mzdbFile, CreateMgfCommand.msLevel)
     val precCompEnum = PrecursorMzComputationEnum.values().find(_.name() == CreateMgfCommand.precMzComputation.toUpperCase)
-    
+    val specProcessor = if (CreateMgfCommand.pClean) { new PCleanProcessor } else { new DefaultSpectrumProcessor }
+
     if (precCompEnum.isDefined) {
-       writer.write(CreateMgfCommand.outputFile,  precCompEnum.get, CreateMgfCommand.mzTolPPM, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+       writer.write(CreateMgfCommand.outputFile,  new DefaultPrecursorComputer(precCompEnum.get, CreateMgfCommand.mzTolPPM), specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted") {
        val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
-       writer.write(CreateMgfCommand.outputFile, precComputer, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
-    } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted_v3") {
-      val precComputer = new IsolationWindowPrecursorExtractor2(CreateMgfCommand.mzTolPPM)
-      writer.write(CreateMgfCommand.outputFile, precComputer, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+    } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted_v3.6") {
+      val precComputer = new IsolationWindowPrecursorExtractor_v3_6(CreateMgfCommand.mzTolPPM)
+      writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+    } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted_v3.7") {
+      val precComputer = new IsolationWindowPrecursorExtractor_v3_7(CreateMgfCommand.mzTolPPM)
+      writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     }  else {
       throw new IllegalArgumentException("Can't create the MGF file, invalid precursor m/z computation method")
     }

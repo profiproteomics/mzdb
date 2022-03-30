@@ -14,7 +14,7 @@ import scala.util.control.Breaks.{break, breakable}
  * @author CB205360
  */
 
-class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecursorComputer(mzTolPPM) {
+class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPrecursorComputer(mzTolPPM) {
   
   private var lastPrediction: (SpectrumHeader, (Double, Int)) = _
   private var metric = new Metric("MGF")
@@ -193,7 +193,7 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
     if (!slices.isEmpty) {
       val sliceOpt = slices.find(x => x.getHeader.getCycle == spectrumHeader.getCycle)
       if (!sliceOpt.isDefined) {
-        logger.warn("Strange missing slice !!!!")
+
         Some(slices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) })
       } else {
         sliceOpt
@@ -240,21 +240,20 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
   }
 
 
-  def _refinePrecMz(reader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, mzTolPPM: Float) : Double = {
+  def _refinePrecMz(reader: MzDbReader, spectrumHeader: SpectrumHeader, targetPrecMz: Double, mzTolPPM: Float) : Double = {
     val time = spectrumHeader.getElutionTime()
     val precursor = spectrumHeader.getPrecursor()
 
-    // Do a XIC in the isolation window and around the provided time
     val spectrumSlices = this._getSpectrumSlicesInIsolationWindow(reader, precursor, time, 5)
-    if (spectrumSlices == null) return precMz
+    if (spectrumSlices == null) return targetPrecMz
 
     val closestSlice = spectrumSlices.filter(_.getHeader.getCycle == spectrumHeader.getCycle)
 
     if (!closestSlice.isEmpty) {
-      val p = closestSlice(0).getNearestPeak(precMz, mzTolPPM)
-      if (p == null) precMz else p.getMz
+      val p = closestSlice(0).getNearestPeak(targetPrecMz, mzTolPPM)
+      if (p == null) targetPrecMz else p.getMz
     } else {
-      precMz
+      targetPrecMz
     }
   }
 
@@ -370,7 +369,6 @@ class IsolationWindowPrecursorExtractor2(mzTolPPM: Float)  extends DefaultPrecur
                   result += ("ident.prediction.intensity" -> altprecursor._1.getIntensity)
                   result += ("ident.prediction.rank" -> altprecursor._2)
                 }
-
               }
               break
             }

@@ -156,6 +156,12 @@
       <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
+    <!-- pClean -->
+    <dependency>
+      <groupId>pClean</groupId>
+      <artifactId>pClean</artifactId>
+      <version>1.0</version>
+    </dependency>
     <!-- Test -->
     <dependency>
       <groupId>junit</groupId>

@@ -140,6 +140,9 @@ object MzDbProcessing extends App with LazyLogging {
 
     @Parameter(names = Array("-ptitle", "--proline_title"), description = "export TITLE using the Proline convention", required = false)
     var exportProlineTitle: Boolean = false
+
+    @Parameter(names = Array("-pclean", "--pclean_ms2_processing"), description = "Apply pClean Module2 to MS2 spectra", required = false)
+    var pClean: Boolean = false
   }
 
   /*

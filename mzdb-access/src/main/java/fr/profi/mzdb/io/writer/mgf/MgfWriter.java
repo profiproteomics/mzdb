@@ -22,7 +22,6 @@ import java.util.Map;
 public class MgfWriter {
 
 	public static String LINE_SPERATOR = System.getProperty("line.separator");
-	private static Integer precNotFound = 0;
 	final Logger logger = LoggerFactory.getLogger(MgfWriter.class);
 
 	private static String titleQuery = "SELECT id, title FROM spectrum WHERE ms_level=?";
@@ -87,17 +86,18 @@ public class MgfWriter {
 
 	public void write(String mgfFile, PrecursorMzComputationEnum precComp, float mzTolPPM, float intensityCutoff, boolean exportProlineTitle)
 		throws SQLiteException, IOException {
-		write(mgfFile, new DefaultPrecursorComputer(precComp, mzTolPPM), intensityCutoff, exportProlineTitle);
+		write(mgfFile, new DefaultPrecursorComputer(precComp, mzTolPPM), null, intensityCutoff, exportProlineTitle);
 	}
 
 	public void write(String mgfFile, IPrecursorComputation precComp, float intensityCutoff, boolean exportProlineTitle) throws SQLiteException, IOException {
+		write(mgfFile, precComp, new DefaultSpectrumProcessor(), intensityCutoff, exportProlineTitle);
+	}
+
+	public void write(String mgfFile, IPrecursorComputation precComp, ISpectrumProcessor spectrumProcessor, float intensityCutoff, boolean exportProlineTitle) throws SQLiteException, IOException {
 		
 		// treat path mgfFile ?
 		if (mgfFile.isEmpty())
 			mgfFile = this.mzDBFilePath + ".mgf";
-		
-		// Reset precNotFound static var
-		MgfWriter.precNotFound = 0;
 		
 		// Configure the mzDbReader in order to load all precursor lists and all scan list when reading spectra headers
 		mzDbReader.enablePrecursorListLoading();
@@ -113,23 +113,20 @@ public class MgfWriter {
 			
 			Spectrum s = spectrumIterator.next();
 			long spectrumId = s.getHeader().getId();
-			
 			DataEncoding dataEnc = dataEncodingBySpectrumId.get(spectrumId);
-			String spectrumAsStr = this.stringifySpectrum(s, dataEnc, precComp, intensityCutoff, exportProlineTitle);
-			
-			//this.logger.debug("Writing spectrum with ID="+spectrumId);
 
-			// Write the spectrum
-			mgfWriter.println(spectrumAsStr);
-			
-			// Write a blank line between two spectra
-			mgfWriter.println();
-			
-			spectraCount++;
+			MgfPrecursor[] precursors = precComp.getMgfPrecursors(mzDbReader, s.getHeader());
+		  for (int k = 0; k < precursors.length; k++) {
+				String spectrumAsStr = this.stringifySpectrum(precursors[k], s, dataEnc, spectrumProcessor, intensityCutoff, exportProlineTitle);
+				// Write the spectrum
+				mgfWriter.println(spectrumAsStr);
+				// Write a blank line between two spectra
+				mgfWriter.println();
+				spectraCount++;
+			}
 		}
 
 		this.logger.info(String.format("MGF file successfully created: %d spectra exported.", spectraCount));
-		this.logger.info(String.format("#Precursor not found: %d", MgfWriter.precNotFound));
 		mgfWriter.flush();
 		mgfWriter.close();
 	}
@@ -138,16 +135,16 @@ public class MgfWriter {
 	 * 
 	 * @param spectrum
 	 * @param dataEnc
-	 * @param precComp
 	 * @param intensityCutoff
 	 * @return
 	 * @throws SQLiteException
 	 * @throws StreamCorruptedException 
 	 */
 	protected String stringifySpectrum(
+	  MgfPrecursor mgfPrecursor,
 		Spectrum spectrum,
 		DataEncoding dataEnc,
-		IPrecursorComputation precComp,
+		ISpectrumProcessor spectrumProcessor,
 		float intensityCutoff,
 		boolean exportProlineTitle
 	) throws SQLiteException, StreamCorruptedException {
@@ -176,68 +173,30 @@ public class MgfWriter {
 				mzDbReader.getFirstSourceFileName().split("\\.")[0]);
 		}
 
-//		MgfHeader mgfSpectrumHeader = precComp.getMgfHeader(mzDbReader, spectrumHeader, title);
-
 		StringBuilder spectrumStringBuilder = new StringBuilder();
 
-		MgfPrecursor[] precursors = precComp.getMgfPrecursors(mzDbReader, spectrumHeader);
-		int index = 0;
-
-		for (MgfPrecursor mgfPrecursor : precursors) {
 
 			if (spectrumStringBuilder.length() > 0) spectrumStringBuilder.append(MgfWriter.LINE_SPERATOR).append(MgfWriter.LINE_SPERATOR);
 
 			spectrumStringBuilder.append(MgfField.BEGIN_IONS).append(MgfWriter.LINE_SPERATOR);
 			spectrumStringBuilder.append(MgfField.TITLE).append("=").append(title);
-			if(index > 0)
-				spectrumStringBuilder.append("; alt:").append(index++);
 
 			spectrumStringBuilder.append(MgfWriter.LINE_SPERATOR);
 			mgfPrecursor.appendToStringBuilder(spectrumStringBuilder);
 
 			// Spectrum Data
-			final SpectrumData data = spectrum.getData();
+			final SpectrumData data = spectrumProcessor.processSpectrum(mgfPrecursor, spectrum.getData());
 			final double[] mzs = data.getMzList();
 			final float[] ints = data.getIntensityList();
-			//final float[] leftHwhms = data.getLeftHwhmList();
-			//final float[] rightHwhms = data.getRightHwhmList();
 
 			final int intsLength = ints.length;
-
-			//final double[] intsAsDouble = new double[intsLength];
-			//for (int i = 0; i < intsLength; ++i) {
-			//	intsAsDouble[i] = (double) ints[i];
-			//}
-			//final double intensityCutOff = 0.0; // new Percentile().evaluate(intsAsDouble, 5.0);
 
 			for (int i = 0; i < intsLength; ++i) {
 
 				float intensity = ints[i];
 
-				// DBO: here we tried boost intensities (but this should be optional)
-				// The benefit is not the same for all instruments
-				// TODO: take into account the width of the peaks
-				//float intensity = (float) Math.pow(ints[i], 1.5 ); // ^ 3/2
-
-			/*if( dataEnc.getMode().equals(DataMode.FITTED) ) {
-			  float peakIntensity = ints[i];
-			  float leftHwhm = leftHwhms[i];
-			  float rightHwhm = rightHwhms[i];
-			  float fwhm = leftHwhm + rightHwhm;
-			  logger.debug("leftHwhm:"+leftHwhm);
-			  if( fwhm != 0 ) {
-			    logger.trace("fwhm:" +fwhm);
-			  }
-			  // Approximate the area using a triangle area computation
-			  // TODO: use a more sophisticated mathematical function
-			  intensity = peakIntensity * fwhm * 1e6f;
-			} else {
-			  intensity = ints[i];
-			}*/
-
 				if (intensity >= intensityCutoff) {
 					double mz = mzs[i];
-
 					spectrumStringBuilder
 									.append(String.format(mzFragFormat, mz))
 									.append(" ")
@@ -247,8 +206,7 @@ public class MgfWriter {
 			}
 
 			spectrumStringBuilder.append(MgfField.END_IONS);
-		}
-		return spectrumStringBuilder.toString();
+			return spectrumStringBuilder.toString();
 	}
 
 }
