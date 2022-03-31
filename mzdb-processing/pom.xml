@@ -161,6 +161,72 @@
       <groupId>pClean</groupId>
       <artifactId>pClean</artifactId>
       <version>1.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.compomics</groupId>
+          <artifactId>mascotdatfile</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>de.proteinms.xtandemparser</groupId>
+          <artifactId>xtandem-parser</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>uk.ac.ebi.jmzml</groupId>
+          <artifactId>jmzml</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>jfree</groupId>
+          <artifactId>jfreechart</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>uk.ac.ebi.pride.archive</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>uk.ac.ebi.pride.tools</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>msv</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>no.uib</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.poi</groupId>
+          <artifactId>poi</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.jgoodies</groupId>
+          <artifactId>looks</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.swinglabs</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>uk.ac.ebi.jmzidml</groupId>
+          <artifactId>jmzidentml</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>batik</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-httpclient</groupId>
+          <artifactId>commons-httpclient</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>net.jimmc</groupId>
+          <artifactId>jshortcut</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <!-- Test -->
     <dependency>
