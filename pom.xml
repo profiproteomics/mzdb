@@ -18,7 +18,6 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <sqlite4java.version>1.0.392</sqlite4java.version>
         <commons.version>1.2.0-SNAPSHOT</commons.version>
     </properties>
     <scm>
