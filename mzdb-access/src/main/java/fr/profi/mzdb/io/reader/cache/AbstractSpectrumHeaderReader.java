@@ -151,13 +151,22 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 					activationType);
 				
 				if (mzDbReader.isParamTreeLoadingEnabled()) {
-					sh.setParamTree( ParamTreeParser.parseParamTree(stmt.columnString(SpectrumHeaderColIdx.paramTree)) );
+					String paramTreeStr = stmt.columnString(SpectrumHeaderColIdx.paramTree);
+					sh.setParamTree( ParamTreeParser.parseParamTree(paramTreeStr) );
+					if(mzDbReader.isStringRepresentationCacheEnabled())
+						sh.setParamTreeAsString(paramTreeStr);
 				}
 				if (mzDbReader.isScanListLoadingEnabled()) {
-					sh.setScanList(ParamTreeParser.parseScanList(stmt.columnString(SpectrumHeaderColIdx.scanList)));
+					String scAsStr= stmt.columnString(SpectrumHeaderColIdx.scanList);
+					sh.setScanList(ParamTreeParser.parseScanList(scAsStr));
+					if(mzDbReader.isStringRepresentationCacheEnabled())
+						sh.setScanListAsString(scAsStr);
 				}
 				if (mzDbReader.isPrecursorListLoadingEnabled() && msLevel >= 2) {
-					sh.setPrecursor(ParamTreeParser.parsePrecursor(stmt.columnString(SpectrumHeaderColIdx.precursorList)));
+					String precAsStr = stmt.columnString(SpectrumHeaderColIdx.precursorList);
+					sh.setPrecursor(ParamTreeParser.parsePrecursor(precAsStr));
+					if(mzDbReader.isStringRepresentationCacheEnabled())
+						sh.setPrecursorAsString(precAsStr);
 				}
 	
 				// System.out.println( (double) (System.nanoTime() - nano) / 1e3 );

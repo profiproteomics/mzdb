@@ -58,6 +58,7 @@ public abstract class AbstractMzDbReader {
 	private boolean _loadParamTree = false;
 	private boolean _loadScanList = false;
 	private boolean _loadPrecursorList = false;
+	private boolean _cacheDataAsString = false;
 
 	/**
 	 * The is no loss mode. If no loss mode is enabled, all data points will be encoded as highres, i.e. 64 bits mz and 64 bits int. No peak picking and not
@@ -74,6 +75,7 @@ public abstract class AbstractMzDbReader {
 	protected List<Sample> samples = null;
 	protected List<Software> softwareList = null;
 	protected List<SourceFile> sourceFiles = null;
+	protected List<SharedParamTree> sharedParamTrees = null;
 
 	/**
 	 * Close the file to avoid memory leaks. Method to be implemented in child classes.
@@ -83,7 +85,19 @@ public abstract class AbstractMzDbReader {
 	public abstract AbstractDataEncodingReader getDataEncodingReader();
 	public abstract AbstractSpectrumHeaderReader getSpectrumHeaderReader();
 	public abstract AbstractRunSliceHeaderReader getRunSliceHeaderReader();
-	
+
+	public boolean isStringRepresentationCacheEnabled(){
+		return  _cacheDataAsString;
+	}
+
+	/**
+	 * This will enable String representation cache for Param Tree, Scan List and Precursor List.
+	 * It is taken into account if at least one of these data are "enabled for loading"
+	 */
+	public void enableDataStringCache() {
+		_cacheDataAsString = true;
+	}
+
 	public boolean isParamTreeLoadingEnabled() {
 		return _loadParamTree;
 	}
@@ -155,9 +169,7 @@ public abstract class AbstractMzDbReader {
 	}
 
 	/**
-	 * @param bbSizes
 	 * @param paramNameGetter
-	 * @param header
 	 */
 	protected void _setBBSizes(IMzDBParamNameGetter paramNameGetter) {
 		this.bbSizes.BB_MZ_HEIGHT_MS1 = Double.parseDouble(this.mzDbHeader.getUserParam(paramNameGetter.getMs1BBMzWidthParamName()).getValue());
@@ -322,16 +334,14 @@ public abstract class AbstractMzDbReader {
 	/**
 	 * Gets the spectrum slices. Each returned spectrum slice corresponds to a single spectrum.
 	 *
-	 * @param minmz
+	 * @param minMz
 	 *            the minMz
-	 * @param maxmz
+	 * @param maxMz
 	 *            the maxMz
-	 * @param minrt
+	 * @param minRt
 	 *            the minRt
-	 * @param maxrt
+	 * @param maxRt
 	 *            the maxRt
-	 * @param msLevel
-	 *            the ms level
 	 * @return the spectrum slices
 	 * @throws SQLiteException
 	 *             the sQ lite exception
@@ -772,8 +782,8 @@ public abstract class AbstractMzDbReader {
 	 *            the min mz
 	 * @param maxMz
 	 *            the max mz
-	 * @param msLevel
-	 *            the ms level
+	 * @param method
+	 *            the XicMethod
 	 * @return the xic
 	 * @throws SQLiteException
 	 *             the sQ lite exception
@@ -923,16 +933,14 @@ public abstract class AbstractMzDbReader {
 	/**
 	 * Gets the peaks.
 	 *
-	 * @param minmz
+	 * @param minMz
 	 *            the minmz
-	 * @param maxmz
+	 * @param maxMz
 	 *            the maxmz
-	 * @param minrt
+	 * @param minRt
 	 *            the minrt
-	 * @param maxrt
+	 * @param maxRt
 	 *            the maxrt
-	 * @param msLevel
-	 *            the ms level
 	 * @return the peaks
 	 * @throws SQLiteException
 	 *             the sQ lite exception

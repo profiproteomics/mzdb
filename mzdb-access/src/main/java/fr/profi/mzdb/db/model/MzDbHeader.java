@@ -1,5 +1,6 @@
 package fr.profi.mzdb.db.model;
 
+import fr.profi.mzdb.db.model.params.FileContentParams;
 import fr.profi.mzdb.db.model.params.ParamTree;
 
 /**

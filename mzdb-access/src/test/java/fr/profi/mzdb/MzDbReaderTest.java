@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteException;
 
+import fr.profi.mzdb.db.model.SharedParamTree;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,6 +37,8 @@ public class MzDbReaderTest {
     private static final AcquisitionMode expectedAcquisitionMode_OVEMB150205_12__0_9_7 = AcquisitionMode.UNKNOWN;
     private static final AcquisitionMode expectedAcquisitionMode_OVEMB150205_12__0_9_8 = AcquisitionMode.DDA;
     private static final IsolationWindow[] expectedDiaIsolationWindows_OVEMB150205_12 = {};
+		private static final String expectedSharedParam_CVMS1001742_ACCESSION="MS:1001742";
+    private static final String expectedSharedParam_CVMS1001742_NAME ="LTQ Orbitrap Velos";
 
     private static final float minMz_OVEMB150205_12 = 400f;
     private static final float maxMz_OVEMB150205_12 = 600f;
@@ -93,7 +96,30 @@ public class MzDbReaderTest {
 	Assert.assertNotNull("Reader cannot be created", mzDb);
 	System.out.print(".");
 
-	// Bounding boxes size
+	//Read SharedParamTree
+			try {
+			List<SharedParamTree> sharedParamTrees = mzDb.getSharedParamTreeList();
+			Assert.assertEquals(1, sharedParamTrees.size());
+
+			List<CVParam> params = sharedParamTrees.get(0).getData().getCVParams();
+			boolean found = false;
+			String cvName ="";
+			for(CVParam p : params){
+				if (p.getAccession().equals(expectedSharedParam_CVMS1001742_ACCESSION)) {
+					found = true;
+					cvName = p.getName();
+					break;
+				}
+			}
+
+			Assert.assertTrue(found);
+			Assert.assertEquals(expectedSharedParam_CVMS1001742_NAME, cvName);
+
+			} catch (SQLiteException e) {
+				Assert.fail("SharedParamTree exception " + e.getMessage() + " for " + filename);
+		}
+
+			// Bounding boxes size
 	try {
 	    BBSizes bbSizes = mzDb.getBBSizes();
 	    Assert.assertEquals("BBSize " + filename + " invalid", expectedBBSizes_OVEMB150205_12, bbSizes);

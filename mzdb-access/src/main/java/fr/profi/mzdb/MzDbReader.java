@@ -12,6 +12,7 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import fr.profi.mzdb.io.reader.SharedParamTreeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,13 +49,14 @@ public class MzDbReader extends AbstractMzDbReader {
 	private SampleReader _sampleReader = null;
 	private SoftwareReader _softwareListReader = null;
 	private SourceFileReader _sourceFileReader = null;
+	private SharedParamTreeReader _sharedParamTreeReader = null;
 
 	/**
 	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
 	 *
 	 * @param dbLocation
 	 *            the db location
-	 * @param cacheEntities
+	 * @param entityCache
 	 *            the cache entities
 	 * @param logConnections
 	 *            the log connections
@@ -70,7 +72,7 @@ public class MzDbReader extends AbstractMzDbReader {
 
 		this.entityCache = entityCache;
 
-		if (logConnections == false) {
+		if (!logConnections) {
 			java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(java.util.logging.Level.OFF);
 		}
 
@@ -103,6 +105,7 @@ public class MzDbReader extends AbstractMzDbReader {
 		this._sampleReader = new SampleReader(this.connection);
 		this._softwareListReader = new SoftwareReader(this.connection);
 		this._sourceFileReader = new SourceFileReader(this.connection);
+		this._sharedParamTreeReader = new SharedParamTreeReader(this.connection);
 
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingReader(this);
@@ -737,7 +740,6 @@ public class MzDbReader extends AbstractMzDbReader {
 	/**
 	 * Gets a DIA data RunSlice iterator for a given m/z range
 	 *
-	 * @param msLevel
 	 * @param minParentMz
 	 * @param maxParentMz
 	 * @return the RunSlice iterator
@@ -774,6 +776,13 @@ public class MzDbReader extends AbstractMzDbReader {
 			this.instrumentConfigs = this._instrumentConfigReader.getInstrumentConfigList();
 		}
 		return this.instrumentConfigs;
+	}
+
+	public List<SharedParamTree> getSharedParamTreeList() throws SQLiteException {
+			if(this.sharedParamTrees == null){
+				this.sharedParamTrees = _sharedParamTreeReader.getSharedParamTreeList();
+			}
+			return sharedParamTrees;
 	}
 
 	public List<Run> getRuns() throws SQLiteException {

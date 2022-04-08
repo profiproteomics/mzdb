@@ -37,8 +37,6 @@ public class Sample extends AbstractTableModel {
 	 *            the id
 	 * @param name
 	 *            the name
-	 * @param location
-	 *            the location
 	 */
 	public Sample(int id, String name) {
 		this(id, name, null);

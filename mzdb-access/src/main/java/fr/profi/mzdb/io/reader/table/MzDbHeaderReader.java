@@ -3,7 +3,7 @@ package fr.profi.mzdb.io.reader.table;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
-import fr.profi.mzdb.db.model.FileContentParams;
+import fr.profi.mzdb.db.model.params.FileContentParams;
 import fr.profi.mzdb.db.model.MzDbHeader;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.table.MzdbTable;

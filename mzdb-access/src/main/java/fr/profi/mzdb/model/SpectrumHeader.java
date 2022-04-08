@@ -4,14 +4,9 @@
  */
 package fr.profi.mzdb.model;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-
 import fr.profi.mzdb.db.model.AbstractTableModel;
 import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.ScanList;
@@ -19,6 +14,10 @@ import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
+
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -75,9 +74,13 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
 	/** The spectrum list. */
 	protected ScanList scanList = null;
+	protected String scanListAsString;
 
 	/** The precursor: contains selected ions list */
 	protected Precursor precursor = null;
+	protected String precursorAsString;
+
+	protected String paramTreeAsString; //String representation of paramTree. Only For Spectrum Header (?)
 
 	/**
 	 * Instantiates a new spectrum header.
@@ -136,27 +139,6 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		this.activationType = activationType;
 		isolationWindow = null;
 	}
-
-	/**
-	 * Instantiates a new spectrum header.
-	 * 
-	 * @param id
-	 *            the id
-	 * @param initialId
-	 *            the initial id
-	 * @param cycle
-	 *            the cycle
-	 * @param time
-	 *            the time
-	 * @param msLevel
-	 *            the ms level
-	 * @param peaksCount
-	 *            the peaks count
-	 */
-	/*
-	 * public SpectrumHeader(int id, int initialId, int cycle, float time, int msLevel, int peaksCount) { this(
-	 * id, initialId, cycle, time, msLevel, peaksCount, false, 0, 0, 0, 0); }
-	 */
 
 	/**
 	 * Gets the id.
@@ -303,6 +285,10 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		this.scanList = scanList;
 	}
 
+	public void setScanListAsString(String scanListAsString) {
+		this.scanListAsString = scanListAsString;
+	}
+
 	public Precursor getPrecursor() {
 		return this.precursor;
 	}
@@ -310,6 +296,15 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	public void setPrecursor(Precursor precursor) {
 		this.precursor = precursor;
 	}
+
+	public void setPrecursorAsString(String precursorAsString) {
+		this.precursorAsString = precursorAsString;
+	}
+
+	public void setParamTreeAsString(String paramTreeAsString) {
+		this.paramTreeAsString = paramTreeAsString;
+	}
+
 
 	/** The rt comp. */
 	public static Comparator<SpectrumHeader> rtComp = new Comparator<SpectrumHeader>() {
@@ -353,20 +348,30 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	}
 
 	public static void loadParamTrees(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection) {
+		SpectrumHeader.loadParamTrees(spectrumHeaders, mzDbConnection, false);
+	}
+
+	public static void loadParamTrees(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection, boolean cacheStringRepresentation) {
 		String sqlString = "SELECT id, param_tree FROM spectrum";
 		Map<Long, String> paramTreeBySpecId = _loadXmlFieldBySpectrumId(sqlString, mzDbConnection);
-		
 		for (SpectrumHeader header : spectrumHeaders) {
 			if (!header.hasParamTree()) {
 				String paramTreeAsStr = paramTreeBySpecId.get(header.getId());
 				if (paramTreeAsStr != null) {
 					header.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
+					if(cacheStringRepresentation)
+						header.paramTreeAsString = paramTreeAsStr;
 				}
 			}
 		}
 	}
-	
+
 	public static void loadScanLists(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection) {
+		SpectrumHeader.loadScanLists(spectrumHeaders,mzDbConnection,false);
+	}
+
+
+		public static void loadScanLists(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection, boolean cacheStringRepresentation) {
 		String sqlString = "SELECT id, scan_list FROM spectrum";
 		Map<Long, String> scanListBySpecId = _loadXmlFieldBySpectrumId(sqlString, mzDbConnection);
 		
@@ -375,20 +380,28 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 				String scanListAsStr = scanListBySpecId.get(header.getId());
 				if (scanListAsStr != null) {
 					header.scanList = ParamTreeParser.parseScanList(scanListAsStr);
+					if(cacheStringRepresentation)
+						header.scanListAsString= scanListAsStr;
 				}
 			}
 		}
 	}
-	
+
 	public static void loadPrecursors(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection) {
+		SpectrumHeader.loadPrecursors(spectrumHeaders,mzDbConnection,false);
+	}
+
+	public static void loadPrecursors(SpectrumHeader[] spectrumHeaders, SQLiteConnection mzDbConnection, boolean cacheStringRepresentation) {
 		String sqlString = "SELECT id, precursor_list FROM spectrum";
 		Map<Long, String> precursorBySpecId = _loadXmlFieldBySpectrumId(sqlString, mzDbConnection);
 		
 		for (SpectrumHeader header : spectrumHeaders) {
 			if (header.precursor == null) {
-				String precursorAsStr = precursorBySpecId.get(header.getId());
-				if (precursorAsStr != null) {
+				String precursorAsStr  = precursorBySpecId.get(header.getId());
+				if (precursorAsStr  != null) {
 					header.precursor = ParamTreeParser.parsePrecursor(precursorAsStr);
+					if(cacheStringRepresentation)
+						header.precursorAsString =precursorAsStr;
 				}
 			}
 		}
@@ -397,43 +410,70 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	@Override
 	public void loadParamTree(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (!this.hasParamTree()) {
-			String paramTreeAsStr = getParamTreeAsString(mzDbConnection);
+			// if use load "XML" representation, suppose cache is not necessary
+			String paramTreeAsStr = getParamTreeAsString(mzDbConnection, false);
 			this.paramTree = ParamTreeParser.parseParamTree(paramTreeAsStr);
 		}
 	}
 
 	@Override
 	public String getParamTreeAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
-		String sqlString = "SELECT param_tree FROM spectrum WHERE id = ?";
-		return new SQLiteQuery(mzDbConnection, sqlString).bind(1,
-			this.getId()).extractSingleString();
+		return this.getParamTreeAsString(mzDbConnection, true);//If call this method suppose cache may be used
+	}
+
+	private String getParamTreeAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation) throws SQLiteException {
+		String paramTreeAsSt = paramTreeAsString;
+		if(paramTreeAsSt == null){
+			String sqlString = "SELECT param_tree FROM spectrum WHERE id = ?";
+			paramTreeAsSt = new SQLiteQuery(mzDbConnection, sqlString).bind(1, this.getId()).extractSingleString();
+			if(cacheStringRepresentation)
+				this.paramTreeAsString = paramTreeAsSt;
+		}
+		return paramTreeAsSt;
 	}
 
 	public void loadScanList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (scanList == null) {
-			String scanListAsStr = getScanListAsString(mzDbConnection);
+			String scanListAsStr = getScanListAsString(mzDbConnection, false); // if use load "XML" representation, suppose cache is not necessary
 			this.scanList = ParamTreeParser.parseScanList(scanListAsStr);
 		}
 	}
 
 	public String getScanListAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
-		String sqlString = "SELECT scan_list FROM spectrum WHERE id = ?";
-		return new SQLiteQuery(mzDbConnection, sqlString).bind(1,
-			this.getId()).extractSingleString();
+		return  this.getScanListAsString(mzDbConnection, true); //If call this method suppose cache may be used
+	}
+
+	private String getScanListAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation) throws SQLiteException {
+		String scanListAsStr = scanListAsString;
+		if(scanListAsStr == null) {
+			String sqlString = "SELECT scan_list FROM spectrum WHERE id = ?";
+			scanListAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1, this.getId()).extractSingleString();
+			if(cacheStringRepresentation)
+				this.scanListAsString = scanListAsStr;
+		}
+		return scanListAsStr;
 	}
 
 	public void loadPrecursorList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (precursor == null) {
-			String precursorListAsStr = getPrecursorListAsString(mzDbConnection);
-			this.precursor = ParamTreeParser.parsePrecursor(precursorListAsStr);
+			// if use load "XML" representation, suppose cache is not necessary
+			String precursorAsStr = getPrecursorListAsString(mzDbConnection, false);
+			this.precursor = ParamTreeParser.parsePrecursor(precursorAsStr);
 		}
 	}
 
 	public String getPrecursorListAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
-		String sqlString = "SELECT precursor_list FROM spectrum WHERE id = ?";
-		String precursorListAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1,
-			this.getId()).extractSingleString();
-		return precursorListAsStr;
+		return this.getPrecursorListAsString(mzDbConnection, true);//If call this method suppose cache may be used
 	}
 
+	private String getPrecursorListAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation ) throws SQLiteException {
+		String precursorAsStr = precursorAsString;
+		if (precursorAsStr == null) {
+			String sqlString = "SELECT precursor_list FROM spectrum WHERE id = ?";
+			precursorAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1, this.getId()).extractSingleString();
+			if(cacheStringRepresentation)
+				this.precursorAsString = precursorAsStr;
+		}
+		return precursorAsStr;
+	}
 }

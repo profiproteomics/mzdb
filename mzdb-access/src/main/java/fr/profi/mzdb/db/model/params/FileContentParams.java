@@ -1,4 +1,4 @@
-package fr.profi.mzdb.db.model;
+package fr.profi.mzdb.db.model.params;
 
 import fr.profi.mzdb.db.model.params.AbstractParamTree;
 

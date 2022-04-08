@@ -4,11 +4,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.sax.SAXSource;
 
-import fr.profi.mzdb.db.model.FileContentParams;
-import fr.profi.mzdb.db.model.params.ComponentList;
-import fr.profi.mzdb.db.model.params.ParamTree;
-import fr.profi.mzdb.db.model.params.Precursor;
-import fr.profi.mzdb.db.model.params.ScanList;
+import fr.profi.mzdb.db.model.params.*;
 import fr.profi.mzdb.util.jaxb.XercesSAXParser;
 
 // TODO: Auto-generated Javadoc
@@ -25,6 +21,7 @@ public class ParamTreeParser {
 	public static Unmarshaller componentListUnmarshaller = null;
 	public static Unmarshaller scanListUnmarshaller = null;
 	public static Unmarshaller precursorUnmarshaller = null;
+	public static Unmarshaller refParamGroupUnmarshaller = null;
 
 	/**
 	 * Parses the param tree.
@@ -129,6 +126,27 @@ public class ParamTreeParser {
 			e.printStackTrace();
 		}
 		
+		return paramTree;
+	}
+
+	synchronized public static ReferencableParamGroup parseReferencableParamGroup(String paramTreeAsStr) {
+
+		ReferencableParamGroup paramTree = null;
+		if(paramTreeAsStr == null)
+			return null;
+
+		try {
+			if( refParamGroupUnmarshaller == null ) {
+				refParamGroupUnmarshaller = JAXBContext.newInstance(ReferencableParamGroup.class).createUnmarshaller();
+			}
+
+			SAXSource source = XercesSAXParser.getSAXSource( paramTreeAsStr );
+			paramTree = (ReferencableParamGroup) refParamGroupUnmarshaller.unmarshal(source);
+
+		}  catch (Exception e) {
+			e.printStackTrace();
+		}
+
 		return paramTree;
 	}
 
