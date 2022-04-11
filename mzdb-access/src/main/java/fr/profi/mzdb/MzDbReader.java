@@ -12,6 +12,9 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import fr.profi.mzdb.db.model.params.param.CV;
+import fr.profi.mzdb.db.model.params.param.CVTerm;
+import fr.profi.mzdb.db.model.params.param.CVUnit;
 import fr.profi.mzdb.io.reader.SharedParamTreeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,18 +41,22 @@ public class MzDbReader extends AbstractMzDbReader {
 	private SQLiteConnection connection = null;
 	
 	/** Some readers with internal entity cache **/
-	private DataEncodingReader _dataEncodingReader = null;
-	private SpectrumHeaderReader _spectrumHeaderReader = null;
-	private RunSliceHeaderReader _runSliceHeaderReader = null;
+	private DataEncodingReader _dataEncodingReader;
+	private SpectrumHeaderReader _spectrumHeaderReader;
+	private RunSliceHeaderReader _runSliceHeaderReader;
 	
 	/** Some readers without internal entity cache **/
-	private MzDbHeaderReader _mzDbHeaderReader = null;
-	private InstrumentConfigReader _instrumentConfigReader = null;
-	private RunReader _runReader = null;
-	private SampleReader _sampleReader = null;
-	private SoftwareReader _softwareListReader = null;
-	private SourceFileReader _sourceFileReader = null;
-	private SharedParamTreeReader _sharedParamTreeReader = null;
+	private MzDbHeaderReader _mzDbHeaderReader;
+	private InstrumentConfigReader _instrumentConfigReader;
+	private RunReader _runReader;
+	private SampleReader _sampleReader;
+	private SoftwareReader _softwareListReader;
+	private SourceFileReader _sourceFileReader;
+	private SharedParamTreeReader _sharedParamTreeReader;
+	private CvReader _cvReader;
+	private CvUnitReader _cvUnitReader;
+	private CvTermReader _cvTermReader;
+
 
 	/**
 	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
@@ -106,6 +113,9 @@ public class MzDbReader extends AbstractMzDbReader {
 		this._softwareListReader = new SoftwareReader(this.connection);
 		this._sourceFileReader = new SourceFileReader(this.connection);
 		this._sharedParamTreeReader = new SharedParamTreeReader(this.connection);
+		this._cvReader = new CvReader(this.connection);
+		this._cvTermReader = new CvTermReader(this.connection);
+		this._cvUnitReader = new CvUnitReader(this.connection);
 
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingReader(this);
@@ -783,6 +793,27 @@ public class MzDbReader extends AbstractMzDbReader {
 				this.sharedParamTrees = _sharedParamTreeReader.getSharedParamTreeList();
 			}
 			return sharedParamTrees;
+	}
+
+	public List<CV> getCvList() throws SQLiteException {
+		if(this.allCVs == null){
+			this.allCVs = _cvReader.getCvList();
+		}
+		return allCVs;
+	}
+
+	public List<CVUnit> getCvUnitList() throws SQLiteException {
+		if(this.cvUnits == null){
+			this.cvUnits = _cvUnitReader.getCvUnit();
+		}
+		return cvUnits;
+	}
+
+	public List<CVTerm> getCvTermList() throws SQLiteException {
+		if(this.cvTerms == null){
+			this.cvTerms = _cvTermReader.getCvTerms();
+		}
+		return cvTerms;
 	}
 
 	public List<Run> getRuns() throws SQLiteException {

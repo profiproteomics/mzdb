@@ -12,13 +12,12 @@ import java.util.TreeMap;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
+import fr.profi.mzdb.db.model.params.param.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import fr.profi.mzdb.db.model.*;
 import fr.profi.mzdb.db.model.params.ParamTree;
-import fr.profi.mzdb.db.model.params.param.CVEntry;
-import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
 import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
@@ -76,6 +75,10 @@ public abstract class AbstractMzDbReader {
 	protected List<Software> softwareList = null;
 	protected List<SourceFile> sourceFiles = null;
 	protected List<SharedParamTree> sharedParamTrees = null;
+	protected List<CV>  allCVs = null;
+	protected List<CVTerm>  cvTerms = null;
+	protected List<CVUnit>  cvUnits = null;
+
 
 	/**
 	 * Close the file to avoid memory leaks. Method to be implemented in child classes.

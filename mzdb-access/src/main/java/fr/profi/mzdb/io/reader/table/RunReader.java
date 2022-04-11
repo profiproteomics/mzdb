@@ -34,7 +34,7 @@ public class RunReader extends AbstractTableModelReader<Run> {
 	 * @param connection
 	 *            the connection
 	 */
-	public RunReader(SQLiteConnection connection) throws SQLiteException {
+	public RunReader(SQLiteConnection connection) {
 		super(connection);
 	}
 
