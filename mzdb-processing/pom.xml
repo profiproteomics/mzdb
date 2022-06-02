@@ -150,7 +150,7 @@
 <!--      <groupId>org.scalatest</groupId>-->
 <!--      <artifactId>scalatest_${scala.compat.version}</artifactId>-->
 <!--    </dependency>-->
-    
+
     <!-- sqlite4java  native libraries (needed for mzDB-access) -->
     <dependency>
       <groupId>com.almworks.sqlite4java</groupId>
