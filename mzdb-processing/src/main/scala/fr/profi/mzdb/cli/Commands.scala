@@ -392,7 +392,7 @@ object Commands extends LazyLogging {
 
     val writer = new MgfWriter(CreateMgfCommand.mzdbFile, CreateMgfCommand.msLevel)
     val precCompEnum = PrecursorMzComputationEnum.values().find(_.name() == CreateMgfCommand.precMzComputation.toUpperCase)
-    val specProcessor = if (CreateMgfCommand.pClean) { new PCleanProcessor } else { new DefaultSpectrumProcessor }
+    val specProcessor = if (CreateMgfCommand.pClean) { PCleanProcessor(CreateMgfCommand.pCleanFilteringMethodName) } else { new DefaultSpectrumProcessor }
 
     if (precCompEnum.isDefined) {
        writer.write(CreateMgfCommand.outputFile,  new DefaultPrecursorComputer(precCompEnum.get, CreateMgfCommand.mzTolPPM), specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)

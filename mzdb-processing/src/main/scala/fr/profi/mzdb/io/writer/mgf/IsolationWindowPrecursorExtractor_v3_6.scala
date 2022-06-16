@@ -1,6 +1,7 @@
 package fr.profi.mzdb.io.writer.mgf
 
 import com.almworks.sqlite4java.SQLiteException
+import fr.profi.ms.algo.IsotopePatternEstimator
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.algo.DotProductPatternScorer
@@ -15,7 +16,8 @@ import scala.util.control.Breaks.{break, breakable}
  */
 
 class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPrecursorComputer(mzTolPPM) {
-  
+
+
   private var lastPrediction: (SpectrumHeader, (Double, Int)) = _
   private var metric = new Metric("MGF")
 
@@ -43,7 +45,7 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
 
     // extract an alternative mz from the isolation window and make a prediction if this value is
     // different from the MS2 header value and from the already predicted precursor
-    val altPrecMzArray = _extractPrecMzFromIsolationWindow(mzDbReader, spectrumHeader, mzTolPPM, 5)
+    val altPrecMzArray = _extractPrecMzFromIsolationWindow(mzDbReader, spectrumHeader, 5)
     val maxPrec = precursors.length + 1
     var rank = 0
     for (
@@ -168,7 +170,7 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
 
   override def getPrecursorMz(reader: MzDbReader, spectrumHeader: SpectrumHeader): Double = {
     val precMz = _getHeaderPrecursorMz(spectrumHeader)
-    val altPrecMzArray = _extractPrecMzFromIsolationWindow(reader, spectrumHeader, mzTolPPM, 5);
+    val altPrecMzArray = _extractPrecMzFromIsolationWindow(reader, spectrumHeader, 5);
 
     lastPrediction = null
     if (!altPrecMzArray.isEmpty) {
@@ -193,7 +195,6 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
     if (!slices.isEmpty) {
       val sliceOpt = slices.find(x => x.getHeader.getCycle == spectrumHeader.getCycle)
       if (!sliceOpt.isDefined) {
-
         Some(slices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) })
       } else {
         sliceOpt
@@ -211,7 +212,7 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
       previousMz = targetMz
       targetMz = bestPattern._2.monoMz
       putativePatterns = DotProductPatternScorer.calcIsotopicPatternHypothesesFromCharge(spectrumSlice.getData, targetMz, bestPattern._2.charge, mzTolPPM)
-      bestPattern = DotProductPatternScorer.selectBestPatternHypothese(putativePatterns, 0.1)
+      bestPattern = DotProductPatternScorer.selectBestPatternHypothese(putativePatterns)
     }
 
 //    val pattern = bestPattern._2
@@ -267,7 +268,7 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
    * @throws SQLiteException
    * @throws StreamCorruptedException
    */
-  private def _extractPrecMzFromIsolationWindow(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, mzTolPPM: Double, timeTol: Float): Array[Peak] = {
+  private def _extractPrecMzFromIsolationWindow(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, timeTol: Float): Array[Peak] = {
 
     val time = spectrumHeader.getElutionTime()
     val precursor = spectrumHeader.getPrecursor()
@@ -310,6 +311,15 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
     result += ("header.moz" -> headerMoz)
     result += ("header.charge" -> spectrumHeader.getPrecursorCharge)
     result += ("header.found" -> "false") // default value that will be updated later
+
+    val headerPrecMz = _getHeaderPrecursorMz(spectrumHeader)
+    val (predictionOpt, predictionNote) = _getPrecursorMz(mzDbReader, spectrumHeader, headerPrecMz, spectrumHeader.getPrecursorCharge)
+    result += ("header.prediction.note" -> predictionNote)
+    if (predictionOpt.isDefined) {
+      result += ("header.prediction.moz" -> predictionOpt.get._1)
+      result += ("header.prediction.charge" -> predictionOpt.get._2)
+    }
+
     val iw = precursor.getIsolationWindow
     val sw_center = iw.getCVParam(CVEntry.ISOLATION_WINDOW_TARGET_MZ).getValue.toFloat
     result += ("sw_center.moz" -> sw_center)
@@ -426,5 +436,81 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
     }
     result
   }
+
+  def extractPrecursorIsotopesStats(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, precZ: Int, mzTolPPM: Float) : Map[String, Any] = {
+
+    var result = Map.empty[String, Any]
+    result += ("found" -> "false")
+
+    // similar to _extractPrecMzFromIsolationWindow
+
+    val time = spectrumHeader.getElutionTime()
+    val precursor = spectrumHeader.getPrecursor()
+
+    // Do a XIC in the isolation window and around the provided time
+    val spectrumSlices = this._getSpectrumSlicesInIsolationWindow(mzDbReader, precursor, time, 5)
+    if (spectrumSlices == null)  {
+      result += ("cause" -> "no spectrum slice")
+      return result
+    }
+
+    if (!spectrumSlices.isEmpty) {
+      val closestSlice = spectrumSlices.filter(_.getHeader.getCycle == spectrumHeader.getCycle)
+      val allPeaks = closestSlice.flatMap(_.toPeaks)
+
+      if (!allPeaks.isEmpty) {
+
+        val maxPeak = allPeaks.maxBy(_.getIntensity)
+        val swPrecMzArray = allPeaks.sortBy(_.getIntensity).reverse // allPeaks.filter(_.getIntensity > 0.2 * maxPeak.getIntensity).sortBy(_.getIntensity).reverse
+        val ms1Slice = getMS1SpectrumSlice(mzDbReader, spectrumHeader, precMz, time)
+
+        var rank = 0
+        breakable {
+          for (swPrecMz <- swPrecMzArray) {
+
+            // prediction from the peak matching the ident.moz value (the precMz argument)
+            if (Math.abs(1e6 * (precMz - swPrecMz.getMz) / precMz) < mzTolPPM) {
+              result += ("found" -> "true")
+              result += ("ident.initial.moz" -> precMz)
+              result += ("ident.initial.rank" -> rank)
+              result += ("ident.initial.intensity" -> swPrecMz.getIntensity)
+              var previousMz = precMz
+//              val avgIsotopicShift = Array(0.0, 1.002961, 1.00235, 1.0022, 1.0022)
+              for (k <- 1 to 4) {
+//              val isotopeMz = previousMz + avgIsotopicShift(k)/precZ
+                val isotopeMz = previousMz + IsotopePatternEstimator.avgIsoMassDiff/precZ
+                val isotopicPeak = ms1Slice.get.getNearestPeak(isotopeMz, mzTolPPM)
+                if(isotopicPeak != null) {
+                  val shift = precZ*(isotopicPeak.getMz - previousMz)
+                  result += ("ident.isotope.shift."+k -> shift)
+                  result += ("ident.isotope.shift.ppm."+k -> 1e6*math.abs((isotopicPeak.getMz - isotopeMz)/isotopicPeak.getMz))
+                  result += ("ident.isotope.shift.abs."+k -> (isotopicPeak.getMz - precMz))
+                  previousMz = isotopicPeak.getMz
+//                  if (math.abs(1e6 * (isotopicPeak.getMz - isotopeMz) / isotopicPeak.getMz) > mzTolPPM) {
+//                    logger.info(" !!!! Error closest peak is not inside tolerance bounds")
+//                  }
+//                  if (shift >= 1.02) {
+//                    logger.info("this one");
+//                  }
+                } else {
+                  previousMz = isotopeMz
+                }
+              }
+              break
+            }
+            rank = rank + 1
+          }
+        }
+
+      } else {
+        result += ("cause" -> "no peaks in MS1")
+      }
+    } else {
+      result += ("cause" -> "no spectrum slice")
+    }
+    result
+
+  }
+
 
 }

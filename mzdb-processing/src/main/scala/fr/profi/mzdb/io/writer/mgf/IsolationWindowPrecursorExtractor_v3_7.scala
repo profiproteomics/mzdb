@@ -27,34 +27,7 @@ class IsolationWindowPrecursorExtractor_v3_7(mzTolPPM: Float) extends DefaultPre
     // try to predict the precursor mz from the mz value found in the MS2 header
     lastPrediction = null
 
-    // Extract the most abondant peak from the selection window and predict
     val altPrecMzArray = _extractPrecMzFromIsolationWindow(mzDbReader, spectrumHeader, 5)
-    val maxPrec = precursors.length + 1
-    var rank = 0
-    for (
-      altPrecMz <- altPrecMzArray
-      if (precursors.length < maxPrec)
-    ) {
-
-      val maxPeak = altPrecMzArray.maxBy(_.getIntensity)
-      val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, altPrecMz.getMz, 0)
-      if (altPredictionOpt.isDefined) {
-        val (refinedAltPrecMz, charge) = altPredictionOpt.get
-        if ( (charge > 1) && (charge < 6) &&
-             !precursors.find( p => Math.abs(1e6 * (p.getPrecMz - refinedAltPrecMz) / p.getPrecMz) < mzTolPPM && p.getCharge == charge).isDefined ) {
-            val altPrecursor = buildMgfPrecursor(time, refinedAltPrecMz, charge)
-            altPrecursor.addAnnotation("source", "sw")
-            altPrecursor.addAnnotation("scan.number", spectrumHeader.getSpectrumId)
-            altPrecursor.addAnnotation("initialPeak", altPrecMz)
-            altPrecursor.addAnnotation("maxPeak", maxPeak)
-            altPrecursor.addAnnotation("rank", rank)
-            altPrecursor.addAnnotation("prediction", altPredictionNote)
-
-            precursors = precursors :+ altPrecursor
-        }
-      }
-      rank = rank + 1
-    }
 
     // search another precursor around the center of the selection window
     val swPrecMzArray = _extractPrecMzFromIsolationWindowCenter(mzDbReader, spectrumHeader, 5, Some(altPrecMzArray))
@@ -64,6 +37,7 @@ class IsolationWindowPrecursorExtractor_v3_7(mzTolPPM: Float) extends DefaultPre
       if (altPredictionOpt.isDefined) {
         val (refinedAltPrecMz, charge) = altPredictionOpt.get
         if ((charge > 1) && (charge < 6) &&
+          //precursors.isEmpty) {
           !precursors.find(p => Math.abs(1e6 * (p.getPrecMz - refinedAltPrecMz) / p.getPrecMz) < mzTolPPM && p.getCharge == charge).isDefined) {
           val altPrecursor = buildMgfPrecursor(time, refinedAltPrecMz, charge)
           altPrecursor.addAnnotation("source", "sw center")
@@ -82,6 +56,7 @@ class IsolationWindowPrecursorExtractor_v3_7(mzTolPPM: Float) extends DefaultPre
     val (predictionOpt, predictionNote) = _getPrecursorMz(mzDbReader, spectrumHeader, headerPrecMz, spectrumHeader.getPrecursorCharge)
     val (refinedHeaderPrecMz, charge) =  predictionOpt.getOrElse((headerPrecMz, spectrumHeader.getPrecursorCharge)) // (headerPrecMz, spectrumHeader.getPrecursorCharge)
 
+//    if (precursors.isEmpty) {
     if (!precursors.find( p => Math.abs(1e6 * (p.getPrecMz - refinedHeaderPrecMz) / p.getPrecMz) < mzTolPPM && p.getCharge == charge).isDefined ) {
 
       val precursor = buildMgfPrecursor(time, refinedHeaderPrecMz, charge)
@@ -92,9 +67,77 @@ class IsolationWindowPrecursorExtractor_v3_7(mzTolPPM: Float) extends DefaultPre
       metric.incr("predicted from header")
     }
 
+
+    // Extract the most abondant peak from the selection window and predict
+    val maxPrec = precursors.length + 1
+    val maxPeak = if (altPrecMzArray.isEmpty) { null} else { altPrecMzArray.maxBy(_.getIntensity) }
+    var rank = 0
+    for (
+      altPrecMz <- altPrecMzArray
+      if (precursors.length < maxPrec)
+    ) {
+
+      val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, altPrecMz.getMz, 0)
+      if (altPredictionOpt.isDefined) {
+        val (refinedAltPrecMz, charge) = altPredictionOpt.get
+        if ( (charge > 1) && (charge < 6) &&
+          !precursors.find( p => Math.abs(1e6 * (p.getPrecMz - refinedAltPrecMz) / p.getPrecMz) < mzTolPPM && p.getCharge == charge).isDefined ) {
+          val altPrecursor = buildMgfPrecursor(time, refinedAltPrecMz, charge)
+          altPrecursor.addAnnotation("source", "sw")
+          altPrecursor.addAnnotation("scan.number", spectrumHeader.getSpectrumId)
+          altPrecursor.addAnnotation("initialPeak", altPrecMz)
+          altPrecursor.addAnnotation("maxPeak", maxPeak)
+          altPrecursor.addAnnotation("rank", rank)
+          altPrecursor.addAnnotation("prediction", altPredictionNote)
+
+          precursors = precursors :+ altPrecursor
+        }
+      }
+      rank = rank + 1
+    }
+
     precursors.toArray
 
   }
+
+  @throws[SQLiteException]
+  def getPossibleMgfPrecursorsFromSW(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader): Array[MgfPrecursor] = {
+    val time = spectrumHeader.getElutionTime
+    var precursors = Seq[MgfPrecursor]()
+
+    // Extract the most abundant peak from the selection window and predict
+    val altPrecMzArray = _extractPrecMzFromIsolationWindow(mzDbReader, spectrumHeader, 5)
+    val maxPeak = if (altPrecMzArray.isEmpty) { null } else {altPrecMzArray.maxBy(_.getIntensity)}
+    var rank = 0
+    for (
+      altPrecMz <- altPrecMzArray
+      if (altPrecMz.getIntensity >= 0.5*maxPeak.getIntensity)
+    ) {
+      val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, altPrecMz.getMz, 0)
+      if (altPredictionOpt.isDefined) {
+        val (refinedAltPrecMz, charge) = altPredictionOpt.get
+        if ( (charge > 1) && (charge < 6) &&
+          !precursors.find( p => Math.abs(1e6 * (p.getPrecMz - refinedAltPrecMz) / p.getPrecMz) < mzTolPPM && p.getCharge == charge).isDefined ) {
+          val altPrecursor = buildMgfPrecursor(time, refinedAltPrecMz, charge)
+          altPrecursor.addAnnotation("source", "sw")
+          altPrecursor.addAnnotation("scan.number", spectrumHeader.getSpectrumId)
+          altPrecursor.addAnnotation("initialPeak", altPrecMz)
+          altPrecursor.addAnnotation("maxPeak", maxPeak)
+          altPrecursor.addAnnotation("rank", rank)
+          altPrecursor.addAnnotation("prediction", altPredictionNote)
+
+          precursors = precursors :+ altPrecursor
+        }
+      }
+      rank = rank + 1
+    }
+
+
+
+    precursors.toArray
+
+  }
+
 
   private def buildMgfPrecursor(time: Float, refinedAltPrecMz: Double, charge: Int) : AnnotatedMgfPrecursor = {
     if (charge != 0) {
@@ -200,7 +243,6 @@ class IsolationWindowPrecursorExtractor_v3_7(mzTolPPM: Float) extends DefaultPre
     if (!slices.isEmpty) {
       val sliceOpt = slices.find(x => x.getHeader.getCycle == spectrumHeader.getCycle)
       if (!sliceOpt.isDefined) {
-        logger.warn("Strange missing slice !!!!")
         Some(slices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) })
       } else {
         sliceOpt

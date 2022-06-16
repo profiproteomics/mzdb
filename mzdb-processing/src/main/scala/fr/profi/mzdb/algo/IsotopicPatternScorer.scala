@@ -256,9 +256,58 @@ object DotProductPatternScorerV1 extends IIsotopicPatternScorer {
 
 
   def selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
-    val refScore = putativePatterns.head._1
-    val patterns = putativePatterns.filter(p => math.abs(p._1 - refScore) < deltaScore)
-    patterns.maxBy(p => p._2.charge)
+    DotProductPatternScorer.selectBestPatternHypothese(putativePatterns, deltaScore)
+  }
+
+}
+
+
+object KLPatternScorer extends IIsotopicPatternScorer {
+
+  def getIPHypothesis(spectrum: SpectrumData, initialMz: Double, isotopicShift: Int, charge: Int, ppmTol: Double): (Double, TheoreticalIsotopePattern) = {
+    var score = 0.0
+    val mz = initialMz - isotopicShift * IsotopePatternEstimator.avgIsoMassDiff / charge
+    val pattern = IsotopePatternEstimator.getTheoreticalPattern(mz, charge)
+
+    val scale = spectrum.getIntensityList()(spectrum.getNearestPeakIndex(initialMz)).toDouble / pattern.mzAbundancePairs(isotopicShift)._2
+
+    var ipMoz = mz
+    val observed = new Array[Double](pattern.mzAbundancePairs.length)
+    val expected = new Array[Double](pattern.mzAbundancePairs.length)
+    for (rank <- 0 until pattern.mzAbundancePairs.length) {
+      ipMoz = if (rank == 0) ipMoz
+      else ipMoz + IsotopePatternEstimator.avgIsoMassDiff / charge
+      val nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
+      if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
+        observed(rank) = spectrum.getIntensityList()(nearestPeakIdx)
+      } else { // reverse expected abundance to penalise signal absence
+        observed(rank) = 1.0/pattern.mzAbundancePairs(rank)._2 * scale
+      }
+      expected(rank) = pattern.mzAbundancePairs(rank)._2
+    }
+
+    score = distance(observed, expected)
+    score = 1.0 - score
+    (score, pattern)
+  }
+
+  def distance(observed: Array[Double], expected: Array[Double]): Double = {
+    var product = 0.0
+    var k = 0
+
+    val exp = expected.map( _ / expected.sum)
+    val obs = observed.map( _ / observed.sum)
+
+    while ( (k < obs.length) && (exp(k) > 0.01) ) {
+      product += exp(k) * math.log(exp(k)/obs(k))
+      k += 1
+    }
+    product
+  }
+
+
+  def selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
+    DotProductPatternScorer.selectBestPatternHypothese(putativePatterns, deltaScore)
   }
 
 }
