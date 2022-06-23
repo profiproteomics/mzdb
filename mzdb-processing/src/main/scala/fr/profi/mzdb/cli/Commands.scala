@@ -178,7 +178,7 @@ object Commands extends LazyLogging {
           } else mz -> None
 
           intSum
-      } toArray
+      }.toArray
 
     } //ends function
 
@@ -353,14 +353,14 @@ object Commands extends LazyLogging {
     val binner = new EntityHistogramComputer(flattenedPeaksMz, (x: Double) => x)
     val mzBins = binner.calcHistogram(nbBins)
 
-    val mzList = mzBins.map { case (bin, values) => bin.center } toArray
-    val rtList = spectrumSlices.map(_.getHeader().getElutionTime()) toArray
+    val mzList = mzBins.map { case (bin, values) => bin.center }.toArray
+    val rtList = spectrumSlices.map(_.getHeader().getElutionTime()).toArray
     val intList = Array.ofDim[Float](spectrumSlices.length, mzBins.length)
 
     var i = 0
     spectrumSlices.foreach { spectrumSlice =>
       val binner_ = new EntityHistogramComputer(spectrumSlice.toPeaks, (x: Peak) => x.getMz())
-      val bins = binner_.calcHistogram(nbBins, range = Some(Pair(minmz, maxmz)))
+      val bins = binner_.calcHistogram(nbBins, range = Some(Tuple2(minmz, maxmz)))
       var j = 0
       bins.foreach {
         case (bin, values) =>

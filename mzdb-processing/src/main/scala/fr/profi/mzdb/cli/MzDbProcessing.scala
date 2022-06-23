@@ -10,6 +10,7 @@ import fr.profi.util.ThreadLogger
  * @auhor David Bouyssie
  * @author CB205360
  */
+//warning: overriding method main in trait App is deprecated (since 2.11.0): main should not be overridden
 object MzDbProcessing extends App with LazyLogging {
   
   // TODO: put in profi-scala-commons (shared with proline admin)
@@ -144,8 +145,7 @@ object MzDbProcessing extends App with LazyLogging {
     var exportProlineTitle: Boolean = false
   }
 
-  override def main(args: Array[String]): Unit = {
-    Thread.currentThread.setUncaughtExceptionHandler(new ThreadLogger(logger.underlying.getName()))
+     Thread.currentThread.setUncaughtExceptionHandler(new ThreadLogger(logger.underlying.getName()))
     
     // Instantiate a JCommander object and set some commands
     val jCmd = new JCommander()
@@ -215,8 +215,5 @@ object MzDbProcessing extends App with LazyLogging {
         System.exit(1)
       }
     }
-    
-  }
-
 
 }

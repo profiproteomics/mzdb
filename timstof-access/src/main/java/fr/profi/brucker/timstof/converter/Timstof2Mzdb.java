@@ -103,7 +103,7 @@ public class Timstof2Mzdb {
         List<UserParam> ups = new ArrayList<>();
         ups.add(new UserParam("origin_file_format", "Timstof Brucker","xsd:string"));
         pt.setUserParams(JavaConverters.asScalaIteratorConverter(ups.iterator()).asScala().toSeq());
-        int currentTime = new Long(System.currentTimeMillis()).intValue();
+        int currentTime = Long.valueOf(System.currentTimeMillis()).intValue();
         MzDbHeader mzdbHeader = new MzDbHeader("0.7", currentTime,  pt);
 
         List<DataEncoding> des = new ArrayList<>();

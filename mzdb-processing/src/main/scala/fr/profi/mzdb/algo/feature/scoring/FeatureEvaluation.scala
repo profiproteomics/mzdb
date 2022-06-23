@@ -209,7 +209,7 @@ class BoxPlotFeatureThresholdsComputer( iqrFactor: Float = 1.5f ) extends IFeatu
   private def _calcFeatureQ1Q3Indexes( values: Seq[Any] ): (Int,Int) = {
     
     val N = values.length
-    val iq1 = N * 0.25 toInt
+    val iq1 = (N * 0.25).toInt
     //val iq2 =  N * 0.5 toInt
     val iq3 = (N * 0.75).toInt
     
@@ -368,7 +368,7 @@ object FeatureEvaluator  {
     lcContextBySpectrumId: LongMap[ILcContext]
   ): Seq[FeatureEvaluation] = {
     //fill data 
-    val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig, lcContextBySpectrumId)) toArray
+    val fq = features.par.map( f => computeQualityVector(f, ftScoringConfig, lcContextBySpectrumId)).toArray
     val qualThresholds = thresholdComputer.getThresholds(fq) 
     /* just one toArray does not work ? FIXME: */
     fq.zip(features).par.map{ case (fq, f) => evaluateQualityVector(f, fq, qualThresholds) }.toArray.toSeq
@@ -409,7 +409,7 @@ object FeatureEvaluator  {
       shape,
       //signalFluctuation,
       isotopesCount,
-      isotopesPattern toFloat,
+      isotopesPattern.toFloat,
       //0,
       peakelsWidth,
       peakelsCorrelation,

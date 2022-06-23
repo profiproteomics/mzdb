@@ -197,7 +197,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     val theoIP = putativeFt.theoreticalIP
 
     // Determine intensity ascendant direction
-    val range = Pair(1, 10)
+    val range = Tuple2(1, 10)
     var ascDirection = this.getIntensityAscendantDirection(putativeFt, pklTree, mzTolPPM, cycleNum, range, minNbPeaks = 1)
       
     // 1 => right, -1 => left
@@ -306,7 +306,7 @@ abstract class AbstractSupervisedFtExtractor() extends AbstractFeatureExtractor 
     pklTree: PeakListTree, 
     mzTolPPM: Float, 
     cycleNum: Int, 
-    range: Pair[Int, Int], 
+    range: Tuple2[Int, Int],
     minNbPeaks: Int // minimm peak in IP to sum
   ): Int = {
 
