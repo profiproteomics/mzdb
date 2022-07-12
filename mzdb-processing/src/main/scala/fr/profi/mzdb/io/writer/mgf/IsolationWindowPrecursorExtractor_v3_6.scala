@@ -31,7 +31,7 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
 
     val headerPrecMz = _getHeaderPrecursorMz(spectrumHeader)
     val (predictionOpt, predictionNote) = _getPrecursorMz(mzDbReader, spectrumHeader, headerPrecMz, spectrumHeader.getPrecursorCharge)
-    val (refinedHeaderPrecMz, charge) =  predictionOpt.getOrElse((headerPrecMz, spectrumHeader.getPrecursorCharge)) // (headerPrecMz, spectrumHeader.getPrecursorCharge)
+    val (refinedHeaderPrecMz, charge) =  predictionOpt.getOrElse((headerPrecMz, spectrumHeader.getPrecursorCharge.intValue())) // (headerPrecMz, spectrumHeader.getPrecursorCharge)
 
     val precursor = buildMgfPrecursor(time, refinedHeaderPrecMz, charge)
     precursor.addAnnotation("source", "header")
