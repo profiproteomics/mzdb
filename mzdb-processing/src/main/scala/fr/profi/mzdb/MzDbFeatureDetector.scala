@@ -508,7 +508,9 @@ class MzDbFeatureDetector(
          
           // Retrieve run slices and their corresponding id
           this.logger.debug(s"will process run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz})")
-          
+//          if(rsNumber > 3)
+//            throw new RuntimeException("VDS Generated Exception")
+
           // Build the list of obsolete run slices
           val rsNumbersToRemove = for(
             processedRsNumber <- pklBySpectrumIdAndRsNumber.keys

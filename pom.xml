@@ -42,4 +42,44 @@
 
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <!-- Logging -->
+        <dependency><!-- Includes slf4j & mlogback core-->
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <!-- SQLite Jar then native libraries -->
+        <dependency>
+            <groupId>com.almworks.sqlite4java</groupId>
+            <artifactId>sqlite4java</artifactId>
+            <version>${sqlite4java.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.almworks.sqlite4java</groupId>
+            <artifactId>sqlite4java-win32-x64</artifactId>
+            <version>${sqlite4java.version}</version>
+            <type>dll</type>
+        </dependency>
+
+        <dependency>
+            <groupId>com.almworks.sqlite4java</groupId>
+            <artifactId>libsqlite4java-linux-amd64</artifactId>
+            <version>${sqlite4java.version}</version>
+            <type>so</type>
+        </dependency>
+
+        <!-- Command Line Interface -->
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+        </dependency>
+
+        <!-- JUnit testing -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+
+    </dependencies>
 </project>
