@@ -125,7 +125,7 @@ object MzDbProcessing extends App with LazyLogging {
 
     @Parameter(names = Array("-o", "--output_file_path"), description = "mgf output file path", required = true)
     var outputFile: String = ""
-    
+
     @Parameter(names = Array("-ms", "--ms_level"), description = "the MS level to export", required = false)
     var msLevel: Int = 2
 
@@ -141,11 +141,6 @@ object MzDbProcessing extends App with LazyLogging {
     @Parameter(names = Array("-ptitle", "--proline_title"), description = "export TITLE using the Proline convention", required = false)
     var exportProlineTitle: Boolean = false
 
-    @Parameter(names = Array("-pClean", "--pClean_ms2_processing"), description = "Apply pClean to MS2 spectra (module2)", required = false)
-    var pClean: Boolean = false
-
-    @Parameter(names = Array("-pLabelFiltering", "--pClean_label_filtering"), description = "Apply pClean Label filtering (module1) associated with the selected method (ITRAQ4PLEX, ITRAQ8PLEX, TMT6PLEX, TMT10PLEX, TMT11PLEX)", required = false)
-    var pCleanFilteringMethodName: String = ""
   }
 
   /*

@@ -437,6 +437,18 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
     result
   }
 
+  /**
+   *
+   * Extract distance between isotopic peaks of the specified precursor mass & charge. The rank of the peak matching the precursor
+   * mass is also extracted.
+   *
+   * @param mzDbReader
+   * @param spectrumHeader
+   * @param precMz
+   * @param precZ
+   * @param mzTolPPM
+   * @return
+   */
   def extractPrecursorIsotopesStats(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, precZ: Int, mzTolPPM: Float) : Map[String, Any] = {
 
     var result = Map.empty[String, Any]

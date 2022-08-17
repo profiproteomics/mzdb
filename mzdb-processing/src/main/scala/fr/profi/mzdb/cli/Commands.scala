@@ -392,13 +392,13 @@ object Commands extends LazyLogging {
 
     val writer = new MgfWriter(CreateMgfCommand.mzdbFile, CreateMgfCommand.msLevel)
     val precCompEnum = PrecursorMzComputationEnum.values().find(_.name() == CreateMgfCommand.precMzComputation.toUpperCase)
-    val specProcessor = if (CreateMgfCommand.pClean) { PCleanProcessor(CreateMgfCommand.pCleanFilteringMethodName) } else { new DefaultSpectrumProcessor }
+    val specProcessor = new DefaultSpectrumProcessor
 
     if (precCompEnum.isDefined) {
-       writer.write(CreateMgfCommand.outputFile,  new DefaultPrecursorComputer(precCompEnum.get, CreateMgfCommand.mzTolPPM), specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+      writer.write(CreateMgfCommand.outputFile,  new DefaultPrecursorComputer(precCompEnum.get, CreateMgfCommand.mzTolPPM), specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted") {
-       val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
-       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+      val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
+      writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted_v3.6") {
       val precComputer = new IsolationWindowPrecursorExtractor_v3_6(CreateMgfCommand.mzTolPPM)
       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
