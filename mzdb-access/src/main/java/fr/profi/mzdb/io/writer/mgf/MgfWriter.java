@@ -48,6 +48,7 @@ public class MgfWriter {
 
 		// Create reader
 		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
+		this.mzDbReader.enablePrecursorListLoading();
 
 		this._fillTitleBySpectrumId();
 		this.logger.info("Number of loaded spectra titles: " + this.titleBySpectrumId.size());
