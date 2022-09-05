@@ -7,7 +7,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
 
-import org.jfree.chart.ChartUtilities
+import org.jfree.chart.ChartUtils
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.axis.NumberAxis
 import org.jfree.chart.plot.XYPlot
@@ -189,11 +189,11 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
    * go the the left then to the right
    * since apex
    */
-  protected def _findLocalMinima(scale:Float = 0, maxIdx :Int): Option[Pair[Int, Int]] = {    
+  protected def _findLocalMinima(scale:Float = 0, maxIdx :Int): Option[Tuple2[Int, Int]] = {
     val coeffsAtScale = this.coeffs(scale)
     
     if (coeffsAtScale.isEmpty)
-      return Option.empty[Pair[Int, Int]]
+      return Option.empty[Tuple2[Int, Int]]
     
     var leftIndex = maxIdx//math.max(maxIdx - 1, 0)
     breakable {
@@ -214,14 +214,14 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
         }
       }
     }
-    if (leftIndex != rightIndex) Some(Pair(leftIndex, rightIndex)) else Option.empty[Pair[Int, Int]]
+    if (leftIndex != rightIndex) Some(Tuple2(leftIndex, rightIndex)) else Option.empty[Tuple2[Int, Int]]
   }
   
   
   /**
    * taken from centwave algorithm
    */
-  def _findPeakBoundariesXCMS(scale:Float, maxIndex:Int) : Option[Pair[Int, Int]] = {
+  def _findPeakBoundariesXCMS(scale:Float, maxIndex:Int) : Option[Tuple2[Int, Int]] = {
     val coeffsAtScale = this.coeffs(scale)
     //println("scale:" + scale+ ", len ydata :" + this.ydata.length + ", len coeffs:" + coeffsAtScale.length )
     val lwpos = math.max(0, maxIndex - scale)
@@ -260,7 +260,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
    * go the the left then to the right
    * since apex
    */
-  protected def _findLocalMinimaRealSpaceFromWaveletBounds(minIdx: Int, maxIdx: Int): Pair[Int, Int] = {    
+  protected def _findLocalMinimaRealSpaceFromWaveletBounds(minIdx: Int, maxIdx: Int): Tuple2[Int, Int] = {
     var leftIndex = minIdx//math.max(maxIdx - 1, 0)
     breakable {
       for (i <- leftIndex until 0 by -1) {
@@ -280,7 +280,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
         }
       }
     }
-    Pair(leftIndex, rightIndex)
+    Tuple2(leftIndex, rightIndex)
   }
 
 ///////////////////////////////////////////////////////////
@@ -439,13 +439,13 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
   /**
    * return the indexes of the peakel found
    */
-  def findPeakelsIndexes(): Array[Pair[Int, Int]] = {
+  def findPeakelsIndexes(): Array[Tuple2[Int, Int]] = {
 
     val peakels = this.findCwtPeakels()
     peakels.map(x => (x.minIdx, x.maxIdx))
   }
   
-  def findPeakelsSpectrumIds(asSpectrumId:Boolean=false): Array[Pair[Long, Long]] = {
+  def findPeakelsSpectrumIds(asSpectrumId:Boolean=false): Array[Tuple2[Long, Long]] = {
     val peakels = this.findCwtPeakels()
     peakels.map(x=> (x.startLcContext.getSpectrumId(), x.endLcContext.getSpectrumId()))
   }
@@ -578,7 +578,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
     val plot = new XYPlot(dataset, xAxis, yAxis, renderer)
     plot.setBackgroundPaint(Color.lightGray);
     val chart = new JFreeChart("XYBlockChartDemo1", plot)
-    ChartUtilities.saveChartAsJPEG(new java.io.File(file), chart, 600, 400)//ydata.length);
+    ChartUtils.saveChartAsJPEG(new java.io.File(file), chart, 600, 400)//ydata.length);
   }
 
   def maximaToImage(f: (Array[Array[Double]], Int) => Array[Array[Int]], file: String = "maxima.jpg") {
@@ -608,7 +608,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
     var plot = new XYPlot(dataset, xAxis, yAxis, renderer)
     plot.setBackgroundPaint(Color.lightGray);
     var chart = new JFreeChart("XYBlockChartDemo1", plot)
-    ChartUtilities.saveChartAsJPEG(new java.io.File(file), chart, ydata.length, ydata.length);*/
+    ChartUtils.saveChartAsJPEG(new java.io.File(file), chart, ydata.length, ydata.length);*/
 
   }
 
@@ -658,7 +658,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
     var plot = new XYPlot(dataset, xAxis, yAxis, renderer)
     plot.setBackgroundPaint(Color.lightGray);
     var chart = new JFreeChart("XYBlockChartDemo1", plot)
-    ChartUtilities.saveChartAsJPEG(new java.io.File("zerocross.jpg"), chart, ydata.length, ydata.length);*/
+    ChartUtils.saveChartAsJPEG(new java.io.File("zerocross.jpg"), chart, ydata.length, ydata.length);*/
   }
 
 }//end class

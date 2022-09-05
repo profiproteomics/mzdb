@@ -70,7 +70,7 @@ public abstract class AbstractTimsFrame implements Comparable<AbstractTimsFrame>
 
 
 
-    static Int2ObjectMap<MsMsType> msmsTypeByCode = new Int2ObjectOpenHashMap();
+    static Int2ObjectMap<MsMsType> msmsTypeByCode = new Int2ObjectOpenHashMap<>();
     public  enum  MsMsType {
         MS(0),
         MSMS(2),
@@ -94,7 +94,7 @@ public abstract class AbstractTimsFrame implements Comparable<AbstractTimsFrame>
 
     }
 
-    static Int2ObjectMap<ScanMode> scanModesByCode = new Int2ObjectOpenHashMap();
+    static Int2ObjectMap<ScanMode> scanModesByCode = new Int2ObjectOpenHashMap<>();
     public  enum  ScanMode {
         MS(0),
         AutoMSMS(1),

@@ -1,6 +1,6 @@
 package fr.profi.mzdb
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.LongMap
@@ -22,7 +22,7 @@ case class DemultiplexedSpectrum(precursorMz: Double, precursorCharge: Int, elut
  */
 class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for each
   
-  val spectrumHeaderById = mapAsScalaMap(mzDbReader.getMs2SpectrumHeaderById).toLongMapWith { case (k,v) => k.toLong -> v } 
+  val spectrumHeaderById = mzDbReader.getMs2SpectrumHeaderById.asScala.toLongMapWith { case (k,v) => k.toLong -> v }
   val minNbPeaksInSpectrum = 3
 
   def demultiplexMSnData(): Array[DemultiplexedSpectrum] = {
@@ -86,7 +86,7 @@ class MzDbMSnDemultiplexer(mzDbReader: MzDbReader) extends LazyLogging { // for 
     
     val allLcEntities = ms1Fts ++ msnPeakels
     
-    val peakelTimeByLcEntity = allLcEntities.map { lcEntity => lcEntity -> _extractWeightedAverageTime(lcEntity) } toMap
+    val peakelTimeByLcEntity = allLcEntities.map { lcEntity => lcEntity -> _extractWeightedAverageTime(lcEntity) }.toMap
     
     // Clusterize peakels having an apex separated by a given time value (10 secs)    
     val histoComputer = new EntityHistogramComputer[Product with Serializable with ILcContext]( allLcEntities, { entity  =>

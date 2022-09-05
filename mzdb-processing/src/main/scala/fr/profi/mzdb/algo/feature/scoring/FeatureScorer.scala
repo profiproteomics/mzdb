@@ -2,13 +2,11 @@ package fr.profi.mzdb.algo.feature.scoring
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.LongMap
-import scala.util.control.Breaks._
 import org.apache.commons.math3.stat.StatUtils
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
-//import fr.profi.mzdb.algo.signal.fitting._
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.util.math.StatisticsConversion
@@ -42,7 +40,7 @@ object FeatureScorer {
       case Seq(p1, p2) =>
         peakelCorrSum += calcPeakelCorrelation(p1, p2)
     }
-    peakelCorrSum / (peakelsCount - 1) toFloat
+    (peakelCorrSum / (peakelsCount - 1)).toFloat
   }
 
   /**correlation between to peakels*/
@@ -107,7 +105,7 @@ object FeatureScorer {
       overlappingMap += Tuple3(peakel, leftOverlappingPeaks, rightOverlappingPeaks)
     }
 
-    calcMeanOverlappingFactor(overlappingMap) toFloat
+    calcMeanOverlappingFactor(overlappingMap)
   }
 
   /** utility function */
@@ -187,7 +185,7 @@ object FeatureScorer {
 
     // Retrieve theoretical and observed abundances
     val theoPattern = IsotopePatternInterpolator.getTheoreticalPattern(mz, f.getCharge)
-    val theoAbundances = theoPattern.abundances.map(_ / 100 toDouble)
+    val theoAbundances = theoPattern.abundances.map(ab => (ab / 100).toDouble)
     val obsAbundances = f.indexedPeakels.map(_._1.area.toDouble)
 
     // Normalize observed abundances
@@ -197,7 +195,7 @@ object FeatureScorer {
     val (shortest, longest) = if (theoAbundances.length < normAbundances.length) (theoAbundances, normAbundances)
     else (normAbundances, theoAbundances)
 
-    VectorSimilarity.rmsd(shortest, longest.take(shortest.length)) toFloat
+    VectorSimilarity.rmsd(shortest, longest.take(shortest.length)).toFloat
   }
 
   /**
@@ -400,7 +398,7 @@ object FeatureScorer {
    * *********************************************************
    */
   private def getDistanceBetweenTwoPoints(x1: Float, y1: Float, x2: Float, y2: Float): Float = {
-    math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2)) toFloat
+    math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2)).toFloat
   }
 
   private def getDistanceSum(peakel: Peakel): Float = {
@@ -516,7 +514,7 @@ abstract class ZScoreEvaluator(featureQualityVectors: Array[FeatureQualityVector
     normalizedValues
   }
 
-  def getPonderatedZScores(): Pair[Array[Double], Double] = {
+  def getPonderatedZScores(): Tuple2[Array[Double], Double] = {
     values = this.transformValues() //featureQualityVectors.map(_.isotopesPattern toDouble) 
     val params = this.getEstimatedParameters(values, SideEstimator.Q1_ESTIMATION)
     val weightingCoeff = if (sideEstimation == SideEstimator.Q1_ESTIMATION) values.filter(_ < params.q1).length
@@ -530,7 +528,7 @@ case class IsotopesPatternZScoreScorer(val featureQualityVectors: Array[FeatureQ
   extends ZScoreEvaluator(featureQualityVectors, SideEstimator.Q1_ESTIMATION) {
 
   def transformValues(): Array[Double] = {
-    featureQualityVectors.map(x => if (x.isotopesPattern != Double.NaN) -math.log10(x.isotopesPattern toDouble)
+    featureQualityVectors.map(x => if (x.isotopesPattern != Double.NaN) -math.log10(x.isotopesPattern.toDouble)
     else Double.NaN)
   }
 
@@ -562,7 +560,7 @@ case class FinalScoreComputer(featureQualityVectors: Array[FeatureQualityVector]
       MzPrecisionZScoreZScorer(featureQualityVectors),
       PeakWidthZScoreZScorer(featureQualityVectors))
 
-    val results = new ArrayBuffer[Pair[Array[Double], Double]]
+    val results = new ArrayBuffer[Tuple2[Array[Double], Double]]
     zscorers.foreach(results += _.getPonderatedZScores)
     //val sumCoeffs = results(0)._2 + results(1)._2 + results(2)._2
     val finalScores = results(0)._1.zip(results(1)._1).zip(results(2)._1).map {
@@ -580,7 +578,7 @@ case class FinalScoreComputer(featureQualityVectors: Array[FeatureQualityVector]
         val mascotStyleScore = -10 * math.log10(p_value)
         mascotStyleScore
     }
-    finalScores toArray
+    finalScores
   }
 
 }

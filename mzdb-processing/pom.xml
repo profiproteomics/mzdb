@@ -2,12 +2,13 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>mzdb-pom</artifactId>
+    <artifactId>mzdb-parent</artifactId>
     <groupId>fr.profi</groupId>
-    <version>1.2.0-SNAPSHOT</version>
+    <version>1.1.0_jdk17-SNAPSHOT</version>
   </parent>
 
-  <artifactId>mzdb-processing_${scala.version}</artifactId>
+  <artifactId>mzdb-processing_${scala.compat.version}</artifactId>
+
   <name>${project.artifactId}</name>
   <description>LC-MS processing algorithms designed for the mzDB file format</description>
   <properties>
@@ -23,9 +24,10 @@
     <!-- ProFI commons  -->
     <dependency>
       <groupId>fr.profi.util</groupId>
-      <artifactId>profi-commons-scala_${scala.version}</artifactId>
+      <artifactId>profi-commons-scala_${scala.compat.version}</artifactId>
       <version>${commons.version}</version>
     </dependency>
+
     <dependency>
       <groupId>fr.profi.util</groupId>
       <artifactId>profi-commons-java</artifactId>
@@ -35,14 +37,14 @@
     <!-- ProFi Proteomics -->
     <dependency>
       <groupId>fr.profi</groupId>
-      <artifactId>profi-proteomics_${scala.version}</artifactId>
+      <artifactId>profi-proteomics_${scala.compat.version}</artifactId>
       <version>${commons.version}</version>
     </dependency>
 
     <!-- mzdb-access -->
     <dependency>
       <groupId>fr.profi</groupId>
-      <artifactId>mzdb-access_${scala.version}</artifactId>
+      <artifactId>mzdb-access_${scala.compat.version}</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -50,20 +52,13 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
     <!-- Logging -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
-    </dependency>
 
     <dependency>
       <groupId>com.typesafe.scala-logging</groupId>
-      <artifactId>scala-logging_${scala.version}</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
+      <artifactId>scala-logging_${scala.compat.version}</artifactId>
     </dependency>
 
     <!-- Configuration -->
@@ -76,14 +71,13 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
 
     <!-- Charting -->
     <dependency>
       <groupId>org.jfree</groupId>
       <artifactId>jfreechart</artifactId>
-      <version>1.0.19</version>
+      <version>1.5.3</version>
     </dependency>
 
     <!-- Smoothing (algorithmic) -->
@@ -104,90 +98,38 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
-    <dependency>
-      <groupId>org.msgpack</groupId>
-      <artifactId>jackson-dataformat-msgpack</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
-    </dependency>
+
     <dependency>
       <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
     </dependency>
+
     <!-- R*Tree library -->
     <dependency>
       <groupId>com.github.davidmoten</groupId>
       <artifactId>rtree</artifactId>
-      <version>0.8.0.1</version>
+      <version>0.10</version>
     </dependency>
-    <dependency>
-      <groupId>com.github.davidmoten</groupId>
-      <artifactId>guava-mini</artifactId>
-      <version>0.1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.github.davidmoten</groupId>
-      <artifactId>rxjava-extras</artifactId>
-      <version>0.8.0.7</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vividsolutions</groupId>
-      <artifactId>jts-core</artifactId>
-      <version>1.14.0</version>
-    </dependency>
-    
+
     <!-- RxJava & RxScala -->
+    <dependency>
+      <groupId>io.reactivex</groupId>
+      <artifactId>rxscala_${scala.compat.version}</artifactId>
+      <version>0.27.0</version>
+    </dependency>
+
     <dependency>
       <groupId>io.reactivex</groupId>
       <artifactId>rxjava</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.reactivex</groupId>
-      <artifactId>rxscala_${scala.version}</artifactId>
-      <version>0.26.5</version>
-    </dependency>
 
-    <!-- Command Line Interface -->
-    <dependency>
-      <groupId>com.beust</groupId>
-      <artifactId>jcommander</artifactId>
-      <!-- Version inherited from ProFI-Pom -->
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>org.scalatest</groupId>-->
+<!--      <artifactId>scalatest_${scala.compat.version}</artifactId>-->
+<!--    </dependency>-->
 
-    <!-- Test -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <!-- Version and scope inherited from ProFI-Pom -->
-    </dependency>
 
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.version}</artifactId>
-      <!-- Version and scope inherited from ProFI-Pom -->
-    </dependency>
-    
-    <!-- sqlite4java  native libraries (needed for mzDB-access) -->
-    <dependency>
-      <groupId>com.almworks.sqlite4java</groupId>
-      <artifactId>sqlite4java</artifactId>
-      <version>${sqlite4java.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.almworks.sqlite4java</groupId>
-      <artifactId>sqlite4java-win32-x64</artifactId>
-      <version>${sqlite4java.version}</version>
-      <type>dll</type>
-    </dependency>
-    <dependency>
-      <groupId>com.almworks.sqlite4java</groupId>
-      <artifactId>libsqlite4java-linux-amd64</artifactId>
-      <version>${sqlite4java.version}</version>
-      <type>so</type>
-    </dependency>
-    
   </dependencies>
 
   <build>
@@ -214,6 +156,10 @@
               </jvmArgs>
             </launcher>
           </launchers>
+<!--          <args>-->
+<!--            <arg>-feature</arg>-->
+<!--            <arg>-deprecation</arg>-->
+<!--          </args>-->
         </configuration>
       </plugin>
 

@@ -40,7 +40,7 @@ public class MzDbReaderAsyncTest {
 		SQLite4JavaTest.checkSQLite();
 	}
 
-	static final HashMap<Integer, Integer> runSliceData = new HashMap();
+	static final HashMap<Integer, Integer> runSliceData = new HashMap<>();
 
 	static {
 		runSliceData.put(2, 158);

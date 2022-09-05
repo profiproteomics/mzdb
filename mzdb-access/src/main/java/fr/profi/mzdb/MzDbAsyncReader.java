@@ -51,7 +51,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @param dbLocation
 	 *            the db location
-	 * @param cacheEntities
+	 * @param entityCache
 	 *            the cache entities
 	 * @param logConnections
 	 *            the log connections

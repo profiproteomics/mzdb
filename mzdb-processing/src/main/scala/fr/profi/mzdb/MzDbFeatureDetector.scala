@@ -428,7 +428,7 @@ class MzDbFeatureDetector(
           detectorQueue = detectorQueue
           //queue = queue
         )(execCtx)
-      }) toList
+      }).toList
       
       // Merge the consumers observable into a single one and then redirect detected peakels to the PublishSubject
       val observablePeakels = consumers.map( _.observable ).toObservable.flatten.doOnError( { error: Throwable =>
@@ -469,7 +469,7 @@ class MzDbFeatureDetector(
       
       // Retrieve run slices headers
       val rsHeaders = mzDbReader.getRunSliceHeaders(ftDetectorConfig.msLevel)
-      val rsHeaderByNumber = rsHeaders.map { rsh => rsh.getNumber -> rsh } toMap
+      val rsHeaderByNumber = rsHeaders.map { rsh => rsh.getNumber -> rsh }.toMap
       
       // Define some vars for the run slice iteration
       var prevRsNumber = 0
@@ -508,7 +508,9 @@ class MzDbFeatureDetector(
          
           // Retrieve run slices and their corresponding id
           this.logger.debug(s"will process run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz})")
-          
+//          if(rsNumber > 3)
+//            throw new RuntimeException("VDS Generated Exception")
+
           // Build the list of obsolete run slices
           val rsNumbersToRemove = for(
             processedRsNumber <- pklBySpectrumIdAndRsNumber.keys
@@ -870,7 +872,7 @@ class MzDbFeatureDetector(
       val peakels = peakelPattern.peakels
       val peakelIndexSet = peakels.map( peakelIdxByPeakel(_) ).toSet
       peakelPattern -> peakelIndexSet
-    } toMap
+    }.toMap
 
     // Apply the peakel pattern clustering to remove duplicated patterns (due to sliding window)
     val clusters = SetClusterer.clusterizeMappedSets(peakelIndexSetByPeakelPattern)
@@ -1213,7 +1215,7 @@ class MzDbFeatureDetector(
         val peakelIndexSetByNewPeakelPattern = newPeakelPatterns.map { peakelPattern =>
           val peakelIndexSet = peakelPattern.peakels.map( peakelIdxByPeakel(_) ).toSet
             peakelPattern -> peakelIndexSet
-        } toMap
+        }.toMap
     
         val newPeakelClusters = SetClusterer.clusterizeMappedSets(peakelIndexSetByNewPeakelPattern)
         logger.trace( s"obtained ${newPeakelClusters.length} new pattern clusters after clustering" )
@@ -1281,7 +1283,7 @@ class MzDbFeatureDetector(
     val peakelIndexSetByPeakelPattern = peakelPatternsBuffer.withFilter(_ != null).map { peakelPattern =>
       val peakelIndexSet = peakelPattern.peakels.withFilter(_ != null).map( peakelIdxByPeakel(_) ).toSet
       peakelPattern -> peakelIndexSet
-    } toMap
+    }.toMap
 
     // Apply the peakel pattern clustering to remove duplicated patterns (due to sliding window)
     val clusters = SetClusterer.clusterizeMappedSets(peakelIndexSetByPeakelPattern)
