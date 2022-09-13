@@ -9,6 +9,15 @@ import fr.profi.mzdb.db.model.params.param.CVEntry
 import fr.profi.mzdb.model.{Peak, SpectrumHeader, SpectrumSlice}
 import fr.profi.util.metrics.Metric
 
+import com.almworks.sqlite4java.SQLiteException
+import fr.profi.ms.algo.IsotopePatternEstimator
+import fr.profi.ms.model.TheoreticalIsotopePattern
+import fr.profi.mzdb.MzDbReader
+import fr.profi.mzdb.algo.DotProductPatternScorer
+import fr.profi.mzdb.db.model.params.param.CVEntry
+import fr.profi.mzdb.model.{Peak, SpectrumHeader, SpectrumSlice}
+import fr.profi.util.metrics.Metric
+
 import scala.util.control.Breaks.{break, breakable}
 
 /**
@@ -291,7 +300,56 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
     altMz
   }
 
-  def extractPrecursorStats(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, mzTolPPM: Float): Map[String, Any] = {
+  def extractSWStats(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, mzTolPPM: Float): Map[String, Any] = {
+
+    var result = Map.empty[String, Any]
+    val precursor = spectrumHeader.getPrecursor()
+    val time = spectrumHeader.getElutionTime()
+
+    val spectrumSlices = this._getSpectrumSlicesInIsolationWindow(mzDbReader, precursor, time, 5)
+    if (spectrumSlices == null || spectrumSlices.isEmpty) {
+      result += ("cause" -> "no spectrum slice")
+      return result
+    }
+
+    result += ("header.moz" -> _getHeaderPrecursorMz(spectrumHeader))
+    result += ("header.charge" -> spectrumHeader.getPrecursorCharge)
+
+    val iw = precursor.getIsolationWindow
+    val sw_center = iw.getCVParam(CVEntry.ISOLATION_WINDOW_TARGET_MZ).getValue.toFloat
+
+    result += ("sw_center.moz" -> sw_center)
+    result += ("sw_center.lower_offset" -> iw.getCVParam(CVEntry.ISOLATION_WINDOW_LOWER_OFFSET).getValue.toFloat)
+    result += ("sw_center.upper_offset" -> iw.getCVParam(CVEntry.ISOLATION_WINDOW_UPPER_OFFSET).getValue.toFloat)
+
+    if (!spectrumSlices.isEmpty) {
+      val closestSlice = spectrumSlices.filter(_.getHeader.getCycle == spectrumHeader.getCycle)
+      val allPeaks = closestSlice.flatMap(_.toPeaks)
+
+      if (!allPeaks.isEmpty) {
+        val maxPeak = allPeaks.maxBy(_.getIntensity)
+        result += ("sw_content.max_intensity" -> maxPeak.getIntensity)
+        for (i <- 0 to 10) {
+          result += (s"sw_content_${i}.count" -> allPeaks.filter(_.getIntensity >= i/10.0 * maxPeak.getIntensity).size)
+        }
+
+        val precMzArray = allPeaks.sortBy(_.getIntensity).reverse //allPeaks.filter(_.getIntensity > 0.2 * maxPeak.getIntensity).sortBy(_.getIntensity).reverse
+        val swPrecMz = precMzArray.zipWithIndex.minBy{ case(p, index) => math.abs(p.getMz - sw_center) }
+
+        result += ("sw_center.peak.moz" -> swPrecMz._1.getMz)
+        result += ("sw_center.peak.intensity" -> swPrecMz._1.getIntensity)
+        result += ("sw_center.peak.rank" -> swPrecMz._2)
+
+
+      } else {
+        result += ("cause" -> "empty_sw")
+      }
+    }
+
+    result
+  }
+
+    def extractPrecursorStats(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, mzTolPPM: Float): Map[String, Any] = {
     var result = Map.empty[String, Any]
     result += ("found" -> "false")
 

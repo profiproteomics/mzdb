@@ -111,7 +111,7 @@ class IsolationWindowPrecursorExtractor_v3_7(mzTolPPM: Float) extends DefaultPre
     var rank = 0
     for (
       altPrecMz <- altPrecMzArray
-      if (altPrecMz.getIntensity >= 0.5*maxPeak.getIntensity)
+//      if (altPrecMz.getIntensity >= 0.5*maxPeak.getIntensity)
     ) {
       val (altPredictionOpt, altPredictionNote) = this._getPrecursorMz(mzDbReader, spectrumHeader, altPrecMz.getMz, 0)
       if (altPredictionOpt.isDefined) {
