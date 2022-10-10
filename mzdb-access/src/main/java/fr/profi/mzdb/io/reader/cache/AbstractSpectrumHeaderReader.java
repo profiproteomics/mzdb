@@ -1,14 +1,10 @@
 package fr.profi.mzdb.io.reader.cache;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-
 import fr.profi.mzdb.AbstractMzDbReader;
+import fr.profi.mzdb.db.model.params.PrecursorList;
 import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.model.ActivationType;
@@ -19,6 +15,12 @@ import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 import org.apache.commons.lang3.StringUtils;
+
+import javax.xml.bind.annotation.XmlRootElement;
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author David Bouyssie
@@ -164,9 +166,16 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 				}
 				if (mzDbReader.isPrecursorListLoadingEnabled() && msLevel >= 2) {
 					String precAsStr = stmt.columnString(SpectrumHeaderColIdx.precursorList);
-					sh.setPrecursor(ParamTreeParser.parsePrecursor(precAsStr));
-					if(mzDbReader.isStringRepresentationCacheEnabled())
-						sh.setPrecursorAsString(precAsStr);
+					if (precAsStr != null && !precAsStr.isBlank()) {
+						Annotation listAnnotation = PrecursorList.class.getAnnotation(XmlRootElement.class);
+						if (precAsStr.trim().startsWith(((XmlRootElement) listAnnotation).name(), 1)) {
+							sh.setPrecursor(ParamTreeParser.parsePrecursorList(precAsStr));
+						} else {
+							sh.setPrecursor(ParamTreeParser.parsePrecursor(precAsStr));
+						}
+						if (mzDbReader.isStringRepresentationCacheEnabled())
+							sh.setPrecursorAsString(precAsStr);
+					}
 				}
 	
 				// System.out.println( (double) (System.nanoTime() - nano) / 1e3 );

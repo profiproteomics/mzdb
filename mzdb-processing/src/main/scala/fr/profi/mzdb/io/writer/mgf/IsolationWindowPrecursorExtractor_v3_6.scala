@@ -9,15 +9,6 @@ import fr.profi.mzdb.db.model.params.param.CVEntry
 import fr.profi.mzdb.model.{Peak, SpectrumHeader, SpectrumSlice}
 import fr.profi.util.metrics.Metric
 
-import com.almworks.sqlite4java.SQLiteException
-import fr.profi.ms.algo.IsotopePatternEstimator
-import fr.profi.ms.model.TheoreticalIsotopePattern
-import fr.profi.mzdb.MzDbReader
-import fr.profi.mzdb.algo.DotProductPatternScorer
-import fr.profi.mzdb.db.model.params.param.CVEntry
-import fr.profi.mzdb.model.{Peak, SpectrumHeader, SpectrumSlice}
-import fr.profi.util.metrics.Metric
-
 import scala.util.control.Breaks.{break, breakable}
 
 /**
@@ -109,7 +100,11 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
   }
 
   private def _getHeaderPrecursorMz(spectrumHeader: SpectrumHeader): Double = {
-    spectrumHeader.getPrecursor.parseFirstSelectedIonMz()
+    if (spectrumHeader.getPrecursor != null) {
+      spectrumHeader.getPrecursor.parseFirstSelectedIonMz()
+    } else {
+      spectrumHeader.getPrecursorMz();
+    }
   }
 
 

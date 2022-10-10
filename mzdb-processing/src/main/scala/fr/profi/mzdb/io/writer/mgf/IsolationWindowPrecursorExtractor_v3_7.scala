@@ -148,10 +148,12 @@ class IsolationWindowPrecursorExtractor_v3_7(mzTolPPM: Float) extends DefaultPre
   }
 
   private def _getHeaderPrecursorMz(spectrumHeader: SpectrumHeader): Double = {
-    spectrumHeader.getPrecursor.parseFirstSelectedIonMz()
+    if (spectrumHeader.getPrecursor != null) {
+      spectrumHeader.getPrecursor.parseFirstSelectedIonMz()
+    } else {
+      spectrumHeader.getPrecursorMz();
+    }
   }
-
-
 
   def _getPrecursorMz(reader: MzDbReader, spectrumHeader: SpectrumHeader, targetPrecMz: Double, targetZ: Int): (Option[(Double, Int)], String) = {
 

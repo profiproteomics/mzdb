@@ -1,10 +1,9 @@
 package fr.profi.mzdb.db.model.params;
 
-import java.util.List;
-
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSchemaType;
+import java.util.List;
 
 public class SelectedIonList extends AbstractParamTree {
 
@@ -26,4 +25,11 @@ public class SelectedIonList extends AbstractParamTree {
     return selectedIons;
   }
 
+  public void setCount(int count) {
+    this.count = count;
+  }
+
+  public void setSelectedIons(List<SelectedIon> selectedIons) {
+    this.selectedIons = selectedIons;
+  }
 }

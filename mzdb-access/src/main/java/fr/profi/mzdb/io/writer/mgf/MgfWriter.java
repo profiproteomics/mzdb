@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,6 +30,8 @@ public class MgfWriter {
 	private final int msLevel;
 	private MzDbReader mzDbReader;
 	private Map<Long, String> titleBySpectrumId = new HashMap<Long, String>();
+
+	private List<String> headerComments = null;
 
 	/**
 	 * 
@@ -60,6 +63,10 @@ public class MgfWriter {
 
 	public MzDbReader getMzDbReader() {
 		return mzDbReader;
+	}
+
+	public void setHeaderComments(List<String> headerComments) {
+		this.headerComments = headerComments;
 	}
 
 	private void _fillTitleBySpectrumId() throws SQLiteException {
@@ -109,6 +116,10 @@ public class MgfWriter {
 		final PrintWriter mgfWriter = new PrintWriter(new BufferedWriter(new FileWriter(mgfFile)));
 		final Map<Long, DataEncoding> dataEncodingBySpectrumId = this.mzDbReader.getDataEncodingBySpectrumId();
 
+		if (headerComments != null && !headerComments.isEmpty()) {
+			headerComments.forEach(l -> mgfWriter.println("# " + l));
+			mgfWriter.println();
+		}
 		int spectraCount = 0;
 		while (spectrumIterator.hasNext()) {
 			

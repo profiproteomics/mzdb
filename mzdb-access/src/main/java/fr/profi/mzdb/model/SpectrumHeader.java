@@ -9,6 +9,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import fr.profi.mzdb.db.model.AbstractTableModel;
 import fr.profi.mzdb.db.model.params.Precursor;
+import fr.profi.mzdb.db.model.params.PrecursorList;
 import fr.profi.mzdb.db.model.params.ScanList;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
 import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
@@ -78,6 +79,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
 	/** The precursor: contains selected ions list */
 	protected Precursor precursor = null;
+
+	protected PrecursorList precursorList = null;
+
 	protected String precursorAsString;
 
 	protected String paramTreeAsString; //String representation of paramTree. Only For Spectrum Header (?)
@@ -401,7 +405,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 				if (precursorAsStr  != null) {
 					header.precursor = ParamTreeParser.parsePrecursor(precursorAsStr);
 					if(cacheStringRepresentation)
-						header.precursorAsString =precursorAsStr;
+						header.precursorAsString = precursorAsStr;
 				}
 			}
 		}

@@ -1,11 +1,11 @@
 package fr.profi.mzdb.io.reader.table;
 
+import fr.profi.mzdb.db.model.params.*;
+import fr.profi.mzdb.util.jaxb.XercesSAXParser;
+
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.sax.SAXSource;
-
-import fr.profi.mzdb.db.model.params.*;
-import fr.profi.mzdb.util.jaxb.XercesSAXParser;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -21,6 +21,7 @@ public class ParamTreeParser {
 	public static Unmarshaller componentListUnmarshaller = null;
 	public static Unmarshaller scanListUnmarshaller = null;
 	public static Unmarshaller precursorUnmarshaller = null;
+	public static Unmarshaller precursorListUnmarshaller = null;
 	public static Unmarshaller refParamGroupUnmarshaller = null;
 
 	/**
@@ -32,7 +33,7 @@ public class ParamTreeParser {
 	synchronized public static ParamTree parseParamTree(String paramTreeAsStr) {
 		
 		ParamTree paramTree = null;
-		if(paramTreeAsStr == null)
+		if(paramTreeAsStr == null || paramTreeAsStr.isBlank())
 			return null;
 		try {
 			if( paramTreeUnmarshaller == null ) {
@@ -52,7 +53,7 @@ public class ParamTreeParser {
 	synchronized public static FileContentParams parseFileContent(String paramTreeAsStr) {
 
 		FileContentParams paramTree = null;
-		if(paramTreeAsStr == null)
+		if(paramTreeAsStr == null || paramTreeAsStr.isBlank())
 			return null;
 		try {
 			if( fileContentUnmarshaller == null ) {
@@ -72,7 +73,7 @@ public class ParamTreeParser {
 	synchronized public static ScanList parseScanList(String scanListAsStr) {
 
 		ScanList scanList = null;
-		if(scanListAsStr == null)
+		if(scanListAsStr == null || scanListAsStr.isBlank())
 			return null;
 		try {
 			if( scanListUnmarshaller == null ) {
@@ -91,7 +92,7 @@ public class ParamTreeParser {
 
 	synchronized public static Precursor parsePrecursor(String precursorAsStr) {
 		Precursor prec = null;
-		if(precursorAsStr == null)
+		if(precursorAsStr == null || precursorAsStr.isBlank())
 			return null;
 		try {
 			if( precursorUnmarshaller == null ) {
@@ -99,8 +100,27 @@ public class ParamTreeParser {
 			}
 			
 			SAXSource source = XercesSAXParser.getSAXSource( precursorAsStr );
-			prec = (Precursor) precursorUnmarshaller.unmarshal(source);
+			prec = (Precursor)precursorUnmarshaller.unmarshal(source);
 			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return prec;
+	}
+
+	synchronized public static Precursor parsePrecursorList(String precursorListAsStr) {
+		Precursor prec = null;
+		if(precursorListAsStr == null || precursorListAsStr.isBlank())
+			return null;
+		try {
+			if( precursorListUnmarshaller == null ) {
+				precursorListUnmarshaller = JAXBContext.newInstance(PrecursorList.class).createUnmarshaller();
+			}
+
+			SAXSource source = XercesSAXParser.getSAXSource( precursorListAsStr );
+			PrecursorList precList = (PrecursorList) precursorListUnmarshaller.unmarshal(source);
+			prec = ((precList.getPrecursors() == null) || precList.getPrecursors().isEmpty()) ? null : precList.getPrecursors().get(0);
 		}  catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -111,7 +131,7 @@ public class ParamTreeParser {
 	synchronized public static ComponentList parseComponentList(String paramTreeAsStr) {
 
 		ComponentList paramTree = null;
-		if(paramTreeAsStr == null)
+		if(paramTreeAsStr == null || paramTreeAsStr.isBlank())
 			return null;
 		
 		try {
@@ -132,7 +152,7 @@ public class ParamTreeParser {
 	synchronized public static ReferencableParamGroup parseReferencableParamGroup(String paramTreeAsStr) {
 
 		ReferencableParamGroup paramTree = null;
-		if(paramTreeAsStr == null)
+		if(paramTreeAsStr == null || paramTreeAsStr.isBlank())
 			return null;
 
 		try {
