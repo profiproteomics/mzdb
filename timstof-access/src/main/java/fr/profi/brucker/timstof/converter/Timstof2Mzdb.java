@@ -12,8 +12,12 @@ import com.github.mzdb4s.msdata.*;
 import com.github.sqlite4s.SQLiteFactory$;
 import fr.profi.brucker.timstof.io.TimstofReader;
 import fr.profi.brucker.timstof.model.AbstractTimsFrame;
+import fr.profi.brucker.timstof.model.SpectrumGeneratingMethod;
 import fr.profi.brucker.timstof.model.TimsPASEFFrame;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -476,7 +480,7 @@ public class Timstof2Mzdb {
         ConverterArguments convertArgs = new ConverterArguments();
         JCommander cmd =  JCommander.newBuilder().addObject(convertArgs).build();
 
-        filepath = ""; //to comment to use local file by default... Dev mode only !
+        //filepath = ""; //to comment to use local file by default... Dev mode only !
         try {
             cmd.parse(args);
             String fileToConvert = filepath;

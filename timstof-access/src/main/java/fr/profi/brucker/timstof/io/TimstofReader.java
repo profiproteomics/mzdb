@@ -3,8 +3,8 @@ package fr.profi.brucker.timstof.io;
 
 import fr.profi.brucker.timstof.TDFLibrary;
 import fr.profi.brucker.timstof.TDFNativeLibrariesFactory;
-import fr.profi.brucker.timstof.model.Precursor;
 import fr.profi.brucker.timstof.model.AbstractTimsFrame;
+import fr.profi.brucker.timstof.model.Precursor;
 import fr.profi.brucker.timstof.model.TimsPASEFFrame;
 import fr.profi.brucker.timstof.util.ArraysUtil;
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
@@ -21,7 +21,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class TimstofReader {
 
@@ -196,14 +198,14 @@ public class TimstofReader {
                     int startScanIntensities = d;
                     d += numberPeaks;
 
-                    Int2FloatMap indiceInstensityMap = new Int2FloatOpenHashMap(numberPeaks*4/3+1);
+                    Int2FloatMap indiceIntensityMap = new Int2FloatOpenHashMap(numberPeaks*4/3+1);
                     for(int peakIndex =0; peakIndex < numberPeaks; peakIndex++){
                         int indix = scanBuffer[startIndices+peakIndex];
                         indicesToSearch[indicesToSearchIndex++] = indix;
-                        indiceInstensityMap.put(indix, (float)scanBuffer[startScanIntensities+peakIndex]);
+                        indiceIntensityMap.put(indix, (float)scanBuffer[startScanIntensities+peakIndex]);
                     }
 
-                    scanIndices2IntensityMap.put(i, indiceInstensityMap);
+                    scanIndices2IntensityMap.put(i, indiceIntensityMap);
                 } //End at least 1 peak in scan
             } // End for all scans
 
@@ -275,11 +277,10 @@ public class TimstofReader {
 //                LOG.error(" !!! could not convert scans to ion mobility for frame {} scan {}.", frameId);
 //            } else{
 //                for(int i =0 ; i<scanMsMsDataMap.size(); i++){
-//
 //                    System.out.println(" Scans "+scanAsDbl[i]+" => Ion Mobility "+ionMobilities[i]);
-//
 //                }
 //            }
+
           //-> VDS For timing logs
 //          if(nbrRead % 100 == 0){
 //              LOG.debug(" TIME reading "+nbrRead+" frame(s):\tScans data read\t"+time_readScans+ "\tExtract peaks from buffer \t"+time_extractPeaks+"\tGet masses from indexes\t"+time_indiceToMass+"\tmap from indexes to mass\t"+time_indiceToMassMapS1+" - "+time_indiceToMassMapS2+" - "+time_indiceToMassMapS3+" - "+time_indiceToMassMap);

@@ -1,6 +1,5 @@
 package fr.profi.brucker.timstof.model;
 
-import fr.profi.brucker.timstof.converter.SpectrumGeneratingMethod;
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.doubles.Double2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;

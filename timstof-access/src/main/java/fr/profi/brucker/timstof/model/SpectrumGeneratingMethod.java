@@ -1,4 +1,4 @@
-package fr.profi.brucker.timstof.converter;
+package fr.profi.brucker.timstof.model;
 
 public enum SpectrumGeneratingMethod {
   FULL,

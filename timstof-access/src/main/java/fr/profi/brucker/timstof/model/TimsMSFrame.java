@@ -1,6 +1,5 @@
 package fr.profi.brucker.timstof.model;
 
-import fr.profi.brucker.timstof.converter.SpectrumGeneratingMethod;
 import fr.profi.mzdb.algo.signal.filtering.SavitzkyGolaySmoother;
 import fr.profi.mzdb.algo.signal.filtering.SavitzkyGolaySmoothingConfig;
 import fr.profi.mzdb.util.math.DerivativeAnalysis;
@@ -12,7 +11,9 @@ import it.unimi.dsi.fastutil.floats.Float2ObjectMap;
 import it.unimi.dsi.fastutil.floats.Float2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.floats.FloatComparators;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -31,6 +32,10 @@ public class TimsMSFrame extends AbstractTimsFrame{
   private Int2ObjectMap<Spectrum> m_spectrumByScan;
   private Float2ObjectMap<DoubleArrayList> m_allIntensity2Masses; //Used to test create SingleSpectrum grouping nearest massed and using higher intensity
   private Double2FloatMap m_mass2retainedIntensityMap; // keep all masses and higher intensity. USe Smoother and max point to create SingleSpectrum
+
+  private int scanStart = Integer.MAX_VALUE;
+
+  private int scanEnd = Integer.MIN_VALUE;
 
   public TimsMSFrame(int id, int nbrScans, int nbrPeaks, int scanMode, int maxIntensity, int summedIntensity, double time) {
     super(id, nbrScans, nbrPeaks, scanMode, MsMsType.MS, maxIntensity, summedIntensity, time);
@@ -98,8 +103,11 @@ public class TimsMSFrame extends AbstractTimsFrame{
           }
         }
         totalIndex += index;
+        scanStart = Math.min(scanStart, scId);
+        scanEnd = Math.max(scanEnd, scId);
+
         //Keep m_spectrumByScan for MS ?
-        m_spectrumByScan.put(scId, new Spectrum("Frame_"+m_id+"-scan_"+scId,1, (float)getTime(), scanMasses, scanIntensities));
+        m_spectrumByScan.put(scId, new Spectrum("Frame_"+m_id+"-scan_"+scId,1, (float)getTime(), massInt));
       }
 
     m_spectrumDataSet = true;
@@ -126,15 +134,27 @@ public class TimsMSFrame extends AbstractTimsFrame{
         createSingleSpFromAllSpectra();
         break;
       case MERGED:
-        createMergedSingleSpFromAllInstensitiesMap();
+        createMergedSingleSpFromAllIntensitiesMap();
         break;
       case SMOOTH:
-        createSingleSpectrumFromMassInstensityMap();
+        createSingleSpectrumFromMassIntensityMap();
         break;
     }
 
   }
 
+
+  public int getScanStart() {
+    return scanStart;
+  }
+
+  public int getScanEnd() {
+    return scanEnd;
+  }
+
+  public int getScanCount() {
+    return m_spectrumByScan.size();
+  }
   @Override
   public int getSpectrumCount(){
     return 1;
@@ -149,7 +169,7 @@ public class TimsMSFrame extends AbstractTimsFrame{
   static long time04 =0;
 
   //For SMOOTH method
-  private void createSingleSpectrumFromMassInstensityMap(){
+  private void createSingleSpectrumFromMassIntensityMap(){
     long start = System.currentTimeMillis();//-- VDS For Duration LOG
     nbrSp++;
     int nbrPeakMS = 0;
@@ -251,7 +271,7 @@ public class TimsMSFrame extends AbstractTimsFrame{
   }
 
     //For MERGED method
-  private void createMergedSingleSpFromAllInstensitiesMap(){
+  private void createMergedSingleSpFromAllIntensitiesMap(){
         long start = System.currentTimeMillis();
         nbrSp++;
         Double2FloatMap retainedMasses2Intensity = new Double2FloatOpenHashMap();

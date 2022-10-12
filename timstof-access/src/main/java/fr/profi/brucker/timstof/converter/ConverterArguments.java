@@ -2,6 +2,7 @@ package fr.profi.brucker.timstof.converter;
 
 import com.beust.jcommander.IStringConverter;
 import com.beust.jcommander.Parameter;
+import fr.profi.brucker.timstof.model.SpectrumGeneratingMethod;
 
 public class ConverterArguments {
 

@@ -1,6 +1,5 @@
 package fr.profi.brucker.timstof.model;
 
-import fr.profi.brucker.timstof.converter.SpectrumGeneratingMethod;
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -50,6 +49,12 @@ public class TimsPASEFFrame extends AbstractTimsFrame {
     return null;
   }
 
+  public PasefMsMsData getPrecursorPasefMsMsData(int precursorIndex) {
+    if (m_pasefMsMsInfoByPrecursor != null && m_spectrumDataSet)
+      return m_pasefMsMsInfoByPrecursor.get(precursorIndex);
+    else
+      return null;
+  }
 
   public Spectrum getPrecursorSpectrum(int precursorIndex) {
     if (m_pasefMsMsInfoByPrecursor != null && m_spectrumDataSet)

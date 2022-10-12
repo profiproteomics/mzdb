@@ -40,7 +40,7 @@ public class Spectrum {
         }
     }
 
-    void  addPeaks(double[] masses, float[] intensities){
+    public void  addPeaks(double[] masses, float[] intensities){
         if(masses.length!=intensities.length)
             throw  new IllegalArgumentException("Specified masses and intensities array must have same length ");
         double[] newMasses = Arrays.copyOf(m_masses, m_masses.length + masses.length);
@@ -54,7 +54,7 @@ public class Spectrum {
         m_intensities = newIntensities;
     }
 
-    void  addPeaks(Double2FloatMap masses2Intensities){
+    public void  addPeaks(Double2FloatMap masses2Intensities){
         DoubleArrayList masses =new DoubleArrayList(masses2Intensities.keySet());
         masses.sort(DoubleComparators.NATURAL_COMPARATOR);
         double[] newMasses = Arrays.copyOf(m_masses, m_masses.length + masses.size());

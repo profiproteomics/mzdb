@@ -1,12 +1,10 @@
 package fr.profi.brucker.timstof;
 
-import fr.profi.brucker.timstof.converter.SpectrumGeneratingMethod;
 import fr.profi.brucker.timstof.io.TimstofReader;
 import fr.profi.brucker.timstof.model.*;
 import org.apache.commons.collections4.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.io.File;
 import java.util.*;
