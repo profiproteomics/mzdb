@@ -252,14 +252,13 @@ object Commands extends LazyLogging {
     def getPutativeFeatures(): Array[PutativeFeature] = {
       Source.fromFile(putativeFtsFile).getLines.map { l =>
         val splitted = "\\s".r.split(l)
-        val pf = new PutativeFeature(
+        new PutativeFeature(
           id = Feature.generateNewId(),
           mz = splitted(0).toDouble,
           charge = splitted(1).toInt,
           elutionTime = splitted(2).toFloat,
-          evidenceMsLevel = 1)
-        pf.isPredicted = true
-        pf
+          evidenceMsLevel = 1,
+          isPredicted = true)
       }.toArray
     }
 

@@ -4,11 +4,10 @@
   <parent>
     <artifactId>mzdb-pom</artifactId>
     <groupId>fr.profi</groupId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
   </parent>
 
   <artifactId>mzdb-access_${scala.version}</artifactId> <!-- scala version from profipom-->
-
   <description>The mzDB access Java library</description>
 
 

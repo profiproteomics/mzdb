@@ -1,30 +1,34 @@
 package fr.profi.mzdb.algo
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.almworks.sqlite4java.SQLiteConnection
-
 import fr.profi.ms.model.TheoreticalIsotopePattern
-import fr.profi.mzdb.MzDbReader
+import fr.profi.mzdb.{MzDbReader, Settings}
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.model.SpectrumData
 import com.typesafe.scalalogging.LazyLogging
+import fr.profi.mzdb.util.ms.MsUtils
+
+import java.util
 
 trait IIsotopicPatternPredictor extends LazyLogging {
 
+  val isotopicPatternScorer = IsotopicPatternScorer(Settings.isotopicPatternScorer)
+
   def isMatchReliable(
     spectrumData: SpectrumData,
-    ppm: Float,
+    ppm: Double,
     moz: Double,
     charge: Int,
     mozTolInDa: Double
   ): Boolean = {
 
-    val putativePatterns = IsotopicPatternScorer.calcIsotopicPatternHypotheses(spectrumData, moz, ppm)
-    val bestPattern = putativePatterns.head
+    val putativePatterns = isotopicPatternScorer.calcIsotopicPatternHypotheses(spectrumData, moz, ppm)
+    val bestPattern = isotopicPatternScorer.selectBestPatternHypothese(putativePatterns)
     
     (bestPattern._2.charge == charge) && (math.abs(bestPattern._2.monoMz - moz) <= mozTolInDa)
   }
+
 
 }
 
@@ -34,7 +38,6 @@ object MzDbPatternPredictor extends IIsotopicPatternPredictor {
     reader: MzDbReader,
     sqliteConn: SQLiteConnection,
     peakel: Peakel,
-    charge: Int,
     mozTolInDa: Double
   ): (Double, TheoreticalIsotopePattern) = {
 
@@ -53,13 +56,12 @@ object MzDbPatternPredictor extends IIsotopicPatternPredictor {
     val ppmTol = if (peakel.getLeftHwhmMean == 0) (1e6 * mozTolInDa / peakel.getApexMz()).toFloat
     else (1e6 * peakel.getLeftHwhmMean / apexMz).toFloat
     
-    val putativePatterns = IsotopicPatternScorer.calcIsotopicPatternHypotheses(
+    val putativePatterns = isotopicPatternScorer.calcIsotopicPatternHypotheses(
       sliceOpt.get.getData(),
       peakel.getApexMz(),
       ppmTol
     )
-    
-    putativePatterns.head
+    isotopicPatternScorer.selectBestPatternHypothese(putativePatterns)
   }
 
   def assessReliability(
@@ -90,7 +92,6 @@ object MzDbPatternPredictor extends IIsotopicPatternPredictor {
         val ppm = if (matchingPeakel.getLeftHwhmMean == 0) (1e6 * mozTolInDa / matchingPeakel.getApexMz()).toFloat else (1e6 * matchingPeakel.getLeftHwhmMean / apexMz).toFloat
         val isReliable = isMatchReliable(sliceOpt.get.getData(), ppm, matchingPeakel.getApexMz(), charge, mozTolInDa)
         filteredPeakels += Tuple2(matchingPeakel, isReliable)
-
       }
     }
 
@@ -103,16 +104,12 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
   def getBestExplanation(
     mozTolPPM: Float,
     coelutingPeakels: Seq[Peakel],
-    peakel: Peakel,
-    charge: Int,
-    mozTolInDa: Double
+    peakel: Peakel
   ): (Double, TheoreticalIsotopePattern) = {
 
-    val(mzList, intensityList) = this.slicePeakels(coelutingPeakels, peakel)
-
-    val spectrumData = new SpectrumData(mzList.toArray, intensityList.toArray)
-    val putativePatterns = IsotopicPatternScorer.calcIsotopicPatternHypotheses(spectrumData, peakel.getApexMz(), mozTolPPM)
-    putativePatterns.head
+    val spectrumData: SpectrumData = buildSpectrumFromPeakels(coelutingPeakels, peakel)
+    val putativePatterns = isotopicPatternScorer.calcIsotopicPatternHypotheses(spectrumData, peakel.getApexMz(), mozTolPPM)
+    isotopicPatternScorer.selectBestPatternHypothese(putativePatterns)
   }
 
   def assessReliability(
@@ -125,33 +122,71 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
 
     val filteredPeakels = new ArrayBuffer[(Peakel, Boolean)](matchingPeakels.length)
 
-    // DBO: the if statement was previously used to decrease the impact of the mzDB lookup
-    // Now the lookup is performed using the in-memory R*Tree
-    //if (matchingPeakels.length == 1) {
     for (matchingPeakel <- matchingPeakels) {
-
-      val (mzList, intensityList) = slicePeakels(coelutingPeakels, matchingPeakel)
-
-      val spectrumData = new SpectrumData(mzList.toArray, intensityList.toArray)
+      val spectrumData: SpectrumData = buildSpectrumFromPeakels(coelutingPeakels, matchingPeakel)
       val isReliable = isMatchReliable(spectrumData, mozTolPPM, matchingPeakel.getApexMz(), charge, mozTolInDa)
-
-//      logger.info("assess reliability for mz={}, spectrumId={} against {} data leads to {}", matchingPeakel.getApexMz(), matchingPeakel.getApexSpectrumId(), mzList.size, isReliable) 
-      
       filteredPeakels += Tuple2(matchingPeakel, isReliable)
-
     }
 
     filteredPeakels
   }
 
-  def slicePeakels(coelutingPeakels: Seq[Peakel],matchingPeakel: Peakel): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
-    // Slice the obtained peakels to create a virtual spectrum
-    val matchingSpectrumId = matchingPeakel.getApexSpectrumId()
+  def buildSpectrumFromPeakels(coelutingPeakels: Seq[Peakel], peakel: Peakel): SpectrumData = {
+    val (mzList, intensityList) = this.slicePeakels(coelutingPeakels, peakel.getApexSpectrumId(), Settings.peakelsSlicingSpan)
+    val spectrumData = new SpectrumData(mzList.toArray, intensityList.toArray)
+    spectrumData
+  }
+
+
+  /**
+   * Slice the list of peakels at a specified Spectrum Id to build a virtual spectrum
+   *
+   * @param coelutingPeakels
+   * @param matchingSpectrumId
+   * @return
+   */
+  def slicePeakels(coelutingPeakels: Seq[Peakel], matchingSpectrumId: Long, span: Int = 1): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
     val coelutingPeakelsCount = coelutingPeakels.length
     
     val mzList = new ArrayBuffer[Double](coelutingPeakelsCount)
     val intensityList = new ArrayBuffer[Float](coelutingPeakelsCount)
-      
+
+    coelutingPeakels.sortBy(_.getApexMz()).map { peakel =>
+
+          var index = util.Arrays.binarySearch(peakel.getSpectrumIds, matchingSpectrumId)
+          var foundPeak = (index >= 0) && (index < peakel.peaksCount)
+          if (!foundPeak) {
+            index = ~index
+            foundPeak = index > 0 && index < peakel.peaksCount
+          }
+          var intensitySum = 0.0f
+          var mzSum = 0.0
+          var count = 0
+          if (foundPeak) {
+            val minBound = Math.max(0, index - span)
+            val maxBound = Math.min(index + span, peakel.getPeaksCount - 1)
+            for (i <- minBound to maxBound) {
+              intensitySum = intensitySum + peakel.intensityValues(i)
+              mzSum = mzSum + peakel.mzValues(i);
+              count = count + 1
+            }
+            mzList += (mzSum/count) //peakel.mzValues(index)
+            intensityList += (intensitySum / count)
+          }
+      }
+
+    
+    (mzList, intensityList)
+  }
+
+
+  def slicePeakelsV1(coelutingPeakels: Seq[Peakel],matchingSpectrumId: Long): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
+    // Slice the obtained peakels to create a virtual spectrum
+    val coelutingPeakelsCount = coelutingPeakels.length
+
+    val mzList = new ArrayBuffer[Double](coelutingPeakelsCount)
+    val intensityList = new ArrayBuffer[Float](coelutingPeakelsCount)
+
     coelutingPeakels.sortBy(_.getApexMz()).map { peakel =>
       val peakelCursor = peakel.getNewCursor()
       var foundPeak = false
@@ -165,8 +200,8 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
         }
       }
     }
-    
+
     (mzList, intensityList)
   }
-  
+
 }
