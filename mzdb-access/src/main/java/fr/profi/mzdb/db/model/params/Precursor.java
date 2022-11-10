@@ -1,10 +1,10 @@
 package fr.profi.mzdb.db.model.params;
 
+import fr.profi.mzdb.db.model.params.param.CVEntry;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import fr.profi.mzdb.db.model.params.param.CVEntry;
 
 @XmlRootElement(name = "precursor")
 public class Precursor {
@@ -49,6 +49,17 @@ public class Precursor {
 	  
       return Double.parseDouble(precMzAsStr);
   }
-  
+
+  public void setIsolationWindow(IsolationWindowParamTree isolationWindow) {
+    this.isolationWindow = isolationWindow;
+  }
+
+  public void setSelectedIonList(SelectedIonList selectedIonList) {
+    this.selectedIonList = selectedIonList;
+  }
+
+  public void setActivation(Activation activation) {
+    this.activation = activation;
+  }
 }
  

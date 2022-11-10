@@ -233,6 +233,16 @@
 
       </plugin>
 
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <!-- Version inherited from ProFI-Pom -->
+        <configuration>
+          <descriptors>
+            <descriptor>assembly/assembly.xml</descriptor>
+          </descriptors>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 
