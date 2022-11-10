@@ -82,9 +82,9 @@
 
     <!-- Smoothing (algorithmic) -->
     <dependency>
-      <groupId>sgfilter</groupId>
+      <groupId>mr.go.sgfilter</groupId>
       <artifactId>sgfilter</artifactId>
-      <version>v1_2r25</version>
+      <version>1.2</version>
     </dependency>
 
     <!-- Wavelet -->
