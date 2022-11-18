@@ -1,18 +1,20 @@
-package fr.profi.brucker.timstof.io;
+package fr.profi.bruker.timstof.io;
 
 
-import fr.profi.brucker.timstof.TDFLibrary;
-import fr.profi.brucker.timstof.TDFNativeLibrariesFactory;
-import fr.profi.brucker.timstof.model.AbstractTimsFrame;
-import fr.profi.brucker.timstof.model.Precursor;
-import fr.profi.brucker.timstof.model.TimsPASEFFrame;
-import fr.profi.brucker.timstof.util.ArraysUtil;
+import fr.profi.bruker.timstof.TDFLibrary;
+import fr.profi.bruker.timstof.TDFNativeLibrariesFactory;
+import fr.profi.bruker.timstof.model.AbstractTimsFrame;
+import fr.profi.bruker.timstof.model.Precursor;
+import fr.profi.bruker.timstof.model.TimsPASEFFrame;
+import fr.profi.bruker.timstof.util.ArraysUtil;
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.doubles.Double2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +101,7 @@ public class TimstofReader {
 
         if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
-        TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
+        TDFMetadataReader metaDataReader = m_cachedMetaReaderByHandle.get(fileHandle);
 
         int nbrFrames = metaDataReader.getFrameCount();
         IntArrayList framesIds = new IntArrayList(nbrFrames*4/3+1);
@@ -123,7 +125,7 @@ public class TimstofReader {
         if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
 
-        TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
+        TDFMetadataReader metaDataReader = m_cachedMetaReaderByHandle.get(fileHandle);
         metaDataReader.readPasefMsMsInfo(frames);
     }
 
@@ -199,7 +201,7 @@ public class TimstofReader {
                     d += numberPeaks;
 
                     Int2FloatMap indiceIntensityMap = new Int2FloatOpenHashMap(numberPeaks*4/3+1);
-                    for(int peakIndex =0; peakIndex < numberPeaks; peakIndex++){
+                    for(int peakIndex = 0; peakIndex < numberPeaks; peakIndex++){
                         int indix = scanBuffer[startIndices+peakIndex];
                         indicesToSearch[indicesToSearchIndex++] = indix;
                         indiceIntensityMap.put(indix, (float)scanBuffer[startScanIntensities+peakIndex]);
@@ -226,9 +228,9 @@ public class TimstofReader {
 //            long step21 = System.currentTimeMillis();
 //            time_indiceToMass += step21-step2; //--> VDS-TIME: Ecoli (10Go) ~1min
 
-            //Create Indice to Mass Map
+          //Create Indice to Mass Map
           Int2DoubleMap indiceToMassMap = new Int2DoubleOpenHashMap(nbPeaksTotal*4/3+1);
-          for(int indiceIndex =0; indiceIndex < scanMasses.length; indiceIndex++)
+          for(int indiceIndex = 0; indiceIndex < scanMasses.length; indiceIndex++)
             indiceToMassMap.put(indicesToSearch[indiceIndex], scanMasses[indiceIndex]);
 
           //Convert indice,intensity tuple to mass,intensity
@@ -244,7 +246,7 @@ public class TimstofReader {
               scansEntry = scansIter.next();
               int scanId = scansEntry.getIntKey();
               Int2FloatMap indiceToIntensity = scansEntry.getValue();
-              Double2FloatMap massIntentisyMap = new Double2FloatOpenHashMap(indiceToIntensity.size()*4/3+1);
+              Double2FloatMap massIntensityMap = new Double2FloatOpenHashMap(indiceToIntensity.size()*4/3+1);
 //              long step23 = System.currentTimeMillis();
 //              time_indiceToMassMapS2 += step23-startWh;//--> VDS-TIME: Ecoli (10Go) <1s
 
@@ -253,11 +255,11 @@ public class TimstofReader {
               while (indiceToIntensityIt.hasNext()){
                 nextInd2IntensityEntry = indiceToIntensityIt.next();
                 int nextIndice = nextInd2IntensityEntry.getIntKey();
-                massIntentisyMap.put(indiceToMassMap.get(nextIndice), nextInd2IntensityEntry.getFloatValue());
+                massIntensityMap.put(indiceToMassMap.get(nextIndice), nextInd2IntensityEntry.getFloatValue());
               }
 //              long step24 = System.currentTimeMillis();
 //              time_indiceToMassMapS3 += step24-step23;//--> VDS-TIME: Ecoli (10Go) ~6-7mins
-              scanMsMsDataMap.put(scanId,massIntentisyMap);
+              scanMsMsDataMap.put(scanId,massIntensityMap);
           }
 //          long end = System.currentTimeMillis();
           //--> VDS-TIME:  Ecoli (10Go). FROM step2 In "Timstof2MzDB" ~15.2min // = time_indiceToMassMapS2 +  time_indiceToMassMapS3 + scanMsMsDataMap.put: ~ 6-7min
@@ -312,6 +314,30 @@ public class TimstofReader {
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
         TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
         return metaDataReader.readGlobalMetaData();
-
     }
+
+    public List<Pair<Integer, Double>> getIonMobilityIndexes(long fileHandle) {
+        if(!m_cachedMetaReaderByHandle.containsKey(fileHandle))
+            m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
+        TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
+        final Map<String, String> propertyGroup = metaDataReader.readPropertyGroup(1);
+        int n = Integer.parseInt(propertyGroup.get("IMS_Cycle_RampTime_Trig")) + 1;
+        double[] scanAsDbl = new double [n];
+        double[] ionMobilities = new double [n];
+        for(int i = 0; i < n; i++){
+            scanAsDbl[i] = i;
+        }
+        long error_stat = m_tdfLib.tims_scannum_to_oneoverk0(fileHandle, 1, scanAsDbl , ionMobilities, ionMobilities.length);
+        if (0 == error_stat) {
+            LOG.error(" !!! could not convert scans to ion mobility for frame 1");
+        } else {
+            List<Pair<Integer, Double>> indices = new ArrayList<>(n);
+            for(int i = 0; i < n; i++){
+                indices.add(new ImmutablePair<>((int)scanAsDbl[i], ionMobilities[i]));
+            }
+            return indices;
+        }
+        return new ArrayList();
+    }
+
  }

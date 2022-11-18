@@ -1,7 +1,7 @@
-package fr.profi.brucker.timstof.model;
+package fr.profi.bruker.timstof.model;
 
 import com.sun.jna.Pointer;
-import fr.profi.brucker.timstof.TDFLibrary;
+import fr.profi.bruker.timstof.TDFLibrary;
 
 import java.util.HashMap;
 import java.util.Map;

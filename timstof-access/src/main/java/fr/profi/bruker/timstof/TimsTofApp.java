@@ -1,7 +1,7 @@
-package fr.profi.brucker.timstof;
+package fr.profi.bruker.timstof;
 
-import fr.profi.brucker.timstof.io.TimstofReader;
-import fr.profi.brucker.timstof.model.*;
+import fr.profi.bruker.timstof.io.TimstofReader;
+import fr.profi.bruker.timstof.model.*;
 import org.apache.commons.collections4.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

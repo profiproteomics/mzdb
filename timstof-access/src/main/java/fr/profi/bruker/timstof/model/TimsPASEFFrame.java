@@ -1,4 +1,4 @@
-package fr.profi.brucker.timstof.model;
+package fr.profi.bruker.timstof.model;
 
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;

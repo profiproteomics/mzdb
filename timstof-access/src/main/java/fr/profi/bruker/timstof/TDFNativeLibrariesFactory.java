@@ -1,11 +1,4 @@
-package fr.profi.brucker.timstof;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Locale;
+package fr.profi.bruker.timstof;
 
 import fr.profi.util.StringUtils;
 import fr.profi.util.ThreadLogger;
@@ -13,6 +6,9 @@ import fr.profi.util.system.OSInfo;
 import fr.profi.util.system.OSType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.Locale;
 
 public class TDFNativeLibrariesFactory {
 

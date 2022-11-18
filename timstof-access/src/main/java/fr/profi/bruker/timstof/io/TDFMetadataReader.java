@@ -1,6 +1,6 @@
-package fr.profi.brucker.timstof.io;
+package fr.profi.bruker.timstof.io;
 
-import fr.profi.brucker.timstof.model.*;
+import fr.profi.bruker.timstof.model.*;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -149,7 +149,7 @@ public class TDFMetadataReader {
 
    void readPasefMsMsInfo(List<TimsPASEFFrame> frames){
 
-        Int2ObjectMap<List<PasefMsMsData>> pasefsMsMsInfoByFrId = new Int2ObjectOpenHashMap<>();
+        Int2ObjectMap<List<PasefMsMsData>> pasefMsMsInfoByFrameId = new Int2ObjectOpenHashMap<>();
         Int2ObjectMap<AbstractTimsFrame> framesById = new Int2ObjectOpenHashMap<>();
         StringBuilder sb = new StringBuilder();
         for(int i=0; i<frames.size(); i++){
@@ -179,13 +179,13 @@ public class TDFMetadataReader {
                     int precursorId = rsFrames.getInt(7);
                     PasefMsMsData msmsInfo = new PasefMsMsData(frId, startScan, endScan, isolationmz, isolationWidth,collisionEnergy, precursorId, (float)framesById.get(frId).getTime());
                     msmsInfo.setPrecursor(m_allPrecursors.get(precursorId));
-                    List<PasefMsMsData> frameMsMsInfos = pasefsMsMsInfoByFrId.getOrDefault(frId, new ArrayList<>());
+                    List<PasefMsMsData> frameMsMsInfos = pasefMsMsInfoByFrameId.getOrDefault(frId, new ArrayList<>());
                     frameMsMsInfos.add(msmsInfo);
-                    pasefsMsMsInfoByFrId.put(frId, frameMsMsInfos);
+                    pasefMsMsInfoByFrameId.put(frId, frameMsMsInfos);
                 }
                 rsFrames.close();
                 for(TimsPASEFFrame fr : frames){
-                    fr.setPasefMsMsData(pasefsMsMsInfoByFrId.getOrDefault(fr.getId(), new ArrayList<>()));
+                    fr.setPasefMsMsData(pasefMsMsInfoByFrameId.getOrDefault(fr.getId(), new ArrayList<>()));
                 }
             }
         }catch (SQLException e) {
@@ -220,6 +220,31 @@ public class TDFMetadataReader {
             return globalProperties;
         }
     }
+
+
+    public Map<String, String> readPropertyGroup(int groupId) {
+        Connection connection = getConnection();
+        Map<String,String> groupProperties = new HashMap<>();
+        try{
+            if(connection != null) {
+                Statement statement = connection.createStatement();
+                statement.setQueryTimeout(30); // set timeout to 30 sec.
+
+                ResultSet rsGlobalMD = statement.executeQuery("SELECT Property, Value, PermanentName FROM GroupProperties gp, PropertyDefinitions pd where gp.Property = pd.Id AND gp.PropertyGroup = "+Integer.toString(groupId));
+                while (rsGlobalMD.next()){
+                    Integer id = rsGlobalMD.getInt(1);
+                    String val = rsGlobalMD.getString(2);
+                    String name = rsGlobalMD.getString(3);
+                    groupProperties.put(name,val);
+                }
+            }
+            return groupProperties;
+        } catch (SQLException e) {
+            LOG.error(e.getMessage());
+            return groupProperties;
+        }
+    }
+
 
     private Connection getConnection(){
         Connection connection;

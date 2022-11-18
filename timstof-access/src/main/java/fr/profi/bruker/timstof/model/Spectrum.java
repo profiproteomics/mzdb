@@ -1,4 +1,4 @@
-package fr.profi.brucker.timstof.model;
+package fr.profi.bruker.timstof.model;
 
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
@@ -60,7 +60,7 @@ public class Spectrum {
         double[] newMasses = Arrays.copyOf(m_masses, m_masses.length + masses.size());
         float[] newIntensities = Arrays.copyOf(m_intensities, m_intensities.length + masses.size());
         int i = m_masses.length;
-        for(double mass: masses){
+        for(double mass : masses){
             newMasses[i] = mass;
             newIntensities[i] = masses2Intensities.get(mass);
             i++;

@@ -1,4 +1,4 @@
-package fr.profi.brucker.timstof.model;
+package fr.profi.bruker.timstof.model;
 
 import it.unimi.dsi.fastutil.doubles.Double2FloatMap;
 import it.unimi.dsi.fastutil.doubles.Double2FloatOpenHashMap;
@@ -176,35 +176,6 @@ public abstract class AbstractTimsFrame implements Comparable<AbstractTimsFrame>
 
     public abstract void setMassIntensityByScan(Int2ObjectMap<Double2FloatMap> massIntByScan);
 
-//    public void setMassIntensityByScan( Map<Integer, Map<Double, Float>> massIntByScan){
-//        List<Integer> scansIndex = new ArrayList<>( massIntByScan.keySet());
-//        if(m_spectrumByScan == null)
-//            m_spectrumByScan = new HashMap<>();
-//        for(Integer scId : scansIndex) {
-//            Map<Double, Float> massInt = massIntByScan.get(scId);
-//            double[] scanMasses = new double[massInt.size()];
-//            float[] scanIntensities = new float[massInt.size()];
-//            final AtomicInteger index = new AtomicInteger();
-//            massInt.forEach((k, v) -> {
-//                scanMasses[index.get()] = k;
-//                scanIntensities[index.getAndIncrement()] = v;
-//            });
-//
-//            if(m_isPasef) {  //VDS : To see for MsMs Data !
-//                for (PasefMsMsData msmsData : m_pasefMsMsInfoByPrecursor.values()) {
-//                    if (msmsData.containsScan(scId)) {
-//                        //Found PasefMsMs for current scan
-//                        msmsData.addSpectrumData(scanMasses, scanIntensities);
-//                    }
-//                }
-//            } else {
-//                m_spectrumByScan.put(scId, new Spectrum("Frame_"+m_id+"-scan_"+scId,1,getTime().floatValue(), scanMasses, scanIntensities));
-//            }
-//        }
-//        m_spectrumDataSet = true;
-//    }
-
-
     public boolean spectrumRead(){
         return  m_spectrumDataSet;
     }
@@ -221,20 +192,17 @@ public abstract class AbstractTimsFrame implements Comparable<AbstractTimsFrame>
         Double2FloatMap retainedMasses2Intensity = new Double2FloatOpenHashMap();
         ObjectList<Spectrum> allSp = getAllSpectra();
         //VDS TODO If list allSp empty: create empty unique Spectra or return null ?
-//        int nbrPeak = 0;
         for (Spectrum sp : allSp) {
             double[] spMasses = sp.getMasses();
-            float[] spInstensities = sp.getIntensities();
-//            nbrPeak += spMasses.length;
+            float[] spIntensities = sp.getIntensities();
             for (int i = 0; i < spMasses.length; i++) {
                 double nextMass = spMasses[i];
                 float currentIntensity = retainedMasses2Intensity.getOrDefault(nextMass, 0f);
-                float newIntensity = spInstensities[i];
+                float newIntensity = spIntensities[i];
                 if (currentIntensity < newIntensity)
                     retainedMasses2Intensity.put(nextMass, newIntensity);
             }
         }
-//        LOG.debug("Frame_" + m_id + " has " + nbrPeak + " peaks, reduced to " + retainedMasses2Intensity.size());
         int msLevel = (m_msmsType.equals(MsMsType.MS)) ? 1 : 2;
         m_singleSpectrum = new Spectrum("Frame_" + m_id, msLevel, (float) m_time, retainedMasses2Intensity);
     }

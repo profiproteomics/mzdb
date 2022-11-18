@@ -1,4 +1,4 @@
-package fr.profi.brucker.timstof;
+package fr.profi.bruker.timstof;
 
 import com.sun.jna.Callback;
 import com.sun.jna.Library;

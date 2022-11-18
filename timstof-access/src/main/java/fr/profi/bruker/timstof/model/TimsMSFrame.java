@@ -1,4 +1,4 @@
-package fr.profi.brucker.timstof.model;
+package fr.profi.bruker.timstof.model;
 
 import fr.profi.mzdb.algo.signal.filtering.SavitzkyGolaySmoother;
 import fr.profi.mzdb.algo.signal.filtering.SavitzkyGolaySmoothingConfig;
@@ -75,8 +75,8 @@ public class TimsMSFrame extends AbstractTimsFrame{
         if(m_mass2retainedIntensityMap == null)
           m_mass2retainedIntensityMap = new Double2FloatOpenHashMap();
 
-        double[] scanMasses = new double[massInt.size()];
-        float[] scanIntensities = new float[massInt.size()];
+//        double[] scanMasses = new double[massInt.size()];
+//        float[] scanIntensities = new float[massInt.size()];
         ObjectIterator<Double2FloatMap.Entry> entries = massInt.double2FloatEntrySet().iterator();
         Double2FloatMap.Entry dataEntry;
         int index = 0;
@@ -84,8 +84,8 @@ public class TimsMSFrame extends AbstractTimsFrame{
           dataEntry = entries.next();
           double massVal = dataEntry.getDoubleKey();
           float intensityVal = dataEntry.getFloatValue();
-          scanMasses[index] = massVal;
-          scanIntensities[index++] = intensityVal;
+//          scanMasses[index] = massVal;
+//          scanIntensities[index++] = intensityVal;
 
           //For merged method
           DoubleArrayList masses4Intensity = m_allIntensity2Masses.getOrDefault(intensityVal, new DoubleArrayList());

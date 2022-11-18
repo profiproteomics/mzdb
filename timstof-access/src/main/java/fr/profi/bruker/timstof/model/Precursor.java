@@ -1,4 +1,4 @@
-package fr.profi.brucker.timstof.model;
+package fr.profi.bruker.timstof.model;
 
 public class Precursor {
 
