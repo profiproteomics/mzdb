@@ -9,6 +9,9 @@ import fr.profi.mzdb.serialization.SerializationWriter;
 import org.apache.commons.lang3.ArrayUtils;
 
 import fr.profi.mzdb.util.ms.MsUtils;
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.Arrays;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -30,6 +33,8 @@ public class SpectrumData implements SerializationInterface {
 	/** The right hwhm list. : : Right Half width at half maximum */
 	protected float[] rightHwhmList;
 
+	protected short[] mobilityIndexList;
+
 	protected int peaksCount;
 
 	public SpectrumData(SerializationReader reader) throws IOException {
@@ -49,12 +54,7 @@ public class SpectrumData implements SerializationInterface {
 	 *            the r hwhm list
 	 */
 	public SpectrumData(double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList) {
-		super();
-		this.peaksCount = mzList.length;
-		this.mzList = mzList;
-		this.intensityList = intensityList;
-		this.leftHwhmList = lHwhmList;
-		this.rightHwhmList = rHwhmList;
+		this(mzList, intensityList, lHwhmList, rHwhmList, null);
 	}
 
 	/**
@@ -68,7 +68,17 @@ public class SpectrumData implements SerializationInterface {
 	public SpectrumData(double[] mzList, float[] intensityList) {
 		this(mzList, intensityList, null, null);
 	}
-	
+
+	public SpectrumData(double[] mzList, float[] intensityList, float[] lHwhmList, float[] rHwhmList, short[] mobilityIndexList) {
+		super();
+		this.peaksCount = mzList.length;
+		this.mzList = mzList;
+		this.intensityList = intensityList;
+		this.leftHwhmList = lHwhmList;
+		this.rightHwhmList = rHwhmList;
+		this.mobilityIndexList = mobilityIndexList;
+	}
+
 	/**
 	 * Gets the peaks count.
 	 * 
@@ -114,6 +124,10 @@ public class SpectrumData implements SerializationInterface {
 		return rightHwhmList;
 	}
 
+	public short[] getMobilityIndexList() {
+		return mobilityIndexList;
+	}
+
 	/**
 	 * To peaks. A new peaks tab is instantiated at each call
 	 * 
@@ -141,7 +155,7 @@ public class SpectrumData implements SerializationInterface {
 	 * @param spectrumData
 	 *            the spectrum data
 	 */
-	// TODO: create a SpectrumDataBuilder instead anddon't use apache ArrayUtils
+	// TODO: create a SpectrumDataBuilder instead and don't use apache ArrayUtils
 	public void addSpectrumData(SpectrumData spectrumData) {
 		if (spectrumData != null) {
 			this.mzList = ArrayUtils.addAll(this.mzList, spectrumData.mzList);
@@ -149,6 +163,9 @@ public class SpectrumData implements SerializationInterface {
 			if (spectrumData.leftHwhmList != null && spectrumData.rightHwhmList != null) {
 				this.leftHwhmList = ArrayUtils.addAll(this.leftHwhmList, spectrumData.leftHwhmList);
 				this.rightHwhmList = ArrayUtils.addAll(this.rightHwhmList, spectrumData.rightHwhmList);
+			}
+			if (spectrumData.mobilityIndexList != null) {
+				this.mobilityIndexList = ArrayUtils.addAll(this.mobilityIndexList, spectrumData.mobilityIndexList);
 			}
 			this.peaksCount = this.mzList.length;
 		}
@@ -168,7 +185,10 @@ public class SpectrumData implements SerializationInterface {
 			this.leftHwhmList = Arrays.copyOf(this.leftHwhmList, newLength);
 			this.rightHwhmList = Arrays.copyOf(this.rightHwhmList, newLength);
 		}
-		
+
+		if (this.mobilityIndexList != null) {
+			this.mobilityIndexList = Arrays.copyOf(this.mobilityIndexList, newLength);
+		}
 		this.peaksCount = newLength;
 	}
 	

@@ -1,13 +1,7 @@
 package fr.profi.mzdb.io.reader.cache;
 
-import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-
 import fr.profi.mzdb.AbstractMzDbReader;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVParam;
@@ -22,6 +16,11 @@ import fr.profi.mzdb.util.sqlite.ISQLiteRecordExtraction;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 import fr.profi.mzdb.util.sqlite.SQLiteRecordIterator;
+
+import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -80,6 +79,8 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 						dm = DataMode.FITTED;
 					else if (dmAsStr.equalsIgnoreCase("PROFILE"))
 						dm = DataMode.PROFILE;
+					else if (dmAsStr.equalsIgnoreCase("CENTROID_3D"))
+						dm = DataMode.CENTROID_3D;
 					else
 						dm = DataMode.CENTROID;
 

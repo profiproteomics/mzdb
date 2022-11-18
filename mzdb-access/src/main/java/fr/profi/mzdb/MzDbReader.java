@@ -916,5 +916,4 @@ public class MzDbReader extends AbstractMzDbReader {
 	public Peak[] getMsnPeaksInMzRtRanges(double parentMz, double minFragMz, double maxFragMz, float minRt, float maxRt) throws SQLiteException, StreamCorruptedException {
 		return this.getMsnPeaksInMzRtRanges(parentMz, minFragMz, maxFragMz, minRt, maxRt, connection);
 	}
-
 }

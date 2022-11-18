@@ -1,18 +1,12 @@
 package fr.profi.mzdb.io.reader.bb;
 
-import java.io.StreamCorruptedException;
-import java.nio.ByteBuffer;
-import java.util.Map;
-
+import fr.profi.mzdb.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.DataMode;
-import fr.profi.mzdb.model.PeakEncoding;
-import fr.profi.mzdb.model.SpectrumData;
-import fr.profi.mzdb.model.SpectrumHeader;
-import fr.profi.mzdb.model.SpectrumSlice;
+import java.io.StreamCorruptedException;
+import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * Abstract Class containing commons objects and attributes through the implementations
@@ -22,13 +16,7 @@ import fr.profi.mzdb.model.SpectrumSlice;
  * @see IBlobReader
  */
 public abstract class AbstractBlobReader implements IBlobReader {
-	
-	/*
-	 * Size of structure depending on dataMode selected
-	 */
-	final static int FITTED = 20;
-	final static int CENTROID = 12;
-	
+
 	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 	protected int _spectraCount; // number of spectrum slices in the blob
@@ -149,9 +137,10 @@ public abstract class AbstractBlobReader implements IBlobReader {
 		// Create new arrays of primitives
 		final double[] mzArray = new double[peaksCount];
 		final float[] intensityArray = new float[peaksCount];
-		final float[] lwhmArray = new float[peaksCount];
-		final float[] rwhmArray = new float[peaksCount];
-		
+		final float[] lwhmArray = (dataMode == DataMode.FITTED) ? new float[peaksCount] : null;
+		final float[] rwhmArray = (dataMode == DataMode.FITTED) ? new float[peaksCount] : null;
+		final short[] mobilityIndexes = (dataMode == DataMode.CENTROID_3D) ? new short[peaksCount] : null;
+
 		for (int peakIdx = 0; peakIdx < peaksCount; peakIdx++ ) {
 			
 			switch (pe) {
@@ -173,11 +162,15 @@ public abstract class AbstractBlobReader implements IBlobReader {
 				lwhmArray[peakIdx] = bbByteBuffer.getFloat();
 				rwhmArray[peakIdx] = bbByteBuffer.getFloat();
 			}
-			
+
+			if (dataMode == DataMode.CENTROID_3D) {
+				mobilityIndexes[peakIdx] = bbByteBuffer.getShort();
+			}
+
 		}
 		
 		// return the newly formed SpectrumData
-		return new SpectrumData(mzArray, intensityArray, lwhmArray, rwhmArray);
+		return new SpectrumData(mzArray, intensityArray, lwhmArray, rwhmArray, mobilityIndexes);
 	}
 	
 	protected void checkSpectrumIndexRange(int idx) {

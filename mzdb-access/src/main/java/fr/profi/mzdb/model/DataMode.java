@@ -27,7 +27,9 @@ public enum DataMode implements SerializationInterface {
 	CENTROID(12),
 
 	/** The fitted. */
-	FITTED(20);
+	FITTED(20),
+
+	CENTROID_3D(14);
 
 	/** The value. */
 	private final int value;

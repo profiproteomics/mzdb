@@ -488,11 +488,15 @@ public abstract class AbstractMzDbReader {
 		float[] finalIntensityList = new float[peaksCount];
 		float[] finalLeftHwhmList = null;
 		float[] finalRightHwhmList = null;
+		short[] finalMobilityIndexes = null;
 
 		SpectrumData firstSpectrumData = spectrumDataList.get(0);
 		if ((firstSpectrumData.getLeftHwhmList() != null) && (firstSpectrumData.getRightHwhmList() != null)) {
 			finalLeftHwhmList = new float[peaksCount];
 			finalRightHwhmList = new float[peaksCount];
+		}
+		if (firstSpectrumData.getMobilityIndexList() != null) {
+			finalMobilityIndexes = new short[peaksCount];
 		}
 
 		// TODO: check that spectrumDataList is m/z sorted ???
@@ -502,7 +506,7 @@ public abstract class AbstractMzDbReader {
 			float[] intensityList = spectrumData.getIntensityList();
 			float[] leftHwhmList = spectrumData.getLeftHwhmList();
 			float[] rightHwhmList = spectrumData.getRightHwhmList();
-
+			final short[] mobilityIndexList = spectrumData.getMobilityIndexList();
 			// Add peaks of this SpectrumData to the final arrays
 			int spectrumDataPeaksCount = spectrumData.getPeaksCount();
 			for (int i = 0; i < spectrumDataPeaksCount; i++) {
@@ -514,11 +518,15 @@ public abstract class AbstractMzDbReader {
 					finalRightHwhmList[finalPeakIdx] = rightHwhmList[i];
 				}
 
+				if (finalMobilityIndexes != null) {
+					finalMobilityIndexes[finalPeakIdx] = 	mobilityIndexList[i];
+				}
+
 				finalPeakIdx++;
 			}
 		}
 
-		return new SpectrumData(finalMzList, finalIntensityList, finalLeftHwhmList, finalRightHwhmList);
+		return new SpectrumData(finalMzList, finalIntensityList, finalLeftHwhmList, finalRightHwhmList, finalMobilityIndexes);
 	}
 
 	/**
@@ -536,13 +544,8 @@ public abstract class AbstractMzDbReader {
 			 * ParamTreeParser.parseParamTree(runParamTree);
 			 */
 
-			List<Run> runs = this.getRuns();
-			Run run0 = runs.get(0);
-			final ParamTree runTree = run0.getParamTree(connection);
-
 			try {
-				final CVParam cvParam = runTree.getCVParam(CVEntry.ACQUISITION_PARAMETER);
-				final String value = cvParam.getValue();
+				final String value = getAcquisitionCVParam(connection, CVEntry.ACQUISITION_PARAMETER);
 				this.acquisitionMode = AcquisitionMode.getAcquisitionMode(value);
 			} catch (Exception e) {
 				this.acquisitionMode = AcquisitionMode.UNKNOWN;

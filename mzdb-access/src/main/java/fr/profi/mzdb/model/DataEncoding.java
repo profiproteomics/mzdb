@@ -68,7 +68,9 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 		int peakBytesSize = this.getPeakEncoding().getValue();
 		if (this.getMode() == DataMode.FITTED)
 			peakBytesSize += 8; // add 2 floats (left hwhm and right hwhm)
-		
+		if (this.getMode() == DataMode.CENTROID_3D)
+			peakBytesSize += 2; // add 1 short (third dimension)
+
 		this.peakStructSize = peakBytesSize;
 	}
 
