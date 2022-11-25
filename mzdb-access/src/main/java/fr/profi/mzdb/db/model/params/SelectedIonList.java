@@ -26,7 +26,7 @@ public class SelectedIonList extends AbstractXMLParamTree {
   public SelectedIonList(SerializationReader reader) throws IOException {
     read(reader);
   }
-  
+
   public SelectedIonList(int c) {
     this.count = c;
   }
