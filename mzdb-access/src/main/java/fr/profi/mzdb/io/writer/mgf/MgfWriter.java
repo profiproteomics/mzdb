@@ -33,6 +33,22 @@ public class MgfWriter {
 
 	private List<String> headerComments = null;
 
+	private String prolineTitleSeparator = ";";
+
+
+	/**
+	 *
+	 * @param mzDBFilePath
+	 * @param msLevel
+	 * @throws SQLiteException
+	 * @throws FileNotFoundException
+	 * @throws ClassNotFoundException
+	 */
+	public MgfWriter(String mzDBFilePath, int msLevel, String prolineSpectraTitleSeparator) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+		this(mzDBFilePath, msLevel);
+		prolineTitleSeparator = prolineSpectraTitleSeparator;
+	}
+
 	/**
 	 * 
 	 * @param mzDBFilePath
@@ -150,7 +166,6 @@ public class MgfWriter {
 	 * @param intensityCutoff
 	 * @return
 	 * @throws SQLiteException
-	 * @throws StreamCorruptedException 
 	 */
 	protected String stringifySpectrum(
 	  MgfPrecursor mgfPrecursor,
@@ -159,7 +174,7 @@ public class MgfWriter {
 		ISpectrumProcessor spectrumProcessor,
 		float intensityCutoff,
 		boolean exportProlineTitle
-	) throws SQLiteException, StreamCorruptedException {
+	) throws SQLiteException {
 
 		String mzFragFormat = null;
 		// FIXME: check if is_high_res parameter is used and is correct
@@ -175,7 +190,16 @@ public class MgfWriter {
 			title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
 		else {
 			float timeInMinutes = spectrumHeader.getTime() / 60;
-			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.3f;last_time:%.3f;raw_file_identifier:%s;",
+			StringBuilder titleTemplate = new StringBuilder();
+			titleTemplate.append("first_cycle:%d").append(prolineTitleSeparator);
+			titleTemplate.append("last_cycle:%d").append(prolineTitleSeparator);
+			titleTemplate.append("first_scan:%d").append(prolineTitleSeparator);
+			titleTemplate.append("last_scan:%d").append(prolineTitleSeparator);
+			titleTemplate.append("first_time:%.3f").append(prolineTitleSeparator);
+			titleTemplate.append("last_time:%.3f").append(prolineTitleSeparator);
+			titleTemplate.append("raw_file_identifier:%s").append(prolineTitleSeparator);
+
+			title = String.format(titleTemplate.toString(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getInitialId(),

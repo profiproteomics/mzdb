@@ -89,7 +89,7 @@ public class MzDbReaderTest {
 	// create Reader
 	try {
 	    mzDb = new MzDbReader(MzDbReaderTest.class.getResource(filename).getFile(), true);
-
+		mzDb.enablePrecursorListLoading();
 	} catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
 	    Assert.fail("MzDB reader instantiation exception " + e.getMessage() + " for " + filename);
 	}
@@ -161,8 +161,11 @@ public class MzDbReaderTest {
 	    int spectrumCount = mzDb.getSpectraCount();
 	    Assert.assertEquals("SpectrumCount " + filename + " invalid", expectedSpectrumCount_OVEMB150205_12,
 		    spectrumCount);
+		Spectrum sp = mzDb.getSpectrum(1);
 	} catch (SQLiteException e) {
 	    Assert.fail("SpectrumCount exception " + e.getMessage() + " for " + filename);
+	} catch (StreamCorruptedException e) {
+		throw new RuntimeException(e);
 	}
 	System.out.print(".");
 

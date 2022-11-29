@@ -11,7 +11,7 @@ public class SelectedIonList extends AbstractParamTree {
   @XmlSchemaType(name = "nonNegativeInteger")
   protected int count;
 
-  @XmlElement( name="selectedIon" )
+
   protected List<SelectedIon> selectedIons;
 
   public SelectedIonList() {
@@ -20,7 +20,8 @@ public class SelectedIonList extends AbstractParamTree {
   public SelectedIonList(int c) {
     this.count = c;
   }
-  
+
+  @XmlElement( name="selectedIon" )
   public List<SelectedIon> getSelectedIons() {
     return selectedIons;
   }
