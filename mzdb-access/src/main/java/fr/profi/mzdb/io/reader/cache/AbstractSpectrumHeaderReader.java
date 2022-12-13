@@ -164,7 +164,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 					if(mzDbReader.isStringRepresentationCacheEnabled())
 						sh.setScanListAsString(scAsStr);
 				}
-				if (mzDbReader.isPrecursorListLoadingEnabled() && msLevel >= 2) {
+				if (mzDbReader.isPrecursorListLoadingEnabled() && msLevel != 1) {
 					String precAsStr = stmt.columnString(SpectrumHeaderColIdx.precursorList);
 					if (precAsStr != null && !precAsStr.isBlank()) {
 						Annotation listAnnotation = PrecursorList.class.getAnnotation(XmlRootElement.class);

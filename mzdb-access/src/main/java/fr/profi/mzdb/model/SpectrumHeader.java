@@ -472,7 +472,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
 	private String getPrecursorListAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation ) throws SQLiteException {
 		String precursorAsStr = precursorAsString;
-		if (precursorAsStr == null) {
+		if (precursorAsStr == null && msLevel != 1) {
 			String sqlString = "SELECT precursor_list FROM spectrum WHERE id = ?";
 			precursorAsStr = new SQLiteQuery(mzDbConnection, sqlString).bind(1, this.getId()).extractSingleString();
 			if(cacheStringRepresentation)
