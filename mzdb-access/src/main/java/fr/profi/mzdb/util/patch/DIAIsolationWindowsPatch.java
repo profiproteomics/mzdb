@@ -9,6 +9,7 @@ import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.table.BoundingBoxMsnRtreeTable;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
+import fr.profi.mzdb.db.table.RunTable;
 import fr.profi.mzdb.model.AcquisitionMode;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
@@ -217,6 +218,31 @@ public class DIAIsolationWindowsPatch {
     }
   }
 
+  public static void forceDIAMode(String filepath) {
+    try {
+      SQLiteConnection connection = new SQLiteConnection(new File(filepath));
+      connection.open();
+
+      String queryStr = "SELECT * FROM run";
+      SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecordIterator();
+      final SQLiteRecord record = records.next();
+      String paramTree = record.columnString(RunTable.PARAM_TREE);
+      final int id = record.columnInt(RunTable.ID);
+      paramTree = paramTree.replace("DDA", "SWATH");
+
+      String sqlString = "UPDATE run SET param_tree = ? WHERE id = ? ";
+      SQLiteStatement stmt = connection.prepare(sqlString, false);
+      connection.exec("BEGIN TRANSACTION;");
+      stmt.bind(1, paramTree);
+      stmt.bind(2, id);
+      stmt.step();
+      connection.exec("COMMIT;");
+      connection.dispose();
+
+    } catch (Exception e) {
+      logger.error("Error during isolation window fix/retrieval", e);
+    }
+  }
 }
 
 

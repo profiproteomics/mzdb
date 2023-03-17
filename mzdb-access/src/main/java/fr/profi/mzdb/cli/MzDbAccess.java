@@ -1,5 +1,18 @@
 package fr.profi.mzdb.cli;
 
+import com.almworks.sqlite4java.SQLiteException;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.db.model.params.param.UserParam;
+import fr.profi.mzdb.io.writer.mgf.MgfWriter;
+import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputationEnum;
+import fr.profi.mzdb.model.Peak;
+import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.util.patch.DIAIsolationWindowsPatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -7,21 +20,6 @@ import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import fr.profi.mzdb.util.patch.DIAIsolationWindowsPatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-
-import fr.profi.mzdb.MzDbReader;
-import fr.profi.mzdb.db.model.params.param.UserParam;
-import fr.profi.mzdb.io.writer.mgf.MgfWriter;
-import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputationEnum;
-import fr.profi.mzdb.model.Peak;
-import fr.profi.mzdb.model.SpectrumHeader;
 
 /***
  * This class allows to access to a mzDB file and to make some range queries on it. A list of putative
@@ -86,6 +84,9 @@ public class MzDbAccess {
 
 		@Parameter(names = { "-mzdb", "--mzdb_file_path" }, description = "mzDB file to patch", required = true)
 		private String mzdbFile = "";
+
+		@Parameter(names = {"-dia", "--force_dia_mode"}, description = "force DIA Mode of the patched file", required = false)
+		private boolean forceDIAMode = false;
 	}
 
 	public static class CreateMgfCommand {
@@ -175,6 +176,9 @@ public class MzDbAccess {
 
 	private static void patchDIA(PatchDIAWindowsCommand pc) {
 		String dbPath = pc.mzdbFile;
+		if (pc.forceDIAMode) {
+			DIAIsolationWindowsPatch.forceDIAMode(dbPath);
+		}
 		DIAIsolationWindowsPatch.patchDIAWindows(dbPath);
 	}
 
