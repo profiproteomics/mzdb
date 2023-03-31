@@ -1,23 +1,10 @@
 package fr.profi.mzdb;
 
-import java.io.File;
-import java.io.StreamCorruptedException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.TreeMap;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-
-import fr.profi.mzdb.db.model.params.param.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import fr.profi.mzdb.db.model.*;
 import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.db.model.params.param.*;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
 import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.bb.BoundingBoxBuilder;
@@ -31,6 +18,12 @@ import fr.profi.mzdb.util.ms.MsUtils;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 import fr.profi.mzdb.util.sqlite.SQLiteRecordIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.StreamCorruptedException;
+import java.util.*;
 
 /**
  * Allows to manipulates data contained in the mzDB file.
@@ -68,6 +61,8 @@ public abstract class AbstractMzDbReader {
 	/** Define some lazy fields **/
 	// TODO: find a CV param representing the information better
 	protected AcquisitionMode acquisitionMode = null;
+	protected Optional<IonMobilityMode> ionMobility = null;
+
 	protected IsolationWindow[] diaIsolationWindows = null;
 	protected List<InstrumentConfiguration> instrumentConfigs = null;
 	protected List<Run> runs = null;
@@ -727,6 +722,51 @@ public abstract class AbstractMzDbReader {
 		}
 
 		return this.acquisitionMode;
+	}
+
+	protected List<String> extractFromInstrumentMethod(String prefix) throws SQLiteException {
+		List<UserText> userParams = this.getMzDbHeader().getUserTexts();
+		List<String> extractedLines = new ArrayList<>();
+		if (userParams != null && !userParams.isEmpty()) {
+			for (UserText userText : userParams) {
+				final  String USER_TEXT_TAG = "instrumentMethods";
+				if (USER_TEXT_TAG.equals(userText.getName())) {
+					String instrumMethods = userText.getText();
+					Scanner scanner = new Scanner(instrumMethods);
+					while (scanner.hasNextLine()) {
+						String line = scanner.nextLine().trim();
+						if (line.startsWith(prefix)) {
+							extractedLines.add(line);
+						}
+					}
+				}
+			}
+		}
+		return extractedLines;
+	}
+
+	/**
+	 * Lazy loading of the acquisition mode, parameter
+	 *
+	 * @return
+	 * @throws SQLiteException
+	 */
+	protected IonMobilityMode getIonMobilityMode(SQLiteConnection connection) throws SQLiteException {
+	//FIXME : this works only for Thermo instruments !
+		if (this.ionMobility == null) {
+			this.ionMobility = Optional.empty();
+			List<String> compensationVoltageValues = new ArrayList<>();
+			for (String line : extractFromInstrumentMethod("FAIMS CV")) {
+				String cvName = line.substring(8).trim();
+				if (cvName.startsWith("="))
+					cvName = cvName.substring(1);
+				compensationVoltageValues.add(cvName.trim());
+			}
+			if (!compensationVoltageValues.isEmpty()) {
+				this.ionMobility = Optional.of(new IonMobilityMode(IonMobilityType.FAIMS, compensationVoltageValues));
+			}
+		}
+		return this.ionMobility.orElse(null);
 	}
 
 	/**

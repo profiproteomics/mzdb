@@ -11,6 +11,7 @@ import fr.profi.mzdb.db.table.BoundingBoxMsnRtreeTable;
 import fr.profi.mzdb.db.table.BoundingBoxTable;
 import fr.profi.mzdb.db.table.RunTable;
 import fr.profi.mzdb.model.AcquisitionMode;
+import fr.profi.mzdb.model.IsolationWindow;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
@@ -151,7 +152,7 @@ public class DIAIsolationWindowsPatch {
 
 
 
-  private static Map<SpectrumHeader, IsolationWindow> retrieveTrueIsolationWindows(MzDbReader reader) throws SQLiteException {
+  public static Map<SpectrumHeader, IsolationWindow> retrieveTrueIsolationWindows(MzDbReader reader) throws SQLiteException {
     Map<SpectrumHeader, IsolationWindow> windows = new HashMap<>();
     SpectrumHeader[] headers = reader.getMs2SpectrumHeaders();
     SpectrumHeader.loadPrecursors(headers, reader.getConnection());
@@ -170,29 +171,23 @@ public class DIAIsolationWindowsPatch {
             upper = cvParam.getValue();
           }
         }
-        windows.put(header, new IsolationWindow(center, Double.valueOf(center) - Double.valueOf(lower), Double.valueOf(center) + Double.valueOf(upper)));
+        windows.put(header, new IsolationWindow(Double.valueOf(center) - Double.valueOf(lower), Double.valueOf(center) + Double.valueOf(upper)));
       }
     }
     return windows;
   }
 
-
-  public static void main(String[] args) {
-
-//    String filepath = "C:\\Local\\bruley\\Data\\DIA\\HF2_000795_0.9.10 - Copie.mzdb";
-//    String filepath = "C:\\Local\\bruley\\Data\\PSAQ_1C\\HF1_005464.mzdb";
-//    String filepath = "C:\\Local\\bruley\\Data\\PSAQ_1C\\HF1_005464.raw.mzDB";
-    String filepath = "C:/Local/bruley/Data/DIA/20180306_serum/HF2_005035-patched.mzdb";
-    patchDIAWindows(filepath);
+  public static void run(String filePath) {
+    updateDIAModeForPRM(filePath);
+    patchDIAWindows(filePath);
   }
 
   public static void patchDIAWindows(String filepath) {
     try {
-
       MzDbReader reader = new MzDbReader(new File(filepath), false);
       AcquisitionMode acqMode = null;
       acqMode = reader.getAcquisitionMode();
-      if (acqMode != null && acqMode.equals(AcquisitionMode.SWATH)) {
+      if (acqMode != null && acqMode.isDataIndependantAcquisition()) {
         int[] range = reader.getMzRange(1);
         logger.info("MS1 mz Range :: " + range[0] + "-" + range[1]);
         int[] range_ms2 = reader.getMzRange(2);
@@ -218,47 +213,54 @@ public class DIAIsolationWindowsPatch {
     }
   }
 
-  public static void forceDIAMode(String filepath) {
+  public static void updateDIAModeForPRM(String filepath) {
     try {
-      SQLiteConnection connection = new SQLiteConnection(new File(filepath));
-      connection.open();
+      MzDbReader reader = new MzDbReader(new File(filepath), false) {
+        public boolean isPRM() {
+          try {
+            List<String> lines = extractFromInstrumentMethod("PRM");
+            lines.addAll(extractFromInstrumentMethod("Scan tMSn"));
+            return !lines.isEmpty();
+          } catch (Exception e) {
+            logger.error("Cannot infer PRM mode from InstrumentMethods", e);
+          }
+          return false;
+        }
 
-      String queryStr = "SELECT * FROM run";
-      SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecordIterator();
-      final SQLiteRecord record = records.next();
-      String paramTree = record.columnString(RunTable.PARAM_TREE);
-      final int id = record.columnInt(RunTable.ID);
-      paramTree = paramTree.replace("DDA", "SWATH");
+        @Override
+        public AcquisitionMode getAcquisitionMode() throws SQLiteException {
+          if (isPRM()) {
+            return AcquisitionMode.PRM;
+          }
+          return super.getAcquisitionMode();
+        }
+      };
 
-      String sqlString = "UPDATE run SET param_tree = ? WHERE id = ? ";
-      SQLiteStatement stmt = connection.prepare(sqlString, false);
-      connection.exec("BEGIN TRANSACTION;");
-      stmt.bind(1, paramTree);
-      stmt.bind(2, id);
-      stmt.step();
-      connection.exec("COMMIT;");
-      connection.dispose();
+      AcquisitionMode acqMode = reader.getAcquisitionMode();
+      if (acqMode.equals(AcquisitionMode.PRM)) {
+        SQLiteConnection connection = new SQLiteConnection(new File(filepath));
+        connection.open();
+        String queryStr = "SELECT * FROM run";
+        SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecordIterator();
+        final SQLiteRecord record = records.next();
+        String paramTree = record.columnString(RunTable.PARAM_TREE);
+        final int id = record.columnInt(RunTable.ID);
+        paramTree = paramTree.replace("DDA", "SWATH");
 
-    } catch (Exception e) {
+        String sqlString = "UPDATE run SET param_tree = ? WHERE id = ? ";
+        SQLiteStatement stmt = connection.prepare(sqlString, false);
+        connection.exec("BEGIN TRANSACTION;");
+        stmt.bind(1, paramTree);
+        stmt.bind(2, id);
+        stmt.step();
+        connection.exec("COMMIT;");
+        connection.dispose();
+        logger.info("Acquisition Mode patched to SWATH");
+      }
+    } catch(Exception e){
       logger.error("Error during isolation window fix/retrieval", e);
     }
   }
-}
-
-
-class IsolationWindow extends fr.profi.mzdb.model.IsolationWindow {
-
-  String center;
-
-  public IsolationWindow(String center, double minMz, double maxMz) {
-    super(minMz, maxMz);
-    center = center;
-  }
-
-  public String getCenter() {
-    return center;
-  }
-
 }
 
 class MsnRtreeEntry {

@@ -10,22 +10,13 @@ package fr.profi.mzdb.model;
  *  - IDA et SWATH are AbSciex terms
  */
 public enum AcquisitionMode {
-	DDA(
-		"DDA acquisition",
-		"Data Dependant Acquisition (Thermo designation), Warning: in ABI this is called IDA (Information Dependant Acquisition)"
-	),
-	SWATH(
-		"SWATH acquisition",
-		"ABI Swath acquisition or Thermo swath acquisition"),
-	MRM(
-		"MRM acquisition",
-		"Multiple reaction monitoring"
-	),
-	SRM("SRM acquisition", "Single reaction monitoring"),
-	UNKNOWN(
-		"UNKNOWN acquisition",
-		"unknown acquisition mode"
-	);
+	DDA("DDA acquisition","Data Dependant Acquisition (Thermo designation), Warning: in ABI this is called IDA (Information Dependant Acquisition)"),
+  DIA("SRM acquisition", "Single reaction monitoring"),
+	SWATH("SWATH acquisition","ABI Swath acquisition or Thermo swath acquisition"),
+  PRM("PRM acquisition", "Parallel reaction monitoring"),
+  MRM("MRM acquisition",		"Multiple reaction monitoring"),
+  SRM("SRM acquisition", "Single reaction monitoring"),
+  UNKNOWN("UNKNOWN acquisition","unknown acquisition mode");
     // Other one to be added
 
     private String description;
@@ -43,7 +34,11 @@ public enum AcquisitionMode {
     public String toString() {
         return this.code;
     }
-    
+
+    public boolean isDataIndependantAcquisition() {
+      return (this == DIA) || (this == SWATH) ||  (this == PRM) || (this == MRM) || (this == SRM) ;
+    }
+
     public static AcquisitionMode getAcquisitionMode(String code){
     	AcquisitionMode[] acqModes = AcquisitionMode.values();
     	for (AcquisitionMode acquisitionMode : acqModes) {

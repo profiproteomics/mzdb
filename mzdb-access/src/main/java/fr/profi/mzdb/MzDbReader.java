@@ -1,5 +1,27 @@
 package fr.profi.mzdb;
 
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
+import fr.profi.mzdb.db.model.*;
+import fr.profi.mzdb.db.model.params.param.CV;
+import fr.profi.mzdb.db.model.params.param.CVTerm;
+import fr.profi.mzdb.db.model.params.param.CVUnit;
+import fr.profi.mzdb.io.reader.MzDbReaderQueries;
+import fr.profi.mzdb.io.reader.SharedParamTreeReader;
+import fr.profi.mzdb.io.reader.cache.DataEncodingReader;
+import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
+import fr.profi.mzdb.io.reader.cache.RunSliceHeaderReader;
+import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader;
+import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
+import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator;
+import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
+import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
+import fr.profi.mzdb.io.reader.table.*;
+import fr.profi.mzdb.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.StreamCorruptedException;
@@ -7,27 +29,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
-
-import fr.profi.mzdb.db.model.params.param.CV;
-import fr.profi.mzdb.db.model.params.param.CVTerm;
-import fr.profi.mzdb.db.model.params.param.CVUnit;
-import fr.profi.mzdb.io.reader.SharedParamTreeReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import fr.profi.mzdb.db.model.*;
-import fr.profi.mzdb.io.reader.MzDbReaderQueries;
-import fr.profi.mzdb.io.reader.cache.*;
-import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
-import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator;
-import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
-import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
-import fr.profi.mzdb.io.reader.table.*;
-import fr.profi.mzdb.model.*;
 
 /**
  * Allows to manipulates data contained in the mzDB file.
@@ -769,6 +770,10 @@ public class MzDbReader extends AbstractMzDbReader {
 	 */
 	public AcquisitionMode getAcquisitionMode() throws SQLiteException {
 		return this.getAcquisitionMode(connection);
+	}
+
+	public IonMobilityMode getIonMobilityMode() throws SQLiteException {
+		return this.getIonMobilityMode(connection);
 	}
 
 	/**

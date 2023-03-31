@@ -39,8 +39,6 @@ public class MzDbAccess {
 	 * 
 	 * @param string
 	 *            the string to print
-	 * @param mode
-	 *            can only assume values PRINT_ALWAYS or PRINT_DEBUG.
 	 * */
 	protected static void println(String string) {
 		System.out.println(string);
@@ -51,8 +49,6 @@ public class MzDbAccess {
 	 * 
 	 * @param string
 	 *            the string to print
-	 * @param mode
-	 *            can only assume values PRINT_ALWAYS or PRINT_DEBUG.
 	 */
 	protected static void print(String string) {
 		System.out.print(string);
@@ -85,8 +81,6 @@ public class MzDbAccess {
 		@Parameter(names = { "-mzdb", "--mzdb_file_path" }, description = "mzDB file to patch", required = true)
 		private String mzdbFile = "";
 
-		@Parameter(names = {"-dia", "--force_dia_mode"}, description = "force DIA Mode of the patched file", required = false)
-		private boolean forceDIAMode = false;
 	}
 
 	public static class CreateMgfCommand {
@@ -176,10 +170,7 @@ public class MzDbAccess {
 
 	private static void patchDIA(PatchDIAWindowsCommand pc) {
 		String dbPath = pc.mzdbFile;
-		if (pc.forceDIAMode) {
-			DIAIsolationWindowsPatch.forceDIAMode(dbPath);
-		}
-		DIAIsolationWindowsPatch.patchDIAWindows(dbPath);
+		DIAIsolationWindowsPatch.run(dbPath);
 	}
 
 	public static void printAvailableCommands(JCommander jc) {
