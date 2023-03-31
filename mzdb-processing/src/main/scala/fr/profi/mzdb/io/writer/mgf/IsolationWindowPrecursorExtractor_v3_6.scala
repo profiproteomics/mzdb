@@ -9,20 +9,38 @@ import fr.profi.mzdb.db.model.params.param.CVEntry
 import fr.profi.mzdb.model.{Peak, SpectrumHeader, SpectrumSlice}
 import fr.profi.util.metrics.Metric
 
+import java.util.regex.Pattern
 import scala.util.control.Breaks.{break, breakable}
 
 /**
  * @author CB205360
  */
 
-class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPrecursorComputer(mzTolPPM) {
+object IsolationWindowPrecursorExtractor_v3_6 {
 
+  private val cvPattern = Pattern.compile("\\scv=([\\+\\-]\\d+.\\d+)")
+
+  def readIonMobilityCV(reader: MzDbReader, spectrumHeader: SpectrumHeader) = {
+    val scanListAsString = spectrumHeader.getScanListAsString(reader.getConnection)
+    val matcher = cvPattern.matcher(scanListAsString)
+    if (matcher.find()) {
+      Some(matcher.group(1))
+    } else {
+      None
+    }
+  }
+
+}
+
+class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float, hasIonMobility: Boolean = false) extends DefaultPrecursorComputer(mzTolPPM) {
 
   private var lastPrediction: (SpectrumHeader, (Double, Int)) = _
   private var metric = new Metric("MGF")
+  private var cvByHeader: collection.mutable.Map[SpectrumHeader, Option[String]] = collection.mutable.Map()
 
   @throws[SQLiteException]
   override def getMgfPrecursors(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader): Array[MgfPrecursor] = {
+
     val time = spectrumHeader.getElutionTime
     var precursors = Seq[MgfPrecursor]()
 
@@ -33,12 +51,14 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
     val (predictionOpt, predictionNote) = _getPrecursorMz(mzDbReader, spectrumHeader, headerPrecMz, spectrumHeader.getPrecursorCharge)
     val (refinedHeaderPrecMz, charge) =  predictionOpt.getOrElse((headerPrecMz, spectrumHeader.getPrecursorCharge.intValue())) // (headerPrecMz, spectrumHeader.getPrecursorCharge)
 
-    val precursor = buildMgfPrecursor(time, refinedHeaderPrecMz, charge)
-    precursor.addAnnotation("source", "header")
-    precursor.addAnnotation("scan.number", spectrumHeader.getSpectrumId)
-    precursor.addAnnotation("prediction", predictionNote)
-
-    precursors = precursors :+ precursor
+    val precursorOpt = buildMgfPrecursor(time, refinedHeaderPrecMz, charge)
+    if (precursorOpt.isDefined) {
+      val precursor = precursorOpt.get
+      precursor.addAnnotation("source", "header")
+      precursor.addAnnotation("scan.number", spectrumHeader.getSpectrumId)
+      precursor.addAnnotation("prediction", predictionNote)
+      precursors = precursors :+ precursor
+    }
 
     if (charge != spectrumHeader.getPrecursorCharge) metric.incr("header charge changed")
     if (Math.abs(1e6 * (headerPrecMz - refinedHeaderPrecMz) / headerPrecMz) > mzTolPPM) metric.incr("header mz changed")
@@ -59,7 +79,9 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
         val (refinedAltPrecMz, charge) = altPredictionOpt.get
         if ( (charge > 1) && (charge < 6) &&
              !precursors.find( p => Math.abs(1e6 * (p.getPrecMz - refinedAltPrecMz) / p.getPrecMz) < mzTolPPM && p.getCharge == charge).isDefined ) {
-            val altPrecursor = buildMgfPrecursor(time, refinedAltPrecMz, charge)
+          val altPrecursorOpt = buildMgfPrecursor(time, refinedAltPrecMz, charge)
+          if (altPrecursorOpt.isDefined) {
+            val altPrecursor = altPrecursorOpt.get
             altPrecursor.addAnnotation("source", "sw")
             altPrecursor.addAnnotation("scan.number", spectrumHeader.getSpectrumId)
             altPrecursor.addAnnotation("initialPeak", altPrecMz)
@@ -68,6 +90,7 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
             altPrecursor.addAnnotation("prediction", altPredictionNote)
 
             precursors = precursors :+ altPrecursor
+          }
         }
       }
       rank = rank + 1
@@ -91,11 +114,11 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
     precursors.toArray
   }
 
-  private def buildMgfPrecursor(time: Float, refinedAltPrecMz: Double, charge: Int) : AnnotatedMgfPrecursor = {
+  private def buildMgfPrecursor(time: Float, refinedAltPrecMz: Double, charge: Int) : Option[AnnotatedMgfPrecursor] = {
     if (charge != 0) {
-      new AnnotatedMgfPrecursor(refinedAltPrecMz, charge, time)
+      Some(new AnnotatedMgfPrecursor(refinedAltPrecMz, charge, time))
     } else {
-      new AnnotatedMgfPrecursor(refinedAltPrecMz, time)
+      None
     }
   }
 
@@ -195,15 +218,31 @@ class IsolationWindowPrecursorExtractor_v3_6(mzTolPPM: Float) extends DefaultPre
   }
 
   private def getMS1SpectrumSlice(reader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, time: Float): Option[SpectrumSlice] = {
+
+    //TODO : completely inefficient ! Must be reimplemented
+    val cvOpt = None //if (hasIonMobility) { _getCV(reader, spectrumHeader) } else { None }
+
     val slices = reader.getMsSpectrumSlices(precMz - 5, precMz + 5, time-5f, time+5f)
     if (!slices.isEmpty) {
-      val sliceOpt = slices.find(x => x.getHeader.getCycle == spectrumHeader.getCycle)
+      val sliceOpt = slices.find(x => (x.getHeader.getCycle == spectrumHeader.getCycle) && (!cvOpt.isDefined || cvOpt.get == _getCV(reader, x.getHeader).get ) )
       if (!sliceOpt.isDefined) {
-        Some(slices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) })
+        val filteredSlices = slices.filter(x => (!cvOpt.isDefined || cvOpt.get == _getCV(reader, x.getHeader).get ))
+        val slice = filteredSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
+        Some(slice)
       } else {
         sliceOpt
       }
     } else None
+  }
+
+  private def _getCV(reader: MzDbReader, spectrumHeader: SpectrumHeader): Option[String] = {
+    if (hasIonMobility) {
+      if (!cvByHeader.contains(spectrumHeader)) {
+        cvByHeader += (spectrumHeader -> IsolationWindowPrecursorExtractor_v3_6.readIonMobilityCV(reader, spectrumHeader))
+      }
+      cvByHeader(spectrumHeader)
+    } else
+      None
   }
 
   private def getBestIsotopicPatternMatch(spectrumSlice: SpectrumSlice, precMz: Double): Option[(Double, TheoreticalIsotopePattern)] = {

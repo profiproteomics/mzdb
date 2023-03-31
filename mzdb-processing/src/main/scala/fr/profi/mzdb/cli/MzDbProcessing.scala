@@ -130,7 +130,7 @@ object MzDbProcessing extends App with LazyLogging {
     @Parameter(names = Array("-ms", "--ms_level"), description = "the MS level to export", required = false)
     var msLevel: Int = 2
 
-    @Parameter(names = Array("-precmz", "--precursor_mz"), description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo, isolation_window_extracted, isolation_window_extracted_v3'", required = false)
+    @Parameter(names = Array("-precmz", "--precursor_mz"), description = "must be on of 'main_precursor_mz, selected_ion_mz, refined, refined_thermo, isolation_window_extracted'", required = false)
     var precMzComputation: String = "main_precursor_mz"
 
     @Parameter(names = Array("-mztol", "--mz_tol_ppm"), description = "m/z tolerance used for precursor m/z value definition", required = false)

@@ -400,7 +400,9 @@ object Commands extends LazyLogging {
       val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted_v3.6") {
-      val precComputer = new IsolationWindowPrecursorExtractor_v3_6(CreateMgfCommand.mzTolPPM)
+      val mzDbReader = writer.getMzDbReader
+      val ionMobility = mzDbReader.getIonMobilityMode
+      val precComputer = new IsolationWindowPrecursorExtractor_v3_6(CreateMgfCommand.mzTolPPM, ionMobility != null)
       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted_v3.7") {
       val precComputer = new IsolationWindowPrecursorExtractor_v3_7(CreateMgfCommand.mzTolPPM)
