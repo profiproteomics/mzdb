@@ -90,7 +90,7 @@ public class MzDbReaderTest {
 	try {
 	    mzDb = new MzDbReader(MzDbReaderTest.class.getResource(filename).getFile(), true);
 		mzDb.enablePrecursorListLoading();
-	} catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
+	} catch ( FileNotFoundException | SQLiteException e) {
 	    Assert.fail("MzDB reader instantiation exception " + e.getMessage() + " for " + filename);
 	}
 	Assert.assertNotNull("Reader cannot be created", mzDb);

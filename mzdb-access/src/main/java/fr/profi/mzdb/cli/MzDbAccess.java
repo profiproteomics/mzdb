@@ -180,7 +180,7 @@ public class MzDbAccess {
 		}
 	}
 
-	private static void extractPeaks(ExtractPeaksCommand epc) throws ClassNotFoundException, FileNotFoundException, SQLiteException, StreamCorruptedException {
+	private static void extractPeaks(ExtractPeaksCommand epc) throws  FileNotFoundException, SQLiteException, StreamCorruptedException {
 		String dbPath = epc.mzdbFile;
 		double minMz = epc.minMz;
 		double maxMz = epc.maxMz;
@@ -214,7 +214,7 @@ public class MzDbAccess {
 		}
 	}
 
-	private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, IOException, ClassNotFoundException {
+	private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, IOException {
 		
 		logger.info("Creating MGF File for mzDB at: " + cmd.mzdbFile);
 		logger.info("Precursor m/z values will be defined using the method: " + cmd.precMzComputation);
@@ -223,7 +223,7 @@ public class MzDbAccess {
 		writer.write(cmd.outputFile, cmd.precMzComputation, cmd.mzTolPPM, cmd.intensityCutoff, cmd.exportProlineTitle);
 	}
 
-	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException {
 
 		MzDbReader mzDbReader = new MzDbReader(cmd.mzdbFile, true);
 		

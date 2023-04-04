@@ -49,7 +49,7 @@ public class MzDbMetaDataTest {
 		try {
 			mzDb = new MzDbReader(MzDbMetaDataTest.class.getResource("/"+filename).getFile(), true);
 
-		} catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
+		} catch ( FileNotFoundException | SQLiteException e) {
 			Assert.fail("MzDB reader instantiation exception " + e.getMessage() + " for " + filename);
 		}
 		Assert.assertNotNull("Reader cannot be created", mzDb);

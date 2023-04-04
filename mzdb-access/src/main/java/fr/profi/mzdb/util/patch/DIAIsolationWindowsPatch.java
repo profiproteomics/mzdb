@@ -183,8 +183,10 @@ public class DIAIsolationWindowsPatch {
   }
 
   public static void patchDIAWindows(String filepath) {
+    MzDbReader reader = null;
+    SQLiteConnection connection = null;
     try {
-      MzDbReader reader = new MzDbReader(new File(filepath), false);
+      reader = new MzDbReader(new File(filepath), false);
       AcquisitionMode acqMode = null;
       acqMode = reader.getAcquisitionMode();
       if (acqMode != null && acqMode.isDataIndependantAcquisition()) {
@@ -201,8 +203,9 @@ public class DIAIsolationWindowsPatch {
         }
 
         reader.close();
+        reader = null;
 
-        SQLiteConnection connection = new SQLiteConnection(new File(filepath));
+        connection = new SQLiteConnection(new File(filepath));
         connection.open();
         logger.info("Updating {} spectrum headers bb indexes", headers.size());
         updateIsolationWindows2(connection, headers);
@@ -210,12 +213,20 @@ public class DIAIsolationWindowsPatch {
       }
     } catch (Exception e) {
       logger.error("Error during isolation window fix/retrieval", e);
+    } finally {
+      if(reader != null)
+        reader.close();
+
+      if(connection != null && connection.isOpen())
+        connection.dispose();
     }
   }
 
   public static void updateDIAModeForPRM(String filepath) {
+    MzDbReader reader = null;
+    SQLiteConnection connection = null;
     try {
-      MzDbReader reader = new MzDbReader(new File(filepath), false) {
+      reader = new MzDbReader(new File(filepath), false) {
         public boolean isPRM() {
           try {
             List<String> lines = extractFromInstrumentMethod("PRM");
@@ -238,7 +249,7 @@ public class DIAIsolationWindowsPatch {
 
       AcquisitionMode acqMode = reader.getAcquisitionMode();
       if (acqMode.equals(AcquisitionMode.PRM)) {
-        SQLiteConnection connection = new SQLiteConnection(new File(filepath));
+        connection = new SQLiteConnection(new File(filepath));
         connection.open();
         String queryStr = "SELECT * FROM run";
         SQLiteRecordIterator records = new SQLiteQuery(connection, queryStr).getRecordIterator();
@@ -259,6 +270,12 @@ public class DIAIsolationWindowsPatch {
       }
     } catch(Exception e){
       logger.error("Error during isolation window fix/retrieval", e);
+    } finally {
+      if(reader != null)
+        reader.close();
+
+      if(connection != null && connection.isOpen())
+        connection.dispose();
     }
   }
 }

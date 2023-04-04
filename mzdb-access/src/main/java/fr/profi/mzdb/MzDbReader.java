@@ -68,14 +68,12 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *            the cache entities
 	 * @param logConnections
 	 *            the log connections
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the SQLite exception
 	 */
-	public MzDbReader(File dbLocation, MzDbEntityCache entityCache, boolean logConnections) throws ClassNotFoundException, FileNotFoundException,
+	public MzDbReader(File dbLocation, MzDbEntityCache entityCache, boolean logConnections) throws  FileNotFoundException,
 			SQLiteException {
 
 		this.entityCache = entityCache;
@@ -141,14 +139,12 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *            the db location
 	 * @param cacheEntities
 	 *            the cache entities
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbReader(File dbLocation, boolean cacheEntities) throws ClassNotFoundException, FileNotFoundException, SQLiteException {
+	public MzDbReader(File dbLocation, boolean cacheEntities) throws  FileNotFoundException, SQLiteException {
 		this(dbLocation, cacheEntities ? new MzDbEntityCache() : null, false);
 	}
 
@@ -159,14 +155,12 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *            the db path
 	 * @param cacheEntities
 	 *            the cache entities
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbReader(String dbPath, boolean cacheEntities) throws ClassNotFoundException, FileNotFoundException, SQLiteException {
+	public MzDbReader(String dbPath, boolean cacheEntities) throws  FileNotFoundException, SQLiteException {
 		this(new File(dbPath), cacheEntities ? new MzDbEntityCache() : null, false);
 	}
 

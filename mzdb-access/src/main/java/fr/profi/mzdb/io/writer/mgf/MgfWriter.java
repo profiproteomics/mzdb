@@ -29,7 +29,7 @@ public class MgfWriter {
 	private final String mzDBFilePath;
 	private final int msLevel;
 	private MzDbReader mzDbReader;
-	private Map<Long, String> titleBySpectrumId = new HashMap<Long, String>();
+	private Map<Long, String> titleBySpectrumId = new HashMap<>();
 
 	private List<String> headerComments = null;
 
@@ -42,9 +42,8 @@ public class MgfWriter {
 	 * @param msLevel
 	 * @throws SQLiteException
 	 * @throws FileNotFoundException
-	 * @throws ClassNotFoundException
 	 */
-	public MgfWriter(String mzDBFilePath, int msLevel, String prolineSpectraTitleSeparator) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	public MgfWriter(String mzDBFilePath, int msLevel, String prolineSpectraTitleSeparator) throws SQLiteException, FileNotFoundException {
 		this(mzDBFilePath, msLevel);
 		prolineTitleSeparator = prolineSpectraTitleSeparator;
 	}
@@ -55,9 +54,8 @@ public class MgfWriter {
 	 * @param msLevel
 	 * @throws SQLiteException
 	 * @throws FileNotFoundException
-	 * @throws ClassNotFoundException 
 	 */
-	public MgfWriter(String mzDBFilePath, int msLevel) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	public MgfWriter(String mzDBFilePath, int msLevel) throws SQLiteException, FileNotFoundException {
 		if (msLevel < 2 || msLevel > 3) {
 			throw new IllegalArgumentException("msLevel must be 2 or 3");
 		}
@@ -65,19 +63,30 @@ public class MgfWriter {
 		this.mzDBFilePath = mzDBFilePath;
 		this.msLevel = msLevel;
 
-		// Create reader
-		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
-		this.mzDbReader.enablePrecursorListLoading();
-
-		this._fillTitleBySpectrumId();
-		this.logger.info("Number of loaded spectra titles: " + this.titleBySpectrumId.size());
+		initReader();
 	}
 	
-	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException {
 		this(mzDBFilePath, 2);
 	}
 
+	private void initReader() throws FileNotFoundException, SQLiteException {
+		// Create reader
+		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
+		this.mzDbReader.enablePrecursorListLoading();
+		titleBySpectrumId.clear();
+		_fillTitleBySpectrumId();
+		this.logger.info("Number of loaded spectra titles: " + this.titleBySpectrumId.size());
+	}
+
 	public MzDbReader getMzDbReader() {
+		if(!mzDbReader.getConnection().isOpen()) {
+			try {
+				initReader();
+			} catch (FileNotFoundException | SQLiteException e) {
+				throw new RuntimeException(e);
+			}
+		}
 		return mzDbReader;
 	}
 
@@ -118,7 +127,10 @@ public class MgfWriter {
 	}
 
 	public void write(String mgfFile, IPrecursorComputation precComp, ISpectrumProcessor spectrumProcessor, float intensityCutoff, boolean exportProlineTitle) throws SQLiteException, IOException {
-		
+		if(!mzDbReader.getConnection().isOpen()) {
+			initReader();
+		}
+
 		// treat path mgfFile ?
 		if (mgfFile.isEmpty())
 			mgfFile = this.mzDBFilePath + ".mgf";
@@ -157,6 +169,7 @@ public class MgfWriter {
 		this.logger.info(String.format("MGF file successfully created: %d spectra exported.", spectraCount));
 		mgfWriter.flush();
 		mgfWriter.close();
+		mzDbReader.close();
 	}
 
 	/**
