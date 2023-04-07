@@ -52,10 +52,12 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		final double precMz = this.getPrecursorMz(mzDbReader, spectrumHeader);
 		final int charge = this.getPrecursorCharge(mzDbReader, spectrumHeader);
 
-		final MgfPrecursor mgfPrecursor = charge != 0 ? new MgfPrecursor(precMz, charge, time) : new MgfPrecursor(precMz, time);
-
-		return new MgfPrecursor[] { mgfPrecursor };
-
+		if(charge != 0) {
+			final MgfPrecursor mgfPrecursor =  new MgfPrecursor(precMz, charge, time);
+			return new MgfPrecursor[]{mgfPrecursor};
+		}
+		else
+			return new MgfPrecursor[0];
 	}
 
 
