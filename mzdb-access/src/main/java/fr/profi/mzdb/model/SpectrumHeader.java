@@ -12,10 +12,13 @@ import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.PrecursorList;
 import fr.profi.mzdb.db.model.params.ScanList;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,49 +32,49 @@ import java.util.Map;
 public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
 	/** The id. */
-	protected final long id;
+	protected long id;
 
 	/** The initial id. */
-	protected final int initialId;
+	protected int initialId;
 
 	/** The cycle. */
-	protected final int cycle;
+	protected int cycle;
 
 	/** The time. */
-	protected final float time;
+	protected float time;
 
 	/** The ms level. */
-	protected final int msLevel;
+	protected int msLevel;
 
-	protected final String title;
+	protected String title;
 
 	/** The peaks count. */
-	protected final int peaksCount;
+	protected int peaksCount;
 
 	/** Is high resolution boolean. */
-	protected final boolean isHighResolution;
+	protected boolean isHighResolution;
 
 	/** total ion chromatogram of the spectrum */
-	protected final float tic;
+	protected float tic;
 
 	/** The base peak mz. */
-	protected final double basePeakMz;
+	protected double basePeakMz;
 
 	/** The base peak intensity. */
-	protected final float basePeakIntensity;
+	protected float basePeakIntensity;
 
-	protected final ActivationType activationType;
+	protected ActivationType activationType;
 
 	protected IsolationWindow isolationWindow;
 
 	/** The precursor mz. */
-	protected final Double precursorMz;
+	protected Double precursorMz;
 
 	/** The precursor charge. */
-	protected final Integer precursorCharge;
+	protected Integer precursorCharge;
 
 	/** The bounding box first spectrum id. */
-	protected final int bbFirstSpectrumId;
+	protected int bbFirstSpectrumId;
 
 	/** The spectrum list. */
 	protected ScanList scanList = null;
@@ -85,6 +88,10 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	protected String precursorAsString;
 
 	protected String paramTreeAsString; //String representation of paramTree. Only For Spectrum Header (?)
+
+	public SpectrumHeader(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new spectrum header.
@@ -479,5 +486,82 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 				this.precursorAsString = precursorAsStr;
 		}
 		return precursorAsStr;
+	}
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+		super.write(writer);
+
+		writer.writeInt64(id);
+		writer.writeInt32(initialId);
+		writer.writeInt32(cycle);
+		writer.writeFloat(time);
+		writer.writeInt32(msLevel);
+		writer.writeString(title);
+		writer.writeInt32(peaksCount);
+		writer.writeBoolean(isHighResolution);
+		writer.writeFloat(tic);
+		writer.writeDouble(basePeakMz);
+		writer.writeFloat(basePeakIntensity);
+		activationType.write(writer);
+		isolationWindow.write(writer);
+
+		writer.writeDouble(precursorMz); //JPM.TODO : can be null ?
+		writer.writeInt32(precursorCharge); //JPM.TODO : can be null ?
+
+		writer.writeInt32(bbFirstSpectrumId);
+
+		scanList.write(writer);
+		writer.writeString(scanListAsString);
+
+		precursor.write(writer);
+		precursorList.write(writer);
+
+		writer.writeString(precursorAsString);
+		writer.writeString(paramTreeAsString);
+
+
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+		super.read(reader);
+
+		id = reader.readInt64();
+		initialId = reader.readInt32();
+		cycle = reader.readInt32();
+		time = reader.readFloat();
+		msLevel = reader.readInt32();
+		title = reader.readString();
+		peaksCount = reader.readInt32();
+		isHighResolution = reader.readBoolean();
+		tic = reader.readFloat();
+
+		basePeakMz = reader.readDouble();
+		basePeakIntensity = reader.readFloat();
+
+		activationType = ActivationType.getEnum(reader);
+
+		isolationWindow = new IsolationWindow(reader);
+
+		precursorMz = reader.readDouble();  //JPM.TODO : can be null ?
+		precursorCharge = reader.readInt32();  //JPM.TODO : can be null ?
+
+
+		bbFirstSpectrumId = reader.readInt32();
+
+		scanList = new ScanList(reader);
+
+		scanListAsString = reader.readString();
+
+		precursor = new Precursor(reader);
+
+		precursorList = new PrecursorList(reader);
+
+
+		precursorAsString = reader.readString();
+		paramTreeAsString = reader.readString();
+
 	}
 }

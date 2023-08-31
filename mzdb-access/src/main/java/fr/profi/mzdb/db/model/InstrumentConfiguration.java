@@ -2,7 +2,12 @@ package fr.profi.mzdb.db.model;
 
 import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 import fr.profi.mzdb.util.misc.AbstractInMemoryIdGen;
+
+import java.io.IOException;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -10,7 +15,7 @@ import fr.profi.mzdb.util.misc.AbstractInMemoryIdGen;
  * 
  * @author David Bouyssie
  */
-public class InstrumentConfiguration extends AbstractInMemoryIdGen {
+public class InstrumentConfiguration extends AbstractInMemoryIdGen implements SerializationInterface {
 	
 	public static final String TABLE_NAME = "instrument_configuration";
 
@@ -28,7 +33,10 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 	
 	/** The param tree. */
 	protected ComponentList componentList;
-	
+
+	public InstrumentConfiguration(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new instrument configuration.
@@ -103,6 +111,32 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen {
 	 */
 	public ComponentList getComponentList() {
 		return componentList;
+	}
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		writer.writeInt32(id);
+		writer.writeString(name);
+		writer.writeInt32(softwareId);
+
+		paramTree.write(writer);
+		componentList.write(writer);
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+
+		id = reader.readInt32();
+		name = reader.readString();
+		softwareId = reader.readInt32();
+
+		paramTree = new ParamTree(reader);
+
+		componentList = new ComponentList(reader);
+
+
 	}
 
 	/**
