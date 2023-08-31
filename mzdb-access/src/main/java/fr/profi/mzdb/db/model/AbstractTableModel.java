@@ -1,5 +1,6 @@
 package fr.profi.mzdb.db.model;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -11,8 +12,12 @@ import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 import fr.profi.mzdb.util.misc.AbstractInMemoryIdGen;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
+
+import fr.profi.mzdb.serialization.SerializationInterface;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -20,15 +25,19 @@ import fr.profi.mzdb.util.sqlite.SQLiteQuery;
  * 
  * @author David Bouyssie
  */
-public abstract class AbstractTableModel extends AbstractInMemoryIdGen implements IParamContainer {
+public abstract class AbstractTableModel extends AbstractInMemoryIdGen implements IParamContainer, SerializationInterface {
 
 	public static String TABLE_NAME;
 	
 	/** The id. */
-	protected final long id;
+	protected long id;
 
 	/** The param tree. */
 	protected ParamTree paramTree = null;
+
+
+	protected AbstractTableModel() {
+	}
 
 	/**
 	 * Instantiates a new abstract table model.
@@ -131,6 +140,33 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 
 	public List<UserText> getUserTexts() {
 		return this.paramTree.getUserTexts();
+	}
+
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		writer.writeInt64(id);
+
+		boolean hasParamTree = (paramTree != null);
+		writer.writeBoolean(hasParamTree);
+		if (hasParamTree) {
+			paramTree.write(writer);
+		}
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+
+		id = reader.readInt64();
+
+		boolean hasParamTree = reader.readBoolean();
+		if (hasParamTree) {
+			paramTree = new ParamTree(reader);
+		} else {
+			paramTree = null;
+		}
 	}
 
 }

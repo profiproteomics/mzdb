@@ -1,14 +1,20 @@
 package fr.profi.mzdb.db.model;
 
+import fr.profi.mzdb.db.model.params.ComponentList;
 import fr.profi.mzdb.db.model.params.FileContentParams;
 import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
+
+import java.io.IOException;
 
 /**
  * The Class MzDbHeader.
  * 
  * @author David Bouyssie
  */
-public class MzDbHeader extends AbstractTableModel {
+public class MzDbHeader extends AbstractTableModel implements SerializationInterface {
 
 	public static final String TABLE_NAME = "mzdb";
 
@@ -24,6 +30,10 @@ public class MzDbHeader extends AbstractTableModel {
 
 	protected FileContentParams fileContent;
 
+
+	public MzDbHeader(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new mz db header.
@@ -56,6 +66,29 @@ public class MzDbHeader extends AbstractTableModel {
 	public FileContentParams getFileContent(){
 		return fileContent;
 	}
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		super.write(writer);
+
+		writer.writeString(version);
+		writer.writeInt32(creationTimestamp);
+		fileContent.write(writer);
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+
+		super.read(reader);
+
+		version = reader.readString();
+		creationTimestamp = reader.readInt32();
+
+		fileContent = new FileContentParams(reader);
+	}
+
 
 }
 

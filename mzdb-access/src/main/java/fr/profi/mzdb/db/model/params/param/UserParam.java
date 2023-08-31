@@ -1,11 +1,16 @@
 package fr.profi.mzdb.db.model.params.param;
 
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import java.io.IOException;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class UserParam {
+public class UserParam implements SerializationInterface {
 	
 	@XmlAttribute
 	protected String cvRef;
@@ -22,7 +27,11 @@ public class UserParam {
 	@XmlAttribute
 	protected String type;// ="xsd:float"/>;
 
-	public  UserParam(){
+	public  UserParam() {
+	}
+
+	public UserParam(SerializationReader reader) throws IOException {
+		read(reader);
 	}
 
 	public UserParam( String cvRef, String accession, String name, String value, String type){
@@ -73,4 +82,23 @@ public class UserParam {
 		this.type = type;
 	}
 
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		writer.writeString(cvRef);
+		writer.writeString(accession);
+		writer.writeString(name);
+		writer.writeString(value);
+		writer.writeString(type);
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException  {
+
+		cvRef = reader.readString();
+		accession = reader.readString();
+		name = reader.readString();
+		value = reader.readString();
+		type = reader.readString();
+	}
 }

@@ -1,5 +1,6 @@
 package fr.profi.mzdb.db.model.params;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,12 +10,15 @@ import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 
 /**
  * @author David Bouyssie
  * 
  */
-public abstract class AbstractParamTree { // implements IParamContainer
+public abstract class AbstractParamTree implements SerializationInterface { // implements IParamContainer
 
 	/** The cv params. */
 	protected List<CVParam> cvParams;
@@ -26,6 +30,11 @@ public abstract class AbstractParamTree { // implements IParamContainer
 	 * The userText params: newly introduced for handling Thermo metadata in text field
 	 */
 	protected List<UserText> userTexts;
+
+
+	public AbstractParamTree() {
+	}
+
 
 	@XmlElement(name = "cvParam", type = CVParam.class, required = false)
 	public List<CVParam> getCVParams() {
@@ -101,5 +110,52 @@ public abstract class AbstractParamTree { // implements IParamContainer
 		
 		return cvParams;
 	}
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		writer.writeInt32(cvParams.size());  //JPM.TODO : can be null ?
+		for (SerializationInterface serializableObject : cvParams) {
+			serializableObject.write(writer);
+		}
+
+		writer.writeInt32(userParams.size()); //JPM.TODO : can be null ?
+		for (SerializationInterface serializableObject : userParams) {
+			serializableObject.write(writer);
+		}
+
+		writer.writeInt32(userTexts.size());
+		for (SerializationInterface serializableObject : userTexts) {
+			serializableObject.write(writer);
+		}
+
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+		int size = reader.readInt32();
+		cvParams = new ArrayList<>(size); //JPM.TODO : can be null ?
+		for (int i=0;i<size;i++) {
+			CVParam element = new CVParam(reader);
+			cvParams.add(element);
+		}
+
+		size = reader.readInt32();
+		userParams = new ArrayList<>(size);
+		for (int i=0;i<size;i++) {
+			UserParam element = new UserParam(reader);
+			userParams.add(element);
+		}
+
+		size = reader.readInt32();
+		userTexts = new ArrayList<>(size);
+		for (int i=0;i<size;i++) {
+			UserText element = new UserText(reader);
+			userTexts.add(element);
+		}
+	}
+
+
 
 }

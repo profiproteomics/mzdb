@@ -1,7 +1,11 @@
 package fr.profi.mzdb.model;
 
+import java.io.IOException;
 import java.util.Arrays;
 
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 import org.apache.commons.lang3.ArrayUtils;
 
 import fr.profi.mzdb.util.ms.MsUtils;
@@ -12,7 +16,7 @@ import fr.profi.mzdb.util.ms.MsUtils;
  * 
  * @author David Bouyssie
  */
-public class SpectrumData {
+public class SpectrumData implements SerializationInterface {
 
 	/** The mz list. */
 	protected double[] mzList;
@@ -27,6 +31,10 @@ public class SpectrumData {
 	protected float[] rightHwhmList;
 
 	protected int peaksCount;
+
+	public SpectrumData(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new spectrum data.
@@ -353,4 +361,26 @@ public class SpectrumData {
 		return filteredSpectrumData;
 	}
 
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		writer.write(mzList);
+		writer.write(intensityList);
+		writer.write(leftHwhmList);
+		writer.write(rightHwhmList);
+		writer.writeInt32(peaksCount);
+
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+
+		mzList = reader.readArrayDouble();
+		intensityList = reader.readArrayFloat();
+		leftHwhmList = reader.readArrayFloat();
+		rightHwhmList = reader.readArrayFloat();
+		peaksCount = reader.readInt32();
+
+	}
 }
