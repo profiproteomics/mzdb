@@ -74,7 +74,12 @@ public class MzDbHeader extends AbstractTableModel implements SerializationInter
 
 		writer.writeString(version);
 		writer.writeInt32(creationTimestamp);
-		fileContent.write(writer);
+
+		boolean hasData = fileContent!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			fileContent.write(writer);
+		}
 
 	}
 
@@ -86,7 +91,12 @@ public class MzDbHeader extends AbstractTableModel implements SerializationInter
 		version = reader.readString();
 		creationTimestamp = reader.readInt32();
 
-		fileContent = new FileContentParams(reader);
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			fileContent = new FileContentParams(reader);
+		} else {
+			fileContent = null;
+		}
 	}
 
 
