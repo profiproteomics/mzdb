@@ -97,26 +97,102 @@ public class CVParam implements SerializationInterface {
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
-		writer.writeString(cvRef);
-		writer.writeString(accession);
-		writer.writeString(name);
-		writer.writeString(value);
-		writer.writeString(unitCvRef);
-		writer.writeString(unitAccession);
-		writer.writeString(unitName);
+		boolean hasData = cvRef!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(cvRef);
+		}
+
+		hasData = accession!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(accession);
+		}
+
+		hasData = name!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(name);
+		}
+
+		hasData = value!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(value);
+		}
+
+		hasData = unitCvRef!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(unitCvRef);
+		}
+
+		hasData = unitAccession!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(unitAccession);
+		}
+
+		hasData = unitName!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(unitName);
+		}
 
 
 	}
 
 	@Override
 	public void read(SerializationReader reader) throws IOException  {
-		cvRef = reader.readString();
-		accession = reader.readString();
-		name = reader.readString();
-		value = reader.readString();
-		unitCvRef = reader.readString();
-		unitAccession = reader.readString();
-		unitName = reader.readString();
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			cvRef = reader.readString();
+		} else {
+			cvRef = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			accession = reader.readString();
+		} else {
+			accession = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			name = reader.readString();
+		} else {
+			name = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			value = reader.readString();
+		} else {
+			value = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			unitCvRef = reader.readString();
+		} else {
+			unitCvRef = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			unitAccession = reader.readString();
+		} else {
+			unitAccession = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			unitName = reader.readString();
+		} else {
+			unitName = null;
+		}
 	}
 
 

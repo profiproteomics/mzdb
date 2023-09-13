@@ -215,8 +215,6 @@ public class SpectrumData implements SerializationInterface {
 	 * 
 	 * @param binSearchIndex
 	 *            the bin search index
-	 * @param length
-	 *            the length
 	 * @return the int
 	 */
 	private int _binSearchIndexToNearestIndex(int binSearchIndex) {
@@ -364,10 +362,30 @@ public class SpectrumData implements SerializationInterface {
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
-		writer.write(mzList);
-		writer.write(intensityList);
-		writer.write(leftHwhmList);
-		writer.write(rightHwhmList);
+		boolean hasData = mzList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(mzList);
+		}
+
+		hasData = intensityList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(intensityList);
+		}
+
+		hasData = leftHwhmList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(leftHwhmList);
+		}
+
+		hasData = rightHwhmList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(rightHwhmList);
+		}
+
 		writer.writeInt32(peaksCount);
 
 
@@ -376,10 +394,33 @@ public class SpectrumData implements SerializationInterface {
 	@Override
 	public void read(SerializationReader reader) throws IOException {
 
-		mzList = reader.readArrayDouble();
-		intensityList = reader.readArrayFloat();
-		leftHwhmList = reader.readArrayFloat();
-		rightHwhmList = reader.readArrayFloat();
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			mzList = reader.readArrayDouble();
+		} else {
+			mzList = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			intensityList = reader.readArrayFloat();
+		} else {
+			intensityList = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			leftHwhmList = reader.readArrayFloat();
+		} else {
+			leftHwhmList = null;
+		}
+		hasData = reader.readBoolean();
+		if (hasData) {
+			rightHwhmList = reader.readArrayFloat();
+		} else {
+			rightHwhmList = null;
+		}
 		peaksCount = reader.readInt32();
 
 	}

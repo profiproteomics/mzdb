@@ -50,9 +50,13 @@ public class SelectedIonList extends AbstractParamTree {
 
     writer.writeInt32(count);
 
-    writer.writeInt32(selectedIons.size());
-    for (SerializationInterface serializableObject : selectedIons) {
-      serializableObject.write(writer);
+    boolean hasData = selectedIons!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      writer.writeInt32(selectedIons.size());
+      for (SerializationInterface serializableObject : selectedIons) {
+        serializableObject.write(writer);
+      }
     }
 
 
@@ -64,11 +68,16 @@ public class SelectedIonList extends AbstractParamTree {
 
     count = reader.readInt32();
 
-    int size = reader.readInt32();
-    selectedIons = new ArrayList<>(size);
-    for (int i = 0; i < size; i++) {
-      SelectedIon element = new SelectedIon(reader);
-      selectedIons.add(element);
+    boolean hasData = reader.readBoolean();
+    if (hasData) {
+      int size = reader.readInt32();
+      selectedIons = new ArrayList<>(size);
+      for (int i = 0; i < size; i++) {
+        SelectedIon element = new SelectedIon(reader);
+        selectedIons.add(element);
+      }
+    } else {
+      selectedIons = null;
     }
   }
 }

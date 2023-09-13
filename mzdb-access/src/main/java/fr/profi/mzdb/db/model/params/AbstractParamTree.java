@@ -114,45 +114,73 @@ public abstract class AbstractParamTree implements SerializationInterface { // i
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
-		writer.writeInt32(cvParams.size());  //JPM.TODO : can be null ?
-		for (SerializationInterface serializableObject : cvParams) {
-			serializableObject.write(writer);
+
+		boolean hasData = cvParams!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(cvParams.size());
+			for (SerializationInterface serializableObject : cvParams) {
+				serializableObject.write(writer);
+			}
 		}
 
-		writer.writeInt32(userParams.size()); //JPM.TODO : can be null ?
-		for (SerializationInterface serializableObject : userParams) {
-			serializableObject.write(writer);
+		hasData = userParams!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(userParams.size());
+			for (SerializationInterface serializableObject : userParams) {
+				serializableObject.write(writer);
+			}
 		}
 
-		writer.writeInt32(userTexts.size());
-		for (SerializationInterface serializableObject : userTexts) {
-			serializableObject.write(writer);
+		hasData = userTexts!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(userTexts.size());
+			for (SerializationInterface serializableObject : userTexts) {
+				serializableObject.write(writer);
+			}
 		}
-
 
 	}
 
 	@Override
 	public void read(SerializationReader reader) throws IOException {
-		int size = reader.readInt32();
-		cvParams = new ArrayList<>(size); //JPM.TODO : can be null ?
-		for (int i=0;i<size;i++) {
-			CVParam element = new CVParam(reader);
-			cvParams.add(element);
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			cvParams = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				CVParam element = new CVParam(reader);
+				cvParams.add(element);
+			}
+		} else {
+			cvParams = null;
 		}
 
-		size = reader.readInt32();
-		userParams = new ArrayList<>(size);
-		for (int i=0;i<size;i++) {
-			UserParam element = new UserParam(reader);
-			userParams.add(element);
+		hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			userParams = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				UserParam element = new UserParam(reader);
+				userParams.add(element);
+			}
+		} else {
+			userParams = null;
 		}
 
-		size = reader.readInt32();
-		userTexts = new ArrayList<>(size);
-		for (int i=0;i<size;i++) {
-			UserText element = new UserText(reader);
-			userTexts.add(element);
+		hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			userTexts = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				UserText element = new UserText(reader);
+				userTexts.add(element);
+			}
+		} else {
+			userTexts = null;
 		}
 	}
 
