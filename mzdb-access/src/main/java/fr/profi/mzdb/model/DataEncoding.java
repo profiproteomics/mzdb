@@ -145,13 +145,32 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 
 		writer.writeInt32(id);
 
-		mode.write(writer);
+		boolean hasData = mode!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			mode.write(writer);
+		}
 
-		peakEncoding.write(writer);
 
-		writer.writeString(compression);
+		hasData = peakEncoding!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			peakEncoding.write(writer);
+		}
 
-		writer.writeString(byteOrder.toString());
+
+		hasData = compression!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(compression);
+		}
+
+
+		hasData = byteOrder!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(byteOrder.toString());
+		}
 
 		writer.writeInt32(peakStructSize);
 
@@ -162,15 +181,37 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 
 		id = reader.readInt32();
 
-		mode = DataMode.getEnum(reader);
-
-		compression = reader.readString();
-
-		String byteOrderString = reader.readString();
-		if (byteOrderString.equals(ByteOrder.BIG_ENDIAN.toString())) {
-			byteOrder = ByteOrder.BIG_ENDIAN;
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			mode = DataMode.getEnum(reader);
 		} else {
-			byteOrder = ByteOrder.LITTLE_ENDIAN;
+			mode = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			peakEncoding = PeakEncoding.getEnum(reader);
+		} else {
+			peakEncoding = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			compression = reader.readString();
+		} else {
+			compression = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			String byteOrderString = reader.readString();
+			if (byteOrderString.equals(ByteOrder.BIG_ENDIAN.toString())) {
+				byteOrder = ByteOrder.BIG_ENDIAN;
+			} else {
+				byteOrder = ByteOrder.LITTLE_ENDIAN;
+			}
+		} else {
+			byteOrder = null;
 		}
 
 		peakStructSize = reader.readInt32();

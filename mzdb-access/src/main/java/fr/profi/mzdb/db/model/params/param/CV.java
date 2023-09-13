@@ -64,19 +64,63 @@ public class CV implements SerializationInterface {
 
   @Override
   public void write(SerializationWriter writer) throws IOException {
-    writer.writeString(cvId);
-    writer.writeString(fullName);
-    writer.writeString(cvVersion);
-    writer.writeString(uri);
+
+    boolean hasData = cvId!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      writer.writeString(cvId);
+    }
+
+    hasData = fullName!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      writer.writeString(fullName);
+    }
+
+    hasData = cvVersion!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      writer.writeString(cvVersion);
+    }
+
+    hasData = uri!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      writer.writeString(uri);
+    }
 
   }
 
   @Override
   public void read(SerializationReader reader) throws IOException {
 
-    cvId = reader.readString();
-    fullName = reader.readString();
-    cvVersion = reader.readString();
-    uri = reader.readString();
+    boolean hasData = reader.readBoolean();
+    if (hasData) {
+      cvId = reader.readString();
+    } else {
+      cvId = null;
+    }
+
+    hasData = reader.readBoolean();
+    if (hasData) {
+      fullName = reader.readString();
+    } else {
+      fullName = null;
+    }
+
+    hasData = reader.readBoolean();
+    if (hasData) {
+      cvVersion = reader.readString();
+    } else {
+      cvVersion = null;
+    }
+
+    hasData = reader.readBoolean();
+    if (hasData) {
+      uri = reader.readString();
+    } else {
+      uri = null;
+    }
+
   }
 }

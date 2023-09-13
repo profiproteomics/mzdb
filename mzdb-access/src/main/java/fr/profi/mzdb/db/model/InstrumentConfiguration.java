@@ -120,8 +120,17 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 		writer.writeString(name);
 		writer.writeInt32(softwareId);
 
-		paramTree.write(writer);
-		componentList.write(writer);
+		boolean hasData = paramTree!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			paramTree.write(writer);
+		}
+
+		hasData = componentList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			componentList.write(writer);
+		}
 
 	}
 
@@ -132,10 +141,19 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 		name = reader.readString();
 		softwareId = reader.readInt32();
 
-		paramTree = new ParamTree(reader);
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			paramTree = new ParamTree(reader);
+		} else {
+			paramTree = null;
+		}
 
-		componentList = new ComponentList(reader);
-
+		hasData = reader.readBoolean();
+		if (hasData) {
+			componentList = new ComponentList(reader);
+		} else {
+			componentList = null;
+		}
 
 	}
 

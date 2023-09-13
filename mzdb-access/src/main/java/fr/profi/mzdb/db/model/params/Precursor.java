@@ -76,21 +76,65 @@ public class Precursor implements SerializationInterface {
   @Override
   public void write(SerializationWriter writer) throws IOException {
 
-    writer.writeString(spectrumRef);
-    isolationWindow.write(writer);
-    selectedIonList.write(writer);
-    activation.write(writer);
+    boolean hasData = spectrumRef!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      writer.writeString(spectrumRef);
+    }
+
+    hasData = isolationWindow!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      isolationWindow.write(writer);
+    }
+
+    hasData = selectedIonList!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      selectedIonList.write(writer);
+    }
+
+    hasData = activation!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      activation.write(writer);
+    }
+
   }
 
   @Override
   public void read(SerializationReader reader) throws IOException {
-    spectrumRef = reader.readString();
 
-    isolationWindow = new IsolationWindowParamTree(reader);
 
-    selectedIonList = new SelectedIonList(reader);
+    boolean hasData = reader.readBoolean();
+    if (hasData) {
+      spectrumRef = reader.readString();
+    } else {
+      spectrumRef = null;
+    }
 
-    activation = new Activation(reader);
+    hasData = reader.readBoolean();
+    if (hasData) {
+      isolationWindow = new IsolationWindowParamTree(reader);
+    } else {
+      isolationWindow = null;
+    }
+
+    hasData = reader.readBoolean();
+    if (hasData) {
+      selectedIonList = new SelectedIonList(reader);
+    } else {
+      selectedIonList = null;
+    }
+
+    hasData = reader.readBoolean();
+    if (hasData) {
+      activation = new Activation(reader);
+    } else {
+      activation = null;
+    }
+
+
 
   }
 }

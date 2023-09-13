@@ -85,20 +85,76 @@ public class UserParam implements SerializationInterface {
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
-		writer.writeString(cvRef);
-		writer.writeString(accession);
-		writer.writeString(name);
-		writer.writeString(value);
-		writer.writeString(type);
+
+		boolean hasData = cvRef!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(cvRef);
+		}
+
+		hasData = accession!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(accession);
+		}
+
+		hasData = name!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(name);
+		}
+
+		hasData = value!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(value);
+		}
+
+		hasData = type!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(type);
+		}
+
 	}
 
 	@Override
 	public void read(SerializationReader reader) throws IOException  {
 
-		cvRef = reader.readString();
-		accession = reader.readString();
-		name = reader.readString();
-		value = reader.readString();
-		type = reader.readString();
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			cvRef = reader.readString();
+		} else {
+			cvRef = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			accession = reader.readString();
+		} else {
+			accession = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			name = reader.readString();
+		} else {
+			name = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			value = reader.readString();
+		} else {
+			value = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			type = reader.readString();
+		} else {
+			type = null;
+		}
+
 	}
 }

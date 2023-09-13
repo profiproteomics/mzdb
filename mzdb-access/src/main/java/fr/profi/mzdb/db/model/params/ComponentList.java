@@ -60,9 +60,13 @@ public class ComponentList extends AbstractParamTree {
 	public void write(SerializationWriter writer) throws IOException {
 		super.write(writer);
 
-		writer.writeInt32(components.size());
-		for (SerializationInterface serializableObject : components) {
-			serializableObject.write(writer);
+		boolean hasData = components!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(components.size());
+			for (SerializationInterface serializableObject : components) {
+				serializableObject.write(writer);
+			}
 		}
 
 		writer.writeInt32(count);
@@ -73,11 +77,16 @@ public class ComponentList extends AbstractParamTree {
 	public void read(SerializationReader reader) throws IOException {
 		super.read(reader);
 
-		int size = reader.readInt32();
-		components = new ArrayList<>(size);
-		for (int i=0;i<size;i++) {
-			Component element = new Component(reader);
-			components.add(element);
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			components = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				Component element = new Component(reader);
+				components.add(element);
+			}
+		} else {
+			components = null;
 		}
 
 		count = reader.readInt32();

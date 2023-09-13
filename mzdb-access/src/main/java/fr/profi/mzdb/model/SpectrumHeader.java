@@ -503,23 +503,70 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		writer.writeFloat(tic);
 		writer.writeDouble(basePeakMz);
 		writer.writeFloat(basePeakIntensity);
-		activationType.write(writer);
-		isolationWindow.write(writer);
 
-		writer.writeDouble(precursorMz); //JPM.TODO : can be null ?
-		writer.writeInt32(precursorCharge); //JPM.TODO : can be null ?
+		boolean hasData = activationType!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			activationType.write(writer);
+		}
+
+		hasData = isolationWindow!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			isolationWindow.write(writer);
+		}
+
+		hasData = precursorMz!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeDouble(precursorMz);
+		}
+
+		hasData = precursorCharge!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(precursorCharge);
+		}
 
 		writer.writeInt32(bbFirstSpectrumId);
 
-		scanList.write(writer);
-		writer.writeString(scanListAsString);
 
-		precursor.write(writer);
-		precursorList.write(writer);
+		hasData = scanList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			scanList.write(writer);
+		}
 
-		writer.writeString(precursorAsString);
-		writer.writeString(paramTreeAsString);
 
+		hasData = scanListAsString!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(scanListAsString);
+		}
+
+		hasData = precursor!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			precursor.write(writer);
+		}
+
+		hasData = precursorList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			precursorList.write(writer);
+		}
+
+		hasData = precursorAsString!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(precursorAsString);
+		}
+
+		hasData = paramTreeAsString!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(paramTreeAsString);
+		}
 
 
 	}
@@ -541,27 +588,77 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		basePeakMz = reader.readDouble();
 		basePeakIntensity = reader.readFloat();
 
-		activationType = ActivationType.getEnum(reader);
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			activationType = ActivationType.getEnum(reader);
+		} else {
+			activationType = null;
+		}
 
-		isolationWindow = new IsolationWindow(reader);
+		hasData = reader.readBoolean();
+		if (hasData) {
+			isolationWindow = new IsolationWindow(reader);
+		} else {
+			isolationWindow = null;
+		}
 
-		precursorMz = reader.readDouble();  //JPM.TODO : can be null ?
-		precursorCharge = reader.readInt32();  //JPM.TODO : can be null ?
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorMz = reader.readDouble();
+		} else {
+			precursorMz = null;
+		}
 
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorCharge = reader.readInt32();
+		} else {
+			precursorCharge = null;
+		}
 
 		bbFirstSpectrumId = reader.readInt32();
 
-		scanList = new ScanList(reader);
+		hasData = reader.readBoolean();
+		if (hasData) {
+			scanList = new ScanList(reader);
+		} else {
+			scanList = null;
+		}
 
-		scanListAsString = reader.readString();
+		hasData = reader.readBoolean();
+		if (hasData) {
+			scanListAsString = reader.readString();
+		} else {
+			scanListAsString = null;
+		}
 
-		precursor = new Precursor(reader);
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursor = new Precursor(reader);
+		} else {
+			precursor = null;
+		}
 
-		precursorList = new PrecursorList(reader);
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorList = new PrecursorList(reader);
+		} else {
+			precursorList = null;
+		}
 
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorAsString = reader.readString();
+		} else {
+			precursorAsString = null;
+		}
 
-		precursorAsString = reader.readString();
-		paramTreeAsString = reader.readString();
+		hasData = reader.readBoolean();
+		if (hasData) {
+			paramTreeAsString = reader.readString();
+		} else {
+			paramTreeAsString = null;
+		}
 
 	}
 }

@@ -1,6 +1,7 @@
 package fr.profi.mzdb.db.model;
 
 import fr.profi.mzdb.db.model.params.ReferencableParamGroup;
+import fr.profi.mzdb.model.ActivationType;
 import fr.profi.mzdb.serialization.SerializationInterface;
 import fr.profi.mzdb.serialization.SerializationReader;
 import fr.profi.mzdb.serialization.SerializationWriter;
@@ -63,9 +64,19 @@ public class SharedParamTree extends AbstractInMemoryIdGen implements Serializat
 
     writer.writeInt64(id);
 
-    data.write(writer);
+    boolean hasData = data!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      data.write(writer);
+    }
 
-    writer.writeString(schemaName);
+
+
+    hasData = schemaName!=null;
+    writer.writeBoolean(hasData);
+    if (hasData) {
+      writer.writeString(schemaName);
+    }
 
   }
 
@@ -73,7 +84,21 @@ public class SharedParamTree extends AbstractInMemoryIdGen implements Serializat
   public void read(SerializationReader reader) throws IOException {
 
     id = reader.readInt64();
-    data = new ReferencableParamGroup(reader);
-    schemaName = reader.readString();
+
+
+    boolean hasData = reader.readBoolean();
+    if (hasData) {
+      data = new ReferencableParamGroup(reader);
+    } else {
+      data = null;
+    }
+
+    hasData = reader.readBoolean();
+    if (hasData) {
+      schemaName =  reader.readString();
+    } else {
+      schemaName = null;
+    }
   }
+
 }

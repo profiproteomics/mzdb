@@ -48,10 +48,16 @@ public class ScanList extends AbstractParamTree {
 
 		writer.writeInt32(count);
 
-		writer.writeInt32(scans.size());
-		for (SerializationInterface serializableObject : scans) {
-			serializableObject.write(writer);
+		boolean hasData = scans!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(scans.size());
+			for (SerializationInterface serializableObject : scans) {
+				serializableObject.write(writer);
+			}
 		}
+
+
 
 
 	}
@@ -62,11 +68,16 @@ public class ScanList extends AbstractParamTree {
 
 		count = reader.readInt32();
 
-		int size = reader.readInt32();
-		scans = new ArrayList<>(size);
-		for (int i=0;i<size;i++) {
-			ScanParamTree element = new ScanParamTree(reader);
-			scans.add(element);
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			scans = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				ScanParamTree element = new ScanParamTree(reader);
+				scans.add(element);
+			}
+		} else {
+			scans = null;
 		}
 	}
 

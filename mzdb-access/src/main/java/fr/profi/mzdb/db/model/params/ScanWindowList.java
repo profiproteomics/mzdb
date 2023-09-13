@@ -44,9 +44,13 @@ public class ScanWindowList extends AbstractParamTree {
 
 		writer.writeInt32(count);
 
-		writer.writeInt32(scanWindows.size());
-		for (SerializationInterface serializableObject : scanWindows) {
-			serializableObject.write(writer);
+		boolean hasData = scanWindows!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(scanWindows.size());
+			for (SerializationInterface serializableObject : scanWindows) {
+				serializableObject.write(writer);
+			}
 		}
 
 
@@ -58,11 +62,16 @@ public class ScanWindowList extends AbstractParamTree {
 
 		count = reader.readInt32();
 
-		int size = reader.readInt32();
-		scanWindows = new ArrayList<>(size);
-		for (int i=0;i<size;i++) {
-			ScanWindow element = new ScanWindow(reader);
-			scanWindows.add(element);
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			scanWindows = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				ScanWindow element = new ScanWindow(reader);
+				scanWindows.add(element);
+			}
+		} else {
+			scanWindows = null;
 		}
 	}
 

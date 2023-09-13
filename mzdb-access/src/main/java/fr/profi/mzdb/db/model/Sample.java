@@ -1,7 +1,6 @@
 package fr.profi.mzdb.db.model;
 
 import fr.profi.mzdb.db.model.params.ParamTree;
-import fr.profi.mzdb.serialization.SerializationInterface;
 import fr.profi.mzdb.serialization.SerializationReader;
 import fr.profi.mzdb.serialization.SerializationWriter;
 

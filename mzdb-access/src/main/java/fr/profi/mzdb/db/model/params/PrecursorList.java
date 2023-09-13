@@ -48,9 +48,13 @@ public class PrecursorList extends AbstractParamTree {
 
 		writer.writeInt32(count);
 
-		writer.writeInt32(precursors.size());
-		for (SerializationInterface serializableObject : precursors) {
-			serializableObject.write(writer);
+		boolean hasData = precursors!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(precursors.size());
+			for (SerializationInterface serializableObject : precursors) {
+				serializableObject.write(writer);
+			}
 		}
 
 
@@ -62,11 +66,16 @@ public class PrecursorList extends AbstractParamTree {
 
 		count = reader.readInt32();
 
-		int size = reader.readInt32();
-		precursors = new ArrayList<>(size);
-		for (int i=0;i<size;i++) {
-			Precursor element = new Precursor(reader);
-			precursors.add(element);
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			precursors = new ArrayList<>(size);
+			for (int i=0;i<size;i++) {
+				Precursor element = new Precursor(reader);
+				precursors.add(element);
+			}
+		} else {
+			precursors = null;
 		}
 
 	}
