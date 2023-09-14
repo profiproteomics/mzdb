@@ -21,6 +21,10 @@ public class SpectrumMetaData implements SerializationInterface {
   protected String scanList;
   protected String precursorList;
 
+  public SpectrumMetaData(SerializationReader reader) throws IOException {
+    read(reader);
+  }
+
 
   public SpectrumMetaData(Long spectrumId, String paramTree, String scanList, String precursorList) {
     this.spectrumId = spectrumId;
