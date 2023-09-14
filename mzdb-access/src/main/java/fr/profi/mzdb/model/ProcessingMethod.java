@@ -16,9 +16,10 @@ public class ProcessingMethod extends AbstractTableModel implements Serializatio
 
   protected Integer softwareId;
 
-  public ProcessingMethod() {
-
+  public ProcessingMethod(SerializationReader reader) throws IOException {
+    read(reader);
   }
+
 
   /**
    * Instantiates a new abstract table model.

@@ -197,7 +197,7 @@ public class MzDBMetaData implements SerializationInterface {
     size = reader.readInt32();
     processingMethods = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
-      ProcessingMethod element = new ProcessingMethod();
+      ProcessingMethod element = new ProcessingMethod(reader);
       element.read(reader);
       processingMethods.add(element);
     }
