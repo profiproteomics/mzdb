@@ -60,29 +60,26 @@ public class ProcessingMethod extends AbstractTableModel implements Serializatio
   @Override
   public void write(SerializationWriter writer) throws IOException {
 
+    super.write(writer);
+
     writer.writeInt32(number);
     writer.writeString(dataProcessingName);
 
-    boolean hasData = softwareId!=null;
-    writer.writeBoolean(hasData);
-    if (hasData) {
-      writer.writeInt32(softwareId);
-    }
+    writer.writeInt32(softwareId);
+
 
 
   }
 
   @Override
   public void read(SerializationReader reader) throws IOException {
+
+    super.read(reader);
+
     number = reader.readInt32();
     dataProcessingName = reader.readString();
+    softwareId = reader.readInt32();
 
-    boolean hasData = reader.readBoolean();
-    if (hasData) {
-      softwareId = reader.readInt32();
-    } else {
-      softwareId = null;
-    }
 
   }
 }
