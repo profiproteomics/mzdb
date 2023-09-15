@@ -76,6 +76,7 @@ public class Precursor implements SerializationInterface {
   @Override
   public void write(SerializationWriter writer) throws IOException {
 
+    //VDS Not Null?
     boolean hasData = spectrumRef!=null;
     writer.writeBoolean(hasData);
     if (hasData) {

@@ -116,6 +116,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
+		// VDS : Pourquoi pas long -> writeInt64 comme autre AbstractTaleModel
 		writer.writeInt32(id);
 		writer.writeString(name);
 		writer.writeInt32(softwareId);
@@ -126,6 +127,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 			paramTree.write(writer);
 		}
 
+		//VDS SQL Not Null
 		hasData = componentList!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {

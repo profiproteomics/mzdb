@@ -64,14 +64,14 @@ public class SharedParamTree extends AbstractInMemoryIdGen implements Serializat
 
     writer.writeInt64(id);
 
+    //VDS SQL Not Null
     boolean hasData = data!=null;
     writer.writeBoolean(hasData);
     if (hasData) {
       data.write(writer);
     }
 
-
-
+    //VDS SQL Not Null
     hasData = schemaName!=null;
     writer.writeBoolean(hasData);
     if (hasData) {

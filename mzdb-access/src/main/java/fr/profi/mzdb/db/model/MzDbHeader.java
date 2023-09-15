@@ -75,6 +75,7 @@ public class MzDbHeader extends AbstractTableModel implements SerializationInter
 		writer.writeString(version);
 		writer.writeInt32(creationTimestamp);
 
+		//VDS SQL Not Null
 		boolean hasData = fileContent!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {

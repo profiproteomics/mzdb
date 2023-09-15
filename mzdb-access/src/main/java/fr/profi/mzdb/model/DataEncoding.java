@@ -143,14 +143,15 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
+		// VDS : Pourquoi pas long -> writeInt64 comme autre AbstractTaleModel
 		writer.writeInt32(id);
 
+		//VDS SQL Not Null
 		boolean hasData = mode!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			mode.write(writer);
 		}
-
 
 		hasData = peakEncoding!=null;
 		writer.writeBoolean(hasData);
@@ -158,14 +159,13 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 			peakEncoding.write(writer);
 		}
 
-
 		hasData = compression!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			writer.writeString(compression);
 		}
 
-
+//VDS SQL Not Null
 		hasData = byteOrder!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {

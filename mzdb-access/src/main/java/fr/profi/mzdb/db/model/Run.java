@@ -112,10 +112,11 @@ public class Run extends AbstractTableModel {
 		super.write(writer);
 
 		writer.writeString(name);
-
+		//VDS SQL MAY BE Null
 		writer.writeInt64(startTimestamp.getTime());
 
 		writer.writeInt32((sampleId != null) ? sampleId : -1);
+		//VDS SQL Not Null
 		writer.writeInt32((instrumentConfigId != null) ? instrumentConfigId : -1);
 		writer.writeInt32((sourceFileId != null) ? sourceFileId : -1);
 
