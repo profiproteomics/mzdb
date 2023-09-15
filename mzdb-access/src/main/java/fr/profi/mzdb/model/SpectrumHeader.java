@@ -492,7 +492,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	public void write(SerializationWriter writer) throws IOException {
 		super.write(writer);
 
-		writer.writeInt64(id);
+		//writer.writeInt64(id); //VDS  !! ecrit 2 fois !! -> A Supprimer (fait en C#)
 		writer.writeInt32(initialId);
 		writer.writeInt32(cycle);
 		writer.writeFloat(time);
@@ -504,6 +504,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		writer.writeDouble(basePeakMz);
 		writer.writeFloat(basePeakIntensity);
 
+		//VDS SQL Not Null
 		boolean hasData = activationType!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
@@ -537,13 +538,14 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 			scanList.write(writer);
 		}
 
-
+		//VDS pas utile ... -> on a scanList ?
 		hasData = scanListAsString!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			writer.writeString(scanListAsString);
 		}
 
+		//VDS PAS SQL mais entre precursor et precursorList ... ?
 		hasData = precursor!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
@@ -556,18 +558,19 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 			precursorList.write(writer);
 		}
 
-		hasData = precursorAsString!=null;
+		//VDS pas utile ... -> on a precursor/precursorList ?-> A Supprimer (fait en C#)
+		/*hasData = precursorAsString!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			writer.writeString(precursorAsString);
-		}
+		}*/
 
-		hasData = paramTreeAsString!=null;
+		//VDS pas utile ... -> on a paramTree dans  AbstractTableModel ?-> A Supprimer (fait en C#)
+		/*hasData = paramTreeAsString!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			writer.writeString(paramTreeAsString);
-		}
-
+		}*/
 
 	}
 
@@ -575,7 +578,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	public void read(SerializationReader reader) throws IOException {
 		super.read(reader);
 
-		id = reader.readInt64();
+		//id = reader.readInt64();
 		initialId = reader.readInt32();
 		cycle = reader.readInt32();
 		time = reader.readFloat();
@@ -645,7 +648,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		} else {
 			precursorList = null;
 		}
-
+/*
 		hasData = reader.readBoolean();
 		if (hasData) {
 			precursorAsString = reader.readString();
@@ -659,6 +662,6 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		} else {
 			paramTreeAsString = null;
 		}
-
+*/
 	}
 }
