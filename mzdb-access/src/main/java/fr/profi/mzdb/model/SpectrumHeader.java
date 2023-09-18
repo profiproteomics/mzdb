@@ -31,8 +31,7 @@ import java.util.Map;
  */
 public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
-	/** The id. */
-	protected long id;
+	//JPM.OM.FIX
 
 	/** The initial id. */
 	protected int initialId;
@@ -133,7 +132,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 					int firstBBSpectrumId,
 					ActivationType activationType) {
 		super(id, null);
-		this.id = id;
+		//JPM.OM.FIX
 		this.initialId = initialId;
 		this.cycle = cycle;
 		this.time = time;
@@ -151,14 +150,8 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		isolationWindow = null;
 	}
 
-	/**
-	 * Gets the id.
-	 * 
-	 * @return the id
-	 */
-	public long getId() {
-		return id;
-	}
+	//JPM.OM.FIX
+
 
 	/**
 	 * Gets the initial id.
