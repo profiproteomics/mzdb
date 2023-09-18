@@ -157,6 +157,9 @@ public class MzDBMetaData implements SerializationInterface {
     writeList(writer, cvList);
     writeList(writer, cvTerms);
     writeList(writer, cvUnits);
+
+    writer.writeDouble(lowestMS1Mz); //JPM.OM.FIX
+
   }
 
   private void writeList(SerializationWriter writer, List list) throws IOException {
@@ -189,8 +192,7 @@ public class MzDBMetaData implements SerializationInterface {
     size = reader.readInt32();
     sharedParamTrees = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
-      SharedParamTree element = new SharedParamTree();
-      element.read(reader);
+      SharedParamTree element = new SharedParamTree(reader);
       sharedParamTrees.add(element);
     }
 
@@ -198,7 +200,6 @@ public class MzDBMetaData implements SerializationInterface {
     processingMethods = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
       ProcessingMethod element = new ProcessingMethod(reader);
-      element.read(reader);
       processingMethods.add(element);
     }
 
