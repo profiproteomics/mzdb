@@ -20,7 +20,8 @@ public class SerializationReader {
     // --- Base Types ---
 
     public String readString() throws IOException {
-        return codedInput.readString();  //JPM.OM.FIX
+        String value = this.codedInput.readStringRequireUtf8(); //JPM.OM.FIX
+         return value;
     }
 
     public int readInt32() throws IOException {

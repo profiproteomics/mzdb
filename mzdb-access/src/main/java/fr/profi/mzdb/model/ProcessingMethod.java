@@ -16,6 +16,10 @@ public class ProcessingMethod extends AbstractTableModel implements Serializatio
 
   protected Integer softwareId;
 
+  public ProcessingMethod() { //JPM.OM.FIX
+
+  }
+
   public ProcessingMethod(SerializationReader reader) throws IOException {
     read(reader);
   }
