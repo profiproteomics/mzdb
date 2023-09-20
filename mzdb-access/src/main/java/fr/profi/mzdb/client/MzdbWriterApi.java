@@ -22,18 +22,18 @@ public class MzdbWriterApi {
 
     private MzDBWriter m_writer = null;
 
-    private XMLData m_XMLData;
+    //private XMLData m_XMLData;
 
     public MzdbWriterApi() {
-        m_XMLData = new XMLData();
+        /*m_XMLData = new XMLData();*/
     }
 
     public String initializeMzdb(String path, MzDBMetaData mzDbMetaData, AcquisitionMode srcAcqMode) {
 
         try {
 
-            m_XMLData.mzDbMetaData =  mzDbMetaData;
-            m_XMLData.srcAcqMode =   srcAcqMode;
+            //m_XMLData.mzDbMetaData =  mzDbMetaData;
+            //m_XMLData.srcAcqMode =   srcAcqMode;
 
 
             boolean isDIA = (srcAcqMode != null && srcAcqMode.equals(fr.profi.mzdb.model.AcquisitionMode.SWATH));
@@ -54,9 +54,9 @@ public class MzdbWriterApi {
 
         try {
 
-            m_XMLData.spectrum.add(spectrum);
+            /*m_XMLData.spectrum.add(spectrum);
             m_XMLData.spectrumMetaData.add(spectrumMetaData);
-            m_XMLData.dataEncoding.add(dataEncoding);
+            m_XMLData.dataEncoding.add(dataEncoding);*/
 
             SpectrumHeader spectrumHeader = spectrum.getHeader();
 
@@ -72,7 +72,7 @@ public class MzdbWriterApi {
 
     public String closedb() {
 
-try {
+/*try {
 
     JAXBContext contextObj = JAXBContext.newInstance(XMLData.class);
 
@@ -82,7 +82,7 @@ try {
     marshallerObj.marshal(new JAXBElement<XMLData>(new QName("", "XMLData"), XMLData.class, null, m_XMLData), new FileOutputStream("./mzDbMetaData1.xml"));
 } catch (Exception e) {
     e.printStackTrace();
-}
+}*/
 
         if (m_writer != null) {
             m_writer.close();
@@ -94,13 +94,13 @@ try {
     }
 
 
-    public static class XMLData {
+    /*public static class XMLData {
         public MzDBMetaData mzDbMetaData;
         public AcquisitionMode srcAcqMode;
 
         public ArrayList<Spectrum> spectrum = new ArrayList<>();
         public ArrayList<SpectrumMetaData> spectrumMetaData = new ArrayList<>();
         public ArrayList<DataEncoding>  dataEncoding = new ArrayList<>();
-    }
+    }*/
 
 }
