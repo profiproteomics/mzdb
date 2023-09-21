@@ -48,7 +48,7 @@ public class DataEncodingAsyncReader extends AbstractDataEncodingReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Observable<DataEncoding> getDataEncoding(int dataEncodingId) {
+	public Observable<DataEncoding> getDataEncoding(long dataEncodingId) {
 		return mzDbReader.observeJobExecution( connection -> {
 			return this.getDataEncoding(dataEncodingId, connection);
 		});
@@ -74,7 +74,7 @@ public class DataEncodingAsyncReader extends AbstractDataEncodingReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Observable<Map<Integer, DataEncoding>> getDataEncodingById() {
+	public Observable<Map<Long, DataEncoding>> getDataEncodingById() {
 		return mzDbReader.observeJobExecution( connection -> {
 			return this.getDataEncodingById(connection);
 		});
