@@ -8,7 +8,7 @@ import java.util.List;
 
 class DataEncodingRegistry {
   HashMap<String, DataEncoding> dataEncodingMap = new HashMap();
-  private int id = 1;
+  private long id = 1;
 
   public DataEncoding getOrAddDataEncoding(DataEncoding de){
     String key = de.getMode().name()+de.getPeakEncoding().name();

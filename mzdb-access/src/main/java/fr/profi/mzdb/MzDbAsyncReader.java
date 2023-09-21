@@ -361,7 +361,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the id
 	 * @return the data encoding
 	 */
-	public Observable<DataEncoding> getDataEncoding(int id) {
+	public Observable<DataEncoding> getDataEncoding(long id) {
 		return this._dataEncodingReader.getDataEncoding(id);
 	}
 

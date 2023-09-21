@@ -22,7 +22,7 @@ import java.nio.ByteOrder;
 public class DataEncoding implements Cloneable, SerializationInterface {
 
 	/** The id. */
-	protected int id;
+	protected long id;
 
 	/** The mode. */
 	protected DataMode mode;
@@ -57,7 +57,7 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 	 * @param byteOrder
 	 *            the byte order
 	 */
-	public DataEncoding(int id, DataMode mode, PeakEncoding peakEncoding, String compression, ByteOrder byteOrder) {
+	public DataEncoding(long id, DataMode mode, PeakEncoding peakEncoding, String compression, ByteOrder byteOrder) {
 		super();
 		this.id = id;
 		this.mode = mode;
@@ -77,7 +77,7 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 	 * 
 	 * @return the id
 	 */
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
@@ -143,8 +143,7 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
-		// VDS : Pourquoi pas long -> writeInt64 comme autre AbstractTaleModel
-		writer.writeInt32(id);
+		writer.writeInt64(id);
 
 		//VDS SQL Not Null
 		boolean hasData = mode!=null;
@@ -179,7 +178,7 @@ public class DataEncoding implements Cloneable, SerializationInterface {
 	@Override
 	public void read(SerializationReader reader) throws IOException {
 
-		id = reader.readInt32();
+		id = reader.readInt64();
 
 		boolean hasData = reader.readBoolean();
 		if (hasData) {
