@@ -48,7 +48,7 @@ public class DataEncodingReader extends AbstractDataEncodingReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public DataEncoding getDataEncoding(int dataEncodingId) throws SQLiteException {
+	public DataEncoding getDataEncoding(long dataEncodingId) throws SQLiteException {
 		return this.getDataEncoding(dataEncodingId, connection);
 	}
 
@@ -70,7 +70,7 @@ public class DataEncodingReader extends AbstractDataEncodingReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public Map<Integer, DataEncoding> getDataEncodingById() throws SQLiteException {
+	public Map<Long, DataEncoding> getDataEncodingById() throws SQLiteException {
 		return this.getDataEncodingById(connection);
 	}
 

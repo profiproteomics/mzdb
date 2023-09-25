@@ -20,7 +20,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 	public static final String TABLE_NAME = "instrument_configuration";
 
 	/** The id. */
-	protected int id;
+	protected long id;
 
 	/** The name. */
 	protected String name;
@@ -50,7 +50,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 	 * @param paramTree
 	 *            the param tree
 	 */
-	public InstrumentConfiguration(int id, String name, int softwareId, ParamTree paramTree, ComponentList comp) {
+	public InstrumentConfiguration(long id, String name, int softwareId, ParamTree paramTree, ComponentList comp) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -69,7 +69,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 	 * @param softwareId
 	 *            the software id
 	 */
-	public InstrumentConfiguration(int id, String name, int softwareId) {
+	public InstrumentConfiguration(long id, String name, int softwareId) {
 		this(id, name, softwareId, null, null);
 	}
 
@@ -78,7 +78,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 	 * 
 	 * @return the id
 	 */
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
@@ -116,8 +116,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
-		// VDS : Pourquoi pas long -> writeInt64 comme autre AbstractTaleModel
-		writer.writeInt32(id);
+		writer.writeInt64(id);
 		writer.writeString(name);
 		writer.writeInt32(softwareId);
 
@@ -139,7 +138,7 @@ public class InstrumentConfiguration extends AbstractInMemoryIdGen implements Se
 	@Override
 	public void read(SerializationReader reader) throws IOException {
 
-		id = reader.readInt32();
+		id = reader.readInt64();
 		name = reader.readString();
 		softwareId = reader.readInt32();
 

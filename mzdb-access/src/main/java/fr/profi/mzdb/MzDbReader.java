@@ -346,7 +346,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public DataEncoding getDataEncoding(int id) throws SQLiteException {
+	public DataEncoding getDataEncoding(long id) throws SQLiteException {
 		return this._dataEncodingReader.getDataEncoding(id);
 	}
 

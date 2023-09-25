@@ -43,8 +43,6 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 *
 	 * @param mzDbReader
 	 *            the mz db reader
-	 * @param modelVersion
-	 *            the model version
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
@@ -115,7 +113,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 				public DataEncoding extract(SQLiteRecord record) throws SQLiteException {
 
 					// Extract record values
-					int id = record.columnInt(DataEncodingTable.ID);
+					long id = record.columnInt(DataEncodingTable.ID);
 					String dmAsStr = record.columnString(DataEncodingTable.MODE);
 					String compression = record.columnString(DataEncodingTable.COMPRESSION);
 					String byteOrderAsStr = record.columnString(DataEncodingTable.BYTE_ORDER);
@@ -176,7 +174,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	protected DataEncoding getDataEncoding(int dataEncodingId, SQLiteConnection connection) throws SQLiteException {
+	protected DataEncoding getDataEncoding(long dataEncodingId, SQLiteConnection connection) throws SQLiteException {
 
 		if (this.getEntityCache() != null) {
 			return this.getDataEncodingById(connection).get(dataEncodingId);
@@ -217,13 +215,13 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 	 * @throws SQLiteException
 	 *             the SQ lite exception
 	 */
-	protected Map<Integer, DataEncoding> getDataEncodingById(SQLiteConnection connection) throws SQLiteException {
+	protected Map<Long, DataEncoding> getDataEncodingById(SQLiteConnection connection) throws SQLiteException {
 
 		if (this.getEntityCache() != null && this.getEntityCache().dataEncodingById != null) {
 			return this.getEntityCache().dataEncodingById;
 		} else {
 			DataEncoding[] dataEncodings = this.getDataEncodings(connection);
-			HashMap<Integer, DataEncoding> dataEncodingById = new HashMap<Integer, DataEncoding>(dataEncodings.length);
+			HashMap<Long, DataEncoding> dataEncodingById = new HashMap<Long, DataEncoding>(dataEncodings.length);
 
 			for (DataEncoding dataEncoding : dataEncodings)
 				dataEncodingById.put(dataEncoding.getId(), dataEncoding);
@@ -250,7 +248,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 			return this.getEntityCache().dataEncodingBySpectrumId;
 		} else {
 
-			Map<Integer, DataEncoding> dataEncodingById = this.getDataEncodingById(connection);
+			Map<Long, DataEncoding> dataEncodingById = this.getDataEncodingById(connection);
 
 			// Retrieve encoding PK for the given spectrum id
 			String queryStr = "SELECT id, data_encoding_id FROM spectrum";
@@ -263,7 +261,7 @@ public abstract class AbstractDataEncodingReader extends MzDbEntityCacheContaine
 				long spectrumId = record.columnLong(SpectrumTable.ID);
 				int spectrumDataEncodingId = record.columnInt(SpectrumTable.DATA_ENCODING_ID);
 				
-				DataEncoding dataEnc = dataEncodingById.get(spectrumDataEncodingId);
+				DataEncoding dataEnc = dataEncodingById.get((long)spectrumDataEncodingId);
 
 				/*
 				// Looking for the appropriate peak encoding
