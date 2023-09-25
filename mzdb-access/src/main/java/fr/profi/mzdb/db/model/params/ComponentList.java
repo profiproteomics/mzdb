@@ -64,8 +64,9 @@ public class ComponentList extends AbstractParamTree {
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			writer.writeInt32(components.size());
-			for (SerializationInterface serializableObject : components) {
-				serializableObject.write(writer);
+			for (Component component : components) {
+				writer.writeInt32(component.getType().getTypeValue());
+				component.write(writer);
 			}
 		}
 
@@ -82,7 +83,26 @@ public class ComponentList extends AbstractParamTree {
 			int size = reader.readInt32();
 			components = new ArrayList<>(size);
 			for (int i = 0; i < size; i++) {
-				Component element = new Component(reader);
+
+				Component element = null;
+				int typeInt = reader.readInt32();
+				Component.ComponentType componentType = Component.ComponentType.getEnum(typeInt);
+				switch (componentType) {
+					case DETECTOR: {
+						element = new DetectorComponent(reader);
+						break;
+					}
+					case ANALYZER: {
+						element = new AnalyzerComponent(reader);
+						break;
+					}
+					case SOURCE: {
+						element = new SourceComponent(reader);
+						break;
+					}
+
+				}
+
 				components.add(element);
 			}
 		} else {

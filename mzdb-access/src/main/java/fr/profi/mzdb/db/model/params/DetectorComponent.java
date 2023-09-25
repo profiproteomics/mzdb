@@ -21,4 +21,8 @@ public class DetectorComponent extends Component {
     public DetectorComponent(SerializationReader reader) throws IOException {
         read(reader);
     }
+
+    public ComponentType getType() {
+        return ComponentType.DETECTOR;
+    }
 }

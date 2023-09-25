@@ -5,6 +5,7 @@ import fr.profi.mzdb.serialization.SerializationWriter;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import java.io.IOException;
+import java.util.HashMap;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -12,19 +13,22 @@ import java.io.IOException;
  * 
  * @author David Bouyssie
  */
-public class Component extends AbstractParamTree {
+public abstract class Component extends AbstractParamTree {
 
     /** The order. */
 
     protected int order;
 
-    public Component() {
+    //protected ComponentType type;
 
+    public Component() {
     }
 
     public Component(SerializationReader reader) throws IOException {
         read(reader);
     }
+
+    public abstract ComponentType getType();
 
     /**
      * Gets the order.
@@ -53,5 +57,30 @@ public class Component extends AbstractParamTree {
         order = reader.readInt32();
     }
 
+    public enum ComponentType {
+        DETECTOR(0), ANALYZER(1), SOURCE(2);
+
+        private final int type;
+
+        private static HashMap<Integer, ComponentType> map = new HashMap<>();
+
+        static {
+            for (ComponentType aType : ComponentType.values()) {
+                map.put(aType.type, aType);
+            }
+        }
+
+        private ComponentType(int type) {
+            this.type = type;
+        }
+
+        public int getTypeValue() {
+            return type;
+        }
+
+        public static ComponentType getEnum(int value) throws IOException {
+            return map.get(value);
+        }
+    }
 
 }

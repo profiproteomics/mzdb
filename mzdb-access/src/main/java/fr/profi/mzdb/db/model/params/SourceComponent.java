@@ -22,4 +22,8 @@ public class SourceComponent extends Component {
     public SourceComponent(SerializationReader reader) throws IOException {
         read(reader);
     }
+
+    public ComponentType getType() {
+        return ComponentType.SOURCE;
+    }
 }
