@@ -16,10 +16,13 @@ import java.io.IOException;
 public class AnalyzerComponent extends Component {
 
     public AnalyzerComponent() {
-
     }
 
     public AnalyzerComponent(SerializationReader reader) throws IOException {
         read(reader);
+    }
+
+    public ComponentType getType() {
+        return ComponentType.ANALYZER;
     }
 }
