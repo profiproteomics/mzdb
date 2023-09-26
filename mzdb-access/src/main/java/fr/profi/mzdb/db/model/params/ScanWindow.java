@@ -10,7 +10,7 @@ import java.io.IOException;
  *
  */
 @XmlRootElement(name = "scanWindow")
-public class ScanWindow extends AbstractParamTree {
+public class ScanWindow extends AbstractXMLParamTree {
 
     public ScanWindow() {
 

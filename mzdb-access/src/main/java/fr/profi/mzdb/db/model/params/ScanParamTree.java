@@ -13,7 +13,7 @@ import fr.profi.mzdb.serialization.SerializationInterface;
 import fr.profi.mzdb.serialization.SerializationReader;
 import fr.profi.mzdb.serialization.SerializationWriter;
 
-public class ScanParamTree extends AbstractParamTree {	
+public class ScanParamTree extends AbstractXMLParamTree {
 
 	@XmlElementWrapper
 	protected List<ScanWindowList> scanWindowList;

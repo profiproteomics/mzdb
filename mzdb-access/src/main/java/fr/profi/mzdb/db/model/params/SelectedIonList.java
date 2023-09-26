@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SelectedIonList extends AbstractParamTree {
+public class SelectedIonList extends AbstractXMLParamTree {
 
   @XmlAttribute(required = true)
   @XmlSchemaType(name = "nonNegativeInteger")

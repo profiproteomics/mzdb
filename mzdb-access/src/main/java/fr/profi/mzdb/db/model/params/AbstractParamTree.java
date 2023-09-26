@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 
 import fr.profi.mzdb.db.model.params.param.CVParam;
@@ -18,6 +20,7 @@ import fr.profi.mzdb.serialization.SerializationWriter;
  * @author David Bouyssie
  * 
  */
+@XmlAccessorType(XmlAccessType.NONE)
 public abstract class AbstractParamTree implements SerializationInterface { // implements IParamContainer
 
 	/** The cv params. */
@@ -36,31 +39,7 @@ public abstract class AbstractParamTree implements SerializationInterface { // i
 	}
 
 
-	@XmlElement(name = "cvParam", type = CVParam.class, required = false)
-	public List<CVParam> getCVParams() {
-		if (this.cvParams == null)
-			this.cvParams = new ArrayList<CVParam>();
 
-		return cvParams;
-	}
-
-	// Marc: most of the object does not contain any UserParam,
-	// so this is set to be non abstract to avoid to override it in subclasses
-	// DBO: why ???
-	@XmlElement(name = "userParam", type = UserParam.class, required = false)
-	public List<UserParam> getUserParams() {
-		if (this.userParams == null)
-			this.userParams = new ArrayList<UserParam>();
-
-		return this.userParams;
-	}
-
-	@XmlElement(name = "userText", type = UserText.class, required = false)
-	public List<UserText> getUserTexts() {
-		if (this.userTexts == null)
-			this.userTexts = new ArrayList<UserText>();
-		return this.userTexts;
-	}
 	
 	public void setCvParams(List<CVParam> cvParams) {
 		this.cvParams = cvParams;
@@ -74,42 +53,7 @@ public abstract class AbstractParamTree implements SerializationInterface { // i
 		this.userTexts = userTexts;
 	}
 
-	public UserParam getUserParam(String name) {
 
-		UserParam foundUP = null;
-		for (UserParam up : this.getUserParams()) {
-			if (up.getName().equals(name)) {
-				foundUP = up;
-				break;
-			}
-		}
-		
-		return foundUP;
-	}
-
-	public CVParam getCVParam(CVEntry cvEntry) {
-		CVParam foundCV = null;
-		for (CVParam cv : this.getCVParams()) {
-			if (cv.getAccession().equals(cvEntry.getAccession()) ) {
-				foundCV = cv;
-				break;
-			}
-		}
-		
-		return foundCV;
-	}
-
-	public CVParam[] getCVParams(CVEntry[] cvEntries) {
-		CVParam[] cvParams = new CVParam[cvEntries.length];
-		
-		int i = 0;
-		for (CVEntry cvEntry : cvEntries) {
-			cvParams[i] = this.getCVParam(cvEntry);
-			i++;
-		}
-		
-		return cvParams;
-	}
 
 	@Override
 	public void write(SerializationWriter writer) throws IOException {

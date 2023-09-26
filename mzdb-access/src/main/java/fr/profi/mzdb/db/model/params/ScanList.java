@@ -18,7 +18,7 @@ import javax.xml.bind.annotation.XmlSchemaType;
  * 
  */
 @XmlRootElement(name = "scanList")
-public class ScanList extends AbstractParamTree {
+public class ScanList extends AbstractXMLParamTree {
 
 	@XmlAttribute(required = true)
 	@XmlSchemaType(name = "nonNegativeInteger")

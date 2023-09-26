@@ -1,6 +1,6 @@
 package fr.profi.mzdb.db.model;
 
-import fr.profi.mzdb.db.model.params.ComponentList;
+
 import fr.profi.mzdb.db.model.params.FileContentParams;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.serialization.SerializationInterface;

@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.IOException;
 
 @XmlRootElement(name = "fileContent")
-public  class FileContentParams extends AbstractParamTree {
+public  class FileContentParams extends AbstractXMLParamTree {
 
 	public FileContentParams() {
 	}

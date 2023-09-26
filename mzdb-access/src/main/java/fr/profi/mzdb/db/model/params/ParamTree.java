@@ -18,7 +18,7 @@ import fr.profi.mzdb.serialization.SerializationReader;
  * @author David Bouyssie
  */
 @XmlRootElement(name = "params")
-public class ParamTree extends AbstractParamTree {
+public class ParamTree extends AbstractNoXMLParamTree {
 
 	public ParamTree() {
 	}
