@@ -6,7 +6,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.IOException;
 
 @XmlRootElement(name="isolationWindow")
-public class IsolationWindowParamTree extends AbstractParamTree {
+public class IsolationWindowParamTree extends AbstractXMLParamTree {
     public IsolationWindowParamTree() {
 	
     }

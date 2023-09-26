@@ -15,7 +15,7 @@ import javax.xml.bind.annotation.*;
  * 
  */
 @XmlRootElement(name = "componentList")
-public class ComponentList extends AbstractParamTree {
+public class ComponentList extends AbstractXMLParamTree {
 
 	protected List<Component> components;
 

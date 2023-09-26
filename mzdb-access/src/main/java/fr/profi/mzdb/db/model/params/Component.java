@@ -13,7 +13,7 @@ import java.util.HashMap;
  * 
  * @author David Bouyssie
  */
-public abstract class Component extends AbstractParamTree {
+public abstract class Component extends AbstractXMLParamTree {
 
     /** The order. */
 

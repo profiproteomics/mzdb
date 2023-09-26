@@ -4,7 +4,7 @@ import fr.profi.mzdb.serialization.SerializationReader;
 
 import java.io.IOException;
 
-public class SelectedIon extends AbstractParamTree {
+public class SelectedIon extends AbstractXMLParamTree {
 
     public SelectedIon() {}
 

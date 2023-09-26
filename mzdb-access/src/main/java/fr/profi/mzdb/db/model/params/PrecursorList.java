@@ -17,7 +17,7 @@ import java.util.List;
  *
  */
 @XmlRootElement(name = "precursorList")
-public class PrecursorList extends AbstractParamTree {
+public class PrecursorList extends AbstractXMLParamTree {
 
 	@XmlAttribute(required = true)
 	@XmlSchemaType(name = "nonNegativeInteger")

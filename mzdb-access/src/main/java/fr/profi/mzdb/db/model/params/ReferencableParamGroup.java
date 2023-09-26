@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.IOException;
 
 @XmlRootElement(name = "referenceableParamGroup")
-public class ReferencableParamGroup extends AbstractParamTree {
+public class ReferencableParamGroup extends AbstractXMLParamTree {
 
   protected  String id;
 
