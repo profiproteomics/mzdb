@@ -435,6 +435,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		}
 		return paramTreeAsSt;
 	}
+	public String getParamTreeAsString() {
+		return this.paramTreeAsString;
+	}
 
 	public void loadScanList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (scanList == null) {
@@ -456,6 +459,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 				this.scanListAsString = scanListAsStr;
 		}
 		return scanListAsStr;
+	}
+	public String getScanListAsString() {
+		return this.scanListAsString;
 	}
 
 	public void loadPrecursorList(SQLiteConnection mzDbConnection) throws SQLiteException {
@@ -479,6 +485,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 				this.precursorAsString = precursorAsStr;
 		}
 		return precursorAsStr;
+	}
+	public String getPrecursorListAsString() {
+		return this.precursorAsString;
 	}
 
 	@Override

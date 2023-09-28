@@ -22,26 +22,19 @@ public class MzdbWriterApi {
 
     private MzDBWriter m_writer = null;
 
-    //private XMLData m_XMLData;
 
     public MzdbWriterApi() {
-        /*m_XMLData = new XMLData();*/
     }
 
-    public String initializeMzdb(String path, MzDBMetaData mzDbMetaData, AcquisitionMode srcAcqMode) {
+    public String initializeMzdb(String path, AcquisitionMode srcAcqMode) {
 
         try {
-
-            //m_XMLData.mzDbMetaData =  mzDbMetaData;
-            //m_XMLData.srcAcqMode =   srcAcqMode;
-
-
             boolean isDIA = (srcAcqMode != null && srcAcqMode.equals(fr.profi.mzdb.model.AcquisitionMode.SWATH));
 
             File destinationFile = new File(path);
             BBSizes defaultBBsize = new BBSizes(5, 10000, 15, 0);
 
-            m_writer = new MzDBWriter(destinationFile, mzDbMetaData, defaultBBsize, isDIA);
+            m_writer = new MzDBWriter(destinationFile, null, defaultBBsize, isDIA);
             m_writer.initialize();
         } catch (Exception e) {
             LOGGER.error("error in initializeMzdb", e);
@@ -50,18 +43,21 @@ public class MzdbWriterApi {
         return "OK";
     }
 
-    public String addspectrum(Spectrum spectrum, SpectrumMetaData spectrumMetaData, DataEncoding dataEncoding)  throws IOException, SQLiteException {
+    public String addMzdbMetaData(MzDBMetaData mzDbMetaData) {
 
         try {
+            m_writer.addMetaData(mzDbMetaData);
+        } catch (Exception e) {
+            LOGGER.error("error in addMzdbMetaData", e);
+            return "KO:"+e.getMessage();
+        }
+        return "OK";
+    }
 
-            /*m_XMLData.spectrum.add(spectrum);
-            m_XMLData.spectrumMetaData.add(spectrumMetaData);
-            m_XMLData.dataEncoding.add(dataEncoding);*/
+    public String addspectrum(Spectrum spectrum/*, SpectrumMetaData spectrumMetaData*/, DataEncoding dataEncoding)  throws IOException, SQLiteException {
 
-            SpectrumHeader spectrumHeader = spectrum.getHeader();
-
-
-            m_writer.insertSpectrum(spectrum, spectrumMetaData, dataEncoding);
+        try {
+            m_writer.insertSpectrum(spectrum/*, spectrumMetaData*/, dataEncoding); // now spectrum must contains data of sprectrumMetadata
         } catch (Exception e) {
             LOGGER.error("error in addspectrum", e);
             return "KO:"+e.getMessage();
@@ -72,17 +68,6 @@ public class MzdbWriterApi {
 
     public String closedb() {
 
-/*try {
-
-    JAXBContext contextObj = JAXBContext.newInstance(XMLData.class);
-
-    Marshaller marshallerObj = contextObj.createMarshaller();
-    marshallerObj.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-
-    marshallerObj.marshal(new JAXBElement<XMLData>(new QName("", "XMLData"), XMLData.class, null, m_XMLData), new FileOutputStream("./mzDbMetaData1.xml"));
-} catch (Exception e) {
-    e.printStackTrace();
-}*/
 
         if (m_writer != null) {
             m_writer.close();
@@ -93,14 +78,5 @@ public class MzdbWriterApi {
 
     }
 
-
-    /*public static class XMLData {
-        public MzDBMetaData mzDbMetaData;
-        public AcquisitionMode srcAcqMode;
-
-        public ArrayList<Spectrum> spectrum = new ArrayList<>();
-        public ArrayList<SpectrumMetaData> spectrumMetaData = new ArrayList<>();
-        public ArrayList<DataEncoding>  dataEncoding = new ArrayList<>();
-    }*/
 
 }
