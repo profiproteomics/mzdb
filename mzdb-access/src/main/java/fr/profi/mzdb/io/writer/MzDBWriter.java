@@ -29,10 +29,10 @@ public class MzDBWriter {
 
   public static double MODEL_VERSION = 0.7;
 
-  File dbLocation;
-  MzDBMetaData metaData;
-  BBSizes bbSizes;
-  boolean isDIA;
+  private File dbLocation;
+  private MzDBMetaData metaData;
+  private BBSizes bbSizes;
+  private boolean isDIA;
 
   private SQLiteConnection sqliteConnection = null;
   private SQLiteStatement bboxInsertStmt;
@@ -72,6 +72,13 @@ public class MzDBWriter {
   public void initialize() throws SQLiteException {
     logger.debug("Initialize Writer for "+dbLocation.getName());
     createConnection();
+    if (metaData != null) {
+      insertMetaData();
+    }
+  }
+
+  public void addMetaData(MzDBMetaData metaData) throws SQLiteException {
+    this.metaData = metaData;
     insertMetaData();
   }
 
@@ -489,6 +496,15 @@ public class MzDBWriter {
 
   /*
    */
+  public void insertSpectrum(Spectrum spectrum, DataEncoding dataEncoding) throws SQLiteException {
+    SpectrumHeader spectrumHeader = spectrum.getHeader();
+    SpectrumMetaData spectrumMetaData = new SpectrumMetaData(
+            spectrumHeader.getId(),
+            spectrumHeader.getParamTreeAsString(),
+            spectrumHeader.getScanListAsString(),
+            spectrumHeader.getPrecursorListAsString());
+                  insertSpectrum(spectrum, spectrumMetaData, dataEncoding);
+  }
   public void insertSpectrum(Spectrum spectrum, SpectrumMetaData metaDataAsText, DataEncoding dataEncoding) throws SQLiteException {
 
     insertSpectrumSW.resume();
@@ -504,6 +520,11 @@ public class MzDBWriter {
     insertedSpectraCount += 1;
 
     int msLevel = sh.getMsLevel();
+    /*if (msLevel == 1) {
+                System.out.println(msLevel);
+    } else {
+      System.out.println("Level:"+msLevel);
+    }*/
     IsolationWindow isolationWindowOpt = (isDIA && msLevel == 2) ?  sh.getIsolationWindow() : null; // very important for cache
     long spectrumId = insertedSpectraCount;  // note: we maintain our own spectrum ID counter
     Float spectrumTime = sh.getElutionTime();
