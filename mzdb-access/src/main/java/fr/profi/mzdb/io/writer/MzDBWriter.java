@@ -498,12 +498,36 @@ public class MzDBWriter {
    */
   public void insertSpectrum(Spectrum spectrum, DataEncoding dataEncoding) throws SQLiteException {
     SpectrumHeader spectrumHeader = spectrum.getHeader();
+
+    String paramTreeAsString = spectrumHeader.getParamTreeAsString();
+    if (paramTreeAsString == null) {
+      if (spectrumHeader.hasParamTree()) {
+        paramTreeAsString = ParamTreeStringifier.stringifyParamTree(spectrumHeader.getParamTree(null));
+      }
+    }
+
+    String scanListAsString = spectrumHeader.getScanListAsString();
+    if (scanListAsString == null) {
+      if (spectrumHeader.hasScanList()) {
+        scanListAsString = ParamTreeStringifier.stringifyScanList(spectrumHeader.getScanList());
+      }
+    }
+
+    String precursorListAsString = spectrumHeader.getPrecursorListAsString();
+    if (precursorListAsString == null) {
+      if (spectrumHeader.hasPrecursorList()) {
+        precursorListAsString = ParamTreeStringifier.stringifyPrecursorList(spectrumHeader.getPrecursorList());
+      }
+    }
+
+
     SpectrumMetaData spectrumMetaData = new SpectrumMetaData(
             spectrumHeader.getId(),
-            spectrumHeader.getParamTreeAsString(),
-            spectrumHeader.getScanListAsString(),
-            spectrumHeader.getPrecursorListAsString());
-                  insertSpectrum(spectrum, spectrumMetaData, dataEncoding);
+            paramTreeAsString,
+            scanListAsString,
+            precursorListAsString);
+
+    insertSpectrum(spectrum, spectrumMetaData, dataEncoding);
   }
   public void insertSpectrum(Spectrum spectrum, SpectrumMetaData metaDataAsText, DataEncoding dataEncoding) throws SQLiteException {
 
