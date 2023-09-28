@@ -1,9 +1,6 @@
 package fr.profi.mzdb.io.writer;
 
-import fr.profi.mzdb.db.model.params.ComponentList;
-import fr.profi.mzdb.db.model.params.FileContentParams;
-import fr.profi.mzdb.db.model.params.ParamTree;
-import fr.profi.mzdb.db.model.params.ReferencableParamGroup;
+import fr.profi.mzdb.db.model.params.*;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Marshaller;
@@ -25,6 +22,8 @@ public class ParamTreeStringifier {
 	public static Marshaller componentMarshaller = null;
 	public static Marshaller fileContentMarshaller = null;
 	public static Marshaller refParamGroupMarshaller = null;
+	public static Marshaller scanListMarshaller = null;
+	public static Marshaller precursorListMarshaller = null;
 
 	synchronized public static String stringifyParamTree(ParamTree paramTree) {
 
@@ -115,6 +114,55 @@ public class ParamTreeStringifier {
 		}
 		return compoListAsStr;
 	}
+
+	synchronized public static String stringifyScanList(ScanList scanLList) {
+
+		String objAsStr ="";
+		if(scanLList == null)
+			return objAsStr;
+
+
+		try {
+			if( scanListMarshaller == null ) {
+				scanListMarshaller = JAXBContext.newInstance(ScanList.class).createMarshaller();
+				scanListMarshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+			}
+
+			Writer w = new StringWriter();
+			scanListMarshaller.marshal(scanLList, w);
+
+			objAsStr = w.toString();
+			return objAsStr;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return objAsStr;
+	}
+
+	synchronized public static String stringifyPrecursorList(PrecursorList precursorList) {
+
+		String objAsStr ="";
+		if(precursorList == null)
+			return objAsStr;
+
+
+		try {
+			if( precursorListMarshaller == null ) {
+				precursorListMarshaller = JAXBContext.newInstance(PrecursorList.class).createMarshaller();
+				precursorListMarshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+			}
+
+			Writer w = new StringWriter();
+			precursorListMarshaller.marshal(precursorList, w);
+
+			objAsStr = w.toString();
+			return objAsStr;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return objAsStr;
+	}
+
 
 
 }

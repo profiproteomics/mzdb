@@ -281,9 +281,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		return this.bbFirstSpectrumId;
 	}
 
-	public ScanList getScanList() {
-		return this.scanList;
-	}
+
 	
 	public void setScanList( ScanList scanList ) {
 		this.scanList = scanList;
@@ -450,6 +448,14 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		return  this.getScanListAsString(mzDbConnection, true); //If call this method suppose cache may be used
 	}
 
+	public boolean hasScanList() {
+		return scanList != null;
+	}
+
+	public ScanList getScanList() {
+		return scanList;
+	}
+
 	private String getScanListAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation) throws SQLiteException {
 		String scanListAsStr = scanListAsString;
 		if(scanListAsStr == null) {
@@ -474,6 +480,14 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
 	public String getPrecursorListAsString(SQLiteConnection mzDbConnection) throws SQLiteException {
 		return this.getPrecursorListAsString(mzDbConnection, true);//If call this method suppose cache may be used
+	}
+
+	public boolean hasPrecursorList() {
+		return precursorList != null;
+	}
+
+	public PrecursorList getPrecursorList() {
+		return precursorList;
 	}
 
 	private String getPrecursorListAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation ) throws SQLiteException {

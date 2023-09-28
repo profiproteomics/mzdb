@@ -7,14 +7,9 @@ import fr.profi.mzdb.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.Marshaller;
-import javax.xml.namespace.QName;
 import java.io.File;
-import java.io.FileOutputStream;
+
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class MzdbWriterApi {
 
