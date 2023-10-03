@@ -553,7 +553,9 @@ public class MzDBWriter {
     long spectrumId = insertedSpectraCount;  // note: we maintain our own spectrum ID counter
     Float spectrumTime = sh.getElutionTime();
 
-    DataEncoding dataEnc = this.dataEncodingRegistry.getOrAddDataEncoding(dataEncoding);
+    DataEncoding dataEnc = this.dataEncodingRegistry.getOrAddDataEncoding(dataEncoding); //JPM.QUESTION: data encoding depends of each spectrum ? Why not specified in Spectrum ?
+
+    // size of Bounding Box according to MS level.
     Double mzInc = (msLevel == 1) ? bbSizes.BB_MZ_HEIGHT_MS1 :  bbSizes.BB_MZ_HEIGHT_MSn;
 
 
@@ -710,7 +712,7 @@ public class MzDBWriter {
       cachedBB = bbCache.createBoundingBox(spectrumTime, runSliceId, msLevel, dataEnc, isolationWindow, sliceSlicesCountHint);
     } else {
       // Increase size of the bounding box for one new spectrum
-      cachedBB.lastTime = spectrumTime ;// update BB last RT
+      cachedBB.lastTime = spectrumTime ;// update BB last RT // JPM : this code works for the moment because spectrum are sorted according to time
     }
 
     cachedBB.getSpectrumIds().add(spectrumId);

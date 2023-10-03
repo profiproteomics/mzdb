@@ -26,15 +26,27 @@ public class BoundingBoxCache {
       return true;
 
     float maxRtWidth = (msLevel == 1) ?  bbSizes.BB_RT_WIDTH_MS1 :  bbSizes.BB_RT_WIDTH_MSn;
-    return (curSpecTime - bbRowFirstSpecTimeOpt) > maxRtWidth;
+    return (curSpecTime - bbRowFirstSpecTimeOpt) > maxRtWidth;  //JPM.QUESTION
 
   }
 
+  /**
+   * Find the smallest firstTime of a Bounding Box with the corresponding value of msLevel and isolationWindow (can be null)
+   * @param msLevel
+   * @param isolationWindow
+   * @return
+   */
+  // JPM.QUESTION :
+  // We create a new list : complexity n
+  // We sort (at best complexity n, average complexity n.log(n) )
+  // Then we go through the list and we stop at n/2
+  // We could use a different data structure instead of boundingBoxMap : TreeMap or LinkedHashMap ?
+  // Or we could just go through unsorted entrySet and look for the smallest value of firstTime : complexity n
   private Float _findBBFirstTime(Integer msLevel, IsolationWindow isolationWindow){
 
     List<Map.Entry<BoundingBoxMapKey, BoundingBoxToWrite>> sortedEntries = new ArrayList<>(boundingBoxMap.entrySet());
-    sortedEntries.sort(Map.Entry.comparingByValue(Comparator.comparingInt(BoundingBoxToWrite::getRunSliceId)));
-    for(Map.Entry<BoundingBoxMapKey, BoundingBoxToWrite> e : sortedEntries){
+    sortedEntries.sort(Map.Entry.comparingByValue(Comparator.comparingInt(BoundingBoxToWrite::getRunSliceId))); // JPM.QUESTION : so BB are sorted according to RunSliceId : is it always the case ?
+    for(Map.Entry<BoundingBoxMapKey, BoundingBoxToWrite> e : sortedEntries){ //JPM : check the sorting
       if(Objects.equals(e.getValue().getMsLevel(), msLevel) && Objects.equals(e.getKey().isolationWindow,isolationWindow))
         return e.getValue().getFirstTime();
     }
