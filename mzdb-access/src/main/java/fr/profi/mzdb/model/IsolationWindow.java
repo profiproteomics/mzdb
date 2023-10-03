@@ -7,7 +7,9 @@ import fr.profi.mzdb.serialization.SerializationWriter;
 import java.io.IOException;
 
 /**
- * 
+ *
+ * Used for DIA msLevel2
+ * DIA mode: The mass spectrometer divides the full scan range of mass spectrometry into several windows and selects, fragments, and collects all ions in each window.
  * 
  */
 public class IsolationWindow implements SerializationInterface {

@@ -24,10 +24,10 @@ public class SpectrumData implements SerializationInterface {
 	/** The intensity list. */
 	protected float[] intensityList;
 
-	/** The left hwhm list. */
+	/** The left hwhm list. : Left Half width at half maximum */
 	protected float[] leftHwhmList;
 
-	/** The right hwhm list. */
+	/** The right hwhm list. : : Right Half width at half maximum */
 	protected float[] rightHwhmList;
 
 	protected int peaksCount;
