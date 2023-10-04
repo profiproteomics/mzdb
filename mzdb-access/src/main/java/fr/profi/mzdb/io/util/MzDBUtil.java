@@ -6,6 +6,7 @@ import fr.profi.mzdb.db.model.*;
 import fr.profi.mzdb.db.model.params.param.CV;
 import fr.profi.mzdb.db.model.params.param.CVTerm;
 import fr.profi.mzdb.db.model.params.param.CVUnit;
+import fr.profi.mzdb.db.model.params.param.UserTerm;
 import fr.profi.mzdb.model.DataEncoding;
 import fr.profi.mzdb.model.MzDBMetaData;
 import fr.profi.mzdb.model.ProcessingMethod;
@@ -57,6 +58,8 @@ public class MzDBUtil {
     List<CV> cvs = srcReader.getCvList();
     List<CVTerm> cvTerms = srcReader.getCvTermList();
     List<CVUnit> cvUnits = srcReader.getCvUnitList();
+    List<UserTerm> userTerms = srcReader.getUserTermList();
+
 
     LOG.info("Created MzDBMetaData.");
     MzDBMetaData mzMetaData = new MzDBMetaData();
@@ -72,6 +75,7 @@ public class MzDBUtil {
     mzMetaData.setCvList(cvs);
     mzMetaData.setCvTerms(cvTerms);
     mzMetaData.setCvUnits(cvUnits);
+    mzMetaData.setUserTerms(userTerms);
 
     return mzMetaData;
   }

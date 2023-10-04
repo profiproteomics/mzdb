@@ -520,7 +520,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		writer.writeDouble(basePeakMz);
 		writer.writeFloat(basePeakIntensity);
 
-		//VDS SQL Not Null
+		//VDS SQL Not Null but can be null !
 		boolean hasData = activationType!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
@@ -593,7 +593,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	@Override
 	public void read(SerializationReader reader) throws IOException {
 		super.read(reader);
-
+//		int mNbr = reader.readInt32();
+//		if(mNbr != 0b01011010110010010110010110101100)
+//			System.out.println(" ERR");
 		//id = reader.readInt64();
 		initialId = reader.readInt32();
 		cycle = reader.readInt32();

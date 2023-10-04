@@ -65,61 +65,31 @@ public class CVTerm implements SerializationInterface {
   @Override
   public void write(SerializationWriter writer) throws IOException {
 
-    boolean hasData = accession!=null;
-    writer.writeBoolean(hasData);
-    if (hasData) {
-      writer.writeString(accession);
-    }
+    writer.writeString(accession);
+    writer.writeString(name);
 
-    hasData = name!=null;
-    writer.writeBoolean(hasData);
-    if (hasData) {
-      writer.writeString(name);
-    }
-
-    hasData = unitAccession!=null;
+    boolean hasData = unitAccession!=null;
     writer.writeBoolean(hasData);
     if (hasData) {
       writer.writeString(unitAccession);
     }
 
-    hasData = cvId!=null;
-    writer.writeBoolean(hasData);
-    if (hasData) {
-      writer.writeString(cvId);
-    }
+    writer.writeString(cvId);
 
   }
 
   @Override
   public void read(SerializationReader reader) throws IOException {
+    accession = reader.readString();
+    name = reader.readString();
 
     boolean hasData = reader.readBoolean();
-    if (hasData) {
-      accession = reader.readString();
-    } else {
-      accession = null;
-    }
-
-    hasData = reader.readBoolean();
-    if (hasData) {
-      name = reader.readString();
-    } else {
-      name = null;
-    }
-
-    hasData = reader.readBoolean();
     if (hasData) {
       unitAccession = reader.readString();
     } else {
       unitAccession = null;
     }
 
-    hasData = reader.readBoolean();
-    if (hasData) {
-      cvId = reader.readString();
-    } else {
-      cvId = null;
-    }
+    cvId = reader.readString();
   }
 }

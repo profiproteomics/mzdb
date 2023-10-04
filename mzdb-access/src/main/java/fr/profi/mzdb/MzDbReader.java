@@ -7,6 +7,7 @@ import fr.profi.mzdb.db.model.*;
 import fr.profi.mzdb.db.model.params.param.CV;
 import fr.profi.mzdb.db.model.params.param.CVTerm;
 import fr.profi.mzdb.db.model.params.param.CVUnit;
+import fr.profi.mzdb.db.model.params.param.UserTerm;
 import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.SharedParamTreeReader;
 import fr.profi.mzdb.io.reader.cache.DataEncodingReader;
@@ -57,6 +58,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	private CvReader _cvReader;
 	private CvUnitReader _cvUnitReader;
 	private CvTermReader _cvTermReader;
+	private UserTermReader _userTermReader;
 
 
 	/**
@@ -115,6 +117,7 @@ public class MzDbReader extends AbstractMzDbReader {
 		this._cvReader = new CvReader(this.connection);
 		this._cvTermReader = new CvTermReader(this.connection);
 		this._cvUnitReader = new CvUnitReader(this.connection);
+		this._userTermReader = new UserTermReader(this.connection);
 
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingReader(this);
@@ -813,6 +816,13 @@ public class MzDbReader extends AbstractMzDbReader {
 			this.cvTerms = _cvTermReader.getCvTerms();
 		}
 		return cvTerms;
+	}
+
+	public List<UserTerm> getUserTermList() throws SQLiteException {
+		if(this.userTerms == null){
+			this.userTerms = _userTermReader.getUserTerms();
+		}
+		return userTerms;
 	}
 
 	public List<Run> getRuns() throws SQLiteException {

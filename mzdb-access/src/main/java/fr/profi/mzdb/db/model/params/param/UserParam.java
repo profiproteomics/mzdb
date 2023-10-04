@@ -11,12 +11,6 @@ import java.io.IOException;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class UserParam implements SerializationInterface {
-	
-	@XmlAttribute
-	protected String cvRef;
-
-	@XmlAttribute
-	protected String accession;
 
 	@XmlAttribute
 	protected String name;
@@ -27,6 +21,9 @@ public class UserParam implements SerializationInterface {
 	@XmlAttribute
 	protected String type;// ="xsd:float"/>;
 
+	@XmlAttribute
+	protected String unitAccession;
+	
 	public  UserParam() {
 	}
 
@@ -34,20 +31,11 @@ public class UserParam implements SerializationInterface {
 		read(reader);
 	}
 
-	public UserParam( String cvRef, String accession, String name, String value, String type){
-		this.cvRef = cvRef;
-		this.accession = accession;
+	public UserParam(  String name, String value, String type, String unitAccession){
 		this.name = name;
 		this.value = value;
-		this. type = type;
-	}
-
-	public String getCvRef() {
-		return cvRef;
-	}
-
-	public String getAccession() {
-		return accession;
+		this.type = type;
+		this.unitAccession = unitAccession;
 	}
 
 	public String getName() {
@@ -62,12 +50,8 @@ public class UserParam implements SerializationInterface {
 		return type;
 	}
 
-	public void setCvRef(String cvRef) {
-		this.cvRef = cvRef;
-	}
-
-	public void setAccession(String accession) {
-		this.accession = accession;
+	public String getUnitAccession() {
+		return unitAccession;
 	}
 
 	public void setName(String name) {
@@ -82,38 +66,27 @@ public class UserParam implements SerializationInterface {
 		this.type = type;
 	}
 
+	public void setUnitAccession(String unitAccession) {
+		this.unitAccession = unitAccession;
+	}
+
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
+		writer.writeString(name);
 
-		boolean hasData = cvRef!=null;
-		writer.writeBoolean(hasData);
-		if (hasData) {
-			writer.writeString(cvRef);
-		}
-
-		hasData = accession!=null;
-		writer.writeBoolean(hasData);
-		if (hasData) {
-			writer.writeString(accession);
-		}
-
-		hasData = name!=null;
-		writer.writeBoolean(hasData);
-		if (hasData) {
-			writer.writeString(name);
-		}
-
-		hasData = value!=null;
+		boolean hasData = value!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			writer.writeString(value);
 		}
 
-		hasData = type!=null;
+		writer.writeString(type);
+
+		hasData = unitAccession!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
-			writer.writeString(type);
+			writer.writeString(unitAccession);
 		}
 
 	}
@@ -121,40 +94,21 @@ public class UserParam implements SerializationInterface {
 	@Override
 	public void read(SerializationReader reader) throws IOException  {
 
+		name = reader.readString();
+
 		boolean hasData = reader.readBoolean();
-		if (hasData) {
-			cvRef = reader.readString();
-		} else {
-			cvRef = null;
-		}
-
-		hasData = reader.readBoolean();
-		if (hasData) {
-			accession = reader.readString();
-		} else {
-			accession = null;
-		}
-
-		hasData = reader.readBoolean();
-		if (hasData) {
-			name = reader.readString();
-		} else {
-			name = null;
-		}
-
-		hasData = reader.readBoolean();
 		if (hasData) {
 			value = reader.readString();
 		} else {
 			value = null;
 		}
 
+		type = reader.readString();
 		hasData = reader.readBoolean();
 		if (hasData) {
-			type = reader.readString();
+			unitAccession = reader.readString();
 		} else {
-			type = null;
+			unitAccession = null;
 		}
-
 	}
 }

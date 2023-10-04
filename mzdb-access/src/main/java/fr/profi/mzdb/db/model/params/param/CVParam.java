@@ -97,25 +97,11 @@ public class CVParam implements SerializationInterface {
 	@Override
 	public void write(SerializationWriter writer) throws IOException {
 
-		boolean hasData = cvRef!=null;
-		writer.writeBoolean(hasData);
-		if (hasData) {
-			writer.writeString(cvRef);
-		}
+		writer.writeString(cvRef);
+		writer.writeString(accession);
+		writer.writeString(name);
 
-		hasData = accession!=null;
-		writer.writeBoolean(hasData);
-		if (hasData) {
-			writer.writeString(accession);
-		}
-
-		hasData = name!=null;
-		writer.writeBoolean(hasData);
-		if (hasData) {
-			writer.writeString(name);
-		}
-
-		hasData = value!=null;
+		boolean hasData = value!=null;
 		writer.writeBoolean(hasData);
 		if (hasData) {
 			writer.writeString(value);
@@ -145,28 +131,11 @@ public class CVParam implements SerializationInterface {
 	@Override
 	public void read(SerializationReader reader) throws IOException  {
 
+		cvRef = reader.readString();
+		accession = reader.readString();
+		name = reader.readString();
+
 		boolean hasData = reader.readBoolean();
-		if (hasData) {
-			cvRef = reader.readString();
-		} else {
-			cvRef = null;
-		}
-
-		hasData = reader.readBoolean();
-		if (hasData) {
-			accession = reader.readString();
-		} else {
-			accession = null;
-		}
-
-		hasData = reader.readBoolean();
-		if (hasData) {
-			name = reader.readString();
-		} else {
-			name = null;
-		}
-
-		hasData = reader.readBoolean();
 		if (hasData) {
 			value = reader.readString();
 		} else {
