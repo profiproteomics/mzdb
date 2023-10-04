@@ -73,6 +73,7 @@ public abstract class AbstractMzDbReader {
 	protected List<CV>  allCVs = null;
 	protected List<CVTerm>  cvTerms = null;
 	protected List<CVUnit>  cvUnits = null;
+	protected List<UserTerm>  userTerms = null;
 
 
 	/**

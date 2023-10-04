@@ -158,7 +158,7 @@ public class MzDBWriter {
     }
     stmt.dispose();
 
-    // --- INSERT CV/CVTerm/CVUnit METHODS --- //
+    // --- INSERT CV/CVTerm/CVUnit/UserTerm METHODS --- //
     logger.trace("     - INSERT CV** METHODS ");
     stmt = sqliteConnection.prepare("INSERT INTO "+ CvTable.tableName+" VALUES (?, ?, ?, ?)", false);
     List<CV> cvs  = metaData.getCvList();
@@ -193,6 +193,20 @@ public class MzDBWriter {
       stmt.bind(1, nextCVUnit.getAccession());
       stmt.bind(2, nextCVUnit.getName());
       stmt.bind(3, nextCVUnit.getCvId());
+      stmt.step();
+      stmt.reset();
+    }
+    stmt.dispose();
+
+    stmt = sqliteConnection.prepare("INSERT INTO "+ UserTermTable.tableName+" VALUES (?, ?, ?, ?)", false);
+    List<UserTerm> userTerms  = metaData.getUserTerms();
+    logger.trace("     --- NBR USER Terms "+userTerms.size());
+    for (UserTerm newUserTerms : userTerms) {
+      stmt.bind(1, newUserTerms.getId());
+      stmt.bind(2, newUserTerms.getName());
+      stmt.bind(3, newUserTerms.getType());
+      stmt.bind(4, newUserTerms.getUnitAccession());
+
       stmt.step();
       stmt.reset();
     }
@@ -265,10 +279,10 @@ public class MzDBWriter {
 
     List<UserParam> userExtraParams = mzdbHeaderParams.getUserParams().stream().filter(p -> !bbSizesKeySet.contains(p.getName()) ).collect(Collectors.toList());
 
-    userExtraParams.add(new UserParam(null, null,"ms1_bb_mz_width", String.valueOf(bbSizes.BB_MZ_HEIGHT_MS1), "xsd:float"));
-    userExtraParams.add(new UserParam(null, null, "ms1_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MS1),  "xsd:float"));
-    userExtraParams.add(new UserParam(null, null, "msn_bb_mz_width", String.valueOf(bbSizes.BB_MZ_HEIGHT_MSn),  "xsd:float"));
-    userExtraParams.add(new UserParam(null, null, "msn_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MSn),  "xsd:float"));
+    userExtraParams.add(new UserParam("ms1_bb_mz_width", String.valueOf(bbSizes.BB_MZ_HEIGHT_MS1), "xsd:float", null));
+    userExtraParams.add(new UserParam( "ms1_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MS1),  "xsd:float", null));
+    userExtraParams.add(new UserParam( "msn_bb_mz_width", String.valueOf(bbSizes.BB_MZ_HEIGHT_MSn),  "xsd:float", null));
+    userExtraParams.add(new UserParam( "msn_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MSn),  "xsd:float", null));
 
     /*val patchedUserParams = mzdbHeaderParams.getUserParams().map { userParam =>
       userParam.name match {
