@@ -4,6 +4,7 @@ import fr.profi.mzdb.db.model.*;
 import fr.profi.mzdb.db.model.params.param.CV;
 import fr.profi.mzdb.db.model.params.param.CVTerm;
 import fr.profi.mzdb.db.model.params.param.CVUnit;
+import fr.profi.mzdb.db.model.params.param.UserTerm;
 import fr.profi.mzdb.serialization.SerializationInterface;
 import fr.profi.mzdb.serialization.SerializationReader;
 import fr.profi.mzdb.serialization.SerializationWriter;
@@ -26,6 +27,7 @@ public class MzDBMetaData implements SerializationInterface {
   protected List<CV> cvList = new ArrayList<>();
   protected List<CVTerm> cvTerms = new ArrayList<>();
   protected List<CVUnit> cvUnits = new ArrayList<>();
+  protected List<UserTerm> userTerms = new ArrayList<>();
 
   protected double lowestMS1Mz = 0.0;
 
@@ -124,6 +126,13 @@ public class MzDBMetaData implements SerializationInterface {
   public void setCvTerms(List<CVTerm> cvTerms) {
     this.cvTerms = cvTerms;
   }
+  public List<UserTerm> getUserTerms() {
+    return userTerms;
+  }
+
+  public void setUserTerms(List<UserTerm> userTerms) {
+    this.userTerms = userTerms;
+  }
 
   public List<CVUnit> getCvUnits() {
     return cvUnits;
@@ -157,6 +166,7 @@ public class MzDBMetaData implements SerializationInterface {
     writeList(writer, cvList);
     writeList(writer, cvTerms);
     writeList(writer, cvUnits);
+    writeList(writer, userTerms);
 
     writer.writeDouble(lowestMS1Mz); //JPM.OM.FIX
 
@@ -252,6 +262,12 @@ public class MzDBMetaData implements SerializationInterface {
       cvUnits.add(element);
     }
 
+    size = reader.readInt32();
+    userTerms = new ArrayList<>(size);
+    for (int i = 0; i < size; i++) {
+      UserTerm element = new UserTerm(reader);
+      userTerms.add(element);
+    }
     lowestMS1Mz = reader.readDouble();
 
   }
