@@ -60,7 +60,7 @@ public class MzDBWriter {
     dataEncodingRegistry = new DataEncodingRegistry();
     runSliceStructureFactory = new RunSliceStructureFactory(1, 1000, bbSizes);
     insertedSpectraCount = 0;
-    boundingBoxCache = new BoundingBoxCache2(bbSizes);
+    boundingBoxCache = new BoundingBoxCache(bbSizes);
     globalSW.start();
     insertSpectrumSW.start();
     insertSpectrumSW.suspend();
@@ -425,7 +425,7 @@ public class MzDBWriter {
     try {
 
       // FIXME: insert missing BBs (last entries in bbCache)
-      for (BoundingBoxCache2.MsLevelAndIsolationWindowKey levelAndIsolationWindow : boundingBoxCache.getBBRowsKeys()) {
+      for (BoundingBoxCache.MsLevelAndIsolationWindowKey levelAndIsolationWindow : boundingBoxCache.getBBRowsKeys()) {
         Long bbFirstSpectrumId = flushBBRow(levelAndIsolationWindow.msLevel, levelAndIsolationWindow.isolationWindow);
         if (bbFirstSpectrumId != null)
           flushSpectrum(levelAndIsolationWindow.msLevel, levelAndIsolationWindow.isolationWindow, bbFirstSpectrumId);
