@@ -11,7 +11,6 @@ import fr.profi.mzdb.db.table.*;
 import fr.profi.mzdb.model.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +40,7 @@ public class MzDBWriter {
   private SQLiteStatement spectrumInsertStmt;
 
   private DataEncodingRegistry dataEncodingRegistry;
-  private BoundingBoxCache bbCache;
+  private BoundingBoxCache boundingBoxCache;
 
   private List<SpectrumToWrite> spectrumCache = new ArrayList<>();
   private RunSliceStructureFactory runSliceStructureFactory;
@@ -61,7 +60,7 @@ public class MzDBWriter {
     dataEncodingRegistry = new DataEncodingRegistry();
     runSliceStructureFactory = new RunSliceStructureFactory(1, 1000, bbSizes);
     insertedSpectraCount = 0;
-    bbCache = new BoundingBoxCache(bbSizes);
+    boundingBoxCache = new BoundingBoxCache2(bbSizes);
     globalSW.start();
     insertSpectrumSW.start();
     insertSpectrumSW.suspend();
@@ -70,7 +69,7 @@ public class MzDBWriter {
   }
 
   public void initialize() throws SQLiteException {
-    logger.debug("Initialize Writer for "+dbLocation.getName());
+    logger.debug("Initialize Writer for " + dbLocation.getName());
     createConnection();
     if (metaData != null) {
       insertMetaData();
@@ -83,20 +82,21 @@ public class MzDBWriter {
   }
 
   private void createConnection() throws SQLiteException {
-    this.sqliteConnection = new SQLiteConnection(dbLocation);
+
+    sqliteConnection = new SQLiteConnection(dbLocation);
     sqliteConnection.open(true); //Allow with allow create = truec
     // See: https://blog.devart.com/increasing-sqlite-performance.html
     sqliteConnection.exec("PRAGMA encoding='UTF-8';");
     sqliteConnection.exec("PRAGMA synchronous=OFF;");
     sqliteConnection.exec("PRAGMA journal_mode=OFF;");
     sqliteConnection.exec("PRAGMA temp_store=2;");
-    sqliteConnection.exec("PRAGMA cache_size=-100000;") ;// around 100 Mo
+    sqliteConnection.exec("PRAGMA cache_size=-100000;");// around 100 Mo
     sqliteConnection.exec("PRAGMA page_size=4096;"); // see: https://www.sqlite.org/pgszchng2016.html
 
     sqliteConnection.exec("PRAGMA automatic_index=OFF;");
-    sqliteConnection.exec("PRAGMA locking_mode=EXCLUSIVE;") ;// we want to lock file access for the whole creation process
+    sqliteConnection.exec("PRAGMA locking_mode=EXCLUSIVE;");// we want to lock file access for the whole creation process
 
-    sqliteConnection.exec("PRAGMA foreign_keys=OFF;") ;
+    sqliteConnection.exec("PRAGMA foreign_keys=OFF;");
     sqliteConnection.exec("PRAGMA ignore_check_constraints=ON;"); // to be a little bit faster (should be OFF in dev mode)
 
     // BEGIN TRANSACTION
@@ -106,32 +106,35 @@ public class MzDBWriter {
     sqliteConnection.exec(MzDBSchema.getSchemaDDL());
 
     // Init some INSERT statements //
-    bboxInsertStmt = sqliteConnection.prepare("INSERT INTO "+ BoundingBoxTable.tableName+" VALUES (NULL, ?, ?, ?, ?)",  false);
+    bboxInsertStmt = sqliteConnection.prepare("INSERT INTO " + BoundingBoxTable.tableName + " VALUES (NULL, ?, ?, ?, ?)", false);
     rtreeInsertStmt = sqliteConnection.prepare("INSERT INTO bounding_box_rtree VALUES (?, ?, ?, ?, ?)", false);
-    msnRtreeInsertStmt = sqliteConnection.prepare("INSERT INTO bounding_box_msn_rtree VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",  false);
+    msnRtreeInsertStmt = sqliteConnection.prepare("INSERT INTO bounding_box_msn_rtree VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", false);
 
     StringBuilder placeHolders = new StringBuilder();
-    for(int i =0; i<24; i++)
+    for (int i = 0; i < 24; i++)
       placeHolders.append("?, ");
-    placeHolders.delete(placeHolders.length()-2, placeHolders.length()-1);
-    spectrumInsertStmt = sqliteConnection.prepare("INSERT INTO spectrum VALUES ("+placeHolders+")",  false);
+    placeHolders.delete(placeHolders.length() - 2, placeHolders.length() - 1);
+    spectrumInsertStmt = sqliteConnection.prepare("INSERT INTO spectrum VALUES (" + placeHolders + ")", false);
 
   }
 
   private void insertMetaData() throws SQLiteException {
+
     metadataSW.resume();
-    if (this.sqliteConnection == null)
+
+    if (sqliteConnection == null) {
       throw new IllegalStateException("The database connection isn't initialized  !");
+    }
     logger.debug(" --- insertMetaData ");
 
     // --- INSERT DATA PROCESSING --- //
     logger.trace("     - INSERT DATA PROCESSING ");
-    SQLiteStatement stmt = sqliteConnection.prepare("INSERT INTO "+ DataProcessingTable.tableName+" VALUES (NULL, ?)", false);
+    SQLiteStatement stmt = sqliteConnection.prepare("INSERT INTO " + DataProcessingTable.tableName + " VALUES (NULL, ?)", false);
     List<ProcessingMethod> procMethods = metaData.getProcessingMethods();
     List<String> dpNames = procMethods.stream().map(ProcessingMethod::getDataProcessingName).distinct().collect(Collectors.toList());
-    logger.trace("     --- NBR "+dpNames.size());
+    logger.trace("     --- NBR " + dpNames.size());
     Map<String, Long> dpIdByName = new HashMap<>();
-    for(String dpName : dpNames){
+    for (String dpName : dpNames) {
       stmt.bind(1, dpName);
       stmt.step();
       Long dpId = sqliteConnection.getLastInsertId();
@@ -142,8 +145,8 @@ public class MzDBWriter {
 
     // --- INSERT PROCESSING METHODS --- //
     logger.trace("     - INSERT PROCESSING METHODS ");
-    stmt = sqliteConnection.prepare("INSERT INTO "+ ProcessingMethodTable.tableName+" VALUES (NULL, ?, ?, ?, ?, ?)", false);
-    logger.trace("     --- NBR "+procMethods.size());
+    stmt = sqliteConnection.prepare("INSERT INTO " + ProcessingMethodTable.tableName + " VALUES (NULL, ?, ?, ?, ?, ?)", false);
+    logger.trace("     --- NBR " + procMethods.size());
     for (ProcessingMethod procMethod : procMethods) {
       stmt.bind(1, procMethod.getNumber());
       if (!procMethod.hasParamTree())
@@ -160,9 +163,9 @@ public class MzDBWriter {
 
     // --- INSERT CV/CVTerm/CVUnit/UserTerm METHODS --- //
     logger.trace("     - INSERT CV** METHODS ");
-    stmt = sqliteConnection.prepare("INSERT INTO "+ CvTable.tableName+" VALUES (?, ?, ?, ?)", false);
-    List<CV> cvs  = metaData.getCvList();
-    logger.trace("     --- NBR CV "+cvs.size());
+    stmt = sqliteConnection.prepare("INSERT INTO " + CvTable.tableName + " VALUES (?, ?, ?, ?)", false);
+    List<CV> cvs = metaData.getCvList();
+    logger.trace("     --- NBR CV " + cvs.size());
     for (CV nextCV : cvs) {
       stmt.bind(1, nextCV.getCvId());
       stmt.bind(2, nextCV.getFullName());
@@ -173,9 +176,9 @@ public class MzDBWriter {
     }
     stmt.dispose();
 
-    stmt = sqliteConnection.prepare("INSERT INTO "+ CVTermTable.tableName+" VALUES (?, ?, ?, ?)", false);
-    List<CVTerm> cvTerms  = metaData.getCvTerms();
-    logger.trace("     --- NBR CV Terms "+cvTerms.size());
+    stmt = sqliteConnection.prepare("INSERT INTO " + CVTermTable.tableName + " VALUES (?, ?, ?, ?)", false);
+    List<CVTerm> cvTerms = metaData.getCvTerms();
+    logger.trace("     --- NBR CV Terms " + cvTerms.size());
     for (CVTerm nextCVTerm : cvTerms) {
       stmt.bind(1, nextCVTerm.getAccession());
       stmt.bind(2, nextCVTerm.getName());
@@ -186,9 +189,9 @@ public class MzDBWriter {
     }
     stmt.dispose();
 
-    stmt = sqliteConnection.prepare("INSERT INTO "+ CvUnitTable.tableName+" VALUES (?, ?, ?)", false);
-    List<CVUnit> cvUnits  = metaData.getCvUnits();
-    logger.trace("     --- NBR CV Units "+cvUnits.size());
+    stmt = sqliteConnection.prepare("INSERT INTO " + CvUnitTable.tableName + " VALUES (?, ?, ?)", false);
+    List<CVUnit> cvUnits = metaData.getCvUnits();
+    logger.trace("     --- NBR CV Units " + cvUnits.size());
     for (CVUnit nextCVUnit : cvUnits) {
       stmt.bind(1, nextCVUnit.getAccession());
       stmt.bind(2, nextCVUnit.getName());
@@ -198,9 +201,9 @@ public class MzDBWriter {
     }
     stmt.dispose();
 
-    stmt = sqliteConnection.prepare("INSERT INTO "+ UserTermTable.tableName+" VALUES (?, ?, ?, ?)", false);
-    List<UserTerm> userTerms  = metaData.getUserTerms();
-    logger.trace("     --- NBR USER Terms "+userTerms.size());
+    stmt = sqliteConnection.prepare("INSERT INTO " + UserTermTable.tableName + " VALUES (?, ?, ?, ?)", false);
+    List<UserTerm> userTerms = metaData.getUserTerms();
+    logger.trace("     --- NBR USER Terms " + userTerms.size());
     for (UserTerm newUserTerms : userTerms) {
       stmt.bind(1, newUserTerms.getId());
       stmt.bind(2, newUserTerms.getName());
@@ -216,16 +219,16 @@ public class MzDBWriter {
     logger.trace("     - INSERT SHARED PARAM ");
     List<SharedParamTree> shParamTrees = metaData.getSharedParamTrees();
     shParamTrees.sort((o1, o2) -> {
-      if(o1 == null)
+      if (o1 == null)
         return -1;
-      if(o2 == null)
+      if (o2 == null)
         return 1;
       return Long.compare(o1.getId(), o2.getId());
     });
 
-    logger.trace("       -- NBR "+shParamTrees.size());
+    logger.trace("       -- NBR " + shParamTrees.size());
     stmt = sqliteConnection.prepare("INSERT INTO " + SharedParamTreeTable.tableName + " VALUES (NULL, ?, ?)", false);
-    for (SharedParamTree sharedParamTree :  shParamTrees){
+    for (SharedParamTree sharedParamTree : shParamTrees) {
       stmt.bind(1, ParamTreeStringifier.stringifyRefParamGroup(sharedParamTree.getData()));
       stmt.bind(2, sharedParamTree.getSchemaName());
       stmt.step();
@@ -237,24 +240,24 @@ public class MzDBWriter {
     logger.trace("     - INSERT INSTRUMENT CONFIGS ");
     stmt = sqliteConnection.prepare("INSERT INTO " + InstrumentConfigurationTable.tableName + " VALUES (NULL, ?, NULL, ?, NULL,  ?)", false);
     List<InstrumentConfiguration> instConfigs = metaData.getInstrumentConfigurations();
-    logger.trace("     --- NBR "+instConfigs.size());
-    for (InstrumentConfiguration instConfig :  instConfigs){
+    logger.trace("     --- NBR " + instConfigs.size());
+    for (InstrumentConfiguration instConfig : instConfigs) {
       if (instConfig.getComponentList() != null) {
         stmt.bind(1, instConfig.getName());
         stmt.bind(2, ParamTreeStringifier.stringifyComponentList(instConfig.getComponentList()));
 //        if(instConfig.getSoftwareId() == null)
 //          stmt.bindNull(3);
 //        else
-          stmt.bind(3, instConfig.getSoftwareId());
+        stmt.bind(3, instConfig.getSoftwareId());
         stmt.step();
         stmt.reset();
       }
     }
-      stmt.dispose();
+    stmt.dispose();
 
     // --- INSERT MZDB HEADER --- //
     logger.trace("     - INSERT MZDB HEADER ");
-    stmt = sqliteConnection.prepare("INSERT INTO "+ MzdbTable.tableName+" VALUES (?, ?, ?, ?, ?)", false);
+    stmt = sqliteConnection.prepare("INSERT INTO " + MzdbTable.tableName + " VALUES (?, ?, ?, ?, ?)", false);
     MzDbHeader mzDbHeader = metaData.getMzdbHeader();
 
     /*
@@ -277,12 +280,12 @@ public class MzDBWriter {
     bbSizesKeySet.add("msn_bb_mz_width");
     bbSizesKeySet.add("msn_bb_time_width");
 
-    List<UserParam> userExtraParams = mzdbHeaderParams.getUserParams().stream().filter(p -> !bbSizesKeySet.contains(p.getName()) ).collect(Collectors.toList());
+    List<UserParam> userExtraParams = mzdbHeaderParams.getUserParams().stream().filter(p -> !bbSizesKeySet.contains(p.getName())).collect(Collectors.toList());
 
     userExtraParams.add(new UserParam("ms1_bb_mz_width", String.valueOf(bbSizes.BB_MZ_HEIGHT_MS1), "xsd:float", null));
-    userExtraParams.add(new UserParam( "ms1_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MS1),  "xsd:float", null));
-    userExtraParams.add(new UserParam( "msn_bb_mz_width", String.valueOf(bbSizes.BB_MZ_HEIGHT_MSn),  "xsd:float", null));
-    userExtraParams.add(new UserParam( "msn_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MSn),  "xsd:float", null));
+    userExtraParams.add(new UserParam("ms1_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MS1), "xsd:float", null));
+    userExtraParams.add(new UserParam("msn_bb_mz_width", String.valueOf(bbSizes.BB_MZ_HEIGHT_MSn), "xsd:float", null));
+    userExtraParams.add(new UserParam("msn_bb_time_width", String.valueOf(bbSizes.BB_RT_WIDTH_MSn), "xsd:float", null));
 
     /*val patchedUserParams = mzdbHeaderParams.getUserParams().map { userParam =>
       userParam.name match {
@@ -298,7 +301,7 @@ public class MzDBWriter {
     String serializedMzDbParamTree = ParamTreeStringifier.stringifyParamTree(mzdbHeaderParams);
 
     stmt.bind(1, MODEL_VERSION);
-    stmt.bind(2, Integer.parseInt( String.valueOf(new java.util.Date().getTime() / 1000)));
+    stmt.bind(2, Integer.parseInt(String.valueOf(new java.util.Date().getTime() / 1000)));
     stmt.bind(3, ParamTreeStringifier.stringifyFileContentParam(mzDbHeader.getFileContent()));
     stmt.bind(4, ""); // FIXME: define contacts in the mzDB file
     stmt.bind(5, serializedMzDbParamTree);
@@ -309,16 +312,16 @@ public class MzDBWriter {
 
     // --- INSERT RUNS --- //
     logger.trace("     - INSERT RUNS ");
-    stmt = sqliteConnection.prepare("INSERT INTO "+ RunTable.tableName+" VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)", false);
+    stmt = sqliteConnection.prepare("INSERT INTO " + RunTable.tableName + " VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)", false);
     List<Run> runs = metaData.getRuns();
-    logger.trace("     --- NBR "+runs.size());
+    logger.trace("     --- NBR " + runs.size());
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
     for (Run run : runs) {
       // Inject the 'acquisition parameter' CV param if it doesn't exist
       ParamTree runParamTree = run.hasParamTree() ? run.getParamTree(sqliteConnection) : new ParamTree();
       List<CVParam> cvParams = runParamTree.getCVParams();
       long nbr = cvParams.stream().filter(cv -> cv.getAccession().equals(CVEntry.ACQUISITION_PARAMETER.getAccession())).count();
-      if(nbr == 0){
+      if (nbr == 0) {
         String modeName = isDIA ? AcquisitionMode.SWATH.name() : AcquisitionMode.DDA.name();
         CVParam cvParam = new CVParam();
         cvParam.setCvRef("MS");
@@ -351,10 +354,10 @@ public class MzDBWriter {
 
     // --- INSERT SOURCE FILES --- //
     logger.trace("     - INSERT SOURCE FILES ");
-    stmt = sqliteConnection.prepare("INSERT INTO "+ SourceFileTable.tableName+" VALUES (NULL, ?, ?, ?, NULL)", false);
+    stmt = sqliteConnection.prepare("INSERT INTO " + SourceFileTable.tableName + " VALUES (NULL, ?, ?, ?, NULL)", false);
     List<SourceFile> sourceFiles = metaData.getSourceFiles();
-    logger.trace("         - Nbr "+sourceFiles.size());
-    for (SourceFile sourceFile: sourceFiles) {
+    logger.trace("         - Nbr " + sourceFiles.size());
+    for (SourceFile sourceFile : sourceFiles) {
       stmt.bind(1, sourceFile.getName());
       stmt.bind(2, sourceFile.getLocation());
       // FIXME: source file paramtree should be defined
@@ -370,14 +373,14 @@ public class MzDBWriter {
 
     // --- INSERT SAMPLES --- //
     logger.trace("     - INSERT SAMPLES ");
-    stmt = sqliteConnection.prepare("INSERT INTO "+ SampleTable.tableName+" VALUES (NULL, ?, ?, NULL)", false);
+    stmt = sqliteConnection.prepare("INSERT INTO " + SampleTable.tableName + " VALUES (NULL, ?, ?, NULL)", false);
 
     List<Sample> samples = metaData.getSamples();
-    logger.trace("         - Nbr "+samples.size());
-    if(samples.isEmpty()) {
+    logger.trace("         - Nbr " + samples.size());
+    if (samples.isEmpty()) {
       String sampleName;
-      if(sourceFiles.isEmpty())
-        sampleName= dbLocation.getName().split("\\.")[0];
+      if (sourceFiles.isEmpty())
+        sampleName = dbLocation.getName().split("\\.")[0];
       else
         sampleName = sourceFiles.get(0).getName();
       stmt.bind(1, sampleName);
@@ -397,14 +400,14 @@ public class MzDBWriter {
 
     // --- INSERT SOFTWARE LIST --- //
     logger.trace("     - INSERT SOFTWARE LIST ");
-    stmt = sqliteConnection.prepare("INSERT INTO "+ SoftwareTable.tableName+" VALUES (NULL, ?, ?, ?, NULL)", false);
+    stmt = sqliteConnection.prepare("INSERT INTO " + SoftwareTable.tableName + " VALUES (NULL, ?, ?, ?, NULL)", false);
     List<Software> softwareList = metaData.getSoftwares();
-    logger.trace("         - Nbr "+softwareList.size());
+    logger.trace("         - Nbr " + softwareList.size());
     for (Software software : softwareList) {
       stmt.bind(1, software.getName());
       stmt.bind(2, software.getVersion());
       // FIXME: software paramtree should be defined
-      ParamTree pt = software.hasParamTree() ? software.getParamTree(sqliteConnection) :  new ParamTree();
+      ParamTree pt = software.hasParamTree() ? software.getParamTree(sqliteConnection) : new ParamTree();
       stmt.bind(3, ParamTreeStringifier.stringifyParamTree(pt));
       stmt.step();
       stmt.reset();
@@ -414,22 +417,24 @@ public class MzDBWriter {
     logger.trace("  --- Insert MetaData done ");
   }
 
- public void close(){
-    if (this.sqliteConnection == null)
+  public void close() {
+    if (sqliteConnection == null) {
       throw new IllegalStateException("The method open() must first be called");
+    }
+
     try {
 
       // FIXME: insert missing BBs (last entries in bbCache)
-      for(Pair<Integer, IsolationWindow> p : this.bbCache.getBBRowsKeys()) {
-         Long bbFirstSpectrumId = flushBBRow(p.getKey(), p.getValue());
-         if (bbFirstSpectrumId != null) flushSpectrum(p.getKey(), p.getValue(), bbFirstSpectrumId);
-       }
-
+      for (BoundingBoxCache2.MsLevelAndIsolationWindowKey levelAndIsolationWindow : boundingBoxCache.getBBRowsKeys()) {
+        Long bbFirstSpectrumId = flushBBRow(levelAndIsolationWindow.msLevel, levelAndIsolationWindow.isolationWindow);
+        if (bbFirstSpectrumId != null)
+          flushSpectrum(levelAndIsolationWindow.msLevel, levelAndIsolationWindow.isolationWindow, bbFirstSpectrumId);
+      }
 
       try {
 
         // --- INSERT DATA ENCODINGS --- //
-        SQLiteStatement stmt = sqliteConnection.prepare("INSERT INTO "+ DataEncodingTable.tableName+" VALUES (?, ?, ?, ?, ?, ?, NULL)", false);
+        SQLiteStatement stmt = sqliteConnection.prepare("INSERT INTO " + DataEncodingTable.tableName + " VALUES (?, ?, ?, ?, ?, ?, NULL)", false);
         List<DataEncoding> dataEncs = dataEncodingRegistry.getDistinctDataEncoding();
         for (DataEncoding dataEnc : dataEncs) {
           long mzPrecision = 64;
@@ -453,8 +458,8 @@ public class MzDBWriter {
         stmt.dispose();
 
         // Finalize the creation of run slices
-        stmt = sqliteConnection.prepare("INSERT INTO "+ RunSliceTable.tableName+" VALUES (?, ?, ?, ?, ?, NULL, ?)", false);
-        for (RunSliceHeader runSlice :  this.runSliceStructureFactory.getAllRunSlices()) {
+        stmt = sqliteConnection.prepare("INSERT INTO " + RunSliceTable.tableName + " VALUES (?, ?, ?, ?, ?, NULL, ?)", false);
+        for (RunSliceHeader runSlice : this.runSliceStructureFactory.getAllRunSlices()) {
           stmt.bind(1, runSlice.getId());
           stmt.bind(2, runSlice.getMsLevel());
           stmt.bind(3, runSlice.getNumber());
@@ -499,20 +504,21 @@ public class MzDBWriter {
         this.sqliteConnection.dispose();
       }
 
-      } catch (SQLiteException e) {
-        e.printStackTrace();
-      }
+    } catch (SQLiteException e) {
+      e.printStackTrace();
+    }
 
     globalSW.stop();
     insertSpectrumSW.stop();
     logger.debug("mzDB Writer closed");
-    }
+  }
 
-  /*
-   */
+
   public void insertSpectrum(Spectrum spectrum, DataEncoding dataEncoding) throws SQLiteException {
+
     SpectrumHeader spectrumHeader = spectrum.getHeader();
 
+    // check if paramTreeAsString has already been set or retrieve it from spectrumHeader.paramTree
     String paramTreeAsString = spectrumHeader.getParamTreeAsString();
     if (paramTreeAsString == null) {
       if (spectrumHeader.hasParamTree()) {
@@ -520,6 +526,7 @@ public class MzDBWriter {
       }
     }
 
+    // check if scanListAsString has already been set or retrieve it from spectrumHeader.scanList
     String scanListAsString = spectrumHeader.getScanListAsString();
     if (scanListAsString == null) {
       if (spectrumHeader.hasScanList()) {
@@ -527,6 +534,7 @@ public class MzDBWriter {
       }
     }
 
+    // check if precursorListAsString has already been set or retrieve it from spectrumHeader.precursorList
     String precursorListAsString = spectrumHeader.getPrecursorListAsString();
     if (precursorListAsString == null) {
       if (spectrumHeader.hasPrecursorList()) {
@@ -543,97 +551,125 @@ public class MzDBWriter {
 
     insertSpectrum(spectrum, spectrumMetaData, dataEncoding);
   }
+
   public void insertSpectrum(Spectrum spectrum, SpectrumMetaData metaDataAsText, DataEncoding dataEncoding) throws SQLiteException {
 
     insertSpectrumSW.resume();
-    SpectrumHeader sh = spectrum.getHeader();
-    SpectrumData sd = spectrum.getData();
-    int peaksCount = sd.getPeaksCount();
+
+
+    SpectrumHeader spectrumHeader = spectrum.getHeader();
+    SpectrumData spectrumData = spectrum.getData();
+    int peaksCount = spectrumData.getPeaksCount();
 
     // FIXME: deal with empty spectra
     if (peaksCount == 0) {
       logger.warn("Empty spectrum detected !!! no insertion in the mzdb file");
       return;
     }
-    insertedSpectraCount += 1;
 
-    int msLevel = sh.getMsLevel();
-    /*if (msLevel == 1) {
-                System.out.println(msLevel);
-    } else {
-      System.out.println("Level:"+msLevel);
-    }*/
-    IsolationWindow isolationWindowOpt = (isDIA && msLevel == 2) ?  sh.getIsolationWindow() : null; // very important for cache
-    long spectrumId = insertedSpectraCount;  // note: we maintain our own spectrum ID counter
-    Float spectrumTime = sh.getElutionTime();
+    // We maintain our own spectrum ID counter
+    insertedSpectraCount++;
+    long spectrumId = insertedSpectraCount;
 
-    DataEncoding dataEnc = this.dataEncodingRegistry.getOrAddDataEncoding(dataEncoding); //JPM.QUESTION: data encoding depends of each spectrum ? Why not specified in Spectrum ?
+    int msLevel = spectrumHeader.getMsLevel();
+    Float spectrumTime = spectrumHeader.getElutionTime();
+
+    // isolationWindow is only used for DIA
+    IsolationWindow isolationWindow = (isDIA && msLevel >= 2) ? spectrumHeader.getIsolationWindow() : null; // very important for cache
+
+
+    DataEncoding dataEnc = this.dataEncodingRegistry.getOrAddDataEncoding(dataEncoding);
+
+    //System.out.println("InsertSpectrum "+insertedSpectraCount+"  msLevel:"+msLevel);
 
     // size of Bounding Box according to MS level.
-    Double mzInc = (msLevel == 1) ? bbSizes.BB_MZ_HEIGHT_MS1 :  bbSizes.BB_MZ_HEIGHT_MSn;
-
-
-      // FIXME: min m/z should be retrieve from meta-data (scan list)
-      float curMinMz = (float) ((Math.floor(sd.getMzList()[0] / bbSizes.BB_MZ_HEIGHT_MS1)) * bbSizes.BB_MZ_HEIGHT_MS1);
-      float curMaxMz = (float) (curMinMz + mzInc);
-
-      // FIXME: this is a workaround => find a better way to do this
-      if (msLevel == 2 && !isDIA) {
+    // FIXME: min m/z should be retrieve from meta-data (scan list)
+    Double mzInc = (msLevel == 1) ? bbSizes.BB_MZ_HEIGHT_MS1 : bbSizes.BB_MZ_HEIGHT_MSn;
+    float curMinMz;
+    float curMaxMz;
+    if (isDIA) {
+      // DIA
+      curMinMz = (float) ((Math.floor(spectrumData.getMzList()[0] / bbSizes.BB_MZ_HEIGHT_MS1)) * bbSizes.BB_MZ_HEIGHT_MS1);
+      curMaxMz = (float) (curMinMz + mzInc);
+    } else {
+      // DDA
+      if (msLevel >= 2) {
         curMinMz = 0;
-        curMaxMz = (float)bbSizes.BB_MZ_HEIGHT_MSn;
+        curMaxMz = (float) bbSizes.BB_MZ_HEIGHT_MSn;
+      } else {
+        curMinMz = (float) ((Math.floor(spectrumData.getMzList()[0] / mzInc)) * mzInc);
+        curMaxMz = (float) (curMinMz + mzInc);
       }
+    }
 
-      boolean isTimeForNewBBRow = bbCache.isTimeForNewBBRow(msLevel, isolationWindowOpt, spectrumTime);
 
-      // Flush BB row when we reach a new row (retention time exceeding size of the bounding box for this MS level)
-      if (isTimeForNewBBRow) {
-        //println("******************************************************* FLUSHING BB ROW ****************************************")
-        Long bbFirstSpectrumId = flushBBRow(msLevel, isolationWindowOpt);
-        if (bbFirstSpectrumId != null) flushSpectrum(msLevel, isolationWindowOpt, bbFirstSpectrumId);
-      }
+    boolean isTimeForNewBBRow = boundingBoxCache.isTimeForNewBBRow(msLevel, isolationWindow, spectrumTime);
 
-      // TODO: put _getBBWithNextSpectrumSlice back here when memory issues are fixed
+    // Flush BB row when we reach a new row (retention time exceeding size of the bounding box for this MS level)
+    if (isTimeForNewBBRow) {
 
-      // Peaks lookup to create Bounding Boxes
-      int i = 0;
-      BoundingBoxToWrite curBB = null;
+            /*if (msLevel == 1) {
+                System.out.println("Flush Start msLevel1");
+                boundingBoxCache.dump();
+            }*/
 
-      while (i < peaksCount) {
-        double mz = sd.getMzList()[i];
+      //println("******************************************************* FLUSHING BB ROW ****************************************")
+      Long bbFirstSpectrumId = flushBBRow(msLevel, isolationWindow);
+      if (bbFirstSpectrumId != null) flushSpectrum(msLevel, isolationWindow, bbFirstSpectrumId);
 
-        if (i == 0) {
-          curBB = getBBWithNextSpectrumSlice(spectrum,spectrumId,spectrumTime,msLevel,dataEnc,isolationWindowOpt, i, curMinMz, curMaxMz);
-        } else if (mz > curMaxMz) {
-          // Creates new bounding boxes even for empty data => should be removed in mzDB V2
-          while (mz > curMaxMz) {
-            curMinMz += mzInc;
-            curMaxMz += mzInc;
-            // Very important: ensure run slices are created in increasing m/z order
-            if (!runSliceStructureFactory.hasRunSlice(msLevel, curMinMz, curMaxMz))
-              runSliceStructureFactory.addRunSlice(msLevel, curMinMz, curMaxMz);
+            /*if (msLevel == 1) {
+                System.out.println("Flush Done msLevel1");
+                boundingBoxCache.dump();
+            }*/
+    }
+
+    // Peaks lookup to create Bounding Boxes
+    int i = 0;
+    BoundingBoxToWrite curBB = getBBWithNextSpectrumSlice(spectrum, spectrumId, spectrumTime, msLevel, dataEnc, isolationWindow, i, curMinMz, curMaxMz);
+
+    i = 1;
+    while (i < peaksCount) {
+      double mz = spectrumData.getMzList()[i];
+
+      if (mz > curMaxMz) {
+
+        // Creates new bounding boxes even for empty data => should be removed in mzDB V2
+        while (mz > curMaxMz) {
+          curMinMz += mzInc;
+          curMaxMz += mzInc;
+          // Very important: ensure run slices are created in increasing m/z order
+          if (!runSliceStructureFactory.hasRunSlice(msLevel, curMinMz, curMaxMz)) {
+            runSliceStructureFactory.addRunSlice(msLevel, curMinMz, curMaxMz);
           }
-          curBB = getBBWithNextSpectrumSlice(spectrum,spectrumId,spectrumTime,msLevel,dataEnc,isolationWindowOpt, i, curMinMz, curMaxMz);
         }
 
-        if (curBB.spectrumSlices.get(curBB.getSpectrumIds().size()-1) != null ) {
-            // Add data point to the Bounding Box
-            SpectrumSliceIndex lastSpectrumSlice = curBB.getSpectrumSlices().get(curBB.getSpectrumIds().size()-1);
-            lastSpectrumSlice.setLastPeakIdx(i);
-        }
+        // For the previous curBB : setLastPeakIdx for lastSpectrumSlice
+        SpectrumSliceIndex lastSpectrumSlice = curBB.getSpectrumSlices().get(curBB.getSpectrumIds().size() - 1);
+        lastSpectrumSlice.setLastPeakIdx(i - 1);
 
-        i++;
+        curBB = getBBWithNextSpectrumSlice(spectrum, spectrumId, spectrumTime, msLevel, dataEnc, isolationWindow, i, curMinMz, curMaxMz);
       }
+
+      i++;
+    }
+
+    // For the last curBB : setLastPeakIdx for lastSpectrumSlice
+    SpectrumSliceIndex lastSpectrumSlice = curBB.getSpectrumSlices().get(curBB.getSpectrumIds().size() - 1);
+    lastSpectrumSlice.setLastPeakIdx(i - 1);
+
+
+    boundingBoxCache.dump();
 
     // --- INSERT SPECTRUM HEADER --- //
 
-    spectrumCache.add(new SpectrumToWrite(sh, metaDataAsText, spectrumId, dataEnc));
+    spectrumCache.add(new SpectrumToWrite(spectrumHeader, metaDataAsText, spectrumId, dataEnc));
 
     insertSpectrumSW.suspend();
   } // ends insertSpectrum
 
   private void flushSpectrum(int msLevel, IsolationWindow isolationWindow, Long bbFirstSpectrumId) throws SQLiteException {
 
-    if (isolationWindow != null) {
+    if (isolationWindow != null) { //JPM.TODO ?
       throw new UnsupportedOperationException("Not Yet implemented");
     }
 
@@ -647,7 +683,7 @@ public class MzDBWriter {
       }
     }
 
-    spectrumCache = newSpectrumCache ;
+    spectrumCache = newSpectrumCache;
   }
 
   private void insertSpectrumToWrite(SpectrumToWrite spectrumToWrite, Long bbFirstSpectrumId) throws SQLiteException {
@@ -676,7 +712,7 @@ public class MzDBWriter {
       stmt.bindNull(11);
     else
       stmt.bind(11, spectrumToWrite.header.getPrecursorMz());
-    if (spectrumToWrite.header.getPrecursorCharge() == null || spectrumToWrite.header.getPrecursorCharge() ==  0)
+    if (spectrumToWrite.header.getPrecursorCharge() == null || spectrumToWrite.header.getPrecursorCharge() == 0)
       stmt.bindNull(12);
     else
       stmt.bind(12, spectrumToWrite.header.getPrecursorCharge());
@@ -712,83 +748,105 @@ public class MzDBWriter {
 
   private BoundingBoxToWrite getBBWithNextSpectrumSlice(Spectrum spectrum, Long spectrumId, Float spectrumTime, Integer msLevel, DataEncoding dataEnc, IsolationWindow isolationWindow, Integer peakIdx, Float minMz, Float maxMz) {
 
-//    val runSliceBoundaries = (msLevel, minMz, maxMz)
     Integer runSliceId = runSliceStructureFactory.getRunSliceId(msLevel, minMz, maxMz);
-    if(runSliceId == null) {
-      runSliceId =  runSliceStructureFactory.addRunSlice(msLevel, minMz, maxMz).getId();
+    if (runSliceId == null) {
+      runSliceId = runSliceStructureFactory.addRunSlice(msLevel, minMz, maxMz).getId();
     }
 
-    BoundingBoxToWrite cachedBB = bbCache.getCachedBoundingBox(runSliceId, isolationWindow);
+    BoundingBoxToWrite cachedBB = boundingBoxCache.getCachedBoundingBox(msLevel, runSliceId, isolationWindow);
 
-    if (cachedBB == null ) { // isTimeForNewBBRow ||
+    if (cachedBB == null) { // isTimeForNewBBRow ||
       // FIXME: perform this estimation by counting the number of run slices per MS level
-      int sliceSlicesCountHint = (msLevel == 2) ? 1 : runSliceStructureFactory.getRunSlicesCount();
-      cachedBB = bbCache.createBoundingBox(spectrumTime, runSliceId, msLevel, dataEnc, isolationWindow, sliceSlicesCountHint);
+      int sliceSlicesCountHint = (msLevel >= 2) ? 1 : runSliceStructureFactory.getRunSlicesCount();
+      cachedBB = boundingBoxCache.createBoundingBox(spectrumTime, runSliceId, msLevel, dataEnc, isolationWindow, sliceSlicesCountHint);
     } else {
       // Increase size of the bounding box for one new spectrum
-      cachedBB.lastTime = spectrumTime ;// update BB last RT // JPM : this code works for the moment because spectrum are sorted according to time
+      cachedBB.lastTime = spectrumTime;// update BB last RT
     }
 
     cachedBB.getSpectrumIds().add(spectrumId);
     //bb.spectrumSlices += Some(_bbCache.acquireSpectrumDataBuilder(sh, sh.peaksCount))
 
     cachedBB.spectrumSlices.add(new SpectrumSliceIndex(spectrum.getData(), peakIdx, peakIdx));
-    return  cachedBB;
+    return cachedBB;
   }
 
-  private Long flushBBRow(Integer msLevel, IsolationWindow isolationWindowOpt)  {
+  private TreeSet<Long> _spectraIdsTreeSet = new TreeSet<>();
 
-    // Retrieve the longest list of spectra ids
-    //val lcCtxBySpecId = new LongMap[ILcContext]()
-    ArrayList<Long> spectraIds = new ArrayList<>();
+  private Long flushBBRow(Integer msLevel, IsolationWindow isolationWindowOpt) {
 
-    Function<BoundingBoxToWrite, Void> function = bb -> {
-      spectraIds.addAll( bb.getSpectrumIds());
-      return null;
-    };
-    bbCache.forEachCachedBB(msLevel, isolationWindowOpt, function);
-
-    List<Long> distinctBBRowSpectraIds = spectraIds.stream().distinct().sorted().collect(Collectors.toList());
-
-    // Insert all BBs corresponding to the same MS level and the same isolation window (DIA only)
-    Function<BoundingBoxToWrite, Void> func2 = bb -> {
-      // Map slices by spectrum id
-      HashMap<Long, SpectrumSliceIndex> specSliceById = new HashMap<>();
-      int spSize= bb.getSpectrumIds().size();
-      for (int i=0; i<spSize; i++){
-        if(bb.spectrumSlices.get(i)!=null){
-          specSliceById.put(bb.spectrumIds.get(i), bb.spectrumSlices.get(i));
-        }
-      }
-
-
-      int distinctSpSize= distinctBBRowSpectraIds.size();
-      List<SpectrumSliceIndex> distinctBBSpectraSlice = new ArrayList<>(distinctSpSize);
-      for (int i=0; i<distinctSpSize; i++){
-        distinctBBSpectraSlice.add(i,specSliceById.get(distinctBBRowSpectraIds.get(i)));
-      }
-
-      // Update Bounding Box
-      bb.spectrumIds.clear();
-      bb.spectrumIds.addAll(distinctBBRowSpectraIds);
-
-      bb.spectrumSlices.clear();
-      bb.spectrumSlices.addAll(distinctBBSpectraSlice);
-
-      // Insert Bounding Box
+    BoundingBoxToWrite singleBoundingBox = boundingBoxCache.hasOneCachedBBWithOneSpectrum(msLevel, isolationWindowOpt);
+    if (singleBoundingBox != null) {
+      // generally be msLevel>=2
+      // this case is for speedness
       try {
-        this.insertAndIndexBoundingBox(bb);
+        insertAndIndexBoundingBox(singleBoundingBox);
       } catch (SQLiteException e) {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
-      return null;
-    };
 
-    bbCache.forEachCachedBB(msLevel, isolationWindowOpt, func2);
-    bbCache.removeBBRow(msLevel, isolationWindowOpt);
+      // remove from cache inserted bounding boxes.
+      boundingBoxCache.removeBBRow(msLevel, isolationWindowOpt);
 
-    return distinctBBRowSpectraIds.isEmpty() ? null : distinctBBRowSpectraIds.get(0);
+      return singleBoundingBox.getSpectrumIds().get(0);
+    } else {
+      // General case (works for one bbox with one spectrum, but too slow)
+
+      // --- Get list of all spectraIds in the bounding box
+      _spectraIdsTreeSet.clear();
+
+      Function<BoundingBoxToWrite, Void> spectraIdsfunction = bb -> {
+        _spectraIdsTreeSet.addAll(bb.getSpectrumIds());
+        return null;
+      };
+      boundingBoxCache.forEachCachedBB(msLevel, isolationWindowOpt, spectraIdsfunction);
+
+      if (_spectraIdsTreeSet.isEmpty()) {
+        return null;
+      }
+
+      // Insert all BBs corresponding to the same MS level and the same isolation window (DIA only)
+      Function<BoundingBoxToWrite, Void> insertBBFunction = bb -> {
+        // Map slices by spectrum id
+        HashMap<Long, SpectrumSliceIndex> specSliceById = new HashMap<>();
+        int spSize = bb.getSpectrumIds().size();
+        for (int i = 0; i < spSize; i++) {
+          if (bb.spectrumSlices.get(i) != null) {
+            specSliceById.put(bb.spectrumIds.get(i), bb.spectrumSlices.get(i));
+          }
+        }
+
+        ArrayList<SpectrumSliceIndex> distinctBBSpectraSlice = new ArrayList<>(_spectraIdsTreeSet.size());
+        for (Long spectrumId : _spectraIdsTreeSet) {
+          distinctBBSpectraSlice.add(specSliceById.get(spectrumId));
+        }
+
+        // Update Bounding Box
+        bb.spectrumIds.clear();
+        bb.spectrumIds.addAll(_spectraIdsTreeSet);
+
+        bb.spectrumSlices.clear();
+        bb.spectrumSlices.addAll(distinctBBSpectraSlice);
+
+        // Insert Bounding Box
+        try {
+          insertAndIndexBoundingBox(bb);
+        } catch (SQLiteException e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
+        }
+        return null;
+      };
+
+      boundingBoxCache.forEachCachedBB(msLevel, isolationWindowOpt, insertBBFunction);
+
+      // remove from cache inserted bounding boxes.
+      boundingBoxCache.removeBBRow(msLevel, isolationWindowOpt);
+
+      // return the first Spectra Id.
+      return _spectraIdsTreeSet.isEmpty() ? null : _spectraIdsTreeSet.first();
+    }
   }
 
   private void insertAndIndexBoundingBox(BoundingBoxToWrite bb) throws SQLiteException { // --- INSERT BOUNDING BOX --- //
@@ -800,7 +858,7 @@ public class MzDBWriter {
 
     // TODO: insert this index at the end of the file creation
     SQLiteStatement stmt = null;
-    boolean isRTreeIndexInserted;
+    boolean isRTreeIndexInserted = false;
     try {
       if (msLevel == 1) {
         stmt = rtreeInsertStmt;
@@ -813,10 +871,12 @@ public class MzDBWriter {
 
         isRTreeIndexInserted = true;
 
-      } else if (msLevel == 2 && isDIA) {
+      } else if (msLevel >= 2) {
 
-        // TODO: parse this in the MzMLParser?
-        // TODO: remove this try/catch
+        if (isDIA) {
+
+          // TODO: parse this in the MzMLParser?
+          // TODO: remove this try/catch
         /*val precursorListStr = smd.precursorList.get
         val selectedIons = precursorListStr.split("selectedIon>")
         if (selectedIons.length <= 1) false
@@ -833,30 +893,42 @@ public class MzDBWriter {
             win.minMz <= selectedIonMz && win.maxMz >= selectedIonMz
           }*/
 
-        IsolationWindow isolationWindowOpt = bb.getIsolationWindow();
+          IsolationWindow isolationWindowOpt = bb.getIsolationWindow();
 
-        if (isolationWindowOpt == null)
-          isRTreeIndexInserted = false;
-        else {
-          stmt = msnRtreeInsertStmt;
+          if (isolationWindowOpt != null) {
+            stmt = msnRtreeInsertStmt;
 
-          stmt.bind(1, bbId);
-          stmt.bind(2, msLevel);
-          stmt.bind(3, msLevel);
-          stmt.bind(4, isolationWindowOpt.getMinMz());
-          stmt.bind(5, isolationWindowOpt.getMaxMz());
-          stmt.bind(6, runSlice.getBeginMz());
-          stmt.bind(7, runSlice.getEndMz());
-          stmt.bind(8, bb.getFirstTime());
-          stmt.bind(9, bb.getLastTime());
+            stmt.bind(1, bbId);
+            stmt.bind(2, msLevel);
+            stmt.bind(3, msLevel);
+            stmt.bind(4, isolationWindowOpt.getMinMz());
+            stmt.bind(5, isolationWindowOpt.getMaxMz());
+            stmt.bind(6, runSlice.getBeginMz());
+            stmt.bind(7, runSlice.getEndMz());
+            stmt.bind(8, bb.getFirstTime());
+            stmt.bind(9, bb.getLastTime());
 
-          isRTreeIndexInserted = true;
+            isRTreeIndexInserted = true;
+          }
+        } else {
+                    stmt = msnRtreeInsertStmt;
+
+                    stmt.bind(1, bbId);
+                    stmt.bind(2, msLevel);
+                    stmt.bind(3, msLevel);
+                    stmt.bind(4, 0); //JPM.TODO ? : put 0 after a discussion with VERO.
+                    stmt.bind(5, 0);
+                    stmt.bind(6, runSlice.getBeginMz());
+                    stmt.bind(7, runSlice.getEndMz());
+                    stmt.bind(8, bb.getFirstTime());
+                    stmt.bind(9, bb.getLastTime());
+
+
+                    isRTreeIndexInserted = true;
         }
-      } else
-        isRTreeIndexInserted = false;
-    } catch  (SQLiteException e) {
+      }
+    } catch (SQLiteException e) {
       e.printStackTrace();
-      isRTreeIndexInserted = false;
     }
 
 
@@ -869,107 +941,108 @@ public class MzDBWriter {
         e.printStackTrace();
       }
     } else if (isDIA) {
-      System.out.println("No R*Tree index inserted for BB with id = "+bb.id+"; MS level = "+msLevel);
+      //System.out.println("No R*Tree index inserted for BB with id = "+bb.id+"; MS level = "+msLevel);
     }
 
   }
- protected Long insertBoundingBoxToWrite(BoundingBoxToWrite bb) throws SQLiteException {
-   List<Long> spectrumIds = bb.getSpectrumIds();
-   List<SpectrumSliceIndex> spectrumSlices = bb.getSpectrumSlices();
-   int slicesCount = spectrumSlices.size();
-   int bbPeaksCount = 0;
-   for(SpectrumSliceIndex spectrumSliceIndex : spectrumSlices){
-     if(spectrumSliceIndex != null)
-      bbPeaksCount += spectrumSliceIndex.peaksCount();
-   }
-  logger.trace("BB "+bb.getId()+" has "+slicesCount+" slicesCount with nbr peaks "+bbPeaksCount);
-   DataEncoding dataEnc = bb.getDataEncoding();
-   PeakEncoding pe = dataEnc.getPeakEncoding();
 
-   // Retrieve m/z and intensity data
-   assert(pe != PeakEncoding.NO_LOSS_PEAK ) :  "The NO_LOSS_PEAK encoding is no yet supported!";
+  protected Long insertBoundingBoxToWrite(BoundingBoxToWrite bb) throws SQLiteException {
+    List<Long> spectrumIds = bb.getSpectrumIds();
+    List<SpectrumSliceIndex> spectrumSlices = bb.getSpectrumSlices();
+    int slicesCount = spectrumSlices.size();
+    int bbPeaksCount = 0;
+    for (SpectrumSliceIndex spectrumSliceIndex : spectrumSlices) {
+      if (spectrumSliceIndex != null)
+        bbPeaksCount += spectrumSliceIndex.peaksCount();
+    }
+    logger.trace("BB " + bb.getId() + " has " + slicesCount + " slicesCount with nbr peaks " + bbPeaksCount);
+    DataEncoding dataEnc = bb.getDataEncoding();
+    PeakEncoding pe = dataEnc.getPeakEncoding();
 
-   int peakStructSize = dataEnc.getPeakStructSize();
+    // Retrieve m/z and intensity data
+    assert (pe != PeakEncoding.NO_LOSS_PEAK) : "The NO_LOSS_PEAK encoding is no yet supported!";
 
-   int bbLen = (int)(8L * slicesCount) + (peakStructSize * bbPeaksCount);
+    int peakStructSize = dataEnc.getPeakStructSize();
 
-   byte[] bbBytes = new byte[bbLen];
-   //val bytesBuffer = new scala.collection.mutable.ArrayBuffer[Byte](bbLen.toInt)
-   ByteBuffer bytesBuffer = ByteBuffer.wrap(bbBytes).order(dataEnc.getByteOrder());
+    int bbLen = (int) (8L * slicesCount) + (peakStructSize * bbPeaksCount);
 
-   // --- SERIALIZE SPECTRUM SLICES TO BOUNDING BOX BYTES --- //
-   int sliceIdx = 0;
-   while (sliceIdx < slicesCount) {
+    byte[] bbBytes = new byte[bbLen];
+    //val bytesBuffer = new scala.collection.mutable.ArrayBuffer[Byte](bbLen.toInt)
+    ByteBuffer bytesBuffer = ByteBuffer.wrap(bbBytes).order(dataEnc.getByteOrder());
 
-     Long spectrumId = spectrumIds.get(sliceIdx);
-     bytesBuffer.putInt(spectrumId.intValue());
+    // --- SERIALIZE SPECTRUM SLICES TO BOUNDING BOX BYTES --- //
+    int sliceIdx = 0;
+    while (sliceIdx < slicesCount) {
 
-     SpectrumSliceIndex spectrumSliceIdx = spectrumSlices.get(sliceIdx);
+      Long spectrumId = spectrumIds.get(sliceIdx);
+      bytesBuffer.putInt(spectrumId.intValue());
 
-     if (spectrumSliceIdx == null )
-       bytesBuffer.putInt(0);
-     else {
+      SpectrumSliceIndex spectrumSliceIdx = spectrumSlices.get(sliceIdx);
 
-       SpectrumData spectrumData = spectrumSliceIdx.getSpectrumData();
-       float firstPeakIdx = spectrumSliceIdx.getFirstPeakIdx();
-       float lastPeakIdx = spectrumSliceIdx.getLastPeakIdx();
+      if (spectrumSliceIdx == null)
+        bytesBuffer.putInt(0);
+      else {
 
-       int slicePeaksCount = spectrumSliceIdx.peaksCount();
-       bytesBuffer.putInt(slicePeaksCount);
+        SpectrumData spectrumData = spectrumSliceIdx.getSpectrumData();
+        float firstPeakIdx = spectrumSliceIdx.getFirstPeakIdx();
+        float lastPeakIdx = spectrumSliceIdx.getLastPeakIdx();
 
-       int i = (int) firstPeakIdx;
-       while (i <= lastPeakIdx) {
+        int slicePeaksCount = spectrumSliceIdx.peaksCount();
+        bytesBuffer.putInt(slicePeaksCount);
 
-         if (pe == PeakEncoding.HIGH_RES_PEAK) {
-           bytesBuffer.putDouble(spectrumData.getMzList()[i]);
-         } else {
-           bytesBuffer.putFloat(Double.valueOf(spectrumData.getMzList()[i]).floatValue());
-         }
+        int i = (int) firstPeakIdx;
+        while (i <= lastPeakIdx) {
 
-         bytesBuffer.putFloat(spectrumData.getIntensityList()[i]);
+          if (pe == PeakEncoding.HIGH_RES_PEAK) {
+            bytesBuffer.putDouble(spectrumData.getMzList()[i]);
+          } else {
+            bytesBuffer.putFloat(Double.valueOf(spectrumData.getMzList()[i]).floatValue());
+          }
 
-         if (dataEnc.getMode().equals(DataMode.FITTED) ){
-           if(spectrumData.getLeftHwhmList() != null && spectrumData.getLeftHwhmList()[i] > 0.0f)
-            bytesBuffer.putFloat(spectrumData.getLeftHwhmList()[i]);
-           else
-             bytesBuffer.putFloat(0f);
+          bytesBuffer.putFloat(spectrumData.getIntensityList()[i]);
 
-           if(spectrumData.getRightHwhmList() != null && spectrumData.getRightHwhmList()[i] > 0.0f)
-            bytesBuffer.putFloat(spectrumData.getRightHwhmList()[i]);
-           else
-             bytesBuffer.putFloat(0f);
-         }
+          if (dataEnc.getMode().equals(DataMode.FITTED)) {
+            if (spectrumData.getLeftHwhmList() != null && spectrumData.getLeftHwhmList()[i] > 0.0f)
+              bytesBuffer.putFloat(spectrumData.getLeftHwhmList()[i]);
+            else
+              bytesBuffer.putFloat(0f);
+
+            if (spectrumData.getRightHwhmList() != null && spectrumData.getRightHwhmList()[i] > 0.0f)
+              bytesBuffer.putFloat(spectrumData.getRightHwhmList()[i]);
+            else
+              bytesBuffer.putFloat(0f);
+          }
 // TODO use mzdb-access ion_mobility branch to enable this feature
 //         if (dataEnc.getMode().equals(DataMode.CENTROID_3D)){
 //           if (spectrumData.getMobilityIndexList() != null)
 //             bytesBuffer.putShort(spectrumData.getMobilityIndexList()[i]);
 //         }
 
-         i += 1;
-       }
-     }
+          i++;
+        }
+      }
 
-     sliceIdx += 1;
-   }
+      sliceIdx++;
+    }
 
-   SQLiteStatement stmt = this.bboxInsertStmt; //.asInstanceOf[SQLiteStatementWrapper].stmt
-   stmt.bind(1, bbBytes);
-   stmt.bind(2, bb.getRunSliceId());
-   stmt.bind(3, spectrumIds.get(0)); // first_spectrum_id
-   stmt.bind(4, spectrumIds.get(spectrumIds.size()-1)); // last_spectrum_id
-   stmt.step();
+    SQLiteStatement stmt = this.bboxInsertStmt; //.asInstanceOf[SQLiteStatementWrapper].stmt
+    stmt.bind(1, bbBytes);
+    stmt.bind(2, bb.getRunSliceId());
+    stmt.bind(3, spectrumIds.get(0)); // first_spectrum_id
+    stmt.bind(4, spectrumIds.get(spectrumIds.size() - 1)); // last_spectrum_id
+    stmt.step();
 
-   long bbId = this.sqliteConnection.getLastInsertId();
-   stmt.reset();
+    long bbId = this.sqliteConnection.getLastInsertId();
+    stmt.reset();
 
-   return bbId;
- }
+    return bbId;
+  }
 
- public void dumpExecutionWatches() {
-   logger.info("Global stop watch : "+globalSW.formatTime());
-   logger.info("insertSpectrum stop watch : "+insertSpectrumSW.formatTime());
-   logger.info("metadata stop watch : "+metadataSW.formatTime());
+  public void dumpExecutionWatches() {
+    logger.info("Global stop watch : " + globalSW.formatTime());
+    logger.info("insertSpectrum stop watch : " + insertSpectrumSW.formatTime());
+    logger.info("metadata stop watch : " + metadataSW.formatTime());
 
- }
+  }
 
 }
