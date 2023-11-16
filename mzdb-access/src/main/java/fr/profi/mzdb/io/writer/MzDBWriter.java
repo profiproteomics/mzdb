@@ -42,7 +42,7 @@ public class MzDBWriter {
   private DataEncodingRegistry dataEncodingRegistry;
   private BoundingBoxCache boundingBoxCache;
 
-  private List<SpectrumToWrite> spectrumCache = new ArrayList<>();
+  private HashMap<BoundingBoxCache.MsLevelAndIsolationWindowKey, ArrayList<SpectrumToWrite>> spectrumCache = new HashMap<>();
   private RunSliceStructureFactory runSliceStructureFactory;
   private long insertedSpectraCount;
 
@@ -574,7 +574,7 @@ public class MzDBWriter {
     int msLevel = spectrumHeader.getMsLevel();
     Float spectrumTime = spectrumHeader.getElutionTime();
 
-    // isolationWindow is only used for DIA
+    // isolationWindow is only used for DIA (normally should be null for msLevel == 1, but it is not the case. So We set it at null for lsLevel==1
     IsolationWindow isolationWindow = (isDIA && msLevel >= 2) ? spectrumHeader.getIsolationWindow() : null; // very important for cache
 
 
@@ -608,19 +608,12 @@ public class MzDBWriter {
     // Flush BB row when we reach a new row (retention time exceeding size of the bounding box for this MS level)
     if (isTimeForNewBBRow) {
 
-            /*if (msLevel == 1) {
-                System.out.println("Flush Start msLevel1");
-                boundingBoxCache.dump();
-            }*/
-
       //println("******************************************************* FLUSHING BB ROW ****************************************")
       Long bbFirstSpectrumId = flushBBRow(msLevel, isolationWindow);
-      if (bbFirstSpectrumId != null) flushSpectrum(msLevel, isolationWindow, bbFirstSpectrumId);
+      if (bbFirstSpectrumId != null) {
+        flushSpectrum(msLevel, isolationWindow, bbFirstSpectrumId);
+      }
 
-            /*if (msLevel == 1) {
-                System.out.println("Flush Done msLevel1");
-                boundingBoxCache.dump();
-            }*/
     }
 
     // Peaks lookup to create Bounding Boxes
@@ -658,32 +651,34 @@ public class MzDBWriter {
     lastSpectrumSlice.setLastPeakIdx(i - 1);
 
 
-    boundingBoxCache.dump();
+    //boundingBoxCache.dump();
 
     // --- INSERT SPECTRUM HEADER --- //
 
-    spectrumCache.add(new SpectrumToWrite(spectrumHeader, metaDataAsText, spectrumId, dataEnc));
+    KEY.msLevel = msLevel;
+    KEY.isolationWindow = isolationWindow;
+    ArrayList spectrumList =  spectrumCache.get(KEY);
+    if (spectrumList == null) {
+      spectrumList = new ArrayList<>();
+      BoundingBoxCache.MsLevelAndIsolationWindowKey key = new BoundingBoxCache.MsLevelAndIsolationWindowKey();
+      key.msLevel = msLevel;
+      key.isolationWindow = isolationWindow;
+      spectrumCache.put(key, spectrumList);
+    }
+    spectrumList.add(new SpectrumToWrite(spectrumHeader, metaDataAsText, spectrumId, dataEnc));
 
     insertSpectrumSW.suspend();
   } // ends insertSpectrum
+  BoundingBoxCache.MsLevelAndIsolationWindowKey KEY = new BoundingBoxCache.MsLevelAndIsolationWindowKey();
 
   private void flushSpectrum(int msLevel, IsolationWindow isolationWindow, Long bbFirstSpectrumId) throws SQLiteException {
 
-    if (isolationWindow != null) { //JPM.TODO ?
-      throw new UnsupportedOperationException("Not Yet implemented");
+    KEY.msLevel = msLevel;
+    KEY.isolationWindow = isolationWindow;
+    ArrayList<SpectrumToWrite> spectrumToWriteList = spectrumCache.remove(KEY);
+    for (SpectrumToWrite s : spectrumToWriteList) {
+      insertSpectrumToWrite(s, bbFirstSpectrumId);
     }
-
-    List<SpectrumToWrite> newSpectrumCache = new ArrayList<>();
-
-    for (SpectrumToWrite s : spectrumCache) {
-      if (s.header.getMsLevel() == msLevel) {
-        insertSpectrumToWrite(s, bbFirstSpectrumId);
-      } else {
-        newSpectrumCache.add(s);
-      }
-    }
-
-    spectrumCache = newSpectrumCache;
   }
 
   private void insertSpectrumToWrite(SpectrumToWrite spectrumToWrite, Long bbFirstSpectrumId) throws SQLiteException {
@@ -793,7 +788,7 @@ public class MzDBWriter {
     } else {
       // General case (works for one bbox with one spectrum, but too slow)
 
-      // --- Get list of all spectraIds in the bounding box
+      // --- Get list of all spectraIds in the bounding box (unique sorted ids)
       _spectraIdsTreeSet.clear();
 
       Function<BoundingBoxToWrite, Void> spectraIdsfunction = bb -> {
@@ -806,28 +801,32 @@ public class MzDBWriter {
         return null;
       }
 
+      ArrayList<Long> allSpectrasIds = new ArrayList<>(_spectraIdsTreeSet);
+
       // Insert all BBs corresponding to the same MS level and the same isolation window (DIA only)
       Function<BoundingBoxToWrite, Void> insertBBFunction = bb -> {
-        // Map slices by spectrum id
-        HashMap<Long, SpectrumSliceIndex> specSliceById = new HashMap<>();
+
         int spSize = bb.getSpectrumIds().size();
-        for (int i = 0; i < spSize; i++) {
-          if (bb.spectrumSlices.get(i) != null) {
+        if (spSize != allSpectrasIds.size()) {
+          // if spSize == allSpectrasIds.size(), there is nothing to do ! : The bounding box contains all the spectraIds in a sorted way
+
+          // Map slices by spectrum id
+          HashMap<Long, SpectrumSliceIndex> specSliceById = new HashMap<>();
+          for (int i = 0; i < spSize; i++) {
+            // bb.spectrumSlices.get(i) can not be null
             specSliceById.put(bb.spectrumIds.get(i), bb.spectrumSlices.get(i));
+
           }
+
+          ArrayList<SpectrumSliceIndex> distinctBBSpectraSlice = new ArrayList<>(allSpectrasIds.size());
+          for (Long spectrumId : allSpectrasIds) {
+            distinctBBSpectraSlice.add(specSliceById.get(spectrumId)); // null are inserted for lacking slices
+          }
+
+          // Update Bounding Box
+          bb.spectrumIds = allSpectrasIds;
+          bb.spectrumSlices = distinctBBSpectraSlice;
         }
-
-        ArrayList<SpectrumSliceIndex> distinctBBSpectraSlice = new ArrayList<>(_spectraIdsTreeSet.size());
-        for (Long spectrumId : _spectraIdsTreeSet) {
-          distinctBBSpectraSlice.add(specSliceById.get(spectrumId));
-        }
-
-        // Update Bounding Box
-        bb.spectrumIds.clear();
-        bb.spectrumIds.addAll(_spectraIdsTreeSet);
-
-        bb.spectrumSlices.clear();
-        bb.spectrumSlices.addAll(distinctBBSpectraSlice);
 
         // Insert Bounding Box
         try {
@@ -848,6 +847,8 @@ public class MzDBWriter {
       return _spectraIdsTreeSet.isEmpty() ? null : _spectraIdsTreeSet.first();
     }
   }
+
+
 
   private void insertAndIndexBoundingBox(BoundingBoxToWrite bb) throws SQLiteException { // --- INSERT BOUNDING BOX --- //
 
@@ -893,16 +894,16 @@ public class MzDBWriter {
             win.minMz <= selectedIonMz && win.maxMz >= selectedIonMz
           }*/
 
-          IsolationWindow isolationWindowOpt = bb.getIsolationWindow();
+          IsolationWindow isolationWindow = bb.getIsolationWindow();
 
-          if (isolationWindowOpt != null) {
+          if (isolationWindow != null) {
             stmt = msnRtreeInsertStmt;
 
             stmt.bind(1, bbId);
             stmt.bind(2, msLevel);
             stmt.bind(3, msLevel);
-            stmt.bind(4, isolationWindowOpt.getMinMz());
-            stmt.bind(5, isolationWindowOpt.getMaxMz());
+            stmt.bind(4, isolationWindow.getMinMz());
+            stmt.bind(5, isolationWindow.getMaxMz());
             stmt.bind(6, runSlice.getBeginMz());
             stmt.bind(7, runSlice.getEndMz());
             stmt.bind(8, bb.getFirstTime());
@@ -911,20 +912,20 @@ public class MzDBWriter {
             isRTreeIndexInserted = true;
           }
         } else {
-                    stmt = msnRtreeInsertStmt;
+          stmt = msnRtreeInsertStmt;
 
-                    stmt.bind(1, bbId);
-                    stmt.bind(2, msLevel);
-                    stmt.bind(3, msLevel);
-                    stmt.bind(4, 0); //JPM.TODO ? : put 0 after a discussion with VERO.
-                    stmt.bind(5, 0);
-                    stmt.bind(6, runSlice.getBeginMz());
-                    stmt.bind(7, runSlice.getEndMz());
-                    stmt.bind(8, bb.getFirstTime());
-                    stmt.bind(9, bb.getLastTime());
+          stmt.bind(1, bbId);
+          stmt.bind(2, msLevel);
+          stmt.bind(3, msLevel);
+          stmt.bind(4, 0); //JPM.TODO ? : put 0 after a discussion with VERO.
+          stmt.bind(5, 0);
+          stmt.bind(6, runSlice.getBeginMz());
+          stmt.bind(7, runSlice.getEndMz());
+          stmt.bind(8, bb.getFirstTime());
+          stmt.bind(9, bb.getLastTime());
 
 
-                    isRTreeIndexInserted = true;
+          isRTreeIndexInserted = true;
         }
       }
     } catch (SQLiteException e) {
