@@ -231,6 +231,7 @@ public class DIAIsolationWindowsPatch {
           try {
             List<String> lines = extractFromInstrumentMethod("PRM");
             lines.addAll(extractFromInstrumentMethod("Scan tMSn"));
+            lines.addAll(extractFromInstrumentMethod("Scan tMS2"));
             return !lines.isEmpty();
           } catch (Exception e) {
             logger.error("Cannot infer PRM mode from InstrumentMethods", e);

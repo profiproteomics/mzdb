@@ -66,7 +66,11 @@ class IsolationWindowPrecursorExtractor(mzTolPPM: Float) extends DefaultPrecurso
     }
   }
   
-  override def  getParamName(): String =  {
+  override def  getMethodName(): String =  {
     "Proline refined precursor mz"
+  }
+
+  override def getMethodVersion: String = {
+    "1.1"
   }
 }

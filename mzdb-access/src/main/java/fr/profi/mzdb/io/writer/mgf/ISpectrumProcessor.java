@@ -6,4 +6,8 @@ public interface ISpectrumProcessor {
 
   public SpectrumData processSpectrum(MgfPrecursor mgfPrecursor, SpectrumData data);
 
+  public String getMethodName();
+
+  public String getMethodVersion();
+
 }

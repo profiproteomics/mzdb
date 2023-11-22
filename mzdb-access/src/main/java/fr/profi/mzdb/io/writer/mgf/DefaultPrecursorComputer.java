@@ -34,18 +34,6 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		this.precComp = precComp;
 	}
 
-	@Override
-	public MgfHeader getMgfHeader(MzDbReader mzDbReader, SpectrumHeader spectrumHeader, String title) throws SQLiteException {
-
-		final float time = spectrumHeader.getElutionTime();
-		final double precMz = this.getPrecursorMz(mzDbReader, spectrumHeader);
-		final int charge = this.getPrecursorCharge(mzDbReader, spectrumHeader);
-
-		final MgfHeader mgfSpectrumHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
-
-		return mgfSpectrumHeader;
-	}
-
 	public MgfPrecursor[] getMgfPrecursors(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 
 		final float time = spectrumHeader.getElutionTime();
@@ -62,17 +50,22 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 
 
 	@Override
-	public String getParamName() {
+	public String getMethodName() {
 		return precComp.getUserParamName();
 	}
 
 	@Override
-	public int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
+	public String getMethodVersion() {
+		return "1.0";
+	}
+
+
+	protected int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 		return spectrumHeader.getPrecursorCharge();
 	}
 
-	@Override
-	public double getPrecursorMz(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
+
+	protected double getPrecursorMz(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 
 		final float time = spectrumHeader.getElutionTime();
 		double precMz = spectrumHeader.getPrecursorMz();

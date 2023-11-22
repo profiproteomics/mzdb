@@ -8,4 +8,14 @@ public class DefaultSpectrumProcessor implements ISpectrumProcessor {
   public SpectrumData processSpectrum(MgfPrecursor mgfPrecursor, SpectrumData data) {
     return data;
   }
+
+  @Override
+  public String getMethodName() {
+    return "None";
+  }
+
+  @Override
+  public String getMethodVersion() {
+    return "1.0";
+  }
 }

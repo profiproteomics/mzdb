@@ -1,10 +1,15 @@
 package fr.profi.mzdb.io.writer.mgf;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class MgfPrecursor {
 
   private Double precMz = null;
   private Integer charge = null;
   private Float rt = null;
+
+  private Map<String, Object> annotations = null;
 
   /**
    *
@@ -54,6 +59,30 @@ public class MgfPrecursor {
   public Float getRt() {
     return rt;
   }
+
+  private Map<String, Object> getAnnotations() {
+    if (annotations == null) {
+      annotations = new HashMap<>();
+    }
+    return annotations;
+  }
+
+  public void addAnnotation(String key, Object value) {
+    getAnnotations().put(key, value);
+  }
+
+  public Object getAnnotationOrElse(String key, Object defaultValue) {
+    return (annotations == null) ? defaultValue : annotations.getOrDefault(key, defaultValue);
+  }
+
+  public boolean hasAnnotation(String key) {
+    return (annotations != null) && annotations.containsKey(key);
+  }
+
+  public Object getAnnotation(String key) {
+    return (annotations == null) ? null : annotations.get(key);
+  }
+
 
   public StringBuilder appendToStringBuilder(StringBuilder sb) {
 

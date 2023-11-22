@@ -210,6 +210,15 @@ public class MgfWriter {
 			titleTemplate.append("last_scan:%d").append(prolineTitleSeparator);
 			titleTemplate.append("first_time:%.3f").append(prolineTitleSeparator);
 			titleTemplate.append("last_time:%.3f").append(prolineTitleSeparator);
+
+			if (mgfPrecursor.hasAnnotation("source")) {
+				titleTemplate.append("source:").append(mgfPrecursor.getAnnotation("source")).append(prolineTitleSeparator);
+			}
+
+			if (mgfPrecursor.hasAnnotation("precursor.signal.total.sw")) {
+				titleTemplate.append("pif:").append(mgfPrecursor.getAnnotation("precursor.signal.total.sw")).append(prolineTitleSeparator);
+			}
+
 			titleTemplate.append("raw_file_identifier:%s").append(prolineTitleSeparator);
 
 			title = String.format(titleTemplate.toString(),
@@ -228,9 +237,9 @@ public class MgfWriter {
 			if (spectrumStringBuilder.length() > 0) spectrumStringBuilder.append(MgfWriter.LINE_SPERATOR).append(MgfWriter.LINE_SPERATOR);
 
 			spectrumStringBuilder.append(MgfField.BEGIN_IONS).append(MgfWriter.LINE_SPERATOR);
-			spectrumStringBuilder.append(MgfField.TITLE).append("=").append(title);
+			spectrumStringBuilder.append(MgfField.TITLE).append("=").append(title).append(MgfWriter.LINE_SPERATOR);
+			spectrumStringBuilder.append(MgfField.SCANS).append("=").append(spectrumHeader.getInitialId()).append(MgfWriter.LINE_SPERATOR);
 
-			spectrumStringBuilder.append(MgfWriter.LINE_SPERATOR);
 			mgfPrecursor.appendToStringBuilder(spectrumStringBuilder);
 
 			// Spectrum Data
