@@ -128,8 +128,18 @@ public class MzDbReader extends AbstractMzDbReader {
 		this.mzDbHeader = this._mzDbHeaderReader.getMzDbHeader();
 
 		// Set the paramNameGetter
-		String pwizMzDbVersion = MzDbReaderQueries.getPwizMzDbVersion(this.connection);
-		this._paramNameGetter = (pwizMzDbVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
+		Software converterSoft = getMzdbConverter();
+		String converterVersion = "";
+		boolean isConverter09Compatible = false;
+		if(converterSoft.getName().equals(ThermoConverterName) || converterSoft.getName().equals(TimsTofConverterName)){
+			converterVersion = converterSoft.getVersion();
+			isConverter09Compatible = true;
+		} else {
+			//Suppose it's raw2mzdb
+			converterVersion = converterSoft.getVersion();
+		}
+
+		this._paramNameGetter = (isConverter09Compatible || converterVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
 
 		// Set BB sizes
 		this._setBBSizes(this._paramNameGetter);
@@ -209,10 +219,27 @@ public class MzDbReader extends AbstractMzDbReader {
 		return MzDbReaderQueries.getModelVersion(connection);
 	}
 
+	/*
+	 * Deprecated method as converter is not a necessary a pwiz Converter. Use getMzdbConverter
+	 */
+	@Deprecated
 	public String getPwizMzDbVersion() throws SQLiteException {
 		return MzDbReaderQueries.getPwizMzDbVersion(connection);
 	}
-	
+
+	public Software getMzdbConverter() throws SQLiteException {
+		//Should only be one raw2mzdb OR one ThermoAccess or Timstof converter
+		for(Software nextSoft : getSoftwareList()) {
+			if (nextSoft.getName().endsWith("mzDB")) {
+				return nextSoft;
+			} else if (nextSoft.getName().equals(ThermoConverterName)) {
+				return nextSoft;
+			} else if (nextSoft.getName().equals(TimsTofConverterName)) {
+				return nextSoft;
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Gets the last time.
