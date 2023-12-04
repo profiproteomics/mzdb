@@ -556,118 +556,123 @@ public class MzDBWriter {
 
     insertSpectrumSW.resume();
 
-
-    SpectrumHeader spectrumHeader = spectrum.getHeader();
-    SpectrumData spectrumData = spectrum.getData();
-    int peaksCount = spectrumData.getPeaksCount();
-
-    // FIXME: deal with empty spectra
-    if (peaksCount == 0) {
-      logger.warn("Empty spectrum detected !!! no insertion in the mzdb file");
-      return;
-    }
-
-    // We maintain our own spectrum ID counter
-    insertedSpectraCount++;
-    long spectrumId = insertedSpectraCount;
-
-    int msLevel = spectrumHeader.getMsLevel();
-    Float spectrumTime = spectrumHeader.getElutionTime();
-
-    // isolationWindow is only used for DIA (normally should be null for msLevel == 1, but it is not the case. So We set it at null for lsLevel==1
-    IsolationWindow isolationWindow = (isDIA && msLevel >= 2) ? spectrumHeader.getIsolationWindow() : null; // very important for cache
+    try {
 
 
-    DataEncoding dataEnc = this.dataEncodingRegistry.getOrAddDataEncoding(dataEncoding);
+      SpectrumHeader spectrumHeader = spectrum.getHeader();
+      SpectrumData spectrumData = spectrum.getData();
+      int peaksCount = spectrumData.getPeaksCount();
 
-    //System.out.println("InsertSpectrum "+insertedSpectraCount+"  msLevel:"+msLevel);
+      // FIXME: deal with empty spectra
+      if (peaksCount == 0) {
+        logger.warn("Empty spectrum detected !!! no insertion in the mzdb file");
+        return;
+      }
 
-    // size of Bounding Box according to MS level.
-    // FIXME: min m/z should be retrieve from meta-data (scan list)
-    Double mzInc = (msLevel == 1) ? bbSizes.BB_MZ_HEIGHT_MS1 : bbSizes.BB_MZ_HEIGHT_MSn;
-    float curMinMz;
-    float curMaxMz;
-    if (isDIA) {
-      // DIA
-      curMinMz = (float) ((Math.floor(spectrumData.getMzList()[0] / bbSizes.BB_MZ_HEIGHT_MS1)) * bbSizes.BB_MZ_HEIGHT_MS1);
-      curMaxMz = (float) (curMinMz + mzInc);
-    } else {
-      // DDA
-      if (msLevel >= 2) {
-        curMinMz = 0;
-        curMaxMz = (float) bbSizes.BB_MZ_HEIGHT_MSn;
-      } else {
-        curMinMz = (float) ((Math.floor(spectrumData.getMzList()[0] / mzInc)) * mzInc);
+      // We maintain our own spectrum ID counter
+      insertedSpectraCount++;
+      long spectrumId = insertedSpectraCount;
+
+      int msLevel = spectrumHeader.getMsLevel();
+      Float spectrumTime = spectrumHeader.getElutionTime();
+
+      // isolationWindow is only used for DIA (normally should be null for msLevel == 1, but it is not the case. So We set it at null for lsLevel==1
+      IsolationWindow isolationWindow = (isDIA && msLevel >= 2) ? spectrumHeader.getIsolationWindow() : null; // very important for cache
+
+
+      DataEncoding dataEnc = this.dataEncodingRegistry.getOrAddDataEncoding(dataEncoding);
+
+      //System.out.println("InsertSpectrum "+insertedSpectraCount+"  msLevel:"+msLevel);
+
+      // size of Bounding Box according to MS level.
+      // FIXME: min m/z should be retrieve from meta-data (scan list)
+      Double mzInc = (msLevel == 1) ? bbSizes.BB_MZ_HEIGHT_MS1 : bbSizes.BB_MZ_HEIGHT_MSn;
+      float curMinMz;
+      float curMaxMz;
+      if (isDIA) {
+        // DIA
+        curMinMz = (float) ((Math.floor(spectrumData.getMzList()[0] / bbSizes.BB_MZ_HEIGHT_MS1)) * bbSizes.BB_MZ_HEIGHT_MS1);
         curMaxMz = (float) (curMinMz + mzInc);
-      }
-    }
-
-
-    boolean isTimeForNewBBRow = boundingBoxCache.isTimeForNewBBRow(msLevel, isolationWindow, spectrumTime);
-
-    // Flush BB row when we reach a new row (retention time exceeding size of the bounding box for this MS level)
-    if (isTimeForNewBBRow) {
-
-      //println("******************************************************* FLUSHING BB ROW ****************************************")
-      Long bbFirstSpectrumId = flushBBRow(msLevel, isolationWindow);
-      if (bbFirstSpectrumId != null) {
-        flushSpectrum(msLevel, isolationWindow, bbFirstSpectrumId);
+      } else {
+        // DDA
+        if (msLevel >= 2) {
+          curMinMz = 0;
+          curMaxMz = (float) bbSizes.BB_MZ_HEIGHT_MSn;
+        } else {
+          curMinMz = (float) ((Math.floor(spectrumData.getMzList()[0] / mzInc)) * mzInc);
+          curMaxMz = (float) (curMinMz + mzInc);
+        }
       }
 
-    }
 
-    // Peaks lookup to create Bounding Boxes
-    int i = 0;
-    BoundingBoxToWrite curBB = getBBWithNextSpectrumSlice(spectrum, spectrumId, spectrumTime, msLevel, dataEnc, isolationWindow, i, curMinMz, curMaxMz);
+      boolean isTimeForNewBBRow = boundingBoxCache.isTimeForNewBBRow(msLevel, isolationWindow, spectrumTime);
 
-    i = 1;
-    while (i < peaksCount) {
-      double mz = spectrumData.getMzList()[i];
+      // Flush BB row when we reach a new row (retention time exceeding size of the bounding box for this MS level)
+      if (isTimeForNewBBRow) {
 
-      if (mz > curMaxMz) {
-
-        // Creates new bounding boxes even for empty data => should be removed in mzDB V2
-        while (mz > curMaxMz) {
-          curMinMz += mzInc;
-          curMaxMz += mzInc;
-          // Very important: ensure run slices are created in increasing m/z order
-          if (!runSliceStructureFactory.hasRunSlice(msLevel, curMinMz, curMaxMz)) {
-            runSliceStructureFactory.addRunSlice(msLevel, curMinMz, curMaxMz);
-          }
+        //println("******************************************************* FLUSHING BB ROW ****************************************")
+        Long bbFirstSpectrumId = flushBBRow(msLevel, isolationWindow);
+        if (bbFirstSpectrumId != null) {
+          flushSpectrum(msLevel, isolationWindow, bbFirstSpectrumId);
         }
 
-        // For the previous curBB : setLastPeakIdx for lastSpectrumSlice
-        SpectrumSliceIndex lastSpectrumSlice = curBB.getSpectrumSlices().get(curBB.getSpectrumIds().size() - 1);
-        lastSpectrumSlice.setLastPeakIdx(i - 1);
-
-        curBB = getBBWithNextSpectrumSlice(spectrum, spectrumId, spectrumTime, msLevel, dataEnc, isolationWindow, i, curMinMz, curMaxMz);
       }
 
-      i++;
+      // Peaks lookup to create Bounding Boxes
+      int i = 0;
+      BoundingBoxToWrite curBB = getBBWithNextSpectrumSlice(spectrum, spectrumId, spectrumTime, msLevel, dataEnc, isolationWindow, i, curMinMz, curMaxMz);
+
+      i = 1;
+      while (i < peaksCount) {
+        double mz = spectrumData.getMzList()[i];
+
+        if (mz > curMaxMz) {
+
+          // Creates new bounding boxes even for empty data => should be removed in mzDB V2
+          while (mz > curMaxMz) {
+            curMinMz += mzInc;
+            curMaxMz += mzInc;
+            // Very important: ensure run slices are created in increasing m/z order
+            if (!runSliceStructureFactory.hasRunSlice(msLevel, curMinMz, curMaxMz)) {
+              runSliceStructureFactory.addRunSlice(msLevel, curMinMz, curMaxMz);
+            }
+          }
+
+          // For the previous curBB : setLastPeakIdx for lastSpectrumSlice
+          SpectrumSliceIndex lastSpectrumSlice = curBB.getSpectrumSlices().get(curBB.getSpectrumIds().size() - 1);
+          lastSpectrumSlice.setLastPeakIdx(i - 1);
+
+          curBB = getBBWithNextSpectrumSlice(spectrum, spectrumId, spectrumTime, msLevel, dataEnc, isolationWindow, i, curMinMz, curMaxMz);
+        }
+
+        i++;
+      }
+
+      // For the last curBB : setLastPeakIdx for lastSpectrumSlice
+      SpectrumSliceIndex lastSpectrumSlice = curBB.getSpectrumSlices().get(curBB.getSpectrumIds().size() - 1);
+      lastSpectrumSlice.setLastPeakIdx(i - 1);
+
+
+      //boundingBoxCache.dump();
+
+      // --- INSERT SPECTRUM HEADER --- //
+
+      KEY.msLevel = msLevel;
+      KEY.isolationWindow = isolationWindow;
+      ArrayList spectrumList = spectrumCache.get(KEY);
+      if (spectrumList == null) {
+        spectrumList = new ArrayList<>();
+        BoundingBoxCache.MsLevelAndIsolationWindowKey key = new BoundingBoxCache.MsLevelAndIsolationWindowKey();
+        key.msLevel = msLevel;
+        key.isolationWindow = isolationWindow;
+        spectrumCache.put(key, spectrumList);
+      }
+      spectrumList.add(new SpectrumToWrite(spectrumHeader, metaDataAsText, spectrumId, dataEnc));
+
+
+    } finally {
+      insertSpectrumSW.suspend();
     }
-
-    // For the last curBB : setLastPeakIdx for lastSpectrumSlice
-    SpectrumSliceIndex lastSpectrumSlice = curBB.getSpectrumSlices().get(curBB.getSpectrumIds().size() - 1);
-    lastSpectrumSlice.setLastPeakIdx(i - 1);
-
-
-    //boundingBoxCache.dump();
-
-    // --- INSERT SPECTRUM HEADER --- //
-
-    KEY.msLevel = msLevel;
-    KEY.isolationWindow = isolationWindow;
-    ArrayList spectrumList =  spectrumCache.get(KEY);
-    if (spectrumList == null) {
-      spectrumList = new ArrayList<>();
-      BoundingBoxCache.MsLevelAndIsolationWindowKey key = new BoundingBoxCache.MsLevelAndIsolationWindowKey();
-      key.msLevel = msLevel;
-      key.isolationWindow = isolationWindow;
-      spectrumCache.put(key, spectrumList);
-    }
-    spectrumList.add(new SpectrumToWrite(spectrumHeader, metaDataAsText, spectrumId, dataEnc));
-
-    insertSpectrumSW.suspend();
   } // ends insertSpectrum
   BoundingBoxCache.MsLevelAndIsolationWindowKey KEY = new BoundingBoxCache.MsLevelAndIsolationWindowKey();
 

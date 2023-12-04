@@ -100,8 +100,22 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 				MzDbAsyncReader.this.mzDbHeader = new MzDbHeaderReader(connection).getMzDbHeader();
 				
 				// Set the paramNameGetter
-				String pwizMzDbVersion = MzDbReaderQueries.getPwizMzDbVersion(connection);
-				MzDbAsyncReader.this._paramNameGetter = (pwizMzDbVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
+				// Set the paramNameGetter
+				String converterVersion = "";
+				boolean isConverter09Compatible = false;
+				List<Software> softwareLists = new SoftwareReader(connection).getSoftwareList();
+				for(Software nextSoft : softwareLists) {
+					if (nextSoft.getName().endsWith("mzDB")) {
+						converterVersion = nextSoft.getVersion();
+						break;
+					} else if (nextSoft.getName().equals(ThermoConverterName) || nextSoft.getName().equals(TimsTofConverterName) ) {
+						converterVersion = nextSoft.getVersion();
+						isConverter09Compatible = true;
+						break;
+					}
+				}
+
+				MzDbAsyncReader.this._paramNameGetter = (isConverter09Compatible || converterVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
 
 				// Set BB sizes
 				MzDbAsyncReader.this._setBBSizes(MzDbAsyncReader.this._paramNameGetter);
@@ -220,11 +234,6 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 		});
 	}
 
-	public Observable<String> getPwizMzDbVersion() {
-		return this.observeJobExecution( connection -> {
-			return MzDbReaderQueries.getPwizMzDbVersion(connection);
-		});
-	}
 
 	/**
 	 * Gets the last time.
