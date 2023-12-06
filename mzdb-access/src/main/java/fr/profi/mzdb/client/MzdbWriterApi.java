@@ -26,10 +26,12 @@ public class MzdbWriterApi {
         try {
             boolean isDIA = (srcAcqMode != null && srcAcqMode.equals(fr.profi.mzdb.model.AcquisitionMode.SWATH));
 
-            File destinationFile = new File(path);
+
+            File finalDbFile = new File(path);
+
             BBSizes defaultBBsize = new BBSizes(5, 10000, 15, 0);
 
-            m_writer = new MzDBWriter(destinationFile, null, defaultBBsize, isDIA);
+            m_writer = new MzDBWriter(finalDbFile, true, null, defaultBBsize, isDIA);
             m_writer.initialize();
         } catch (Exception e) {
             LOGGER.error("error in initializeMzdb", e);
