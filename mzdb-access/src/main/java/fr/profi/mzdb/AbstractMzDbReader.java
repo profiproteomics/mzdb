@@ -36,6 +36,12 @@ public abstract class AbstractMzDbReader {
 	//final protected static java.util.concurrent.ExecutorService computationThreadPool = java.util.concurrent.Executors.newCachedThreadPool();
 	//final protected static rx.Scheduler rxCompScheduler = rx.schedulers.Schedulers.from(computationThreadPool);
 
+	// Define Existing Converter Software other than raw2mzdb. Should define equivalence between them ? raw2mzdb 0.9.10 = ThermoAccess * ?
+	public static String ThermoConverterName = "ThermoAccess";
+	public static String TimsTofConverterName = "ttofConverter";
+
+
+
 	final protected Logger logger = LoggerFactory.getLogger(AbstractMzDbReader.class);
 	
 	final protected BBSizes bbSizes = new BBSizes();
@@ -73,6 +79,7 @@ public abstract class AbstractMzDbReader {
 	protected List<CV>  allCVs = null;
 	protected List<CVTerm>  cvTerms = null;
 	protected List<CVUnit>  cvUnits = null;
+	protected List<UserTerm>  userTerms = null;
 
 
 	/**

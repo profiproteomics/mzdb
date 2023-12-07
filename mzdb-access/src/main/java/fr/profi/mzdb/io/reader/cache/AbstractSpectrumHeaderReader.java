@@ -130,7 +130,7 @@ public abstract class AbstractSpectrumHeaderReader extends MzDbEntityCacheContai
 	
 				int bbFirstSpectrumId = stmt.columnInt(SpectrumHeaderColIdx.bbFirstSpectrumId);
 	
-				DataEncoding dataEnc = _dataEncodingReader.getDataEncoding(stmt.columnInt(SpectrumHeaderColIdx.dataEncodingId), connection);
+				DataEncoding dataEnc = _dataEncodingReader.getDataEncoding(stmt.columnLong(SpectrumHeaderColIdx.dataEncodingId), connection);
 	
 				boolean isHighRes = dataEnc.getPeakEncoding() == PeakEncoding.LOW_RES_PEAK ? false : true;
 				String activationTypeAsStr =  stmt.columnString(SpectrumHeaderColIdx.activationType);

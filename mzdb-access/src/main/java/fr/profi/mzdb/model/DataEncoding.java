@@ -4,7 +4,14 @@
  */
 package fr.profi.mzdb.model;
 
+
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
+
+import java.io.IOException;
 import java.nio.ByteOrder;
+
 
 // TODO: Auto-generated Javadoc
 /**
@@ -12,25 +19,29 @@ import java.nio.ByteOrder;
  * 
  * @author David Bouyssie
  */
-public class DataEncoding implements Cloneable {
+public class DataEncoding implements Cloneable, SerializationInterface {
 
 	/** The id. */
-	protected final int id;
+	protected long id;
 
 	/** The mode. */
-	protected final DataMode mode;
+	protected DataMode mode;
 
 	/** The peak encoding. */
 	protected PeakEncoding peakEncoding;
 
 	/** The compression. */
-	protected final String compression;
+	protected String compression;
 
 	/** The byte order. */
-	protected final ByteOrder byteOrder;
+	protected ByteOrder byteOrder;
 	
 	/** The byte order. */
-	protected final int peakStructSize;
+	protected int peakStructSize;
+
+	public DataEncoding(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new data encoding.
@@ -46,7 +57,7 @@ public class DataEncoding implements Cloneable {
 	 * @param byteOrder
 	 *            the byte order
 	 */
-	public DataEncoding(int id, DataMode mode, PeakEncoding peakEncoding, String compression, ByteOrder byteOrder) {
+	public DataEncoding(long id, DataMode mode, PeakEncoding peakEncoding, String compression, ByteOrder byteOrder) {
 		super();
 		this.id = id;
 		this.mode = mode;
@@ -66,7 +77,7 @@ public class DataEncoding implements Cloneable {
 	 * 
 	 * @return the id
 	 */
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
@@ -127,6 +138,83 @@ public class DataEncoding implements Cloneable {
 	 */
 	public DataEncoding clone() {
 		return new DataEncoding(id, mode, peakEncoding, compression, byteOrder);
+	}
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		writer.writeInt64(id);
+
+		//VDS SQL Not Null
+		boolean hasData = mode!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			mode.write(writer);
+		}
+
+		hasData = peakEncoding!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			peakEncoding.write(writer);
+		}
+
+		hasData = compression!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(compression);
+		}
+
+//VDS SQL Not Null
+		hasData = byteOrder!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(byteOrder.toString());
+		}
+
+		writer.writeInt32(peakStructSize);
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+
+		id = reader.readInt64();
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			mode = DataMode.getEnum(reader);
+		} else {
+			mode = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			peakEncoding = PeakEncoding.getEnum(reader);
+		} else {
+			peakEncoding = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			compression = reader.readString();
+		} else {
+			compression = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			String byteOrderString = reader.readString();
+			if (byteOrderString.equals(ByteOrder.BIG_ENDIAN.toString())) {
+				byteOrder = ByteOrder.BIG_ENDIAN;
+			} else {
+				byteOrder = ByteOrder.LITTLE_ENDIAN;
+			}
+		} else {
+			byteOrder = null;
+		}
+
+		peakStructSize = reader.readInt32();
+
 	}
 
 }

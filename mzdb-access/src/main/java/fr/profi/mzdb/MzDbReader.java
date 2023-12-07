@@ -7,6 +7,7 @@ import fr.profi.mzdb.db.model.*;
 import fr.profi.mzdb.db.model.params.param.CV;
 import fr.profi.mzdb.db.model.params.param.CVTerm;
 import fr.profi.mzdb.db.model.params.param.CVUnit;
+import fr.profi.mzdb.db.model.params.param.UserTerm;
 import fr.profi.mzdb.io.reader.MzDbReaderQueries;
 import fr.profi.mzdb.io.reader.SharedParamTreeReader;
 import fr.profi.mzdb.io.reader.cache.DataEncodingReader;
@@ -57,6 +58,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	private CvReader _cvReader;
 	private CvUnitReader _cvUnitReader;
 	private CvTermReader _cvTermReader;
+	private UserTermReader _userTermReader;
 
 
 	/**
@@ -115,6 +117,7 @@ public class MzDbReader extends AbstractMzDbReader {
 		this._cvReader = new CvReader(this.connection);
 		this._cvTermReader = new CvTermReader(this.connection);
 		this._cvUnitReader = new CvUnitReader(this.connection);
+		this._userTermReader = new UserTermReader(this.connection);
 
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingReader(this);
@@ -125,8 +128,18 @@ public class MzDbReader extends AbstractMzDbReader {
 		this.mzDbHeader = this._mzDbHeaderReader.getMzDbHeader();
 
 		// Set the paramNameGetter
-		String pwizMzDbVersion = MzDbReaderQueries.getPwizMzDbVersion(this.connection);
-		this._paramNameGetter = (pwizMzDbVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
+		Software converterSoft = getMzdbConverter();
+		String converterVersion = "";
+		boolean isConverter09Compatible = false;
+		if(converterSoft.getName().equals(ThermoConverterName) || converterSoft.getName().equals(TimsTofConverterName)){
+			converterVersion = converterSoft.getVersion();
+			isConverter09Compatible = true;
+		} else {
+			//Suppose it's raw2mzdb
+			converterVersion = converterSoft.getVersion();
+		}
+
+		this._paramNameGetter = (isConverter09Compatible || converterVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
 
 		// Set BB sizes
 		this._setBBSizes(this._paramNameGetter);
@@ -206,10 +219,27 @@ public class MzDbReader extends AbstractMzDbReader {
 		return MzDbReaderQueries.getModelVersion(connection);
 	}
 
+	/*
+	 * Deprecated method as converter is not a necessary a pwiz Converter. Use getMzdbConverter
+	 */
+	@Deprecated
 	public String getPwizMzDbVersion() throws SQLiteException {
 		return MzDbReaderQueries.getPwizMzDbVersion(connection);
 	}
-	
+
+	public Software getMzdbConverter() throws SQLiteException {
+		//Should only be one raw2mzdb OR one ThermoAccess or Timstof converter
+		for(Software nextSoft : getSoftwareList()) {
+			if (nextSoft.getName().endsWith("mzDB")) {
+				return nextSoft;
+			} else if (nextSoft.getName().equals(ThermoConverterName)) {
+				return nextSoft;
+			} else if (nextSoft.getName().equals(TimsTofConverterName)) {
+				return nextSoft;
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Gets the last time.
@@ -346,7 +376,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public DataEncoding getDataEncoding(int id) throws SQLiteException {
+	public DataEncoding getDataEncoding(long id) throws SQLiteException {
 		return this._dataEncodingReader.getDataEncoding(id);
 	}
 
@@ -813,6 +843,13 @@ public class MzDbReader extends AbstractMzDbReader {
 			this.cvTerms = _cvTermReader.getCvTerms();
 		}
 		return cvTerms;
+	}
+
+	public List<UserTerm> getUserTermList() throws SQLiteException {
+		if(this.userTerms == null){
+			this.userTerms = _userTermReader.getUserTerms();
+		}
+		return userTerms;
 	}
 
 	public List<Run> getRuns() throws SQLiteException {

@@ -1,6 +1,10 @@
 package fr.profi.mzdb.db.model;
 
 import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
+
+import java.io.IOException;
 
 // TODO: Auto-generated Javadoc
 /**
@@ -17,6 +21,10 @@ public class SourceFile extends AbstractTableModel {
 
 	/** The location. */
 	protected String location;
+
+	public SourceFile(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new source file.
@@ -68,4 +76,20 @@ public class SourceFile extends AbstractTableModel {
 		return location;
 	}
 
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+		super.write(writer);
+
+		writer.writeString(name);
+		writer.writeString(location);
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+		super.read(reader);
+
+		name = reader.readString();
+		location = reader.readString();
+	}
 }

@@ -12,10 +12,13 @@ import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.PrecursorList;
 import fr.profi.mzdb.db.model.params.ScanList;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,50 +31,49 @@ import java.util.Map;
  */
 public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 
-	/** The id. */
-	protected final long id;
+	//JPM.OM.FIX
 
 	/** The initial id. */
-	protected final int initialId;
+	protected int initialId;
 
 	/** The cycle. */
-	protected final int cycle;
+	protected int cycle;
 
 	/** The time. */
-	protected final float time;
+	protected float time;
 
 	/** The ms level. */
-	protected final int msLevel;
+	protected int msLevel;
 
-	protected final String title;
+	protected String title;
 
 	/** The peaks count. */
-	protected final int peaksCount;
+	protected int peaksCount;
 
 	/** Is high resolution boolean. */
-	protected final boolean isHighResolution;
+	protected boolean isHighResolution;
 
 	/** total ion chromatogram of the spectrum */
-	protected final float tic;
+	protected float tic;
 
 	/** The base peak mz. */
-	protected final double basePeakMz;
+	protected double basePeakMz;
 
 	/** The base peak intensity. */
-	protected final float basePeakIntensity;
+	protected float basePeakIntensity;
 
-	protected final ActivationType activationType;
+	protected ActivationType activationType;
 
 	protected IsolationWindow isolationWindow;
 
 	/** The precursor mz. */
-	protected final Double precursorMz;
+	protected Double precursorMz;
 
 	/** The precursor charge. */
-	protected final Integer precursorCharge;
+	protected Integer precursorCharge;
 
 	/** The bounding box first spectrum id. */
-	protected final int bbFirstSpectrumId;
+	protected int bbFirstSpectrumId;
 
 	/** The spectrum list. */
 	protected ScanList scanList = null;
@@ -85,6 +87,10 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	protected String precursorAsString;
 
 	protected String paramTreeAsString; //String representation of paramTree. Only For Spectrum Header (?)
+
+	public SpectrumHeader(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new spectrum header.
@@ -126,7 +132,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 					int firstBBSpectrumId,
 					ActivationType activationType) {
 		super(id, null);
-		this.id = id;
+		//JPM.OM.FIX
 		this.initialId = initialId;
 		this.cycle = cycle;
 		this.time = time;
@@ -144,14 +150,8 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		isolationWindow = null;
 	}
 
-	/**
-	 * Gets the id.
-	 * 
-	 * @return the id
-	 */
-	public long getId() {
-		return id;
-	}
+	//JPM.OM.FIX
+
 
 	/**
 	 * Gets the initial id.
@@ -281,9 +281,7 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		return this.bbFirstSpectrumId;
 	}
 
-	public ScanList getScanList() {
-		return this.scanList;
-	}
+
 	
 	public void setScanList( ScanList scanList ) {
 		this.scanList = scanList;
@@ -435,6 +433,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		}
 		return paramTreeAsSt;
 	}
+	public String getParamTreeAsString() {
+		return this.paramTreeAsString;
+	}
 
 	public void loadScanList(SQLiteConnection mzDbConnection) throws SQLiteException {
 		if (scanList == null) {
@@ -447,6 +448,14 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		return  this.getScanListAsString(mzDbConnection, true); //If call this method suppose cache may be used
 	}
 
+	public boolean hasScanList() {
+		return scanList != null;
+	}
+
+	public ScanList getScanList() {
+		return scanList;
+	}
+
 	private String getScanListAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation) throws SQLiteException {
 		String scanListAsStr = scanListAsString;
 		if(scanListAsStr == null) {
@@ -456,6 +465,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 				this.scanListAsString = scanListAsStr;
 		}
 		return scanListAsStr;
+	}
+	public String getScanListAsString() {
+		return this.scanListAsString;
 	}
 
 	public void loadPrecursorList(SQLiteConnection mzDbConnection) throws SQLiteException {
@@ -470,6 +482,14 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		return this.getPrecursorListAsString(mzDbConnection, true);//If call this method suppose cache may be used
 	}
 
+	public boolean hasPrecursorList() {
+		return precursorList != null;
+	}
+
+	public PrecursorList getPrecursorList() {
+		return precursorList;
+	}
+
 	private String getPrecursorListAsString(SQLiteConnection mzDbConnection, boolean cacheStringRepresentation ) throws SQLiteException {
 		String precursorAsStr = precursorAsString;
 		if (precursorAsStr == null && msLevel != 1) {
@@ -479,5 +499,187 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 				this.precursorAsString = precursorAsStr;
 		}
 		return precursorAsStr;
+	}
+	public String getPrecursorListAsString() {
+		return this.precursorAsString;
+	}
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+		super.write(writer);
+
+		//writer.writeInt64(id); //VDS  !! ecrit 2 fois !! -> A Supprimer (fait en C#)
+		writer.writeInt32(initialId);
+		writer.writeInt32(cycle);
+		writer.writeFloat(time);
+		writer.writeInt32(msLevel);
+		writer.writeString(title);
+		writer.writeInt32(peaksCount);
+		writer.writeBoolean(isHighResolution);
+		writer.writeFloat(tic);
+		writer.writeDouble(basePeakMz);
+		writer.writeFloat(basePeakIntensity);
+
+		//VDS SQL Not Null but can be null !
+		boolean hasData = activationType!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			activationType.write(writer);
+		}
+
+		hasData = isolationWindow!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			isolationWindow.write(writer);
+		}
+
+		hasData = precursorMz!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeDouble(precursorMz);
+		}
+
+		hasData = precursorCharge!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(precursorCharge);
+		}
+
+		writer.writeInt32(bbFirstSpectrumId);
+
+
+		hasData = scanList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			scanList.write(writer);
+		}
+
+		//VDS pas utile ... -> on a scanList ?
+		hasData = scanListAsString!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(scanListAsString);
+		}
+
+		//VDS PAS SQL mais entre precursor et precursorList ... ?
+		hasData = precursor!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			precursor.write(writer);
+		}
+
+		hasData = precursorList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			precursorList.write(writer);
+		}
+
+		//VDS pas utile ... -> on a precursor/precursorList ?-> A Supprimer (fait en C#)
+		/*hasData = precursorAsString!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(precursorAsString);
+		}*/
+
+		//VDS pas utile ... -> on a paramTree dans  AbstractTableModel ?-> A Supprimer (fait en C#)
+		/*hasData = paramTreeAsString!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeString(paramTreeAsString);
+		}*/
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+		super.read(reader);
+//		int mNbr = reader.readInt32();
+//		if(mNbr != 0b01011010110010010110010110101100)
+//			System.out.println(" ERR");
+		//id = reader.readInt64();
+		initialId = reader.readInt32();
+		cycle = reader.readInt32();
+		time = reader.readFloat();
+		msLevel = reader.readInt32();
+		title = reader.readString();
+		peaksCount = reader.readInt32();
+		isHighResolution = reader.readBoolean();
+		tic = reader.readFloat();
+
+		basePeakMz = reader.readDouble();
+		basePeakIntensity = reader.readFloat();
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			activationType = ActivationType.getEnum(reader);
+		} else {
+			activationType = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			isolationWindow = new IsolationWindow(reader);
+		} else {
+			isolationWindow = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorMz = reader.readDouble();
+		} else {
+			precursorMz = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorCharge = reader.readInt32();
+		} else {
+			precursorCharge = null;
+		}
+
+		bbFirstSpectrumId = reader.readInt32();
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			scanList = new ScanList(reader);
+		} else {
+			scanList = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			scanListAsString = reader.readString();
+		} else {
+			scanListAsString = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursor = new Precursor(reader);
+		} else {
+			precursor = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorList = new PrecursorList(reader);
+		} else {
+			precursorList = null;
+		}
+/*
+		hasData = reader.readBoolean();
+		if (hasData) {
+			precursorAsString = reader.readString();
+		} else {
+			precursorAsString = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			paramTreeAsString = reader.readString();
+		} else {
+			paramTreeAsString = null;
+		}
+*/
 	}
 }

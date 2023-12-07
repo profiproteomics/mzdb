@@ -64,7 +64,7 @@ case class IsotopicPattern(
   }
   
   def normalizeIntensities( nfBySpectrumId: LongMap[Float] ) {
-    val nf = nfBySpectrumId(this.spectrumHeader.id)
+    val nf = nfBySpectrumId(this.spectrumHeader.getId)
     
     for( p <- peaks if p != null ) {
       if( p.isNormalized == false)

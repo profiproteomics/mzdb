@@ -1,20 +1,27 @@
 package fr.profi.mzdb.db.model.params;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 
 /**
  * @author David Bouyssie
  * 
  */
-public abstract class AbstractParamTree { // implements IParamContainer
+@XmlAccessorType(XmlAccessType.NONE)
+public abstract class AbstractParamTree implements SerializationInterface { // implements IParamContainer
 
 	/** The cv params. */
 	protected List<CVParam> cvParams;
@@ -27,31 +34,12 @@ public abstract class AbstractParamTree { // implements IParamContainer
 	 */
 	protected List<UserText> userTexts;
 
-	@XmlElement(name = "cvParam", type = CVParam.class, required = false)
-	public List<CVParam> getCVParams() {
-		if (this.cvParams == null)
-			this.cvParams = new ArrayList<CVParam>();
 
-		return cvParams;
+	public AbstractParamTree() {
 	}
 
-	// Marc: most of the object does not contain any UserParam,
-	// so this is set to be non abstract to avoid to override it in subclasses
-	// DBO: why ???
-	@XmlElement(name = "userParam", type = UserParam.class, required = false)
-	public List<UserParam> getUserParams() {
-		if (this.userParams == null)
-			this.userParams = new ArrayList<UserParam>();
 
-		return this.userParams;
-	}
 
-	@XmlElement(name = "userText", type = UserText.class, required = false)
-	public List<UserText> getUserTexts() {
-		if (this.userTexts == null)
-			this.userTexts = new ArrayList<UserText>();
-		return this.userTexts;
-	}
 	
 	public void setCvParams(List<CVParam> cvParams) {
 		this.cvParams = cvParams;
@@ -65,41 +53,81 @@ public abstract class AbstractParamTree { // implements IParamContainer
 		this.userTexts = userTexts;
 	}
 
-	public UserParam getUserParam(String name) {
 
-		UserParam foundUP = null;
-		for (UserParam up : this.getUserParams()) {
-			if (up.getName().equals(name)) {
-				foundUP = up;
-				break;
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+
+		boolean hasData = cvParams!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(cvParams.size());
+			for (SerializationInterface serializableObject : cvParams) {
+				serializableObject.write(writer);
 			}
 		}
-		
-		return foundUP;
-	}
 
-	public CVParam getCVParam(CVEntry cvEntry) {
-		CVParam foundCV = null;
-		for (CVParam cv : this.getCVParams()) {
-			if (cv.getAccession().equals(cvEntry.getAccession()) ) {
-				foundCV = cv;
-				break;
+		hasData = userParams!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(userParams.size());
+			for (SerializationInterface serializableObject : userParams) {
+				serializableObject.write(writer);
 			}
 		}
-		
-		return foundCV;
+
+		hasData = userTexts!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(userTexts.size());
+			for (SerializationInterface serializableObject : userTexts) {
+				serializableObject.write(writer);
+			}
+		}
+
 	}
 
-	public CVParam[] getCVParams(CVEntry[] cvEntries) {
-		CVParam[] cvParams = new CVParam[cvEntries.length];
-		
-		int i = 0;
-		for (CVEntry cvEntry : cvEntries) {
-			cvParams[i] = this.getCVParam(cvEntry);
-			i++;
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			cvParams = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				CVParam element = new CVParam(reader);
+				cvParams.add(element);
+			}
+		} else {
+			cvParams = null;
 		}
-		
-		return cvParams;
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			userParams = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				UserParam element = new UserParam(reader);
+				userParams.add(element);
+			}
+		} else {
+			userParams = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			userTexts = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				UserText element = new UserText(reader);
+				userTexts.add(element);
+			}
+		} else {
+			userTexts = null;
+		}
 	}
+
+
 
 }
