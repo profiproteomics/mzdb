@@ -17,6 +17,14 @@ public class SerializationReader {
     }
 
 
+    /**
+     * Must be called between several use of the CodedInputStream
+     * to avoid to reach the size limit
+     */
+    public void resetStream() {
+        codedInput.resetSizeCounter();
+    }
+
     // --- Base Types ---
 
     public String readString() throws IOException {
@@ -114,6 +122,29 @@ public class SerializationReader {
 
         return array;
     }
+
+
+    /*
+    // Same code as the previous one without optimization
+    public float[] readArrayFloat()  throws IOException {
+
+
+        int size = codedInput.readInt32();
+        float[] array = new float[size];
+
+        int length = codedInput.readRawVarint32();
+        //int limit = codedInput.pushLimit(length);
+        int i = 0;
+        // while (codedInput.getBytesUntilLimit() > 0) { can not be called private
+        while (i < size)
+        {
+            array[i] = codedInput.readFloat();
+            i++;
+        }
+        //codedInput.popLimit(limit);
+
+        return array;
+    }*/
 
     public double[] readArrayDouble() throws IOException {
 
