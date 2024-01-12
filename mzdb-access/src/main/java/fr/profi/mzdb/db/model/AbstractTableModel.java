@@ -8,6 +8,7 @@ import com.almworks.sqlite4java.SQLiteException;
 
 import fr.profi.mzdb.db.model.params.IParamContainer;
 import fr.profi.mzdb.db.model.params.ParamTree;
+import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
@@ -136,6 +137,10 @@ public abstract class AbstractTableModel extends AbstractInMemoryIdGen implement
 	 */
 	public UserParam getUserParam(String name) {
 		return this.paramTree.getUserParam(name);
+	}
+
+	public CVParam getCVParam(CVEntry cvEntry) {
+		return this.paramTree.getCVParam(cvEntry);
 	}
 
 	public List<UserText> getUserTexts() {

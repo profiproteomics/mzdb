@@ -7,16 +7,16 @@ public class IonMobilityMode {
   private IonMobilityType mobilityType;
   private List<String> compensationVoltageValues;
 
-  public IonMobilityMode(IonMobilityType mode, List<String> compensationVoltageValues) {
-    this.mobilityType = mode;
+  public IonMobilityMode(IonMobilityType type, List<String> compensationVoltageValues) {
+    this.mobilityType = type;
     this.compensationVoltageValues = compensationVoltageValues;
   }
 
-  public IonMobilityMode(IonMobilityType mode) {
-    this.mobilityType = mode;
+  public IonMobilityMode(IonMobilityType type) {
+    this.mobilityType = type;
   }
 
-  public IonMobilityType getIonMobilityMode() {
+  public IonMobilityType getIonMobilityType() {
     return mobilityType;
   }
 
