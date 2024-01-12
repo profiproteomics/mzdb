@@ -1,15 +1,15 @@
 package fr.profi.mzdb.io.writer.mgf
 
 import com.almworks.sqlite4java.SQLiteException
+import com.typesafe.scalalogging.LazyLogging
 import fr.profi.ms.algo.IsotopePatternEstimator
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.mzdb.algo.DotProductPatternScorer
 import fr.profi.mzdb.db.model.params.param.CVEntry
-import fr.profi.mzdb.model.{Peak, SpectrumHeader, SpectrumSlice}
+import fr.profi.mzdb.model.{IonMobilityType, Peak, SpectrumHeader, SpectrumSlice}
 import fr.profi.mzdb.{MzDbReader, Settings}
 import fr.profi.util.metrics.Metric
 
-import java.util.regex.Pattern
 import scala.util.control.Breaks.{break, breakable}
 
 /**
@@ -18,13 +18,10 @@ import scala.util.control.Breaks.{break, breakable}
 
 object MgfBoostPrecursorExtractor {
 
-  private val cvPattern = Pattern.compile("\\scv=([\\+\\-]\\d+.\\d+)")
-
-  def readIonMobilityCV(reader: MzDbReader, spectrumHeader: SpectrumHeader): Option[String] = {
-    val scanListAsString = spectrumHeader.getScanListAsString(reader.getConnection)
-    val matcher = cvPattern.matcher(scanListAsString)
-    if (matcher.find()) {
-      Some(matcher.group(1))
+  def readIonMobilityCV(spectrumHeader: SpectrumHeader): Option[String] = {
+    val cvParam = spectrumHeader.getCVParam(CVEntry.FAIMS_COMPENSATION_VOLTAGE)
+    if (cvParam != null) {
+      Some(cvParam.getValue)
     } else {
       None
     }
@@ -33,18 +30,22 @@ object MgfBoostPrecursorExtractor {
 }
 
 
-case class SpectrumDataSource(var spectrumHeader : SpectrumHeader, var spectrumSlices : Array[SpectrumSlice], var isolationWindowBounds : Array[Float]) {
+case class SpectrumDataSource(var spectrumHeader : SpectrumHeader,
+                              var spectrumSlices : Array[SpectrumSlice],
+                              var isolationWindowBounds : Array[Float],
+                              var hasIonMobility : Boolean = false,
+                              var scanSelectorModes: ScanSelectorModes.ScanSelectorMode = ScanSelectorModes.SAME_CYCLE) extends LazyLogging {
 
-  //TODO : completely inefficient ! Must be reimplemented
+  private var cvByHeader: collection.mutable.Map[SpectrumHeader, Option[String]] = collection.mutable.Map()
+  private var masterScanIndex: Int = -1
 
-  //  private var cvByHeader: collection.mutable.Map[SpectrumHeader, Option[String]] = collection.mutable.Map()
   private def _getCV(spectrumHeader: SpectrumHeader): Option[String] = {
-//    if (hasIonMobility) {
-//      if (!cvByHeader.contains(spectrumHeader)) {
-//        cvByHeader += (spectrumHeader -> IsolationWindowPrecursorExtractor_v3_6.readIonMobilityCV(reader, spectrumHeader))
-//      }
-//      cvByHeader(spectrumHeader)
-//    } else
+    if (hasIonMobility) {
+      if (!cvByHeader.contains(spectrumHeader)) {
+        cvByHeader += (spectrumHeader -> MgfBoostPrecursorExtractor.readIonMobilityCV(spectrumHeader))
+      }
+      cvByHeader(spectrumHeader)
+    } else
       None
   }
 
@@ -52,13 +53,9 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader, var spectrumS
   def getNearestPeak(targetPrecMz: Double, mzTolPPM: Float) : Option[Peak] = {
     if (spectrumSlices == null) return None
 
-    //
-    // Simulate previous behaviour
-    // if (targetPrecMz < isolationWindowBounds(0) || targetPrecMz > isolationWindowBounds(1)) return None
-
-    val sameCycleMSScans = spectrumSlices.filter(_.getHeader.getCycle == spectrumHeader.getCycle)
-    if (!sameCycleMSScans.isEmpty) {
-      val p = sameCycleMSScans(0).getNearestPeak(targetPrecMz, mzTolPPM)
+    val nearestSlice = getNearestSpectrumSlice()
+    if (nearestSlice.isDefined) {
+      val p = nearestSlice.get.getNearestPeak(targetPrecMz, mzTolPPM)
       Option(p)
     } else {
       None
@@ -73,28 +70,54 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader, var spectrumS
 
   def getNearestSpectrumSlice(): Option[SpectrumSlice] = {
 
-    //TODO : completely inefficient ! Must be reimplemented
-    val cvOpt = None //if (hasIonMobility) { _getCV(spectrumHeader) } else { None }
+    val cvOpt = if (hasIonMobility) {
+      _getCV(spectrumHeader)
+    } else {
+      None
+    }
 
-    val time = spectrumHeader.getElutionTime
-
-    if (spectrumSlices.nonEmpty) {
-      val sliceOpt = spectrumSlices.find(x => (x.getHeader.getCycle == spectrumHeader.getCycle) && (!cvOpt.isDefined || cvOpt.get == _getCV(x.getHeader).get ) )
-      if (!sliceOpt.isDefined) {
-        val filteredSlices = spectrumSlices.filter(x => !cvOpt.isDefined || cvOpt.get == _getCV(x.getHeader).get)
-        val slice = filteredSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
-        Some(slice)
-      } else {
-        sliceOpt
+    if (ScanSelectorModes.equals(ScanSelectorModes.MASTER_SCAN)) {
+      if (masterScanIndex < 0) {
+        val masterScanUP = spectrumHeader.getScanList.getScans.get(0).getUserParam("[Thermo Trailer Extra]Master Scan Number:")
+        if (masterScanUP == null) {
+          scanSelectorModes = ScanSelectorModes.SAME_CYCLE
+          logger.warn("no master scan found for scan {}, move to SAME_CYCLE policy")
+          return getNearestSpectrumSlice()
+        } else {
+          masterScanIndex = masterScanUP.getValue.toInt
+        }
       }
-    } else None
+
+      val sliceOpt = spectrumSlices.find(x => x.getSpectrumId == masterScanIndex)
+      return sliceOpt
+
+    }
+
+    if (scanSelectorModes.equals(ScanSelectorModes.SAME_CYCLE)) {
+      if (spectrumSlices.nonEmpty) {
+        val sliceOpt = spectrumSlices.find(x => (x.getHeader.getCycle == spectrumHeader.getCycle))
+        if (!sliceOpt.isDefined) {
+          val time = spectrumHeader.getElutionTime
+          val filteredSlices = spectrumSlices.filter(x => !cvOpt.isDefined || cvOpt.get == _getCV(x.getHeader).get)
+          val slice = filteredSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
+          return Some(slice)
+        } else {
+          return sliceOpt
+        }
+      } else return None
+    } else if (ScanSelectorModes.equals(ScanSelectorModes.NEAREST)){
+      val time = spectrumHeader.getElutionTime
+      val slice = spectrumSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
+      return Some(slice)
+    }
+    None
   }
+
 
   def getCandidatePeaksFromIsolationWindow(swIntensityThreshold: Float): Array[Peak] = {
     var peaks = Array.empty[Peak]
     if (spectrumSlices == null) return Array.empty[Peak]
-    val nearestSlice = spectrumSlices.filter(_.getHeader.getCycle == spectrumHeader.getCycle)
-    val allPeaks = nearestSlice.flatMap(_.toPeaks).filter(p => (p.getMz >= isolationWindowBounds(0)) && (p.getMz <=  isolationWindowBounds(1)))
+    val allPeaks = getAllPeaksFromIsolationWindow()
     if (!allPeaks.isEmpty) {
       val maxPeak = allPeaks.maxBy(_.getIntensity)
       peaks = peaks ++ allPeaks.filter(_.getIntensity > swIntensityThreshold*maxPeak.getIntensity).sortBy(_.getIntensity).reverse
@@ -104,8 +127,8 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader, var spectrumS
 
   def getAllPeaksFromIsolationWindow(): Array[Peak] = {
     if (spectrumSlices == null) return Array.empty[Peak]
-    val nearestSlice = spectrumSlices.filter(_.getHeader.getCycle == spectrumHeader.getCycle)
-    nearestSlice.flatMap(_.toPeaks).filter(p => (p.getMz >= isolationWindowBounds(0)) && (p.getMz <=  isolationWindowBounds(1)))
+    val nearestSlice = getNearestSpectrumSlice()
+    nearestSlice.get.toPeaks.filter(p => (p.getMz >= isolationWindowBounds(0)) && (p.getMz <=  isolationWindowBounds(1)))
   }
 
 }
@@ -127,7 +150,12 @@ object IsotopicPatternMatch {
 
 }
 
-class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = false, useHeader: Boolean = true, useSW: Boolean = true, swMaxPrecursorsCount: Int = 1, swIntensityThreshold: Float = 0.2f) extends DefaultPrecursorComputer(mzTolPPM) {
+object ScanSelectorModes extends Enumeration {
+  type ScanSelectorMode = Value
+  val MASTER_SCAN, SAME_CYCLE, NEAREST = Value
+}
+
+class MgfBoostPrecursorExtractor(mzTolPPM: Float, useHeader: Boolean = true, useSW: Boolean = true, swMaxPrecursorsCount: Int = 1, swIntensityThreshold: Float = 0.2f, scanSelector : ScanSelectorModes.ScanSelectorMode = ScanSelectorModes.SAME_CYCLE) extends DefaultPrecursorComputer(mzTolPPM) {
 
   private val metric = new Metric("MgfBoost")
 
@@ -137,7 +165,7 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
     var precursors = Seq[MgfPrecursor]()
     var headerPrecursor : MgfPrecursor = null
 
-    val spectrumData = _getSpectrumDataSource(mzDbReader, spectrumHeader)
+    val spectrumData = _getSpectrumDataSource(mzDbReader, spectrumHeader, scanSelector)
     val altPrecursorPeaks = spectrumData.getCandidatePeaksFromIsolationWindow(swIntensityThreshold)
 
     // try to predict the precursor mz from the mz value found in the MS2 header
@@ -277,14 +305,14 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
   }
 
   private def _getHeaderPrecursorMz(spectrumHeader: SpectrumHeader): Double = {
-    if (spectrumHeader.getPrecursor != null) {
-      spectrumHeader.getPrecursor.parseFirstSelectedIonMz()
-    } else {
+//    if (spectrumHeader.getPrecursor != null) {
+//      spectrumHeader.getPrecursor.parseFirstSelectedIonMz()
+//    } else {
       spectrumHeader.getPrecursorMz()
-    }
+//    }
   }
 
-  private def _getSpectrumDataSource(reader: MzDbReader, spectrumHeader: SpectrumHeader): SpectrumDataSource = {
+  private def _getSpectrumDataSource(reader: MzDbReader, spectrumHeader: SpectrumHeader, scanSelector : ScanSelectorModes.ScanSelectorMode): SpectrumDataSource = {
 
     val time = spectrumHeader.getElutionTime
     val precursor = spectrumHeader.getPrecursor()
@@ -304,8 +332,12 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
     val maxrt = time + 5
 
     val spectrumSlices = reader.getMsSpectrumSlices(minmz - 5, maxmz + 5, minrt, maxrt)
-
-    SpectrumDataSource(spectrumHeader, spectrumSlices, Array(minmz,maxmz))
+    val ionMobilityMode = reader.getIonMobilityMode
+    SpectrumDataSource(spectrumHeader,
+                       spectrumSlices,
+                       Array(minmz,maxmz),
+                       (ionMobilityMode != null) && ionMobilityMode.getIonMobilityType.equals(IonMobilityType.FAIMS),
+                       scanSelector)
   }
 
   def _predictPrecursorFromTarget(spectrumData: SpectrumDataSource, precMz: Double, targetZ: Int): (Option[(Double, Int)], String, Option[IsotopicPatternMatch]) = {
@@ -334,10 +366,12 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
         }
 
         if (pattern.charge > 1) {
-          (Some(pattern.monoMz, pattern.charge), "pattern prediction", Some(bestPatternMatch))
+          val predictedMz = { if (bestPatternMatch.matchingPeaks(0).isDefined) bestPatternMatch.matchingPeaks(0).get.getMz else pattern.monoMz }
+          (Some(predictedMz, pattern.charge), "pattern prediction", Some(bestPatternMatch))
         } else {
           if (targetZ <= 0) {
-            (Some(pattern.monoMz, pattern.charge), "pattern prediction 1+", Some(bestPatternMatch))
+            val predictedMz = { if (bestPatternMatch.matchingPeaks(0).isDefined) bestPatternMatch.matchingPeaks(0).get.getMz else pattern.monoMz }
+            (Some(predictedMz, pattern.charge), "pattern prediction 1+", Some(bestPatternMatch))
           } else {
             metric.incr("ignored.predicted_1+")
             (Some(precMz, targetZ), "ignored 1+ prediction", None)
@@ -373,27 +407,12 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
   }
 
   override def  getMethodVersion(): String =  {
-    "3.6.1"
+    "3.6.2"
   }
 
   def dumpMetrics(): Unit = {
     logger.info(metric.toString());
   }
-
-
-  private def _getMS1SpectrumSlice(reader: MzDbReader, spectrumHeader: SpectrumHeader, precMz: Double, time: Float): Option[SpectrumSlice] = {
-      val slices = reader.getMsSpectrumSlices(precMz - 5, precMz + 5, time-5f, time+5f)
-      if (!slices.isEmpty) {
-        val sliceOpt = slices.find(x => (x.getHeader.getCycle == spectrumHeader.getCycle))
-        if (!sliceOpt.isDefined) {
-          val slice = slices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
-          Some(slice)
-        } else {
-          sliceOpt
-        }
-      } else None
-  }
-
 
   def extractSWStats(mzDbReader: MzDbReader, spectrumHeader: SpectrumHeader, mzTolPPM: Float): Map[String, Any] = {
 
@@ -455,7 +474,7 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
 
     // Do a XIC in the isolation window and around the provided time
 
-    val spectrumData = this._getSpectrumDataSource(mzDbReader, spectrumHeader)
+    val spectrumData = this._getSpectrumDataSource(mzDbReader, spectrumHeader, ScanSelectorModes.SAME_CYCLE)
     if (spectrumData.spectrumSlices == null)  {
       result += ("cause" -> "no spectrum slice")
       return result
@@ -563,7 +582,7 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
         }
 
         // + rechercher les found = false pour voir si on les trouve dans le scan MS1 !!
-        var spectrumSlice = _getMS1SpectrumSlice(mzDbReader, spectrumHeader, precMz, time)
+        var spectrumSlice = spectrumData.getNearestSpectrumSlice()
         if (spectrumSlice.isDefined) {
 
           if(result("found") != "true") {
@@ -573,7 +592,7 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
               }
           }
 
-          spectrumSlice = _getMS1SpectrumSlice(mzDbReader, spectrumHeader, headerMoz, time)
+          spectrumSlice = spectrumData.getNearestSpectrumSlice()
           val nearestPeak = spectrumSlice.get.getNearestPeak(headerMoz, mzTolPPM)
           if (nearestPeak != null) {
             result += ("header.found" -> "true")
@@ -615,7 +634,7 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
     val precursor = spectrumHeader.getPrecursor()
 
     // Do a XIC in the isolation window and around the provided time
-    val spectrumData = this._getSpectrumDataSource(mzDbReader, spectrumHeader)
+    val spectrumData = this._getSpectrumDataSource(mzDbReader, spectrumHeader, ScanSelectorModes.SAME_CYCLE)
     if (spectrumData.spectrumSlices == null)  {
       result += ("cause" -> "no spectrum slice")
       return result
@@ -628,7 +647,7 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float, hasIonMobility: Boolean = fals
 
         val maxPeak = allPeaks.maxBy(_.getIntensity)
         val swPrecMzArray = allPeaks.sortBy(_.getIntensity).reverse
-        val ms1Slice = _getMS1SpectrumSlice(mzDbReader, spectrumHeader, precMz, time)
+        val ms1Slice = spectrumData.getNearestSpectrumSlice()
 
         var rank = 0
         breakable {
