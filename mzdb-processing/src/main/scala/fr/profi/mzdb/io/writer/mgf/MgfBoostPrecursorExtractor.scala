@@ -34,7 +34,7 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader,
                               var spectrumSlices : Array[SpectrumSlice],
                               var isolationWindowBounds : Array[Float],
                               var hasIonMobility : Boolean = false,
-                              var scanSelectorModes: ScanSelectorModes.ScanSelectorMode = ScanSelectorModes.SAME_CYCLE) extends LazyLogging {
+                              var scanSelectorMode: ScanSelectorModes.ScanSelectorMode = ScanSelectorModes.SAME_CYCLE) extends LazyLogging {
 
   private var cvByHeader: collection.mutable.Map[SpectrumHeader, Option[String]] = collection.mutable.Map()
   private var masterScanIndex: Int = -1
@@ -76,12 +76,11 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader,
       None
     }
 
-    if (ScanSelectorModes.equals(ScanSelectorModes.MASTER_SCAN)) {
+    if (scanSelectorMode.equals(ScanSelectorModes.MASTER_SCAN)) {
       if (masterScanIndex < 0) {
         val masterScanUP = spectrumHeader.getScanList.getScans.get(0).getUserParam("[Thermo Trailer Extra]Master Scan Number:")
         if (masterScanUP == null) {
-          scanSelectorModes = ScanSelectorModes.SAME_CYCLE
-          logger.warn("no master scan found for scan {}, move to SAME_CYCLE policy")
+          scanSelectorMode = ScanSelectorModes.SAME_CYCLE
           return getNearestSpectrumSlice()
         } else {
           masterScanIndex = masterScanUP.getValue.toInt
@@ -93,7 +92,7 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader,
 
     }
 
-    if (scanSelectorModes.equals(ScanSelectorModes.SAME_CYCLE)) {
+    if (scanSelectorMode.equals(ScanSelectorModes.SAME_CYCLE)) {
       if (spectrumSlices.nonEmpty) {
         val sliceOpt = spectrumSlices.find(x => (x.getHeader.getCycle == spectrumHeader.getCycle))
         if (!sliceOpt.isDefined) {
@@ -105,7 +104,7 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader,
           return sliceOpt
         }
       } else return None
-    } else if (ScanSelectorModes.equals(ScanSelectorModes.NEAREST)){
+    } else if (scanSelectorMode.equals(ScanSelectorModes.NEAREST)){
       val time = spectrumHeader.getElutionTime
       val slice = spectrumSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
       return Some(slice)
@@ -128,6 +127,10 @@ case class SpectrumDataSource(var spectrumHeader : SpectrumHeader,
   def getAllPeaksFromIsolationWindow(): Array[Peak] = {
     if (spectrumSlices == null) return Array.empty[Peak]
     val nearestSlice = getNearestSpectrumSlice()
+    if (!nearestSlice.isDefined) {
+      logger.error("No nearest slice for scan #{}.", spectrumHeader.getSpectrumId)
+      return Array.empty[Peak]
+    }
     nearestSlice.get.toPeaks.filter(p => (p.getMz >= isolationWindowBounds(0)) && (p.getMz <=  isolationWindowBounds(1)))
   }
 
