@@ -219,6 +219,10 @@ public class MgfWriter {
 				titleTemplate.append("pif:").append(mgfPrecursor.getAnnotation("precursor.signal.total.sw")).append(prolineTitleSeparator);
 			}
 
+			if (mgfPrecursor.hasAnnotation("mgf.id")) {
+				titleTemplate.append("mgf_id:").append(mgfPrecursor.getAnnotation("mgf.id")).append(prolineTitleSeparator);
+			}
+
 			titleTemplate.append("raw_file_identifier:%s").append(prolineTitleSeparator);
 
 			title = String.format(titleTemplate.toString(),
