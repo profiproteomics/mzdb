@@ -112,12 +112,13 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float,
     var precursors = Seq[MgfPrecursor]()
     var headerPrecursor : MgfPrecursor = null
 
-    val spectrumData = _buildSpectrumDataSource(mzDbReader, spectrumHeader, scanSelector)
-    val altPrecursorPeaks = spectrumData.getCandidatePeaksFromIsolationWindow(swIntensityThreshold)
-
     // try to predict the precursor mz from the mz value found in the MS2 header
 
     if (useHeader) {
+
+      val spectrumData = _buildSpectrumDataSource(mzDbReader, spectrumHeader, scanSelector)
+      val altPrecursorPeaks = spectrumData.getCandidatePeaksFromIsolationWindow(swIntensityThreshold)
+
       val headerPrecMz = _getHeaderPrecursorMz(spectrumHeader)
       val refinedHeaderMz = spectrumData.getNearestPeak(headerPrecMz, mzTolPPM).map(_.getMz).getOrElse(headerPrecMz)
       val (predictionOpt, predictionNote, patternMatchOpt) = _predictPrecursorFromTarget(spectrumData, refinedHeaderMz, spectrumHeader.getPrecursorCharge)
