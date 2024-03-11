@@ -12,7 +12,7 @@ public class MgfHeader {
 	/**
 	 * 
 	 * @param title
-	 * @param pepMass
+	 * @param precMz
 	 * @param charge
 	 * @return a new MgfHeader
 	 */
@@ -29,7 +29,7 @@ public class MgfHeader {
 	/**
 	 * 
 	 * @param title
-	 * @param pepMass
+	 * @param precMz
 	 * @param rt
 	 * @return a new MgfHeader
 	 */
@@ -47,7 +47,7 @@ public class MgfHeader {
 	/**
 	 * 
 	 * @param title
-	 * @param pepMass
+	 * @param precMz
 	 * @param charge
 	 * @param rt
 	 * @return a new MgfHeader
