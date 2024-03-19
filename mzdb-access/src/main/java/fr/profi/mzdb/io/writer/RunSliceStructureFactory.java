@@ -25,8 +25,8 @@ public class RunSliceStructureFactory {
 
     //System.out.println("addRunSlice nbSlices="+runSliceById.size());
 
-    int offset = (msLevel == 1) ? 1 : maxMS1SlicesHint + (msLevel-1);
-    //VDS : Si plusieurs msLevel 2 & msLevel3 ca ne marchera pas !
+    int offset = (msLevel == 1) ? 1 : maxMS1SlicesHint * (msLevel-1);
+
     int runSliceId = (int) (Math.floor(beginMz / bbSizes.BB_MZ_HEIGHT_MS1)) + offset;
     RunSliceHeader runSlice = new RunSliceHeader(runSliceId, msLevel, -1, beginMz, endMz, runId);
 
