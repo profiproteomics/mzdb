@@ -1,11 +1,12 @@
 package fr.profi.mzdb.algo
 
-import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.ms.algo.IsotopePatternEstimator
 import fr.profi.ms.model.TheoreticalIsotopePattern
 import fr.profi.mzdb.Settings
 import fr.profi.mzdb.model.SpectrumData
+
+import scala.collection.mutable.ArrayBuffer
 
 object IsotopicPatternScorer {
 
@@ -34,28 +35,46 @@ trait IIsotopicPatternScorer extends LazyLogging {
 
     var result = ArrayBuffer[(Double, TheoreticalIsotopePattern)]()
     for (charge <- 1 to MAX_CHARGE) {
-      val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, 0, charge, ppmTol)
-      result += (score -> theoreticalIP)
-
-      var j = 1
-      var backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
-      var nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
-      var existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
-
-      while (existBackward && j <= theoreticalIP.theoreticalMaxPeakelIndex + 1) {
-        val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, j, charge, ppmTol)
-        result += (score -> theoreticalIP)
-        j = j + 1
-        backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
-        nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
-        existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
-      }
+      result ++= calcIsotopicPatternHypothesesFromCharge(spectrum, mz, charge, ppmTol)
     }
 
     result = result.sortWith { (p1, p2) =>
       ((p1._1 == p2._1) && (p1._2.charge < p2._2.charge)) ||
         ((p1._1 != p2._1) && (p1._1 < p2._1))
     }
+    result.toArray
+  }
+
+  /**
+   * Tries to explain a peak at the specified mz value by testing different isotopic pattern explanations.
+   *
+   * @param spectrum the MS data (mz, intensities) signal around the peak to explain
+   * @param mz       the mz of the peak that must be explained
+   * @param ppmTol
+   * @return a list of isotopic patterns tested, ordered by score (better = higher score first).
+   */
+  def calcIsotopicPatternHypothesesFromCharge(spectrum: SpectrumData, mz: Double, charge: Int, ppmTol: Double): Array[(Double, TheoreticalIsotopePattern)] = {
+
+    var result = ArrayBuffer[(Double, TheoreticalIsotopePattern)]()
+    val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, 0, charge, ppmTol)
+    result += (score -> theoreticalIP)
+
+    var j = 1
+    var backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
+    var nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
+    var existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
+
+    while (existBackward && j <= theoreticalIP.theoreticalMaxPeakelIndex + 1) {
+      val (score, theoreticalIP) = getIPHypothesis(spectrum, mz, j, charge, ppmTol)
+      result += (score -> theoreticalIP)
+      j = j + 1
+      backwardMz = mz - j * IsotopePatternEstimator.avgIsoMassDiff / charge
+      nearestPeakIdx = spectrum.getNearestPeakIndex(backwardMz)
+      existBackward = (1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - backwardMz) / backwardMz) < ppmTol
+    }
+
+    result = result.sortWith { (p1, p2) => (p1._1 < p2._1) }
+
     result.toArray
   }
 
@@ -146,8 +165,7 @@ object DotProductPatternScorer extends IIsotopicPatternScorer {
         val nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
         if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
           observed(rank) = spectrum.getIntensityList()(nearestPeakIdx)
-        }
-        else { //  minus expected abundance to penalise signal absence
+        } else { //  minus expected abundance to penalise signal absence
           observed(rank) = -pattern.mzAbundancePairs(rank)._2 * scale
         }
         expected(rank) = pattern.mzAbundancePairs(rank)._2
@@ -205,8 +223,7 @@ object DotProductPatternScorerV1 extends IIsotopicPatternScorer {
       val nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
       if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
         observed(rank) = spectrum.getIntensityList()(nearestPeakIdx)
-      }
-      else { //  minus expected abundance to penalise signal absence
+      } else { //  minus expected abundance to penalise signal absence
         observed(rank) = -pattern.mzAbundancePairs(rank)._2 * scale
       }
       expected(rank) = pattern.mzAbundancePairs(rank)._2
@@ -239,9 +256,58 @@ object DotProductPatternScorerV1 extends IIsotopicPatternScorer {
 
 
   def selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
-    val refScore = putativePatterns.head._1
-    val patterns = putativePatterns.filter(p => math.abs(p._1 - refScore) < deltaScore)
-    patterns.maxBy(p => p._2.charge)
+    DotProductPatternScorer.selectBestPatternHypothese(putativePatterns, deltaScore)
+  }
+
+}
+
+
+object KLPatternScorer extends IIsotopicPatternScorer {
+
+  def getIPHypothesis(spectrum: SpectrumData, initialMz: Double, isotopicShift: Int, charge: Int, ppmTol: Double): (Double, TheoreticalIsotopePattern) = {
+    var score = 0.0
+    val mz = initialMz - isotopicShift * IsotopePatternEstimator.avgIsoMassDiff / charge
+    val pattern = IsotopePatternEstimator.getTheoreticalPattern(mz, charge)
+
+    val scale = spectrum.getIntensityList()(spectrum.getNearestPeakIndex(initialMz)).toDouble / pattern.mzAbundancePairs(isotopicShift)._2
+
+    var ipMoz = mz
+    val observed = new Array[Double](pattern.mzAbundancePairs.length)
+    val expected = new Array[Double](pattern.mzAbundancePairs.length)
+    for (rank <- 0 until pattern.mzAbundancePairs.length) {
+      ipMoz = if (rank == 0) ipMoz
+      else ipMoz + IsotopePatternEstimator.avgIsoMassDiff / charge
+      val nearestPeakIdx = spectrum.getNearestPeakIndex(ipMoz)
+      if ((1e6 * Math.abs(spectrum.getMzList()(nearestPeakIdx) - ipMoz) / ipMoz) < ppmTol) {
+        observed(rank) = spectrum.getIntensityList()(nearestPeakIdx)
+      } else { // reverse expected abundance to penalise signal absence
+        observed(rank) = 1.0/pattern.mzAbundancePairs(rank)._2 * scale
+      }
+      expected(rank) = pattern.mzAbundancePairs(rank)._2
+    }
+
+    score = distance(observed, expected)
+    score = 1.0 - score
+    (score, pattern)
+  }
+
+  def distance(observed: Array[Double], expected: Array[Double]): Double = {
+    var product = 0.0
+    var k = 0
+
+    val exp = expected.map( _ / expected.sum)
+    val obs = observed.map( _ / observed.sum)
+
+    while ( (k < obs.length) && (exp(k) > 0.01) ) {
+      product += exp(k) * math.log(exp(k)/obs(k))
+      k += 1
+    }
+    product
+  }
+
+
+  def selectBestPatternHypothese(putativePatterns: Array[(Double, TheoreticalIsotopePattern)], deltaScore: Double = 0.1): (Double, TheoreticalIsotopePattern) = {
+    DotProductPatternScorer.selectBestPatternHypothese(putativePatterns, deltaScore)
   }
 
 }

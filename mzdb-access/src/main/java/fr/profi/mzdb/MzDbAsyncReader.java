@@ -51,18 +51,16 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *
 	 * @param dbLocation
 	 *            the db location
-	 * @param cacheEntities
+	 * @param entityCache
 	 *            the cache entities
 	 * @param logConnections
 	 *            the log connections
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the SQLite exception
 	 */
-	public MzDbAsyncReader(File dbLocation, MzDbEntityCache entityCache, boolean logConnections) throws ClassNotFoundException, FileNotFoundException,
+	public MzDbAsyncReader(File dbLocation, MzDbEntityCache entityCache, boolean logConnections) throws  FileNotFoundException,
 			SQLiteException {
 
 		this.entityCache = entityCache;
@@ -102,8 +100,22 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 				MzDbAsyncReader.this.mzDbHeader = new MzDbHeaderReader(connection).getMzDbHeader();
 				
 				// Set the paramNameGetter
-				String pwizMzDbVersion = MzDbReaderQueries.getPwizMzDbVersion(connection);
-				MzDbAsyncReader.this._paramNameGetter = (pwizMzDbVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
+				// Set the paramNameGetter
+				String converterVersion = "";
+				boolean isConverter09Compatible = false;
+				List<Software> softwareLists = new SoftwareReader(connection).getSoftwareList();
+				for(Software nextSoft : softwareLists) {
+					if (nextSoft.getName().endsWith("mzDB")) {
+						converterVersion = nextSoft.getVersion();
+						break;
+					} else if (nextSoft.getName().equals(ThermoConverterName) || nextSoft.getName().equals(TimsTofConverterName) ) {
+						converterVersion = nextSoft.getVersion();
+						isConverter09Compatible = true;
+						break;
+					}
+				}
+
+				MzDbAsyncReader.this._paramNameGetter = (isConverter09Compatible || converterVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
 
 				// Set BB sizes
 				MzDbAsyncReader.this._setBBSizes(MzDbAsyncReader.this._paramNameGetter);
@@ -125,14 +137,12 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the db location
 	 * @param cacheEntities
 	 *            the cache entities
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbAsyncReader(File dbLocation, boolean cacheEntities) throws ClassNotFoundException, FileNotFoundException, SQLiteException {
+	public MzDbAsyncReader(File dbLocation, boolean cacheEntities) throws  FileNotFoundException, SQLiteException {
 		this(dbLocation, cacheEntities ? new MzDbEntityCache() : null, false);
 	}
 
@@ -143,14 +153,12 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the db path
 	 * @param cacheEntities
 	 *            the cache entities
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbAsyncReader(String dbPath, boolean cacheEntities) throws ClassNotFoundException, FileNotFoundException, SQLiteException {
+	public MzDbAsyncReader(String dbPath, boolean cacheEntities) throws FileNotFoundException, SQLiteException {
 		this(new File(dbPath), cacheEntities ? new MzDbEntityCache() : null, false);
 	}
 
@@ -192,16 +200,14 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	
 	/**
 	 * @return the _blockingMzDbReader
-	 * @throws SQLiteException 
-	 * @throws FileNotFoundException 
-	 * @throws ClassNotFoundException 
+	 * @throws SQLiteException
 	 */
 	protected SQLiteConnection createBlockingSQLiteConnection() throws SQLiteException {
 		
 		synchronized(_blockingConnectionLock) {
 			try {
 				return new MzDbReader(this.dbLocation, this.entityCache, false).getConnection();
-			} catch (ClassNotFoundException | FileNotFoundException | SQLiteException e) {
+			} catch ( FileNotFoundException | SQLiteException e) {
 				logger.error("Can't open blocking MzDbReader at location: "+ this.dbLocation.getAbsolutePath(), e);
 				throw new SQLiteException(0, "Error acquiring blocking SQLiteConnection");
 			}
@@ -228,11 +234,6 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 		});
 	}
 
-	public Observable<String> getPwizMzDbVersion() {
-		return this.observeJobExecution( connection -> {
-			return MzDbReaderQueries.getPwizMzDbVersion(connection);
-		});
-	}
 
 	/**
 	 * Gets the last time.
@@ -369,7 +370,7 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	 *            the id
 	 * @return the data encoding
 	 */
-	public Observable<DataEncoding> getDataEncoding(int id) {
+	public Observable<DataEncoding> getDataEncoding(long id) {
 		return this._dataEncodingReader.getDataEncoding(id);
 	}
 
@@ -612,16 +613,14 @@ public class MzDbAsyncReader extends AbstractMzDbReader {
 	/**
 	 * Gets the spectrum slices. Each returned spectrum slice corresponds to a single spectrum.
 	 *
-	 * @param minmz
+	 * @param minMz
 	 *            the minMz
-	 * @param maxmz
+	 * @param maxMz
 	 *            the maxMz
-	 * @param minrt
+	 * @param minRt
 	 *            the minRt
-	 * @param maxrt
+	 * @param maxRt
 	 *            the maxRt
-	 * @param msLevel
-	 *            the ms level
 	 * @return the spectrum slices
 	 */
 	public Observable<SpectrumSlice[]> getMsSpectrumSlices(double minMz, double maxMz, float minRt, float maxRt) {

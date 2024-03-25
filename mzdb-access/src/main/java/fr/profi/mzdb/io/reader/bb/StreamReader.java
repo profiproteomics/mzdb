@@ -24,10 +24,6 @@ public class StreamReader extends AbstractBlobReader {
 	private InputStream _stream;
 
 	/**
-	 * @param dataEnc
-	 *            SpectrumID the key, dataEncoding the value
-	 * @param s
-	 *            inputStream
 	 * @see AbstractBlobReader
 	 * @see AbstractBlobReader#_dataEncodingBySpectrumId
 	 */
@@ -62,25 +58,9 @@ public class StreamReader extends AbstractBlobReader {
 		return -1;
 	}
 
-	/**
-	 * @see IBlobReader#getBlobSize()
-	 */
-	//public int getBlobSize() {
-	//	throw new UnsupportedOperationException("can't compute the size of a stream");
-		
-		/*int c = 0;
-		try {
-			while (_stream.read() != 0)
-				c++;
-		} catch (IOException e) {
-			logger.error("IOException caught while calculating the size of the stream", e);
-			e.printStackTrace();
-		}
-		return c;*/
-	//}
 
 	/**
-	 * @see IBlobReader#idOfSpectrumAt(int)
+	 * @see IBlobReader#getSpectrumIdAt(int)
 	 */
 	public long getSpectrumIdAt(final int idx) {
 		
@@ -109,33 +89,7 @@ public class StreamReader extends AbstractBlobReader {
 		return lastSpectrumId;
 	}
 
-	/**
-	 * @see IBlobReader#nbPeaksOfSpectrumAt(int)
-	 */
-	/*public int nbPeaksOfSpectrumAt(int i) {
-		int lastNbPeaks = 0;
-		try {
-			for (int j = 1; j <= i; j++) {
-				byte[] b = new byte[4];
-				_stream.read(b);
-				int id = BytesUtils.bytesToInt(b, 0);
-				byte[] bytes = new byte[4];
-				_stream.read(bytes);
-				int nbPeaks = BytesUtils.bytesToInt(bytes, 0);
-				lastNbPeaks = nbPeaks;
-				DataEncoding de = this._dataEncodingBySpectrumId.get(id);
-				int structSize = de.getPeakEncoding().getValue();
-				if (de.getMode() == DataMode.FITTED)
-					structSize += 8;
-				_stream.skip(nbPeaks * structSize);
-			}
-			_stream.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return lastNbPeaks;
-	}*/
-	
+
 	/**
 	 * @see IBlobReader#readSpectrumSliceAt(int)
 	 */

@@ -10,7 +10,7 @@ public enum CvTable {
   public static String tableName = "cv";
   private final String columnName;
   
-  private CvTable(String colName) {
+  CvTable(String colName) {
     this.columnName = colName;
   }
   

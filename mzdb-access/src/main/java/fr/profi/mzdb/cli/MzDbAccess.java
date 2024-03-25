@@ -1,5 +1,18 @@
 package fr.profi.mzdb.cli;
 
+import com.almworks.sqlite4java.SQLiteException;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import fr.profi.mzdb.MzDbReader;
+import fr.profi.mzdb.db.model.params.param.UserParam;
+import fr.profi.mzdb.io.writer.mgf.MgfWriter;
+import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputationEnum;
+import fr.profi.mzdb.model.Peak;
+import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.util.patch.DIAIsolationWindowsPatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -7,21 +20,6 @@ import java.io.StreamCorruptedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import fr.profi.mzdb.util.patch.DIAIsolationWindowsPatch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.almworks.sqlite4java.SQLiteException;
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-
-import fr.profi.mzdb.MzDbReader;
-import fr.profi.mzdb.db.model.params.param.UserParam;
-import fr.profi.mzdb.io.writer.mgf.MgfWriter;
-import fr.profi.mzdb.io.writer.mgf.PrecursorMzComputationEnum;
-import fr.profi.mzdb.model.Peak;
-import fr.profi.mzdb.model.SpectrumHeader;
 
 /***
  * This class allows to access to a mzDB file and to make some range queries on it. A list of putative
@@ -41,8 +39,6 @@ public class MzDbAccess {
 	 * 
 	 * @param string
 	 *            the string to print
-	 * @param mode
-	 *            can only assume values PRINT_ALWAYS or PRINT_DEBUG.
 	 * */
 	protected static void println(String string) {
 		System.out.println(string);
@@ -53,8 +49,6 @@ public class MzDbAccess {
 	 * 
 	 * @param string
 	 *            the string to print
-	 * @param mode
-	 *            can only assume values PRINT_ALWAYS or PRINT_DEBUG.
 	 */
 	protected static void print(String string) {
 		System.out.print(string);
@@ -86,6 +80,7 @@ public class MzDbAccess {
 
 		@Parameter(names = { "-mzdb", "--mzdb_file_path" }, description = "mzDB file to patch", required = true)
 		private String mzdbFile = "";
+
 	}
 
 	public static class CreateMgfCommand {
@@ -175,7 +170,7 @@ public class MzDbAccess {
 
 	private static void patchDIA(PatchDIAWindowsCommand pc) {
 		String dbPath = pc.mzdbFile;
-		DIAIsolationWindowsPatch.patchDIAWindows(dbPath);
+		DIAIsolationWindowsPatch.run(dbPath);
 	}
 
 	public static void printAvailableCommands(JCommander jc) {
@@ -185,7 +180,7 @@ public class MzDbAccess {
 		}
 	}
 
-	private static void extractPeaks(ExtractPeaksCommand epc) throws ClassNotFoundException, FileNotFoundException, SQLiteException, StreamCorruptedException {
+	private static void extractPeaks(ExtractPeaksCommand epc) throws  FileNotFoundException, SQLiteException, StreamCorruptedException {
 		String dbPath = epc.mzdbFile;
 		double minMz = epc.minMz;
 		double maxMz = epc.maxMz;
@@ -219,7 +214,7 @@ public class MzDbAccess {
 		}
 	}
 
-	private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, IOException, ClassNotFoundException {
+	private static void createMgf(CreateMgfCommand cmd) throws SQLiteException, IOException {
 		
 		logger.info("Creating MGF File for mzDB at: " + cmd.mzdbFile);
 		logger.info("Precursor m/z values will be defined using the method: " + cmd.precMzComputation);
@@ -228,7 +223,7 @@ public class MzDbAccess {
 		writer.write(cmd.outputFile, cmd.precMzComputation, cmd.mzTolPPM, cmd.intensityCutoff, cmd.exportProlineTitle);
 	}
 
-	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	private static void debug(DebugCommand cmd) throws SQLiteException, FileNotFoundException {
 
 		MzDbReader mzDbReader = new MzDbReader(cmd.mzdbFile, true);
 		

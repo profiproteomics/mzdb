@@ -12,7 +12,7 @@ object DerivativeAnalysis {
     val signums = values.sliding(2).map { buffer =>
       val diff = (buffer(1) - buffer(0))
       if( diff == 0 ) 0.0 else diff.signum.toDouble
-    } toArray
+    }.toArray
     
     if( derivativeLevel == 1 ) signums
     else calcTernarySlopes(signums, derivativeLevel - 1)

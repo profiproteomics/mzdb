@@ -1,32 +1,21 @@
 package fr.profi.mzdb.io.writer.mgf;
 
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StreamCorruptedException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
-//import org.apache.commons.math3.stat.descriptive.rank.Percentile;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.almworks.sqlite4java.SQLiteException;
-
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.table.SpectrumTable;
 import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
-import fr.profi.mzdb.model.DataEncoding;
-import fr.profi.mzdb.model.PeakEncoding;
-import fr.profi.mzdb.model.Spectrum;
-import fr.profi.mzdb.model.SpectrumData;
-import fr.profi.mzdb.model.SpectrumHeader;
+import fr.profi.mzdb.model.*;
 import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author MDB
@@ -34,14 +23,30 @@ import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 public class MgfWriter {
 
 	public static String LINE_SPERATOR = System.getProperty("line.separator");
-	private static Integer precNotFound = 0;
 	final Logger logger = LoggerFactory.getLogger(MgfWriter.class);
 
 	private static String titleQuery = "SELECT id, title FROM spectrum WHERE ms_level=?";
 	private final String mzDBFilePath;
 	private final int msLevel;
 	private MzDbReader mzDbReader;
-	private Map<Long, String> titleBySpectrumId = new HashMap<Long, String>();
+	private Map<Long, String> titleBySpectrumId = new HashMap<>();
+
+	private List<String> headerComments = null;
+
+	private String prolineTitleSeparator = ";";
+
+
+	/**
+	 *
+	 * @param mzDBFilePath
+	 * @param msLevel
+	 * @throws SQLiteException
+	 * @throws FileNotFoundException
+	 */
+	public MgfWriter(String mzDBFilePath, int msLevel, String prolineSpectraTitleSeparator) throws SQLiteException, FileNotFoundException {
+		this(mzDBFilePath, msLevel);
+		prolineTitleSeparator = prolineSpectraTitleSeparator;
+	}
 
 	/**
 	 * 
@@ -49,9 +54,8 @@ public class MgfWriter {
 	 * @param msLevel
 	 * @throws SQLiteException
 	 * @throws FileNotFoundException
-	 * @throws ClassNotFoundException 
 	 */
-	public MgfWriter(String mzDBFilePath, int msLevel) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	public MgfWriter(String mzDBFilePath, int msLevel) throws SQLiteException, FileNotFoundException {
 		if (msLevel < 2 || msLevel > 3) {
 			throw new IllegalArgumentException("msLevel must be 2 or 3");
 		}
@@ -59,19 +63,36 @@ public class MgfWriter {
 		this.mzDBFilePath = mzDBFilePath;
 		this.msLevel = msLevel;
 
-		// Create reader
-		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
-
-		this._fillTitleBySpectrumId();
-		this.logger.info("Number of loaded spectra titles: " + this.titleBySpectrumId.size());
+		initReader();
 	}
 	
-	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException, ClassNotFoundException {
+	public MgfWriter(String mzDBFilePath) throws SQLiteException, FileNotFoundException {
 		this(mzDBFilePath, 2);
 	}
 
+	private void initReader() throws FileNotFoundException, SQLiteException {
+		// Create reader
+		this.mzDbReader = new MzDbReader(this.mzDBFilePath, true);
+		this.mzDbReader.enablePrecursorListLoading();
+		this.mzDbReader.enableParamTreeLoading();
+		titleBySpectrumId.clear();
+		_fillTitleBySpectrumId();
+		this.logger.info("Number of loaded spectra titles: " + this.titleBySpectrumId.size());
+	}
+
 	public MzDbReader getMzDbReader() {
+		if(!mzDbReader.getConnection().isOpen()) {
+			try {
+				initReader();
+			} catch (FileNotFoundException | SQLiteException e) {
+				throw new RuntimeException(e);
+			}
+		}
 		return mzDbReader;
+	}
+
+	public void setHeaderComments(List<String> headerComments) {
+		this.headerComments = headerComments;
 	}
 
 	private void _fillTitleBySpectrumId() throws SQLiteException {
@@ -99,17 +120,21 @@ public class MgfWriter {
 
 	public void write(String mgfFile, PrecursorMzComputationEnum precComp, float mzTolPPM, float intensityCutoff, boolean exportProlineTitle)
 		throws SQLiteException, IOException {
-		write(mgfFile, new DefaultPrecursorComputer(precComp, mzTolPPM), intensityCutoff, exportProlineTitle);
+		write(mgfFile, new DefaultPrecursorComputer(precComp, mzTolPPM), null, intensityCutoff, exportProlineTitle);
 	}
 
 	public void write(String mgfFile, IPrecursorComputation precComp, float intensityCutoff, boolean exportProlineTitle) throws SQLiteException, IOException {
-		
+		write(mgfFile, precComp, new DefaultSpectrumProcessor(), intensityCutoff, exportProlineTitle);
+	}
+
+	public void write(String mgfFile, IPrecursorComputation precComp, ISpectrumProcessor spectrumProcessor, float intensityCutoff, boolean exportProlineTitle) throws SQLiteException, IOException {
+		if(!mzDbReader.getConnection().isOpen()) {
+			initReader();
+		}
+
 		// treat path mgfFile ?
 		if (mgfFile.isEmpty())
 			mgfFile = this.mzDBFilePath + ".mgf";
-		
-		// Reset precNotFound static var
-		MgfWriter.precNotFound = 0;
 		
 		// Configure the mzDbReader in order to load all precursor lists and all scan list when reading spectra headers
 		mzDbReader.enablePrecursorListLoading();
@@ -120,49 +145,50 @@ public class MgfWriter {
 		final PrintWriter mgfWriter = new PrintWriter(new BufferedWriter(new FileWriter(mgfFile)));
 		final Map<Long, DataEncoding> dataEncodingBySpectrumId = this.mzDbReader.getDataEncodingBySpectrumId();
 
+		if (headerComments != null && !headerComments.isEmpty()) {
+			headerComments.forEach(l -> mgfWriter.println("# " + l));
+			mgfWriter.println();
+		}
 		int spectraCount = 0;
 		while (spectrumIterator.hasNext()) {
 			
 			Spectrum s = spectrumIterator.next();
 			long spectrumId = s.getHeader().getId();
-			
 			DataEncoding dataEnc = dataEncodingBySpectrumId.get(spectrumId);
-			String spectrumAsStr = this.stringifySpectrum(s, dataEnc, precComp, intensityCutoff, exportProlineTitle);
-			
-			//this.logger.debug("Writing spectrum with ID="+spectrumId);
 
-			// Write the spectrum
-			mgfWriter.println(spectrumAsStr);
-			
-			// Write a blank line between two spectra
-			mgfWriter.println();
-			
-			spectraCount++;
+			MgfPrecursor[] precursors = precComp.getMgfPrecursors(mzDbReader, s.getHeader());
+		  for (int k = 0; k < precursors.length; k++) {
+				String spectrumAsStr = this.stringifySpectrum(precursors[k], s, dataEnc, spectrumProcessor, intensityCutoff, exportProlineTitle);
+				// Write the spectrum
+				mgfWriter.println(spectrumAsStr);
+				// Write a blank line between two spectra
+				mgfWriter.println();
+				spectraCount++;
+			}
 		}
 
 		this.logger.info(String.format("MGF file successfully created: %d spectra exported.", spectraCount));
-		this.logger.info(String.format("#Precursor not found: %d", MgfWriter.precNotFound));
 		mgfWriter.flush();
 		mgfWriter.close();
+		mzDbReader.close();
 	}
 
 	/**
 	 * 
 	 * @param spectrum
 	 * @param dataEnc
-	 * @param precComp
 	 * @param intensityCutoff
 	 * @return
 	 * @throws SQLiteException
-	 * @throws StreamCorruptedException 
 	 */
 	protected String stringifySpectrum(
+	  MgfPrecursor mgfPrecursor,
 		Spectrum spectrum,
 		DataEncoding dataEnc,
-		IPrecursorComputation precComp,
+		ISpectrumProcessor spectrumProcessor,
 		float intensityCutoff,
 		boolean exportProlineTitle
-	) throws SQLiteException, StreamCorruptedException {
+	) throws SQLiteException {
 
 		String mzFragFormat = null;
 		// FIXME: check if is_high_res parameter is used and is correct
@@ -171,7 +197,6 @@ public class MgfWriter {
 		} else { // We assume high resolution m/z for fragments
 			mzFragFormat = "%.3f";
 		}
-
 		// Unpack data
 		final SpectrumHeader spectrumHeader = spectrum.getHeader();
 		String title;
@@ -179,7 +204,29 @@ public class MgfWriter {
 			title = this.titleBySpectrumId.get(spectrumHeader.getSpectrumId());
 		else {
 			float timeInMinutes = spectrumHeader.getTime() / 60;
-			title = String.format("first_cycle:%d;last_cycle:%d;first_scan:%d;last_scan:%d;first_time:%.3f;last_time:%.3f;raw_file_identifier:%s;",
+			StringBuilder titleTemplate = new StringBuilder();
+			titleTemplate.append("first_cycle:%d").append(prolineTitleSeparator);
+			titleTemplate.append("last_cycle:%d").append(prolineTitleSeparator);
+			titleTemplate.append("first_scan:%d").append(prolineTitleSeparator);
+			titleTemplate.append("last_scan:%d").append(prolineTitleSeparator);
+			titleTemplate.append("first_time:%.3f").append(prolineTitleSeparator);
+			titleTemplate.append("last_time:%.3f").append(prolineTitleSeparator);
+
+			if (mgfPrecursor.hasAnnotation("source")) {
+				titleTemplate.append("source:").append(mgfPrecursor.getAnnotation("source")).append(prolineTitleSeparator);
+			}
+
+			if (mgfPrecursor.hasAnnotation("precursor.signal.total.sw")) {
+				titleTemplate.append("pif:").append(mgfPrecursor.getAnnotation("precursor.signal.total.sw")).append(prolineTitleSeparator);
+			}
+
+			if (mgfPrecursor.hasAnnotation("mgf.id")) {
+				titleTemplate.append("mgf_id:").append(mgfPrecursor.getAnnotation("mgf.id")).append(prolineTitleSeparator);
+			}
+
+			titleTemplate.append("raw_file_identifier:%s").append(prolineTitleSeparator);
+
+			title = String.format(titleTemplate.toString(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getCycle(),
 				spectrumHeader.getInitialId(),
@@ -189,65 +236,40 @@ public class MgfWriter {
 				mzDbReader.getFirstSourceFileName().split("\\.")[0]);
 		}
 
-		MgfHeader mgfSpectrumHeader = precComp.getMgfHeader(mzDbReader, spectrumHeader, title);
-
 		StringBuilder spectrumStringBuilder = new StringBuilder();
-		mgfSpectrumHeader.appendToStringBuilder(spectrumStringBuilder);
 
-		// Spectrum Data
-		final SpectrumData data = spectrum.getData();
-		final double[] mzs = data.getMzList();
-		final float[] ints = data.getIntensityList();
-		//final float[] leftHwhms = data.getLeftHwhmList();
-		//final float[] rightHwhms = data.getRightHwhmList();
 
-		final int intsLength = ints.length;
+			if (spectrumStringBuilder.length() > 0) spectrumStringBuilder.append(MgfWriter.LINE_SPERATOR).append(MgfWriter.LINE_SPERATOR);
 
-		//final double[] intsAsDouble = new double[intsLength];
-		//for (int i = 0; i < intsLength; ++i) {
-		//	intsAsDouble[i] = (double) ints[i];
-		//}
-		//final double intensityCutOff = 0.0; // new Percentile().evaluate(intsAsDouble, 5.0);
+			spectrumStringBuilder.append(MgfField.BEGIN_IONS).append(MgfWriter.LINE_SPERATOR);
+			spectrumStringBuilder.append(MgfField.TITLE).append("=").append(title).append(MgfWriter.LINE_SPERATOR);
+			spectrumStringBuilder.append(MgfField.SCANS).append("=").append(spectrumHeader.getInitialId()).append(MgfWriter.LINE_SPERATOR);
 
-		for (int i = 0; i < intsLength; ++i) {
+			mgfPrecursor.appendToStringBuilder(spectrumStringBuilder);
 
-			float intensity = ints[i];
+			// Spectrum Data
+			final SpectrumData data = spectrumProcessor.processSpectrum(mgfPrecursor, spectrum.getData());
+			final double[] mzs = data.getMzList();
+			final float[] ints = data.getIntensityList();
 
-			// DBO: here we tried boost intensities (but this should be optional)
-			// The benefit is not the same for all instruments
-			// TODO: take into account the width of the peaks
-			//float intensity = (float) Math.pow(ints[i], 1.5 ); // ^ 3/2
+			final int intsLength = ints.length;
 
-			/*if( dataEnc.getMode().equals(DataMode.FITTED) ) {
-			  float peakIntensity = ints[i];
-			  float leftHwhm = leftHwhms[i];
-			  float rightHwhm = rightHwhms[i];
-			  float fwhm = leftHwhm + rightHwhm;
-			  logger.debug("leftHwhm:"+leftHwhm);
-			  if( fwhm != 0 ) {
-			    logger.trace("fwhm:" +fwhm);
-			  }
-			  // Approximate the area using a triangle area computation
-			  // TODO: use a more sophisticated mathematical function
-			  intensity = peakIntensity * fwhm * 1e6f;
-			} else {
-			  intensity = ints[i];
-			}*/
+			for (int i = 0; i < intsLength; ++i) {
 
-			if (intensity >= intensityCutoff) {
-				double mz = mzs[i];
+				float intensity = ints[i];
 
-				spectrumStringBuilder
-					.append(String.format(mzFragFormat, mz))
-					.append(" ")
-					.append(String.format("%.0f", intensity))
-					.append(LINE_SPERATOR);
+				if (intensity >= intensityCutoff) {
+					double mz = mzs[i];
+					spectrumStringBuilder
+									.append(String.format(mzFragFormat, mz))
+									.append(" ")
+									.append(String.format("%.0f", intensity))
+									.append(LINE_SPERATOR);
+				}
 			}
-		}
 
-		spectrumStringBuilder.append(MgfField.END_IONS);
-
-		return spectrumStringBuilder.toString();
+			spectrumStringBuilder.append(MgfField.END_IONS);
+			return spectrumStringBuilder.toString();
 	}
 
 }

@@ -1,5 +1,6 @@
 package fr.profi.mzdb.db.model.params;
 
+import java.io.IOException;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlElement;
@@ -9,6 +10,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
+import fr.profi.mzdb.serialization.SerializationReader;
 
 /**
  * The Class ParamTree.
@@ -16,11 +18,15 @@ import fr.profi.mzdb.db.model.params.param.UserText;
  * @author David Bouyssie
  */
 @XmlRootElement(name = "params")
-public class ParamTree extends AbstractParamTree {
+public class ParamTree extends AbstractNoXMLParamTree {
 
 	public ParamTree() {
-		super();
 	}
+
+	public ParamTree(SerializationReader reader) throws IOException {
+		read(reader);
+	}
+
 
 	@Override
 	@XmlElement(name = "cvParam", type = CVParam.class, required = false)

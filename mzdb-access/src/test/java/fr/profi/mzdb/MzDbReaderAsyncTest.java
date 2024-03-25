@@ -40,7 +40,7 @@ public class MzDbReaderAsyncTest {
 		SQLite4JavaTest.checkSQLite();
 	}
 
-	static final HashMap<Integer, Integer> runSliceData = new HashMap();
+	static final HashMap<Integer, Integer> runSliceData = new HashMap<>();
 
 	static {
 		runSliceData.put(2, 158);
@@ -208,7 +208,7 @@ public class MzDbReaderAsyncTest {
 	/** check synchronously an SQL request that is asynchronously blocking */
 	@Test
 	public void getBBoxSync_OVEMB150205_12()
-			throws URISyntaxException, ClassNotFoundException, FileNotFoundException, SQLiteException {
+			throws URISyntaxException {
 
 		final File file_OVEMB150205_12 = new File(filename_OVEMB150205_12.toURI());
 		final int[] bboxDataIds1 = { 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
@@ -328,13 +328,10 @@ public class MzDbReaderAsyncTest {
 	 * Non regression test date: jul 17th 2015
 	 *
 	 * @throws URISyntaxException
-	 * @throws SQLiteException
-	 * @throws FileNotFoundException
-	 * @throws ClassNotFoundException
 	 */
 	@Test
 	public void readerAsyncTest_OVEMB150205_12()
-			throws URISyntaxException, ClassNotFoundException, FileNotFoundException, SQLiteException {
+			throws URISyntaxException {
 
 		final float FLOAT_EPSILON = 1E-3f;
 		final double DOUBLE_EPSILON = 1E-5d;

@@ -17,6 +17,8 @@ import com.almworks.sqlite4java.SQLiteStatement;
  */
 public class SQLiteQuery {
 
+	//VDS TODO : When run step : test return value before calling columnXX
+
 	private String queryString = null;
 	private SQLiteStatement stmt = null;
 	private SQLiteResultDescriptor resultDesc = null;
@@ -279,8 +281,10 @@ public class SQLiteQuery {
 	}
 	
 	public String extractSingleString() throws SQLiteException {
-		this.stmt.step();
-		String result = this.stmt.columnString(0);
+		boolean dataToRead = this.stmt.step();
+		String result = null;
+		if(dataToRead)
+			result = this.stmt.columnString(0);
 		this.dispose();
 		return result;
 	}

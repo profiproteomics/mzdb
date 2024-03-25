@@ -16,7 +16,7 @@ object VectorSimilarity {
    */
   // TODO: mix with the version from IsotopePatternEstimator
   def dot[T](as: Iterable[T], bs: Iterable[T])(f: (T,T) => Double): Double =
-    (for ((a, b) <- as zip bs) yield f(a, b)) sum
+    (for ((a, b) <- as zip bs) yield f(a, b)).sum
   
   /** The dotProduct function.
    * Returns the dot product of the 2 double arrays

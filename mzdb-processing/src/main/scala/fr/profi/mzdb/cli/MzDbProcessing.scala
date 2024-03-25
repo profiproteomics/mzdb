@@ -1,15 +1,14 @@
 package fr.profi.mzdb.cli
 
 import com.beust.jcommander._
-
 import com.typesafe.scalalogging.LazyLogging
-
 import fr.profi.util.ThreadLogger
 
 /**
  * @auhor David Bouyssie
  * @author CB205360
  */
+//warning: overriding method main in trait App is deprecated (since 2.11.0): main should not be overridden
 object MzDbProcessing extends App with LazyLogging {
   
   // TODO: put in profi-scala-commons (shared with proline admin)
@@ -127,7 +126,7 @@ object MzDbProcessing extends App with LazyLogging {
 
     @Parameter(names = Array("-o", "--output_file_path"), description = "mgf output file path", required = true)
     var outputFile: String = ""
-    
+
     @Parameter(names = Array("-ms", "--ms_level"), description = "the MS level to export", required = false)
     var msLevel: Int = 2
 
@@ -142,10 +141,26 @@ object MzDbProcessing extends App with LazyLogging {
 
     @Parameter(names = Array("-ptitle", "--proline_title"), description = "export TITLE using the Proline convention", required = false)
     var exportProlineTitle: Boolean = false
+
   }
 
-  override def main(args: Array[String]): Unit = {
-    Thread.currentThread.setUncaughtExceptionHandler(new ThreadLogger(logger.underlying.getName()))
+  /*
+  * Dump scan headers
+  */
+  @Parameters(commandNames = Array("dump_scan_headers"), commandDescription = "Dump headers", separators = "=")
+  private[cli] object DumpScanHeaders extends JCommandReflection {
+
+    @Parameter(names = Array("-mzdb", "--mzdb_file_path"), description = "mzDB file to perform extraction", required = true)
+    var mzdbFilePath: String = ""
+
+    @Parameter(names = Array("-o", "--output_file_path"), description = "mgf output file path", required = true)
+    var outputFilePath: String = ""
+
+    @Parameter(names = Array("-ms", "--ms_level"), description = "the MS level to export", required = false)
+    var msLevel: Int = 2
+  }
+
+     Thread.currentThread.setUncaughtExceptionHandler(new ThreadLogger(logger.underlying.getName()))
     
     // Instantiate a JCommander object and set some commands
     val jCmd = new JCommander()
@@ -153,6 +168,7 @@ object MzDbProcessing extends App with LazyLogging {
     jCmd.addCommand(ExtractPutativeFts)
     jCmd.addCommand(DumpRegion)
     jCmd.addCommand(DumpRegionBinning)
+    jCmd.addCommand(DumpScanHeaders)
     jCmd.addCommand(CreateMgfCommand)
 
     // Try to parse the command line
@@ -192,7 +208,12 @@ object MzDbProcessing extends App with LazyLogging {
           this.logger.info("" + p.mzmin + ", " + p.mzmax + ", " + p.rtmin + ", " + p.rtmax)
           dumpRegionBinning(p.mzdbFilePath, p.outputFilePath, p.nbBins, p.mzmin, p.mzmax, p.rtmin, p.rtmax)
         }
+        case DumpScanHeaders.Parameters.firstName => {
+          val p = DumpScanHeaders
+          dumpScanHeaders(p.mzdbFilePath, p.outputFilePath, p.msLevel)
+        }
         case CreateMgfCommand.Parameters.firstName => {
+          logger.info("Creating MGF file ...");
           createMgf()
         }
         case _ => {
@@ -215,8 +236,5 @@ object MzDbProcessing extends App with LazyLogging {
         System.exit(1)
       }
     }
-    
-  }
-
 
 }

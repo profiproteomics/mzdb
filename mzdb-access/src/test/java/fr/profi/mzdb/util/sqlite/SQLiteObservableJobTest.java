@@ -119,7 +119,7 @@ public class SQLiteObservableJobTest {
 			        @Override
 			        public void onNext(Integer integer) {
 			            System.out.println("mzDB file contains " + integer + " tables");
-			            Assert.assertEquals( new Integer(32), integer );
+			            Assert.assertEquals( Integer.valueOf(32), integer );
 			        }
 			    });
 		    }

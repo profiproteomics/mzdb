@@ -1,8 +1,5 @@
 package fr.profi.mzdb.util.math.wavelet
 
-import scala.collection.mutable.ArrayBuffer
-import org.apache.commons.math3.complex.Complex
-
 trait IWaveletInterface[T] {
   def values(): Array[T]
 
