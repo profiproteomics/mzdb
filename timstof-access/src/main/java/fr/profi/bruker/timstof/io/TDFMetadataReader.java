@@ -245,6 +245,27 @@ public class TDFMetadataReader {
         }
     }
 
+    public Map<String, String>  readFrameProperty(int frameId) {
+        Connection connection = getConnection();
+        Map<String,String> frameProperties = new HashMap<>();
+        try{
+            if(connection != null) {
+                Statement statement = connection.createStatement();
+                statement.setQueryTimeout(30); // set timeout to 30 sec.
+
+                ResultSet rsGlobalMD = statement.executeQuery("SELECT PermanentName, Value FROM FrameProperties fp, PropertyDefinitions pd where fp.Property = pd.Id AND fp.Frame = "+Integer.toString(frameId));
+                while (rsGlobalMD.next()){
+                    String name = rsGlobalMD.getString(1);
+                    String val = rsGlobalMD.getString(2);
+                    frameProperties.put(name, val);
+                }
+            }
+            return frameProperties;
+        } catch (SQLException e) {
+            LOG.error(e.getMessage());
+            return frameProperties;
+        }
+    }
 
     private Connection getConnection(){
         Connection connection;
