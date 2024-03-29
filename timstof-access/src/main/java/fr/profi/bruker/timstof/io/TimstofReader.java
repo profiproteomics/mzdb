@@ -321,21 +321,31 @@ public class TimstofReader {
             m_cachedMetaReaderByHandle.put(fileHandle, new TDFMetadataReader(m_ttFilesByHandle.get(fileHandle)));
         TDFMetadataReader metaDataReader =m_cachedMetaReaderByHandle.get(fileHandle);
         final Map<String, String> propertyGroup = metaDataReader.readPropertyGroup(1);
-        int n = Integer.parseInt(propertyGroup.get("IMS_Cycle_RampTime_Trig")) + 1;
-        double[] scanAsDbl = new double [n];
-        double[] ionMobilities = new double [n];
-        for(int i = 0; i < n; i++){
-            scanAsDbl[i] = i;
-        }
-        long error_stat = m_tdfLib.tims_scannum_to_oneoverk0(fileHandle, 1, scanAsDbl , ionMobilities, ionMobilities.length);
-        if (0 == error_stat) {
-            LOG.error(" !!! could not convert scans to ion mobility for frame 1");
+        int n = 0;
+        if(propertyGroup.containsKey("IMS_Cycle_RampTime_Trig")) {
+            n = Integer.parseInt(propertyGroup.get("IMS_Cycle_RampTime_Trig")) + 1;
         } else {
-            List<Pair<Integer, Double>> indices = new ArrayList<>(n);
-            for(int i = 0; i < n; i++){
-                indices.add(new ImmutablePair<>((int)scanAsDbl[i], ionMobilities[i]));
+            final Map<String, String> propertyFrame= metaDataReader.readFrameProperty(1); //Try in first frame data
+            if(propertyFrame.containsKey("IMS_Cycle_RampTime_Trig"))
+                n = Integer.parseInt(propertyFrame.get("IMS_Cycle_RampTime_Trig")) + 1;
+        }
+        if(n>0) {
+            double[] scanAsDbl = new double[n];
+            double[] ionMobilities = new double[n];
+            for (int i = 0; i < n; i++) {
+                scanAsDbl[i] = i;
             }
-            return indices;
+
+            long error_stat = m_tdfLib.tims_scannum_to_oneoverk0(fileHandle, 1, scanAsDbl, ionMobilities, ionMobilities.length);
+            if (0 == error_stat) {
+                LOG.error(" !!! could not convert scans to ion mobility for frame 1");
+            } else {
+                List<Pair<Integer, Double>> indices = new ArrayList<>(n);
+                for (int i = 0; i < n; i++) {
+                    indices.add(new ImmutablePair<>((int) scanAsDbl[i], ionMobilities[i]));
+                }
+                return indices;
+            }
         }
         return new ArrayList();
     }
