@@ -1,15 +1,13 @@
 package fr.profi.mzdb.algo
 
-import scala.collection.mutable.ArrayBuffer
 import com.almworks.sqlite4java.SQLiteConnection
-import fr.profi.ms.model.TheoreticalIsotopePattern
-import fr.profi.mzdb.{MzDbReader, Settings}
-import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.model.SpectrumData
 import com.typesafe.scalalogging.LazyLogging
-import fr.profi.mzdb.util.ms.MsUtils
+import fr.profi.ms.model.TheoreticalIsotopePattern
+import fr.profi.mzdb.model.{Peakel, SpectrumData}
+import fr.profi.mzdb.{MzDbReader, Settings}
 
 import java.util
+import scala.collection.mutable.ArrayBuffer
 
 trait IIsotopicPatternPredictor extends LazyLogging {
 
@@ -151,7 +149,7 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
     val mzList = new ArrayBuffer[Double](coelutingPeakelsCount)
     val intensityList = new ArrayBuffer[Float](coelutingPeakelsCount)
 
-    coelutingPeakels.sortBy(_.getApexMz()).map { peakel =>
+    coelutingPeakels.sortBy(_.getApexMz()).foreach { peakel =>
 
           var index = util.Arrays.binarySearch(peakel.getSpectrumIds, matchingSpectrumId)
           var foundPeak = (index >= 0) && (index < peakel.peaksCount)
@@ -175,7 +173,6 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
           }
       }
 
-    
     (mzList, intensityList)
   }
 
