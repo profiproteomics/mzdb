@@ -401,7 +401,7 @@ object Commands extends LazyLogging {
       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "mgf_boost") {
       val precComputer = new MgfBoostPrecursorExtractor(mzTolPPM = CreateMgfCommand.mzTolPPM,
-                                                        useHeader= false,
+                                                        useHeader= true,
                                                         useSW = true,
                                                         scanSelector = ScanSelectorModes.SAME_CYCLE)
       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
