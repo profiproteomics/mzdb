@@ -2,7 +2,7 @@ package fr.profi.mzdb.algo
 
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model.SpectrumData
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 class IsotopicPatternScorerTest {
 
@@ -73,7 +73,7 @@ class IsotopicPatternScorerTest {
     ()
   }
 
-  @Test
+  @Ignore
   def testFromSpectrumData() =  {
 
     val mzDb = new MzDbReader("C:/Local/bruley/Tests/MGF/Data/mzdb-converter-1.2.1/Xpl1_002787.mzdb", true)
