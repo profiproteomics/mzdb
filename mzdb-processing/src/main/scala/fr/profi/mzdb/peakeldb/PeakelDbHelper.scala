@@ -12,7 +12,7 @@ import fr.profi.mzdb.util.ms.MsUtils
 import fr.profi.util.metrics.Metric
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
 
-import scala.collection.mutable.{ArrayBuffer, HashSet}
+import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks.{break, breakable}
 
 object PeakelDbHelper {
@@ -90,7 +90,7 @@ object PeakelDbHelper {
       putativeFt: PutativeFeature,
       mappingMozTolPpm: Float,
       extractionMozTolPpm: Float,
-      assignedMzDbPeakelIdSetOpt: Option[HashSet[Int]],
+      assignedMzDbPeakelIdSetOpt: Option[Set[Int]],
       multiMatchedMzDbPeakelIdsOpt: Option[Seq[Int]],
       metric: Metric
   ): Option[(Peakel,Boolean)] = {
