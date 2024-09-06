@@ -32,11 +32,10 @@ public class MultiMzDbReaderTest implements Callback<SpectrumSlice[]> {
      * @throws URISyntaxException
      * @throws SQLiteException
      * @throws FileNotFoundException
-     * @throws ClassNotFoundException
      */
     @Test
     public void readerAsyncTest_OVEMB150205_12()
-	    throws URISyntaxException, ClassNotFoundException, FileNotFoundException, SQLiteException {
+	    throws URISyntaxException, FileNotFoundException, SQLiteException {
 
 	final MzDbEntityCache cache = new MzDbEntityCache();
 	final double minMz = 00;

@@ -1,14 +1,6 @@
 package fr.profi.mzdb.io.writer.mgf;
 
-import java.io.StreamCorruptedException;
-import java.util.ArrayList;
-import java.util.Collections;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.almworks.sqlite4java.SQLiteException;
-
 import fr.profi.mzdb.MzDbReader;
 import fr.profi.mzdb.db.model.params.IsolationWindowParamTree;
 import fr.profi.mzdb.db.model.params.Precursor;
@@ -19,6 +11,12 @@ import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
 import fr.profi.mzdb.util.ms.MsUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.StreamCorruptedException;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class DefaultPrecursorComputer implements IPrecursorComputation {
 
@@ -36,30 +34,40 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		this.precComp = precComp;
 	}
 
-	@Override
-	public MgfHeader getMgfHeader(MzDbReader mzDbReader, SpectrumHeader spectrumHeader, String title) throws SQLiteException {
+	public MgfPrecursor[] getMgfPrecursors(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 
 		final float time = spectrumHeader.getElutionTime();
 		final double precMz = this.getPrecursorMz(mzDbReader, spectrumHeader);
 		final int charge = this.getPrecursorCharge(mzDbReader, spectrumHeader);
 
-		final MgfHeader mgfSpectrumHeader = charge != 0 ? new MgfHeader(title, precMz, charge, time) : new MgfHeader(title, precMz, time);
-
-		return mgfSpectrumHeader;
+		if (charge != 0) {
+			final MgfPrecursor mgfPrecursor =  new MgfPrecursor(precMz, charge, time);
+			mgfPrecursor.addAnnotation("scan.number", spectrumHeader.getSpectrumId());
+			mgfPrecursor.addAnnotation("mgf.id", spectrumHeader.getSpectrumId()+".1");
+			return new MgfPrecursor[]{mgfPrecursor};
+		}
+		else
+			return new MgfPrecursor[0];
 	}
 
+
 	@Override
-	public String getParamName() {
+	public String getMethodName() {
 		return precComp.getUserParamName();
 	}
 
 	@Override
-	public int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
+	public String getMethodVersion() {
+		return "1.0";
+	}
+
+
+	protected int getPrecursorCharge(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 		return spectrumHeader.getPrecursorCharge();
 	}
 
-	@Override
-	public double getPrecursorMz(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
+
+	protected double getPrecursorMz(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {
 
 		final float time = spectrumHeader.getElutionTime();
 		double precMz = spectrumHeader.getPrecursorMz();
@@ -115,7 +123,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	/**
 	 * Detects isotopic pattern in the survey and return the most probable mono-isotopic m/z value
 	 * 
-	 * @param centerMz
+	 *
 	 *            the m/z value at the center of the isolation window
 	 * @return
 	 * @throws SQLiteException
@@ -273,7 +281,7 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		return medMz;
 	}
 
-	private SpectrumSlice[] _getSpectrumSlicesInIsolationWindow(MzDbReader mzDbReader, Precursor precursor, float time, float timeTol)
+	protected SpectrumSlice[] _getSpectrumSlicesInIsolationWindow(MzDbReader mzDbReader, Precursor precursor, float time, float timeTol)
 		throws StreamCorruptedException, SQLiteException {
 
 		// do a XIC over isolation window
@@ -289,9 +297,9 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 		};
 		final CVParam[] cvParams = iw.getCVParams(cvEntries);
 
-		final float lowerMzOffset = Float.parseFloat(cvParams[0].getValue());
+		final float lowerMzOffset = Float.parseFloat(cvParams[0].getValue()); //1.1f;
 		final float targetMz = Float.parseFloat(cvParams[1].getValue());
-		final float upperMzOffset = Float.parseFloat(cvParams[2].getValue());
+		final float upperMzOffset = Float.parseFloat(cvParams[2].getValue()); //1.1f;
 		final double minmz = targetMz - lowerMzOffset;
 		final double maxmz = targetMz + upperMzOffset;
 		final float minrt = time - timeTol;

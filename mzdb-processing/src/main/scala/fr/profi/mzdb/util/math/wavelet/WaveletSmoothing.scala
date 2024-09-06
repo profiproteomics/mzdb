@@ -32,8 +32,8 @@ object WaveletSmoothing extends App {
   val a = new Peak(0,0)
   val b = new Peak(0, 0)
   var h = new collection.immutable.HashMap[Peak, Int]()
-  h += Pair(a, 0)
-  h += Pair(b, 1)
+  h += Tuple2(a, 0)
+  h += Tuple2(b, 1)
   println("" + h(a))
   println(""+ h(b))
   

@@ -1,9 +1,6 @@
 package fr.profi.mzdb.model
 
 import scala.beans.BeanProperty
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.LongMap
 
 object PeakList {
   
@@ -230,7 +227,7 @@ case class PeakList protected(
       //println("deltaMz"+ absDeltaMz)
       
       // Check if we found a better peak candidate 
-      if( absDeltaMz < lowestDeltaMz ) {
+      if( (absDeltaMz < lowestDeltaMz) || ( (absDeltaMz == lowestDeltaMz) && (nearestMzIdx == -1 || intensityList(mzIdx) > intensityList(nearestMzIdx)) )) {
         lowestDeltaMz = absDeltaMz
         nearestMzIdx = mzIdx
       // Check if we previously found a peak and we are now out of the valid m/z range

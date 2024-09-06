@@ -3,7 +3,6 @@ package fr.profi.mzdb.peakeldb.io
 import java.io.File
 
 import com.almworks.sqlite4java.SQLiteConnection
-
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.model.PeakelDataMatrix
 import fr.profi.mzdb.model.SpectrumHeader
@@ -11,7 +10,22 @@ import fr.profi.util.collection._
 import java.text.SimpleDateFormat
 import java.util.Date
 
+import fr.profi.mzdb.peakeldb.model.PeakelTable
+
 object PeakelDbWriter {
+
+  def initPeaklUpdate(fileLocation: File): SQLiteConnection = {
+    // Open SQLite connection
+    val connection = new SQLiteConnection(fileLocation)
+    connection.open(true) // allowCreate = true
+
+    // SQLite optimization
+    connection.exec("PRAGMA synchronous=OFF;")
+    connection.exec("PRAGMA journal_mode=OFF;")
+    connection.exec("PRAGMA temp_store=2;")
+    connection.exec("PRAGMA cache_size=100000;")
+    connection
+  }
 
   def initPeakelStore(fileLocation: File): SQLiteConnection = {
 
@@ -214,4 +228,48 @@ CREATE TABLE peakel_rtree (
     sqliteConn.exec("COMMIT TRANSACTION;")
   }
 
+  def updatePeakelsInPeakelDB(
+                              sqliteConn: SQLiteConnection,
+                              peakels: Array[Peakel],
+                              initialIdBySpectrumId: Map[Long, Long]
+                            ) {
+
+
+    // BEGIN TRANSACTION
+    sqliteConn.exec("BEGIN TRANSACTION;")
+
+    // Prepare the insertion in the peakel table
+    val peakelStmt = sqliteConn.prepare(
+      s"UPDATE ${PeakelTable.tableName} SET ${PeakelTable.DURATION} = ?, ${PeakelTable.PEAK_COUNT} = ?, ${PeakelTable.PEAKS} = ?, ${PeakelTable.FIRST_SPECTRUM_ID} = ?, ${PeakelTable.APEX_INTENSITY} = ?," +
+        s"  ${PeakelTable.LAST_SPECTRUM_ID} = ?  WHERE ${PeakelTable.ID} = ?"
+    )
+
+    try {
+      for (peakel <- peakels) {
+
+        val scanInitialIds = peakel.getSpectrumIds().map(initialIdBySpectrumId(_))
+        val peakelMessage = peakel.toPeakelDataMatrix()
+        val peakelMessageAsBytes = PeakelDataMatrix.pack(peakelMessage)
+
+        var fieldNumber = 1
+        peakelStmt.bind(fieldNumber, peakel.calcDuration()); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakel.spectrumIds.length); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakelMessageAsBytes); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, scanInitialIds.head); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakel.getApexSpectrumId); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, scanInitialIds.last); fieldNumber += 1
+        peakelStmt.bind(fieldNumber, peakel.getId()); // map_id
+
+        peakelStmt.step()
+        peakelStmt.reset()
+
+      }
+    } finally {
+      // Release statements
+      peakelStmt.dispose()
+    }
+
+    // COMMIT TRANSACTION
+    sqliteConn.exec("COMMIT TRANSACTION;")
+  }
 }

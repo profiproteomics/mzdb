@@ -4,7 +4,7 @@ import java.io.File
 import java.io.PrintWriter
 import java.util.TreeMap
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import fr.profi.mzdb.MzDbReader
@@ -38,7 +38,7 @@ object CalibrationCurveWriter {
 	    
 	    //eliminate noise little peaks using quantile approach, other techniques ?
 	    //val sortedIntensities = mergedSpectrum.map (_.getIntensity).toSeq.sortWith(_<_)
-	    val thresh = mergedSpectrum.map (_.getIntensity).toSeq.sortWith(_<_)((intensityThresh * mergedSpectrum.length) toInt)
+	    val thresh = mergedSpectrum.map (_.getIntensity).toSeq.sortWith(_<_)((intensityThresh * mergedSpectrum.length).toInt)
 	    
 	    mergedSpectrum = mergedSpectrum.filter(_.getIntensity > thresh)
 	    
@@ -108,7 +108,7 @@ object CalibrationCurveWriter {
 	  
 	  var output = new TreeMap[Long, Double]
 	  var sum = 0.0
-	  for (entry <- result.entrySet()) {
+	  for (entry <- result.entrySet().asScala) {
 	    sum += entry.getValue
 	    output.put(entry.getKey, sum)
 	  }
@@ -124,7 +124,7 @@ object CalibrationCurveWriter {
 	  var m445 = result._2
 	  val writer = new PrintWriter(new File(mzDbFile + "_calib.txt" ))
 	  
-	  for (entry <- o.entrySet()) {
+	  for (entry <- o.entrySet().asScala) {
 	    writer.write(entry.getKey + "\t" + entry.getValue + "\t" + m445.get(entry.getKey) + "\n")
 	  }
 	}

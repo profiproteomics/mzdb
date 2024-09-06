@@ -176,7 +176,7 @@ object WaveletUtils {
         
         val scale = scales(scaleIndex)
         //build scales wavelet @see MassSpecWavelet, calc indexes of wavelet upSampling
-        var f = ( for (i <- 0 until ydataExtended.length) yield 0f) toArray //ydata
+        var f = ( for (i <- 0 until ydataExtended.length) yield 0f).toArray //ydata
         
         //println("buggy stuff:"  + (scale * xmax).toInt +", " + scale )
         val maxStuff = (scale * xmax).toInt
@@ -200,7 +200,7 @@ object WaveletUtils {
         }
         
         val convolvingResult : Array[Float] = this.convolveUsingJtransform(ydataExtended, f, true)
-        val scaleogram = convolvingResult.map { x => (x * (1.0 / math.sqrt(scale))) toFloat }
+        val scaleogram = convolvingResult.map { x => (x * (1.0 / math.sqrt(scale))).toFloat }
   
         //flip an assign to row
         val p = ydataExtended.length - math.floor(lenWave / 2f).toInt //Extended

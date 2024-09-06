@@ -1,5 +1,7 @@
 package fr.profi.mzdb.util
 
+import scala.language.implicitConversions
+
 /**
  * @author David Bouyssie
  *

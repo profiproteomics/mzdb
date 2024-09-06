@@ -21,7 +21,7 @@ public class RunSliceHeader extends AbstractInMemoryIdGen implements Comparable<
 	protected final int msLevel;
 
 	/** The number. */
-	protected final int number;
+	protected int number;
 
 	/** The begin mz. */
 	protected final double beginMz;
@@ -83,6 +83,10 @@ public class RunSliceHeader extends AbstractInMemoryIdGen implements Comparable<
 	 */
 	public int getNumber() {
 		return number;
+	}
+
+	public void setNumber(int number) {
+		this.number = number;
 	}
 
 	/**

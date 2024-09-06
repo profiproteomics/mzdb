@@ -129,7 +129,7 @@ case class PeakListTree(
     val mz = theoreticalIP.monoMz
     val charge = theoreticalIP.charge
     val maxNbPeaks = if (maxNbPeaksInIP.isDefined) maxNbPeaksInIP.get else theoreticalIP.abundances.filter(_ >= 5).length
-    val spectrumId = spectrumHeader.id
+    val spectrumId = spectrumHeader.getId
     val pklTriplet = pklTripletBySpectrumId.getOrNull(spectrumId)
     
     if( charge < 1 || pklTriplet == null )

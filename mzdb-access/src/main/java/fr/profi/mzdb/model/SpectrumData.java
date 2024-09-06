@@ -1,7 +1,11 @@
 package fr.profi.mzdb.model;
 
+import java.io.IOException;
 import java.util.Arrays;
 
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
 import org.apache.commons.lang3.ArrayUtils;
 
 import fr.profi.mzdb.util.ms.MsUtils;
@@ -12,7 +16,7 @@ import fr.profi.mzdb.util.ms.MsUtils;
  * 
  * @author David Bouyssie
  */
-public class SpectrumData {
+public class SpectrumData implements SerializationInterface {
 
 	/** The mz list. */
 	protected double[] mzList;
@@ -20,13 +24,17 @@ public class SpectrumData {
 	/** The intensity list. */
 	protected float[] intensityList;
 
-	/** The left hwhm list. */
+	/** The left hwhm list. : Left Half width at half maximum */
 	protected float[] leftHwhmList;
 
-	/** The right hwhm list. */
+	/** The right hwhm list. : : Right Half width at half maximum */
 	protected float[] rightHwhmList;
 
 	protected int peaksCount;
+
+	public SpectrumData(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 
 	/**
 	 * Instantiates a new spectrum data.
@@ -207,8 +215,6 @@ public class SpectrumData {
 	 * 
 	 * @param binSearchIndex
 	 *            the bin search index
-	 * @param length
-	 *            the length
 	 * @return the int
 	 */
 	private int _binSearchIndexToNearestIndex(int binSearchIndex) {
@@ -353,4 +359,69 @@ public class SpectrumData {
 		return filteredSpectrumData;
 	}
 
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		boolean hasData = mzList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(mzList);
+		}
+
+		hasData = intensityList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(intensityList);
+		}
+
+		hasData = leftHwhmList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(leftHwhmList);
+		}
+
+		hasData = rightHwhmList!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.write(rightHwhmList);
+		}
+
+		writer.writeInt32(peaksCount);
+
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			mzList = reader.readArrayDouble();
+		} else {
+			mzList = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			intensityList = reader.readArrayFloat();
+		} else {
+			intensityList = null;
+		}
+
+		hasData = reader.readBoolean();
+		if (hasData) {
+			leftHwhmList = reader.readArrayFloat();
+		} else {
+			leftHwhmList = null;
+		}
+		hasData = reader.readBoolean();
+		if (hasData) {
+			rightHwhmList = reader.readArrayFloat();
+		} else {
+			rightHwhmList = null;
+		}
+		peaksCount = reader.readInt32();
+
+	}
 }

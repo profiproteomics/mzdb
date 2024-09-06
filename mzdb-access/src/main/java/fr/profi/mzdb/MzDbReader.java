@@ -1,5 +1,28 @@
 package fr.profi.mzdb;
 
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
+import fr.profi.mzdb.db.model.*;
+import fr.profi.mzdb.db.model.params.param.CV;
+import fr.profi.mzdb.db.model.params.param.CVTerm;
+import fr.profi.mzdb.db.model.params.param.CVUnit;
+import fr.profi.mzdb.db.model.params.param.UserTerm;
+import fr.profi.mzdb.io.reader.MzDbReaderQueries;
+import fr.profi.mzdb.io.reader.SharedParamTreeReader;
+import fr.profi.mzdb.io.reader.cache.DataEncodingReader;
+import fr.profi.mzdb.io.reader.cache.MzDbEntityCache;
+import fr.profi.mzdb.io.reader.cache.RunSliceHeaderReader;
+import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader;
+import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
+import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator;
+import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
+import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
+import fr.profi.mzdb.io.reader.table.*;
+import fr.profi.mzdb.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.StreamCorruptedException;
@@ -7,23 +30,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import fr.profi.mzdb.db.model.*;
-import fr.profi.mzdb.io.reader.MzDbReaderQueries;
-import fr.profi.mzdb.io.reader.cache.*;
-import fr.profi.mzdb.io.reader.iterator.BoundingBoxIterator;
-import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator;
-import fr.profi.mzdb.io.reader.iterator.LcMsnRunSliceIterator;
-import fr.profi.mzdb.io.reader.iterator.SpectrumIterator;
-import fr.profi.mzdb.io.reader.table.*;
-import fr.profi.mzdb.model.*;
 
 /**
  * Allows to manipulates data contained in the mzDB file.
@@ -37,40 +43,44 @@ public class MzDbReader extends AbstractMzDbReader {
 	private SQLiteConnection connection = null;
 	
 	/** Some readers with internal entity cache **/
-	private DataEncodingReader _dataEncodingReader = null;
-	private SpectrumHeaderReader _spectrumHeaderReader = null;
-	private RunSliceHeaderReader _runSliceHeaderReader = null;
+	private DataEncodingReader _dataEncodingReader;
+	private SpectrumHeaderReader _spectrumHeaderReader;
+	private RunSliceHeaderReader _runSliceHeaderReader;
 	
 	/** Some readers without internal entity cache **/
-	private MzDbHeaderReader _mzDbHeaderReader = null;
-	private InstrumentConfigReader _instrumentConfigReader = null;
-	private RunReader _runReader = null;
-	private SampleReader _sampleReader = null;
-	private SoftwareReader _softwareListReader = null;
-	private SourceFileReader _sourceFileReader = null;
+	private MzDbHeaderReader _mzDbHeaderReader;
+	private InstrumentConfigReader _instrumentConfigReader;
+	private RunReader _runReader;
+	private SampleReader _sampleReader;
+	private SoftwareReader _softwareListReader;
+	private SourceFileReader _sourceFileReader;
+	private SharedParamTreeReader _sharedParamTreeReader;
+	private CvReader _cvReader;
+	private CvUnitReader _cvUnitReader;
+	private CvTermReader _cvTermReader;
+	private UserTermReader _userTermReader;
+
 
 	/**
 	 * Instantiates a new mzDB reader (primary constructor). Builds a SQLite connection.
 	 *
 	 * @param dbLocation
 	 *            the db location
-	 * @param cacheEntities
+	 * @param entityCache
 	 *            the cache entities
 	 * @param logConnections
 	 *            the log connections
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the SQLite exception
 	 */
-	public MzDbReader(File dbLocation, MzDbEntityCache entityCache, boolean logConnections) throws ClassNotFoundException, FileNotFoundException,
+	public MzDbReader(File dbLocation, MzDbEntityCache entityCache, boolean logConnections) throws  FileNotFoundException,
 			SQLiteException {
 
 		this.entityCache = entityCache;
 
-		if (logConnections == false) {
+		if (!logConnections) {
 			java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(java.util.logging.Level.OFF);
 		}
 
@@ -103,6 +113,11 @@ public class MzDbReader extends AbstractMzDbReader {
 		this._sampleReader = new SampleReader(this.connection);
 		this._softwareListReader = new SoftwareReader(this.connection);
 		this._sourceFileReader = new SourceFileReader(this.connection);
+		this._sharedParamTreeReader = new SharedParamTreeReader(this.connection);
+		this._cvReader = new CvReader(this.connection);
+		this._cvTermReader = new CvTermReader(this.connection);
+		this._cvUnitReader = new CvUnitReader(this.connection);
+		this._userTermReader = new UserTermReader(this.connection);
 
 		// Instantiates some readers with internal cache (entity cache object)
 		this._dataEncodingReader = new DataEncodingReader(this);
@@ -113,8 +128,18 @@ public class MzDbReader extends AbstractMzDbReader {
 		this.mzDbHeader = this._mzDbHeaderReader.getMzDbHeader();
 
 		// Set the paramNameGetter
-		String pwizMzDbVersion = MzDbReaderQueries.getPwizMzDbVersion(this.connection);
-		this._paramNameGetter = (pwizMzDbVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
+		Software converterSoft = getMzdbConverter();
+		String converterVersion = "";
+		boolean isConverter09Compatible = false;
+		if(converterSoft.getName().equals(ThermoConverterName) || converterSoft.getName().equals(TimsTofConverterName)){
+			converterVersion = converterSoft.getVersion();
+			isConverter09Compatible = true;
+		} else {
+			//Suppose it's raw2mzdb
+			converterVersion = converterSoft.getVersion();
+		}
+
+		this._paramNameGetter = (isConverter09Compatible || converterVersion.compareTo("0.9.1") > 0) ? new MzDBParamName_0_9() : new MzDBParamName_0_8();
 
 		// Set BB sizes
 		this._setBBSizes(this._paramNameGetter);
@@ -127,14 +152,12 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *            the db location
 	 * @param cacheEntities
 	 *            the cache entities
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbReader(File dbLocation, boolean cacheEntities) throws ClassNotFoundException, FileNotFoundException, SQLiteException {
+	public MzDbReader(File dbLocation, boolean cacheEntities) throws  FileNotFoundException, SQLiteException {
 		this(dbLocation, cacheEntities ? new MzDbEntityCache() : null, false);
 	}
 
@@ -145,14 +168,12 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *            the db path
 	 * @param cacheEntities
 	 *            the cache entities
-	 * @throws ClassNotFoundException
-	 *             the class not found exception
 	 * @throws FileNotFoundException
 	 *             the file not found exception
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public MzDbReader(String dbPath, boolean cacheEntities) throws ClassNotFoundException, FileNotFoundException, SQLiteException {
+	public MzDbReader(String dbPath, boolean cacheEntities) throws  FileNotFoundException, SQLiteException {
 		this(new File(dbPath), cacheEntities ? new MzDbEntityCache() : null, false);
 	}
 
@@ -198,10 +219,27 @@ public class MzDbReader extends AbstractMzDbReader {
 		return MzDbReaderQueries.getModelVersion(connection);
 	}
 
+	/*
+	 * Deprecated method as converter is not a necessary a pwiz Converter. Use getMzdbConverter
+	 */
+	@Deprecated
 	public String getPwizMzDbVersion() throws SQLiteException {
 		return MzDbReaderQueries.getPwizMzDbVersion(connection);
 	}
-	
+
+	public Software getMzdbConverter() throws SQLiteException {
+		//Should only be one raw2mzdb OR one ThermoAccess or Timstof converter
+		for(Software nextSoft : getSoftwareList()) {
+			if (nextSoft.getName().endsWith("mzDB")) {
+				return nextSoft;
+			} else if (nextSoft.getName().equals(ThermoConverterName)) {
+				return nextSoft;
+			} else if (nextSoft.getName().equals(TimsTofConverterName)) {
+				return nextSoft;
+			}
+		}
+		return null;
+	}
 
 	/**
 	 * Gets the last time.
@@ -338,7 +376,7 @@ public class MzDbReader extends AbstractMzDbReader {
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */
-	public DataEncoding getDataEncoding(int id) throws SQLiteException {
+	public DataEncoding getDataEncoding(long id) throws SQLiteException {
 		return this._dataEncodingReader.getDataEncoding(id);
 	}
 
@@ -607,16 +645,14 @@ public class MzDbReader extends AbstractMzDbReader {
 	/**
 	 * Gets the spectrum slices. Each returned spectrum slice corresponds to a single spectrum.
 	 *
-	 * @param minmz
+	 * @param minMz
 	 *            the minMz
-	 * @param maxmz
+	 * @param maxMz
 	 *            the maxMz
-	 * @param minrt
+	 * @param minRt
 	 *            the minRt
-	 * @param maxrt
+	 * @param maxRt
 	 *            the maxRt
-	 * @param msLevel
-	 *            the ms level
 	 * @return the spectrum slices
 	 * @throws SQLiteException
 	 *             the sQ lite exception
@@ -739,7 +775,6 @@ public class MzDbReader extends AbstractMzDbReader {
 	/**
 	 * Gets a DIA data RunSlice iterator for a given m/z range
 	 *
-	 * @param msLevel
 	 * @param minParentMz
 	 * @param maxParentMz
 	 * @return the RunSlice iterator
@@ -761,6 +796,10 @@ public class MzDbReader extends AbstractMzDbReader {
 		return this.getAcquisitionMode(connection);
 	}
 
+	public IonMobilityMode getIonMobilityMode() throws SQLiteException {
+		return this.getIonMobilityMode(connection);
+	}
+
 	/**
 	 * Get the DIA IsolationWindows
 	 * 
@@ -776,6 +815,41 @@ public class MzDbReader extends AbstractMzDbReader {
 			this.instrumentConfigs = this._instrumentConfigReader.getInstrumentConfigList();
 		}
 		return this.instrumentConfigs;
+	}
+
+	public List<SharedParamTree> getSharedParamTreeList() throws SQLiteException {
+			if(this.sharedParamTrees == null){
+				this.sharedParamTrees = _sharedParamTreeReader.getSharedParamTreeList();
+			}
+			return sharedParamTrees;
+	}
+
+	public List<CV> getCvList() throws SQLiteException {
+		if(this.allCVs == null){
+			this.allCVs = _cvReader.getCvList();
+		}
+		return allCVs;
+	}
+
+	public List<CVUnit> getCvUnitList() throws SQLiteException {
+		if(this.cvUnits == null){
+			this.cvUnits = _cvUnitReader.getCvUnit();
+		}
+		return cvUnits;
+	}
+
+	public List<CVTerm> getCvTermList() throws SQLiteException {
+		if(this.cvTerms == null){
+			this.cvTerms = _cvTermReader.getCvTerms();
+		}
+		return cvTerms;
+	}
+
+	public List<UserTerm> getUserTermList() throws SQLiteException {
+		if(this.userTerms == null){
+			this.userTerms = _userTermReader.getUserTerms();
+		}
+		return userTerms;
 	}
 
 	public List<Run> getRuns() throws SQLiteException {
@@ -813,9 +887,9 @@ public class MzDbReader extends AbstractMzDbReader {
 	 *            the min mz
 	 * @param maxMz
 	 *            the max mz
-	 * @param msLevel
-	 *            the ms level
-	 * @return the xic
+	 * @param method
+	 *            the Xic method
+	 * @return Peak
 	 * @throws SQLiteException
 	 *             the sQ lite exception
 	 */

@@ -1,5 +1,11 @@
 package fr.profi.mzdb.db.model.params;
 
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
+
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -12,7 +18,7 @@ import javax.xml.bind.annotation.XmlSchemaType;
  * 
  */
 @XmlRootElement(name = "scanList")
-public class ScanList extends AbstractParamTree {
+public class ScanList extends AbstractXMLParamTree {
 
 	@XmlAttribute(required = true)
 	@XmlSchemaType(name = "nonNegativeInteger")
@@ -23,6 +29,10 @@ public class ScanList extends AbstractParamTree {
 
 	public ScanList() {
 	}
+
+	public ScanList(SerializationReader reader) throws IOException {
+		read(reader);
+	}
 	
 	public ScanList(int c) {
 		this.count = c;
@@ -30,6 +40,45 @@ public class ScanList extends AbstractParamTree {
 	
 	public List<ScanParamTree> getScans() {
 		return scans;
+	}
+
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+		super.write(writer);
+
+		writer.writeInt32(count);
+
+		boolean hasData = scans!=null;
+		writer.writeBoolean(hasData);
+		if (hasData) {
+			writer.writeInt32(scans.size());
+			for (SerializationInterface serializableObject : scans) {
+				serializableObject.write(writer);
+			}
+		}
+
+
+
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+		super.read(reader);
+
+		count = reader.readInt32();
+
+		boolean hasData = reader.readBoolean();
+		if (hasData) {
+			int size = reader.readInt32();
+			scans = new ArrayList<>(size);
+			for (int i = 0; i < size; i++) {
+				ScanParamTree element = new ScanParamTree(reader);
+				scans.add(element);
+			}
+		} else {
+			scans = null;
+		}
 	}
 
 }

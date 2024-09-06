@@ -85,7 +85,7 @@ public class BoundingBox implements Comparable<BoundingBox> {
 	/**
 	 * Sets the first spectrum id.
 	 * 
-	 * @param spectrumid the new first spectrum id
+	 * @param spectrumId the new first spectrum id
 	 */
 	public void setFirstSpectrumId(long spectrumId) {
 		_firstSpectrumId = spectrumId;
@@ -97,6 +97,15 @@ public class BoundingBox implements Comparable<BoundingBox> {
 
 	public void setLastSpectrumId(long spectrumId) {
 		_lastSpectrumId = spectrumId;
+	}
+
+
+	public int getMsLevel() {
+		return _msLevel;
+	}
+
+	public void setMsLevel(int msLevel) {
+		this._msLevel = msLevel;
 	}
 
 	/**
@@ -146,9 +155,7 @@ public class BoundingBox implements Comparable<BoundingBox> {
 
 	/**
 	 * As spectrum slices array.
-	 * 
-	 * @param firstSpectrumID the first spectrum id
-	 * @param runSliceID the run slice id
+	 *
 	 * @return the spectrum slice[]
 	 */
 	public SpectrumSlice[] toSpectrumSlices() {

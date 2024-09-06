@@ -33,7 +33,7 @@ public class MzDbEntityCache {
 	
 	protected Map<Integer, ArrayList<Long>> spectrumIdsByTimeIndex = null;
 
-	protected Map<Integer, DataEncoding> dataEncodingById = null;
+	protected Map<Long, DataEncoding> dataEncodingById = null;
 
 	protected Map<Long, DataEncoding> dataEncodingBySpectrumId = null;
 

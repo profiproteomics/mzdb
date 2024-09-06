@@ -30,13 +30,13 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
     this.maxScale=  math.round( ( 110 / spectrumTimeDiffMean ) / 2f ) 
     
     /*baseline and noise estimation, based on CentWave*/
-    val toBeTrimmed = math.round(0.1 * ydata.length) toInt
+    val toBeTrimmed = math.round(0.1 * ydata.length).toInt
     val trimmedYdata = ydata.sorted.slice(toBeTrimmed, ydata.length - toBeTrimmed).map(_.toDouble)
     
     this.baseline = trimmedYdata.sum / trimmedYdata.length
     this.noise = new StandardDeviation().evaluate(trimmedYdata, 0, trimmedYdata.length)
       
-    this.cwtParams = CwtParameters(scales = ( minScale to maxScale by 2f ) toArray, wavelet =  MexicanHat() )
+    this.cwtParams = CwtParameters(scales = ( minScale to maxScale by 2f ).toArray, wavelet =  MexicanHat() )
   }
   
   
@@ -72,7 +72,7 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
     val centroidValue = math.abs(r.maxCoeffPos._3)
     val (mn, mx) = (math.max(maxIdxAtFirstScale - sizeNoise, 0), math.min(maxIdxAtFirstScale + sizeNoise, ydata.length - 1))
     val snrCoeffs = coeffs(this.minScale).map(math.abs(_)).slice(mn, mx).sortBy(x => x)
-    val noiseValue = if (! snrCoeffs.isEmpty) snrCoeffs((0.95 * snrCoeffs.length) toInt) else 0
+    val noiseValue = if (! snrCoeffs.isEmpty) snrCoeffs((0.95 * snrCoeffs.length).toInt) else 0
     val estimatedSNR = centroidValue / noiseValue
     r.SNR = estimatedSNR.toFloat
   }
@@ -137,12 +137,12 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
     var filteredRidges = ridges.filter { x => (!x.isEnded() && x.length >= 0) } //minRidgeLength) }
 
     /*group ridges by the max at first scale*/
-    val ridgesByMaxIndexAtMaxScale = new HashMap[Pair[Float, Int], ArrayBuffer[Ridge]]()
+    val ridgesByMaxIndexAtMaxScale = new HashMap[Tuple2[Float, Int], ArrayBuffer[Ridge]]()
     filteredRidges.foreach { r =>
       val pair = (r.maxCoeffPos._1, r.maxCoeffPos._2) // (maxScale, maxIndexAtMaxScale)
       ridgesByMaxIndexAtMaxScale.getOrElseUpdate(pair, new ArrayBuffer[Ridge]) += r
     }
-    filteredRidges = ridgesByMaxIndexAtMaxScale.map { case (i, ridges) => ridges.maxBy(_.length) } toArray
+    filteredRidges = ridgesByMaxIndexAtMaxScale.map { case (i, ridges) => ridges.maxBy(_.length) }.toArray
 
     /*compute SNR for each ridge*/
     val minimaByRidges = new HashMap[Ridge, Option[(Int, Int)]]
@@ -158,7 +158,7 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
         if (minIdx < maxIdx) {
           val sliced = this.ydata.slice(minIdx, math.min(maxIdx + 1, ydata.length))
           if (!sliced.isEmpty)
-            ridge.SNR = (sliced.max - this.baseline) / this.noise toFloat
+            ridge.SNR =((sliced.max - this.baseline) / this.noise).toFloat
           else
             ridge.SNR = -1000
         } else {
@@ -199,16 +199,16 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
         val xmax = xvalues(intensities.indexOf(intensityMax))
 
         peakels += new CwtPeakel(
-          peaks = slicedPeaks toArray,
+          peaks = slicedPeaks.toArray,
           apexIndex = intensities.indexOf(intensityMax),
           apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
           minIdx = minIdx,
           startLcContext = peaks(minIdx).getLcContext,
           maxIdx = maxIdx,
           endLcContext = peaks(maxIdx).getLcContext,
-          xMax = xmax toFloat,
-          intensityMax = intensityMax toFloat,
-          centroid = centroid toFloat,
+          xMax = xmax.toFloat,
+          intensityMax = intensityMax.toFloat,
+          centroid = centroid.toFloat,
           snr = ridge.SNR
         )
       }

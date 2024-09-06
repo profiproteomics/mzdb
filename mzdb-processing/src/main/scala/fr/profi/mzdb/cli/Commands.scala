@@ -1,17 +1,20 @@
 package fr.profi.mzdb.cli
 
-import java.io.File
-
-import scala.collection.mutable.ArrayBuffer
-import scala.io.Source
-
 import com.typesafe.scalalogging.LazyLogging
-
 import fr.profi.mzdb._
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
+import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
 import fr.profi.mzdb.algo.signal.detection.waveletImpl.WaveletDetectorDuMethod
+import fr.profi.mzdb.io.exporter.SQLiteFeatureStorer
 import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
+import fr.profi.mzdb.io.writer.mgf._
 import fr.profi.mzdb.model._
+import fr.profi.util.stat.EntityHistogramComputer
+import mr.go.sgfilter.SGFilterMath3
+
+import java.io.{File, FileOutputStream, PrintWriter}
+import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 
 /**
@@ -27,14 +30,6 @@ object Commands extends LazyLogging {
     mzTolInPPM: Float,
     algo: String
   ) {
-
-    import java.io.FileOutputStream
-    import java.io.PrintWriter
-    import scala.io.Source
-    import fr.profi.mzdb.algo.signal.detection.BasicPeakelFinder
-    import fr.profi.mzdb.model.Peak
-    import fr.profi.mzdb.model.Peakel
-    import fr.profi.mzdb.MzDbReader
 
     case class DetectedPeak(mz: Double, apex: Peak, duration: Float, area: Float) {
       lazy val intensity: Float = apex.getIntensity()
@@ -178,7 +173,7 @@ object Commands extends LazyLogging {
           } else mz -> None
 
           intSum
-      } toArray
+      }.toArray
 
     } //ends function
 
@@ -243,11 +238,6 @@ object Commands extends LazyLogging {
   }
 
   def extractFeatures(mzdbFilePath: String, putativeFtsFile: String, outputFile: String) {
-    import java.io.FileOutputStream
-    import java.io.PrintWriter
-    //import scala.io.Source
-    import fr.profi.mzdb.MzDbReader
-    import fr.profi.mzdb.io.exporter.SQLiteFeatureStorer
 
     def getPutativeFeatures(): Array[PutativeFeature] = {
       Source.fromFile(putativeFtsFile).getLines.map { l =>
@@ -288,7 +278,6 @@ object Commands extends LazyLogging {
 
   protected def smoothIntensities(intensities: Array[Float]): Array[Float] = {
     val times = 3
-    import mr.go.sgfilter.SGFilterMath3
 
     // TODO: static values
     val (nl, nr, order) = (5, 5, 4)
@@ -307,11 +296,6 @@ object Commands extends LazyLogging {
    *
    */
   def dumpRegion(mzdbFilePath: String, outputFilePath: String, mzmin: Double, mzmax: Double, rtmin: Float, rtmax: Float) {
-    //import java.io.File
-    import java.io.FileOutputStream
-    import java.io.PrintWriter
-    //import scala.io.Source
-    import fr.profi.mzdb.MzDbReader
 
     val start = System.currentTimeMillis()
 
@@ -335,12 +319,6 @@ object Commands extends LazyLogging {
   }
 
   def dumpRegionBinning(mzdbFilePath: String, outputFilePath: String, nbBins: Int, mzmin: Double, mzmax: Double, rtmin: Float, rtmax: Float) {
-    import java.io.FileOutputStream
-    import java.io.PrintWriter
-    //import scala.io.Source
-    import fr.profi.util.stat.EntityHistogramComputer
-    import fr.profi.mzdb.MzDbReader
-    import fr.profi.mzdb.model.Peak
 
     val start = System.currentTimeMillis()
 
@@ -353,14 +331,14 @@ object Commands extends LazyLogging {
     val binner = new EntityHistogramComputer(flattenedPeaksMz, (x: Double) => x)
     val mzBins = binner.calcHistogram(nbBins)
 
-    val mzList = mzBins.map { case (bin, values) => bin.center } toArray
-    val rtList = spectrumSlices.map(_.getHeader().getElutionTime()) toArray
+    val mzList = mzBins.map { case (bin, values) => bin.center }.toArray
+    val rtList = spectrumSlices.map(_.getHeader().getElutionTime()).toArray
     val intList = Array.ofDim[Float](spectrumSlices.length, mzBins.length)
 
     var i = 0
     spectrumSlices.foreach { spectrumSlice =>
       val binner_ = new EntityHistogramComputer(spectrumSlice.toPeaks, (x: Peak) => x.getMz())
-      val bins = binner_.calcHistogram(nbBins, range = Some(Pair(minmz, maxmz)))
+      val bins = binner_.calcHistogram(nbBins, range = Some(Tuple2(minmz, maxmz)))
       var j = 0
       bins.foreach {
         case (bin, values) =>
@@ -380,24 +358,55 @@ object Commands extends LazyLogging {
     val took = (System.currentTimeMillis - start) / 1000f
     logger.info("extraction took: " + took)
   }
-  
+
+  def dumpScanHeaders(mzdbFilePath: String, outputFilePath: String, msLevel: Int) {
+
+    val start = System.currentTimeMillis()
+
+    val mzDbReader = new MzDbReader(mzdbFilePath, true)
+    val outStream = new PrintWriter(new FileOutputStream(outputFilePath))
+
+    if (msLevel == 2) {
+      outStream.println(List("file", "scan", "moz", "charge").mkString("\t"))
+      mzDbReader.getMs2SpectrumHeaders.foreach(sh =>
+          outStream.println(List(mzdbFilePath, sh.getInitialId, sh.getPrecursorMz, sh.getPrecursorCharge).mkString("\t"))
+      )
+    } else {
+      throw new UnsupportedOperationException("Not yet implemented")
+    }
+
+    outStream.close()
+    mzDbReader.close()
+
+    val took = (System.currentTimeMillis - start) / 1000f
+    logger.info("extraction took: " + took)
+  }
+
   // TODO: extract command parameters in method signature ?
   def createMgf(): Unit = {
     
     import fr.profi.mzdb.cli.MzDbProcessing.CreateMgfCommand
-    import fr.profi.mzdb.io.writer.mgf._
 
     logger.info("Creating MGF File for mzDB at: " + CreateMgfCommand.mzdbFile)
     logger.info("Precursor m/z values will be defined using the method: " + CreateMgfCommand.precMzComputation)
 
     val writer = new MgfWriter(CreateMgfCommand.mzdbFile, CreateMgfCommand.msLevel)
     val precCompEnum = PrecursorMzComputationEnum.values().find(_.name() == CreateMgfCommand.precMzComputation.toUpperCase)
-    
+    val specProcessor = new DefaultSpectrumProcessor
+
     if (precCompEnum.isDefined) {
-       writer.write(CreateMgfCommand.outputFile,  precCompEnum.get, CreateMgfCommand.mzTolPPM, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+      writer.write(CreateMgfCommand.outputFile,  new DefaultPrecursorComputer(precCompEnum.get, CreateMgfCommand.mzTolPPM), specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else if (CreateMgfCommand.precMzComputation == "isolation_window_extracted") {
-       val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
-       writer.write(CreateMgfCommand.outputFile, precComputer, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+      val precComputer = new IsolationWindowPrecursorExtractor(CreateMgfCommand.mzTolPPM)
+      writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
+    } else if (CreateMgfCommand.precMzComputation == "mgf_boost") {
+      val precComputer = new MgfBoostPrecursorExtractor(mzTolPPM = CreateMgfCommand.mzTolPPM,
+                                                        useHeader= true,
+                                                        useSW = true,
+                                                        swMaxPrecursorsCount = 1,
+                                                        swIntensityThreshold = 0.2f,
+                                                        scanSelector = ScanSelectorModes.SAME_CYCLE)
+      writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else {
       throw new IllegalArgumentException("Can't create the MGF file, invalid precursor m/z computation method")
     }

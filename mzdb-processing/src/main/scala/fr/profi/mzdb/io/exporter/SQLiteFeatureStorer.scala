@@ -8,7 +8,6 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.jfree.chart._
 import org.jfree.chart.plot.PlotOrientation
-import org.jfree.data._
 import org.jfree.data.xy._
 
 import com.almworks.sqlite4java.SQLiteConnection
@@ -17,7 +16,6 @@ import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
 import fr.profi.mzdb.algo.signal.filtering._
-import fr.profi.mzdb.io.reader.cache.SpectrumHeaderReader
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.Peakel
 import fr.profi.mzdb.util.math.DerivativeAnalysis
@@ -49,7 +47,7 @@ object SQLiteIsolationWindowStorer extends LazyLogging {
     // Configure the SpectrumHeaderReader in order to load all precursor lists when reading spectra headers
     mzDbReader.enablePrecursorListLoading()
     
-    val ms1ShByCycle = mzDbReader.getMs1SpectrumHeaders().map { sh => sh.getCycle() -> sh } toMap
+    val ms1ShByCycle = mzDbReader.getMs1SpectrumHeaders().map { sh => sh.getCycle() -> sh }.toMap
     val ms2SpectrumHeaders = mzDbReader.getMs2SpectrumHeaders().take(1000)
     
     for( sh <- ms2SpectrumHeaders ) {
@@ -68,7 +66,7 @@ object SQLiteIsolationWindowStorer extends LazyLogging {
         if( filteredData != null ) {
           val dataPoints = filteredData.toPeaks(sh).map { peak =>
             Array( (peak.getMz() - 0.00001) -> 0f, peak.getMz() -> peak.getIntensity(), (peak.getMz() + 0.00001) -> 0f)
-          } flatten
+          }.flatten
     
           val chartBytes = createSpectrumChart(dataPoints)
           
@@ -102,7 +100,7 @@ object SQLiteIsolationWindowStorer extends LazyLogging {
     )
                 
     val bi = chartToImage(chart, 800, 600)
-    ChartUtilities.encodeAsPNG( bi )
+    ChartUtils.encodeAsPNG( bi )
   }
   
   protected def chartToImage( chart: JFreeChart, width: Int, height: Int): BufferedImage = { 
@@ -263,7 +261,7 @@ object SQLitePeakelStorer {
     )
                 
     val bi = chartToImage(chart, 400, 300)
-    ChartUtilities.encodeAsPNG( bi )
+    ChartUtils.encodeAsPNG( bi )
   }
   
   protected def chartToImage( chart: JFreeChart, width: Int, height: Int): BufferedImage = { 
@@ -615,7 +613,7 @@ object SQLiteFeatureStorer {
                 )
                 
     val bi = chartToImage(chart, 400, 300)
-    ChartUtilities.encodeAsPNG( bi )
+    ChartUtils.encodeAsPNG( bi )
   }
   
   protected def chartToImage( chart: JFreeChart, width: Int, height: Int):  BufferedImage = { 

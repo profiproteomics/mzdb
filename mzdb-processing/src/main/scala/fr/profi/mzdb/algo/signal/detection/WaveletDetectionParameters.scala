@@ -31,7 +31,7 @@ case class CwtPeakel(
    
   val snr: Float,
    
-  val coeffsAtMaxScale: Array[Pair[Peak, Double]] = null
+  val coeffsAtMaxScale: Array[Tuple2[Peak, Double]] = null
 ) {//extends Peakel( lcContexts, mzValues, intensityValues, leftHwhmValues, rightHwhmValues ) {
   
   def getFirstLcContext() = peaks.head.getLcContext()

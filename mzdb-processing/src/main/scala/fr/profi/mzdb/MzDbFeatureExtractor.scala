@@ -1,18 +1,16 @@
 package fr.profi.mzdb
 
-import scala.collection.JavaConversions.mapAsScalaMap
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
 import scala.collection.mutable.LongMap
-import scala.util.control.Breaks._
-
 import com.typesafe.scalalogging.LazyLogging
-
 import fr.profi.mzdb.algo.FeatureExtractor
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
 import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model._
 import fr.profi.util.collection._
+
+import scala.language.implicitConversions
 
 
 /**
@@ -138,7 +136,7 @@ class MzDbFeatureExtractor(
     //progressPlan( MZFT_STEP1 ).incrementAndGetCount(1)
 
     // Retrieve spectra mapped by their id
-    val spectrumHeaderById = mzDbReader.getSpectrumHeaderById.map { case (i, sh) => i.toLong -> sh } toLongMap
+    val spectrumHeaderById = mzDbReader.getSpectrumHeaderById.asScala.map { case (i, sh) => i.toLong -> sh }.toLongMap
  
     // Compute MS spectra normalization factors
  
@@ -275,7 +273,7 @@ class MzDbFeatureExtractor(
           }
 
           xft
-        } toArray;
+        }.toArray;
 
         if (error != null)
           throw error

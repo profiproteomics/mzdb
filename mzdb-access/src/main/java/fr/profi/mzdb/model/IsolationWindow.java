@@ -1,17 +1,29 @@
 package fr.profi.mzdb.model;
 
+import fr.profi.mzdb.serialization.SerializationInterface;
+import fr.profi.mzdb.serialization.SerializationReader;
+import fr.profi.mzdb.serialization.SerializationWriter;
+
+import java.io.IOException;
+
 /**
- * 
+ *
+ * Used for DIA msLevel2
+ * DIA mode: The mass spectrometer divides the full scan range of mass spectrometry into several windows and selects, fragments, and collects all ions in each window.
  * 
  */
-public class IsolationWindow {
+public class IsolationWindow implements SerializationInterface {
     
-    private final double minMz;
-    private final double maxMz;
-    
+    private double minMz;
+    private double maxMz;
+
+	public IsolationWindow(SerializationReader reader) throws IOException {
+		read(reader);
+	}
+
     public IsolationWindow(double minMz, double maxMz) {
-	this.minMz = minMz;
-	this.maxMz = maxMz;
+			this.minMz = minMz;
+			this.maxMz = maxMz;
     }
     
     public double getMinMz() {
@@ -64,4 +76,17 @@ public class IsolationWindow {
 		return "IsolationWindow [minMz=" + minMz + ", maxMz=" + maxMz + "]";
 	}
 
+	@Override
+	public void write(SerializationWriter writer) throws IOException {
+
+		writer.writeDouble(minMz);
+		writer.writeDouble(maxMz);
+
+	}
+
+	@Override
+	public void read(SerializationReader reader) throws IOException {
+		minMz = reader.readDouble();
+		maxMz = reader.readDouble();
+	}
 }

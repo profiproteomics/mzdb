@@ -20,7 +20,8 @@ class WaveletDetectorDuMethod (peaks: Seq[Peak]) extends AbstractWaveletPeakelFi
   def setCwtParametersParams() = {
     this.minScale = 1
     this.maxScale = 64
-    this.cwtParams = CwtParameters(scales=( minScale to maxScale by 2f ) toArray, wavelet=MexicanHat())
+    this.cwtParams = CwtParameters(scales=( minScale to maxScale by 2f ).toArray, wavelet=MexicanHat())
+  //  this.cwtParams = CwtParameters(scales=( BigDecimal(minScale).floatValue() to BigDecimal(maxScale).floatValue() by BigDecimal(2f).floatValue() ).toArray, wavelet=MexicanHat())
   }
   
   /** */
@@ -55,7 +56,7 @@ class WaveletDetectorDuMethod (peaks: Seq[Peak]) extends AbstractWaveletPeakelFi
     val centroidValue = math.abs(r.maxCoeffPos._3)
     val (mn, mx) = (math.max(maxIdxAtFirstScale - sizeNoise, 0), math.min(maxIdxAtFirstScale + sizeNoise, ydata.length - 1))
     val snrCoeffs = coeffs(this.minScale).map(math.abs(_)).slice(mn, mx).sortBy(x => x)
-    val noiseValue = if (! snrCoeffs.isEmpty) snrCoeffs((0.95 * snrCoeffs.length) toInt) else 0
+    val noiseValue = if (! snrCoeffs.isEmpty) snrCoeffs((0.95 * snrCoeffs.length).toInt) else 0
     val estimatedSNR = centroidValue / noiseValue
     r.SNR = estimatedSNR.toFloat
   }
@@ -144,16 +145,16 @@ class WaveletDetectorDuMethod (peaks: Seq[Peak]) extends AbstractWaveletPeakelFi
       val xmax =  xvalues(intensities.indexOf(intensityMax)) 
       
       new CwtPeakel(
-        peaks = slicedPeaks toArray, 
+        peaks = slicedPeaks.toArray,
         apexIndex = intensities.indexOf(intensityMax),
         apexLcContext = this.peaks(intensities.indexOf(intensityMax)).getLcContext,
         minIdx = minIdx, 
         startLcContext = peaks(minIdx).getLcContext,  
         maxIdx = maxIdx, 
         endLcContext = peaks(maxIdx).getLcContext,
-        xMax = xmax toFloat,
-        intensityMax = intensityMax toFloat,
-        centroid = centroid toFloat,
+        xMax = xmax.toFloat,
+        intensityMax = intensityMax.toFloat,
+        centroid = centroid.toFloat,
         snr = ridge.SNR
       )
     }
