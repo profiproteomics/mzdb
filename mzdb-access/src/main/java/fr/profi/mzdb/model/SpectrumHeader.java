@@ -23,7 +23,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-// TODO: Auto-generated Javadoc
+
 /**
  * The Class SpectrumHeader.
  * 
@@ -282,6 +282,9 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 	}
 
 
+	public void setTitle(String newTitle) {
+		this.title = newTitle;
+	}
 	
 	public void setScanList( ScanList scanList ) {
 		this.scanList = scanList;
