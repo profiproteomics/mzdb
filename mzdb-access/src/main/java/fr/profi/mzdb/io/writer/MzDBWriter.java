@@ -88,7 +88,7 @@ public class MzDBWriter {
     private void createConnection() throws SQLiteException {
 
         sqliteConnection = new SQLiteConnection(tmpDBLocation);
-        sqliteConnection.open(true); //Allow with allow create = truec
+        sqliteConnection.open(true); //Allow with allow create = true
         // See: https://blog.devart.com/increasing-sqlite-performance.html
         sqliteConnection.exec("PRAGMA encoding='UTF-8';");
         sqliteConnection.exec("PRAGMA synchronous=OFF;");
