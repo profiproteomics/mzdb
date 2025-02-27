@@ -93,6 +93,16 @@ public class MgfPrecursor {
     return sb;
   }
 
+  public MgfPrecursor clone(double precMz, int charge, float rt) {
+    MgfPrecursor newPrecursor = new MgfPrecursor(precMz, charge, rt);
+    if (annotations != null) {
+      for (Map.Entry<String, Object> entry : annotations.entrySet()) {
+        newPrecursor.addAnnotation(entry.getKey(), entry.getValue());
+      }
+    }
+    return newPrecursor;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
