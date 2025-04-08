@@ -403,9 +403,7 @@ object Commands extends LazyLogging {
       val precComputer = new MgfBoostPrecursorExtractor(mzTolPPM = CreateMgfCommand.mzTolPPM,
                                                         useHeader= false,
                                                         useSW = true,
-                                                        swMaxPrecursorsCount = 2,
-                                                        swIntensityThreshold = 0.0f,
-                                                        scanSelector = ScanSelectorModes.ALL)
+                                                        scanSelector = ScanSelectorModes.SAME_CYCLE)
       writer.write(CreateMgfCommand.outputFile, precComputer, specProcessor, CreateMgfCommand.intensityCutoff, CreateMgfCommand.exportProlineTitle)
     } else {
       throw new IllegalArgumentException("Can't create the MGF file, invalid precursor m/z computation method")
