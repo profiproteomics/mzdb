@@ -264,7 +264,6 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float,
           val selectedPrec = chunk.maxBy{ p => p.getAnnotation("precursor.signal.total.sw").asInstanceOf[Float]}
           val newPrec = selectedPrec.clone(chunkMeanMz, selectedPrec.getCharge, selectedPrec.getRt)
           selectedPrecursors = selectedPrecursors :+ newPrec
-//          selectedPrecursors = selectedPrecursors :+ selectedPrec
           chunk = Seq(sortedPrec(i))
           chunkMeanMz = sortedPrec(i).getPrecMz
         }
@@ -273,7 +272,6 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float,
       val selectedPrec = chunk.maxBy{ p => p.getAnnotation("precursor.signal.total.sw").asInstanceOf[Float]}
       val newPrec = selectedPrec.clone(chunkMeanMz, selectedPrec.getCharge, selectedPrec.getRt)
       selectedPrecursors = selectedPrecursors :+ newPrec
-//      selectedPrecursors = selectedPrecursors :+ selectedPrec
       selectedPrecursors
     }
 
