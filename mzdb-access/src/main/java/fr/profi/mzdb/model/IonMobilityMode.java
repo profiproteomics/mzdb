@@ -5,11 +5,11 @@ import java.util.List;
 public class IonMobilityMode {
 
   private IonMobilityType mobilityType;
-  private List<String> compensationVoltageValues;
+  private List<String> separationValues;
 
   public IonMobilityMode(IonMobilityType type, List<String> compensationVoltageValues) {
     this.mobilityType = type;
-    this.compensationVoltageValues = compensationVoltageValues;
+    this.separationValues = compensationVoltageValues;
   }
 
   public IonMobilityMode(IonMobilityType type) {
@@ -20,7 +20,7 @@ public class IonMobilityMode {
     return mobilityType;
   }
 
-  public List<String> getCompensationVoltageValues() {
-    return compensationVoltageValues;
+  public List<String> getSeparationValues() {
+    return separationValues;
   }
 }

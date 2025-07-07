@@ -1,38 +1,25 @@
 package fr.profi.mzdb
 
-import java.util.Iterator
-import java.util.concurrent.Executors
-import java.util.concurrent.ThreadPoolExecutor
-
-import scala.beans.BeanProperty
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.LongMap
-import scala.collection.mutable.Queue
-import scala.concurrent._
-import scala.concurrent.duration.Duration
-import scala.util.control.Breaks._
-
 import com.typesafe.scalalogging.LazyLogging
-
+import fr.profi.api.progress._
 import fr.profi.ms.algo.IsotopePatternInterpolator
 import fr.profi.mzdb.algo.feature.extraction.UnsupervisedPeakelDetector
-import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
+import fr.profi.mzdb.algo.signal.detection.{IPeakelFinder, SmartPeakelFinder}
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.util.misc.SetClusterer
 import fr.profi.mzdb.util.ms.MsUtils
 import fr.profi.util.collection._
 import fr.profi.util.stat._
-import fr.profi.api.progress._
-
 import rx.lang.scala.Observable
-import rx.lang.scala.Subject
-import rx.lang.scala.Subscriber
 import rx.lang.scala.schedulers.ExecutionContextScheduler
-import rx.lang.scala.subjects.PublishSubject
+
+import java.util.Iterator
+import java.util.concurrent.{Executors, ThreadPoolExecutor}
+import scala.beans.BeanProperty
+import scala.collection.mutable.{ArrayBuffer, HashMap, HashSet, ListBuffer, LongMap, Queue}
+import scala.concurrent._
+import scala.concurrent.duration.Duration
+import scala.util.control.Breaks._
 
 abstract class PeakelFinderConfig
 
@@ -508,8 +495,6 @@ class MzDbFeatureDetector(
          
           // Retrieve run slices and their corresponding id
           this.logger.debug(s"will process run slice $rsNumber (${rsh.getBeginMz},${rsh.getEndMz})")
-//          if(rsNumber > 3)
-//            throw new RuntimeException("VDS Generated Exception")
 
           // Build the list of obsolete run slices
           val rsNumbersToRemove = for(
