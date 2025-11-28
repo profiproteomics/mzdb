@@ -1,19 +1,12 @@
 package fr.profi.mzdb.peakeldb.io
 
-import java.io.File
-
-import scala.collection.mutable.ArrayBuffer
-
-import com.almworks.sqlite4java.SQLiteConnection
-import com.almworks.sqlite4java.SQLiteStatement
-import com.github.davidmoten.rtree.RTree
-import com.github.davidmoten.rtree.geometry
-
-import fr.profi.mzdb.model.Peakel
-import fr.profi.mzdb.model.PeakelDataMatrix
-import rx.lang.scala.Observable
-import java.util.Arrays
+import com.almworks.sqlite4java.{SQLiteConnection, SQLiteStatement}
+import fr.profi.mzdb.model.{Peakel, PeakelDataMatrix}
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation
+import rx.lang.scala.Observable
+
+import java.io.File
+import scala.collection.mutable.ArrayBuffer
 
 object PeakelDbReader {
 

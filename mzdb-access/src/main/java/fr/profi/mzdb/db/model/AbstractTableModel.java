@@ -1,11 +1,7 @@
 package fr.profi.mzdb.db.model;
 
-import java.io.IOException;
-import java.util.List;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-
 import fr.profi.mzdb.db.model.params.IParamContainer;
 import fr.profi.mzdb.db.model.params.ParamTree;
 import fr.profi.mzdb.db.model.params.param.CVEntry;
@@ -13,12 +9,14 @@ import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
 import fr.profi.mzdb.db.model.params.param.UserText;
 import fr.profi.mzdb.io.reader.table.ParamTreeParser;
+import fr.profi.mzdb.serialization.SerializationInterface;
 import fr.profi.mzdb.serialization.SerializationReader;
 import fr.profi.mzdb.serialization.SerializationWriter;
 import fr.profi.mzdb.util.misc.AbstractInMemoryIdGen;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 
-import fr.profi.mzdb.serialization.SerializationInterface;
+import java.io.IOException;
+import java.util.List;
 
 // TODO: Auto-generated Javadoc
 /**
