@@ -10,7 +10,7 @@
 
     <groupId>fr.profi</groupId>
     <artifactId>mzdb-parent</artifactId>
-    <version>1.3.2quant-SNAPSHOT</version>
+    <version>1.3.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>mzDB-Parent</name>

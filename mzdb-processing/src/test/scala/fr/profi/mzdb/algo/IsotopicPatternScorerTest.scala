@@ -1,5 +1,6 @@
 package fr.profi.mzdb.algo
 
+import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model.SpectrumData
 import org.junit.{Ignore, Test}
 
