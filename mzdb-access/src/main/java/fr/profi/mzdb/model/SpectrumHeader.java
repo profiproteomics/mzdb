@@ -18,7 +18,9 @@ import fr.profi.mzdb.util.sqlite.ISQLiteRecordOperation;
 import fr.profi.mzdb.util.sqlite.SQLiteQuery;
 import fr.profi.mzdb.util.sqlite.SQLiteRecord;
 
+import javax.xml.bind.annotation.XmlRootElement;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -403,11 +405,16 @@ public class SpectrumHeader extends AbstractTableModel implements ILcContext {
 		for (SpectrumHeader header : spectrumHeaders) {
 			if (header.precursor == null) {
 				String precursorAsStr  = precursorBySpecId.get(header.getId());
-				if (precursorAsStr  != null) {
-					header.precursor = ParamTreeParser.parsePrecursor(precursorAsStr);
-					if(cacheStringRepresentation)
-						header.precursorAsString = precursorAsStr;
-				}
+
+        if (precursorAsStr != null && !precursorAsStr.isBlank()) {
+          Annotation listAnnotation = PrecursorList.class.getAnnotation(XmlRootElement.class);
+          if (precursorAsStr.trim().startsWith(((XmlRootElement) listAnnotation).name(), 1)) {
+            header.setPrecursor(ParamTreeParser.parsePrecursorList(precursorAsStr));
+          } else {
+            header.setPrecursor(ParamTreeParser.parsePrecursor(precursorAsStr));
+          }
+        }
+
 			}
 		}
 	}
