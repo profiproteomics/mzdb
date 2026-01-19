@@ -967,13 +967,13 @@ public class MzDBWriter {
     protected Long insertBoundingBoxToWrite(BoundingBoxToWrite bb) throws SQLiteException {
         List<Long> spectrumIds = bb.getSpectrumIds();
         List<SpectrumSliceIndex> spectrumSlices = bb.getSpectrumSlices();
-        int slicesCount = spectrumSlices.size();
-        int bbPeaksCount = 0;
+        int slicesCountToWrite = (int)spectrumSlices.stream().filter(ssi -> (ssi != null) && ssi.peaksCount() > 0).count();
+        int slicesCount = spectrumSlices.size();        int bbPeaksCount = 0;
         for (SpectrumSliceIndex spectrumSliceIndex : spectrumSlices) {
             if (spectrumSliceIndex != null)
                 bbPeaksCount += spectrumSliceIndex.peaksCount();
         }
-        logger.trace("BB " + bb.getId() + " has " + slicesCount + " slicesCount with nbr peaks " + bbPeaksCount);
+        logger.trace("BB " + bb.getId() + " has " + slicesCount + " slicesCount ("+ slicesCountToWrite+"to write) with nbr peaks " + bbPeaksCount);
         DataEncoding dataEnc = bb.getDataEncoding();
         PeakEncoding pe = dataEnc.getPeakEncoding();
 
@@ -982,7 +982,7 @@ public class MzDBWriter {
 
         int peakStructSize = dataEnc.getPeakStructSize();
 
-        int bbLen = (int) (8L * slicesCount) + (peakStructSize * bbPeaksCount);
+        int bbLen = (int) (8L * slicesCountToWrite) + (peakStructSize * bbPeaksCount);
 
         byte[] bbBytes = new byte[bbLen];
         //val bytesBuffer = new scala.collection.mutable.ArrayBuffer[Byte](bbLen.toInt)
@@ -993,51 +993,49 @@ public class MzDBWriter {
         while (sliceIdx < slicesCount) {
 
             Long spectrumId = spectrumIds.get(sliceIdx);
-            bytesBuffer.putInt(spectrumId.intValue());
-
             SpectrumSliceIndex spectrumSliceIdx = spectrumSlices.get(sliceIdx);
 
-            if (spectrumSliceIdx == null)
-                bytesBuffer.putInt(0);
-            else {
+            if ((spectrumSliceIdx != null) && spectrumSliceIdx.peaksCount() > 0) {
+              bytesBuffer.putInt(spectrumId.intValue());
 
-                SpectrumData spectrumData = spectrumSliceIdx.getSpectrumData();
-                float firstPeakIdx = spectrumSliceIdx.getFirstPeakIdx();
-                float lastPeakIdx = spectrumSliceIdx.getLastPeakIdx();
+              SpectrumData spectrumData = spectrumSliceIdx.getSpectrumData();
+              float firstPeakIdx = spectrumSliceIdx.getFirstPeakIdx();
+              float lastPeakIdx = spectrumSliceIdx.getLastPeakIdx();
 
-                int slicePeaksCount = spectrumSliceIdx.peaksCount();
-                bytesBuffer.putInt(slicePeaksCount);
+              int slicePeaksCount = spectrumSliceIdx.peaksCount();
+              bytesBuffer.putInt(slicePeaksCount);
 
-                int i = (int) firstPeakIdx;
-                while (i <= lastPeakIdx) {
+              int i = (int) firstPeakIdx;
+              while (i <= lastPeakIdx) {
 
-                    if (pe == PeakEncoding.HIGH_RES_PEAK) {
-                        bytesBuffer.putDouble(spectrumData.getMzList()[i]);
-                    } else {
-                        bytesBuffer.putFloat(Double.valueOf(spectrumData.getMzList()[i]).floatValue());
-                    }
+                if (pe == PeakEncoding.HIGH_RES_PEAK) {
+                  bytesBuffer.putDouble(spectrumData.getMzList()[i]);
+                } else {
+                  bytesBuffer.putFloat(Double.valueOf(spectrumData.getMzList()[i]).floatValue());
+                }
 
-                    bytesBuffer.putFloat(spectrumData.getIntensityList()[i]);
+                bytesBuffer.putFloat(spectrumData.getIntensityList()[i]);
 
-                    if (dataEnc.getMode().equals(DataMode.FITTED)) {
-                        if (spectrumData.getLeftHwhmList() != null && spectrumData.getLeftHwhmList()[i] > 0.0f)
-                            bytesBuffer.putFloat(spectrumData.getLeftHwhmList()[i]);
-                        else
-                            bytesBuffer.putFloat(0f);
+                if (dataEnc.getMode().equals(DataMode.FITTED)) {
+                  if (spectrumData.getLeftHwhmList() != null && spectrumData.getLeftHwhmList()[i] > 0.0f)
+                    bytesBuffer.putFloat(spectrumData.getLeftHwhmList()[i]);
+                  else
+                    bytesBuffer.putFloat(0f);
 
-                        if (spectrumData.getRightHwhmList() != null && spectrumData.getRightHwhmList()[i] > 0.0f)
-                            bytesBuffer.putFloat(spectrumData.getRightHwhmList()[i]);
-                        else
-                            bytesBuffer.putFloat(0f);
-                    }
+                  if (spectrumData.getRightHwhmList() != null && spectrumData.getRightHwhmList()[i] > 0.0f)
+                    bytesBuffer.putFloat(spectrumData.getRightHwhmList()[i]);
+                  else
+                    bytesBuffer.putFloat(0f);
+                }
 // TODO use mzdb-access ion_mobility branch to enable this feature
 //         if (dataEnc.getMode().equals(DataMode.CENTROID_3D)){
 //           if (spectrumData.getMobilityIndexList() != null)
 //             bytesBuffer.putShort(spectrumData.getMobilityIndexList()[i]);
 //         }
 
-                    i++;
-                }
+                i++;
+              }
+
             }
 
             sliceIdx++;
