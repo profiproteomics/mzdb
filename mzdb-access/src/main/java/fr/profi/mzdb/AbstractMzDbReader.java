@@ -544,8 +544,13 @@ public abstract class AbstractMzDbReader {
 			 * ParamTreeParser.parseParamTree(runParamTree);
 			 */
 
+			List<Run> runs = this.getRuns();
+			Run run0 = runs.get(0);
+			final ParamTree runTree = run0.getParamTree(connection);
+
 			try {
-				final String value = getAcquisitionCVParam(connection, CVEntry.ACQUISITION_PARAMETER);
+				final CVParam cvParam = runTree.getCVParam(CVEntry.ACQUISITION_PARAMETER);
+				final String value = cvParam.getValue();
 				this.acquisitionMode = AcquisitionMode.getAcquisitionMode(value);
 			} catch (Exception e) {
 				this.acquisitionMode = AcquisitionMode.UNKNOWN;
