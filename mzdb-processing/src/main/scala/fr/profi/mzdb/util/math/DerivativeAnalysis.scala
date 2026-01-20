@@ -1,9 +1,6 @@
 package fr.profi.mzdb.util.math
 
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.LongMap
-import fr.profi.util.collection._
+import scala.collection.mutable.{ArrayBuffer, ListBuffer, LongMap}
 
 object DerivativeAnalysis {
   
@@ -72,8 +69,7 @@ object DerivativeAnalysis {
             prevMaxValue = prevValue
             afterMaximum = true
             afterMinimum = false
-          }
-          else if( prevSlope == -1 && afterMaximum ) {
+          } else if( prevSlope == -1 && afterMaximum ) {
             changes += LocalMinimum( values(prevIdx), prevIdx )
             afterMaximum = false
             afterMinimum = true
@@ -86,79 +82,87 @@ object DerivativeAnalysis {
       
     } // ends while
     
-    if( changes.isEmpty )
-      return Array()
-      
-    val firstChange = changes(0)
-    
-    // If needed, add missing initial minimum
-    if( firstChange.isMaximum ) {
-      val firstChangeIdx = firstChange.index
-      
-      // If maximum is the first value
-      if( firstChangeIdx == 0 ) {
-        // We remove it from the array
-        changes.remove(0)
+    if( changes.isEmpty ) {
+      if (values(0) > values(valuesCount-1)) {
+        changes += LocalMaximum(values(0), 0 )
+        changes += LocalMinimum(values(valuesCount-1), valuesCount-1)
       } else {
-        
-        // Search for previous minimum value
-        var prevMinValue = Double.MaxValue
-        var prevMinIndex = -1
-        var idx = 0
-        while (idx <= firstChangeIdx) {
-          val value = values(idx)
-          if (value < prevMinValue) {
-            prevMinValue = value
-            prevMinIndex = idx
-          }
-          idx += 1
-        }
-        
-        // Handle the case where the minimum value equals the maximum value
-        if( prevMinValue != firstChange.value ) {
-          changes.prepend( LocalMinimum( prevMinValue, prevMinIndex ) )
+        changes += LocalMinimum(values(0), 0 )
+        changes += LocalMaximum(values(valuesCount-1), valuesCount-1)
+      }
+//      return Array()
+    } else {
+
+      val firstChange = changes(0)
+
+      // If needed, add missing initial minimum
+      if (firstChange.isMaximum) {
+        val firstChangeIdx = firstChange.index
+
+        // If maximum is the first value
+        if (firstChangeIdx == 0) {
+          // We remove it from the array
+          changes.remove(0)
         } else {
-          changes.prepend( LocalMinimum( values(0), 0 ) )
+
+          // Search for previous minimum value
+          var prevMinValue = Double.MaxValue
+          var prevMinIndex = -1
+          var idx = 0
+          while (idx <= firstChangeIdx) {
+            val value = values(idx)
+            if (value < prevMinValue) {
+              prevMinValue = value
+              prevMinIndex = idx
+            }
+            idx += 1
+          }
+
+          // Handle the case where the minimum value equals the maximum value
+          if (prevMinValue != firstChange.value) {
+            changes.prepend(LocalMinimum(prevMinValue, prevMinIndex))
+          } else {
+            changes.prepend(LocalMinimum(values(0), 0))
+          }
+        }
+      }
+
+      val lastChange = changes.last
+
+      // If needed, add missing final minimum
+      if (lastChange.isMaximum) {
+        val lastChangeIndex = lastChange.index
+        val lastValueIndex = valuesCount - 1
+
+        // If maximum is the last value
+        if (lastChangeIndex == lastValueIndex) {
+          // We remove it from the array
+          changes.remove(lastChangeIndex)
+        } else {
+          //val nextMinWithIndex = indexedValues.slice(lastChange.index, indexedValues.length).minBy(_._1)
+
+          // Search for next minimum value
+          var nextMinValue = Double.MaxValue
+          var nextMinIndex = -1
+          var idx = lastChange.index
+          while (idx <= lastValueIndex) {
+            val value = values(idx)
+            if (value < nextMinValue) {
+              nextMinValue = value
+              nextMinIndex = idx
+            }
+            idx += 1
+          }
+
+          // Handle the case where the minimum value equals the maximum value
+          if (nextMinValue != lastChange.value) {
+            changes.append(LocalMinimum(nextMinValue, nextMinIndex))
+          } else {
+            changes.append(LocalMinimum(values(lastValueIndex), lastValueIndex))
+          }
         }
       }
     }
-    
-    val lastChange = changes.last
-    
-    // If needed, add missing final minimum
-    if( lastChange.isMaximum ) {
-      val lastChangeIndex = lastChange.index
-      val lastValueIndex = valuesCount - 1
-      
-      // If maximum is the last value
-      if( lastChangeIndex == lastValueIndex ) {
-        // We remove it from the array
-        changes.remove(lastChangeIndex)
-      } else {
-        //val nextMinWithIndex = indexedValues.slice(lastChange.index, indexedValues.length).minBy(_._1)
-        
-        // Search for next minimum value
-        var nextMinValue = Double.MaxValue
-        var nextMinIndex = -1
-        var idx = lastChange.index
-        while (idx <= lastValueIndex) {
-          val value = values(idx)
-          if (value < nextMinValue) {
-            nextMinValue = value
-            nextMinIndex = idx
-          }
-          idx += 1
-        }
-        
-        // Handle the case where the minimum value equals the maximum value
-        if( nextMinValue != lastChange.value ) {
-          changes.append( LocalMinimum( nextMinValue, nextMinIndex ) )
-        } else {
-          changes.append( LocalMinimum( values(lastValueIndex), lastValueIndex ) )
-        }
-      }
-    }
-    
     // Check we have an alternation of minima and maxima
     // TODO: remove me if exception not thrown for a while
     /*require(

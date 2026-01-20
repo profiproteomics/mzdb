@@ -1,14 +1,12 @@
 package fr.profi.mzdb.algo.signal.detection
 
-import scala.beans.BeanProperty
-import scala.collection.mutable.ArrayBuffer
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb.Settings
 import fr.profi.mzdb.algo.signal.filtering._
-import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.util.math.DerivativeAnalysis
 import fr.profi.mzdb.util.math.DerivativeAnalysis.ILocalDerivativeChange
-import fr.profi.util.stat._
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * @author David Bouyssie
@@ -83,16 +81,24 @@ class SmartPeakelFinder(
     val miniMaxiCount = miniMaxi.length
     val tmpPeakelsIndices = new ArrayBuffer[(Int,Int)](miniMaxiCount)
     var miniMaxiIdx = 0
-    var prevMinMax: ILocalDerivativeChange = null
+    var prevMin: ILocalDerivativeChange = null
     while (miniMaxiIdx < miniMaxiCount) {
       val curMinMax = miniMaxi(miniMaxiIdx)
       if (curMinMax.isMinimum) {
-        if (prevMinMax != null) {
-          tmpPeakelsIndices += Tuple2(prevMinMax.index, curMinMax.index)
+        if (prevMin != null) {
+          tmpPeakelsIndices += Tuple2(prevMin.index, curMinMax.index)
         }
-        prevMinMax = curMinMax
+        prevMin = curMinMax
       }
       miniMaxiIdx += 1
+    }
+    // Add a first peakel indices if start of signal is a maxima
+    if (miniMaxi.head.isMaximum) {
+      tmpPeakelsIndices.prepend(Tuple2(miniMaxi.head.index, miniMaxi(1).index))
+    }
+
+    if (miniMaxi.last.isMaximum) {
+      tmpPeakelsIndices += Tuple2(prevMin.index, miniMaxi.last.index)
     }
 
     // Refine peakels using BaselineRemover algorithm

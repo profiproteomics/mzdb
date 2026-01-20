@@ -33,7 +33,7 @@ class MzDbFeatureDetectorTest extends StrictLogging {
         )
       )
 
-      val runSliceIterator = new LcMsRunSliceIterator(mzDb, mzDb.getConnection(), 450, 452)
+      val runSliceIterator = new LcMsRunSliceIterator(mzDb, mzDb.getConnection(), 450, 500)
       val detectedPeakels = mzdbFtDetector.detectPeakels(runSliceIterator)
       logger.info("# of peakels detected : " + detectedPeakels.length)
       
@@ -121,24 +121,27 @@ class MzDbFeatureDetectorTest extends StrictLogging {
   @Test
   def testDetectPeakelsFromMS1() = {
 
-    mzDb = new MzDbReader(new File("C:\\Local\\bruley\\Tests\\HF1_022278.mzdb"), true )
+    mzDb = new MzDbReader(new File("C:\\Local\\bruley\\Tests\\DiaNN\\Dataset1Raw\\Asc_004865-1.3.0-dia_patched.mzdb"), true )
     val mzDbFts = try {
 
       val ftDetectorConfig = FeatureDetectorConfig(
         msLevel = 1,
         mzTolPPM = 5.0f,
-        minNbOverlappingIPs = 5)
+        minNbOverlappingIPs = 5,
+        peakelFinderConfig = new SmartPeakelFinderConfig(minPeaksCount = 3))
       // detect peakels
 
       val mzdbFtDetector = new MzDbFeatureDetector(mzDb, ftDetectorConfig)
       // detect peakels
-      val runSliceIterator = new LcMsRunSliceIterator(mzDb, mzDb.getConnection(), 570.8, 570.9)
-      val detectedPeakels = mzdbFtDetector.detectPeakels(runSliceIterator)
+      val runSliceIterator = new LcMsRunSliceIterator(mzDb, mzDb.getConnection(), 865, 866)
+      val detectedPeakels = mzdbFtDetector.detectPeakels(runSliceIterator, nbThreads = Some(1))
       logger.info("# of peakels detected : " + detectedPeakels.length)
       for (peakel <- detectedPeakels) {
-        val intensities = peakel.getIntensityValues
-        val apexPeakelIdx = peakel.apexIndex
-        logger.info("Peak : {}, {}, {}", peakel.getMz(), peakel.getApexIntensity(), peakel.getApexElutionTime()/60.0)
+        if ((Math.abs(peakel.getMz()-865.79) < 0.05) && (Math.abs(peakel.getApexElutionTime()/60.0 - 33.60) < 0.1)) {
+          val intensities = peakel.getIntensityValues
+          val apexPeakelIdx = peakel.apexIndex
+          logger.info("Peak : {}, {}, {}", peakel.getMz(), peakel.getApexIntensity(), peakel.getApexElutionTime() / 60.0)
+        }
       }
 
     } finally {
