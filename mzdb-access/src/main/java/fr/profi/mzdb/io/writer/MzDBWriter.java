@@ -1027,11 +1027,14 @@ public class MzDBWriter {
                   else
                     bytesBuffer.putFloat(0f);
                 }
-// TODO use mzdb-access ion_mobility branch to enable this feature
-//         if (dataEnc.getMode().equals(DataMode.CENTROID_3D)){
-//           if (spectrumData.getMobilityIndexList() != null)
-//             bytesBuffer.putShort(spectrumData.getMobilityIndexList()[i]);
-//         }
+
+               if (dataEnc.getMode().equals(DataMode.CENTROID_3D)){
+                 if (spectrumData.getMobilityIndexList() != null)
+                   bytesBuffer.putShort(spectrumData.getMobilityIndexList()[i]);
+                 else {
+                   bytesBuffer.putShort((short)0);
+                 }
+               }
 
                 i++;
               }
