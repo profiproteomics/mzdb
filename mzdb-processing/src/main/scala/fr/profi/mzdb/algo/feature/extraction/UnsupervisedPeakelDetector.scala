@@ -1,20 +1,14 @@
 package fr.profi.mzdb.algo.feature.extraction
 
-import java.util.BitSet
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.HashSet
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.LongMap
-import scala.util.control.Breaks._
 import com.typesafe.scalalogging.LazyLogging
-import fr.profi.mzdb.algo.signal.detection.HistogramBasedPeakelFinder
+import fr.profi.api.progress._
+import fr.profi.mzdb.algo.signal.detection.{IPeakelFinder, SmartPeakelFinder}
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.util.ms.MsUtils
-import fr.profi.api.progress._
-import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.IPeakelFinder
-import fr.profi.mzdb.algo.signal.detection.SmartPeakelFinder
+
+import java.util.BitSet
+import scala.collection.mutable.{ArrayBuffer, HashMap, LongMap}
+import scala.util.control.Breaks._
 
 object UnsupervisedPeakelDetector {
   
@@ -206,7 +200,7 @@ class UnsupervisedPeakelDetector(
     val apexSpectrumData = apexSpectrum.getData
     val apexMz = apexSpectrumData.getMzList()(apexPeakIdx)
     val apexIntensity = apexSpectrumData.getIntensityList()(apexPeakIdx)
-    
+
     //println("apexMz "+ apexMz)
     //println("apexIntensity "+ apexIntensity)
 

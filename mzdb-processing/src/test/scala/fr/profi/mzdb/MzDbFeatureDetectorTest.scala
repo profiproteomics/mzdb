@@ -1,19 +1,14 @@
 package fr.profi.mzdb
 
 import com.typesafe.scalalogging.StrictLogging
-import org.junit.AfterClass
-import org.junit.Assert
-import org.junit.BeforeClass
-import org.junit.Test
-import org.junit.Before
-import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig
-import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.io.reader.iterator.LcMsRunSliceIterator
 import fr.profi.mzdb.io.reader.provider.RunSliceDataProvider
 import fr.profi.mzdb.model.PutativeFeature
+import org.junit.{Before, Ignore, Test}
+
 import java.io.File
-import org.junit.Ignore
+import scala.collection.mutable.ArrayBuffer
 
 class MzDbFeatureDetectorTest extends StrictLogging {
 
@@ -120,6 +115,36 @@ class MzDbFeatureDetectorTest extends StrictLogging {
       mzDb.close()
     }
     
+  }
+
+  @Ignore
+  @Test
+  def testDetectPeakelsFromMS1() = {
+
+    mzDb = new MzDbReader(new File("C:\\Local\\bruley\\Tests\\HF1_022278.mzdb"), true )
+    val mzDbFts = try {
+
+      val ftDetectorConfig = FeatureDetectorConfig(
+        msLevel = 1,
+        mzTolPPM = 5.0f,
+        minNbOverlappingIPs = 5)
+      // detect peakels
+
+      val mzdbFtDetector = new MzDbFeatureDetector(mzDb, ftDetectorConfig)
+      // detect peakels
+      val runSliceIterator = new LcMsRunSliceIterator(mzDb, mzDb.getConnection(), 570.8, 570.9)
+      val detectedPeakels = mzdbFtDetector.detectPeakels(runSliceIterator)
+      logger.info("# of peakels detected : " + detectedPeakels.length)
+      for (peakel <- detectedPeakels) {
+        val intensities = peakel.getIntensityValues
+        val apexPeakelIdx = peakel.apexIndex
+        logger.info("Peak : {}, {}, {}", peakel.getMz(), peakel.getApexIntensity(), peakel.getApexElutionTime()/60.0)
+      }
+
+    } finally {
+      mzDb.close()
+    }
+
   }
 
 }

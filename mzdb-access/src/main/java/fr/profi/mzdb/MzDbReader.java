@@ -86,7 +86,7 @@ public class MzDbReader extends AbstractMzDbReader {
 
 		// Check if database exists
 		if (!dbLocation.exists()) {
-			throw (new FileNotFoundException("can't find the mzDB file at the given path: "+dbLocation));
+			throw (new FileNotFoundException("can't find the mzDB file at the given path: "+dbLocation.getAbsolutePath()));
 		}
 
 		this.dbLocation = dbLocation;
