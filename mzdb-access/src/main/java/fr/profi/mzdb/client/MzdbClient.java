@@ -8,6 +8,9 @@ import java.io.*;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
+/**
+ * This class use SerializationWriter to send command and write data on a Socket (Should be connected to a MzdbServerWriter)
+ */
 public class MzdbClient {
 
     private SerializationWriter m_writer;
@@ -18,12 +21,9 @@ public class MzdbClient {
     }
 
     public void connect(String host, int port) throws Exception {
-        Socket socket = null;
-        DataOutputStream sockDataOut = null;
-        BufferedReader sockIn = null;
 
         try {
-            socket = new Socket(host, port);
+            Socket socket = new Socket(host, port);
             DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream());
             m_writer = new SerializationWriter(outputStream, 4096);
             m_reader = new SerializationReader(socket.getInputStream());
@@ -76,7 +76,7 @@ public class MzdbClient {
     }
 
     public void exitServer() throws Exception {
-        m_writer.writeInt32(MethodKeys.METHOD_KEY_EXIT);
+        m_writer.writeInt32(MethodKeys.METHOD_KEY_FINISHED);
         m_writer.flush();
     }
 

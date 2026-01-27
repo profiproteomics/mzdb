@@ -1,7 +1,8 @@
 package fr.profi.mzdb.algo
 
+import fr.profi.mzdb.MzDbReader
 import fr.profi.mzdb.model.SpectrumData
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 class IsotopicPatternScorerTest {
 
@@ -70,5 +71,28 @@ class IsotopicPatternScorerTest {
     val predictions = DotProductPatternScorer.calcIsotopicPatternHypotheses(spectrumData, 785.41167, 5)
     predictions.length
     ()
+  }
+
+  @Ignore
+  def testFromSpectrumData() =  {
+
+    val mzDb = new MzDbReader("C:/Local/bruley/Tests/MGF/Data/mzdb-converter-1.2.1/Xpl1_002787.mzdb", true)
+    mzDb.enableScanListLoading()
+    mzDb.enablePrecursorListLoading()
+    val spectrum = mzDb.getSpectrum(122873)
+    val putativePatterns = DotProductPatternScorer.calcIsotopicPatternHypotheses(spectrum.getData, 1322.7196, 10.0)
+    val bestPattern = DotProductPatternScorer.selectBestPatternHypothese(putativePatterns)
+    val spectrum2 = mzDb.getSpectrum(122930)
+    val putativePatterns2 = DotProductPatternScorer.calcIsotopicPatternHypotheses(spectrum2.getData, 1322.7148, 10.0)
+    val bestPattern2 = DotProductPatternScorer.selectBestPatternHypothese(putativePatterns2)
+    mzDb.close()
+
+//    val mzDb = new MzDbReader("C:/Local/bruley/Tests/MGF/Data/mzdb-converter-1.2.1/Xpl1_002787.mzdb", true)
+//    mzDb.enableScanListLoading()
+//    mzDb.enablePrecursorListLoading()
+//    val spectrum = mzDb.getSpectrum(122873)
+//    val putativePatterns = DotProductPatternScorer.calcIsotopicPatternHypotheses(spectrum.getData, 1322.2038, 10.0)
+//    mzDb.close()
+
   }
 }

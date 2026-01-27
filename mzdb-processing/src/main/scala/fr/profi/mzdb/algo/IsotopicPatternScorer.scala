@@ -182,8 +182,14 @@ object DotProductPatternScorer extends IIsotopicPatternScorer {
       var product = 0.0
       var k = 0
 
-      var weights = expected.take(6)
-      weights = weights.map( _ / weights.sum)
+      var sum = 0.0
+      for(i <- 0 until 6) {
+        sum = sum + expected(i)
+      }
+      val weights = Array.ofDim[Double](6)
+      for(i <- 0 until 6) {
+        weights(i) = expected(i)/sum
+      }
 
       while ( (k < observed.length) ) {
         val weight = if (k < weights.size) { weights(k) } else { 0.0 }
