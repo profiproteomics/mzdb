@@ -588,20 +588,43 @@ public abstract class AbstractMzDbReader {
 	 * @throws SQLiteException
 	 */
 	protected IonMobilityMode getIonMobilityMode(SQLiteConnection connection) throws SQLiteException {
-	//FIXME : this works only for Thermo instruments !
 		if (this.ionMobility == null) {
-			this.ionMobility = Optional.empty();
-			List<String> compensationVoltageValues = new ArrayList<>();
-			for (String line : extractFromInstrumentMethod("FAIMS CV")) {
-				String cvName = line.substring(8).trim();
-				if (cvName.startsWith("="))
-					cvName = cvName.substring(1);
-				compensationVoltageValues.add(cvName.trim());
-			}
-			if (!compensationVoltageValues.isEmpty()) {
-				this.ionMobility = Optional.of(new IonMobilityMode(IonMobilityType.FAIMS, compensationVoltageValues));
-			}
-		}
+      // try to extract CV from instrument method found in Run.param_tree.userTexts
+      this.ionMobility = Optional.empty();
+      List<String> separationValues = new ArrayList<>();
+      for (String line : extractFromInstrumentMethod("FAIMS CV")) {
+        String cvName = line.substring(8).trim();
+        if (cvName.startsWith("="))
+          cvName = cvName.substring(1);
+        separationValues.add(cvName.trim());
+      }
+      if (!separationValues.isEmpty()) {
+        this.ionMobility = Optional.of(new IonMobilityMode(IonMobilityType.FAIMS, separationValues));
+      } else {
+        // if not found, try to extract ion mobility separation from Run.param_tree.cvParams
+        final ParamTree runTree = this.getRuns().get(0).getParamTree(connection);
+        final CVParam cvParam = runTree.getCVParam(CVEntry.ION_MOBILITY_SEPARATION);
+        final String value = cvParam == null ? null : cvParam.getValue();
+        if (value != null) {
+          this.ionMobility = Optional.of(new IonMobilityMode(IonMobilityType.valueOf(value.toUpperCase())));
+          if (this.ionMobility.get().getIonMobilityType() == IonMobilityType.TIMS) {
+            final Optional<SharedParamTree> ionMobilityParams = sharedParamTrees.stream().filter(sp -> sp.getSchemaName().equals("IonMobilityParams")).findFirst();
+            if (ionMobilityParams.isPresent()) {
+              String text = ionMobilityParams.get().getData().getUserTexts().get(0).getText();
+              String[] lines = text.split("\n");
+              final List<String> stringList = Arrays.stream(lines).filter(s -> s.contains(";")).toList();
+              String[] values = new String[stringList.size()];
+              for (String s : stringList) {
+                int idx = s.indexOf(';');
+                values[Integer.parseInt(s.substring(0, idx))] = s.substring(idx + 1);
+              }
+              separationValues = Arrays.asList(values);
+              this.ionMobility = Optional.of(new IonMobilityMode(IonMobilityType.TIMS, separationValues));
+            }
+          }
+        }
+      }
+    }
 		return this.ionMobility.orElse(null);
 	}
 

@@ -404,6 +404,11 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float,
       }
     }
 
+//    if (targetedSlice.isDefined)
+//      logger.debug(s"ms2 header ${spectrumHeader.getSpectrumId}, scan_selector ${scanSelector}, targetedSlice: ${targetedSlice.get.getSpectrumId}")
+//    else
+//      logger.debug(s"ms2 header ${spectrumHeader.getSpectrumId}, scan_selector ${scanSelector}, targetedSlice: NONE ")
+
     SpectrumDataSource(spectrumHeader,
       Array(minmz,maxmz),
       targetedSlice)
