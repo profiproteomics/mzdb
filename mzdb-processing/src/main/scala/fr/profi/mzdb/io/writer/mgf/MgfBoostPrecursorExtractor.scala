@@ -395,8 +395,10 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float,
         if (scanSelector.equals(ScanSelectorModes.NEAREST) || !targetedSlice.isDefined) {
           val time = spectrumHeader.getElutionTime
           val filteredSlices = spectrumSlices.filter(x => !hasIonMobility || cvOpt.get == MgfBoostPrecursorExtractor.readIonMobilityCV(x.getHeader).get)
-          val slice = filteredSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
-          targetedSlice = Some(slice)
+          if (filteredSlices.nonEmpty) {
+            val slice = filteredSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
+            targetedSlice = Some(slice)
+          }
         }
 
       }
@@ -471,8 +473,10 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float,
         if (scanSelectors.contains(ScanSelectorModes.NEAREST)) {
           val time = spectrumHeader.getElutionTime
           val filteredSlices = spectrumSlices.filter(x => !hasIonMobility || cvOpt.get == MgfBoostPrecursorExtractor.readIonMobilityCV(x.getHeader).get)
-          val slice = filteredSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
-          spectrumSourceMap += (ScanSelectorModes.NEAREST -> SpectrumDataSource(spectrumHeader, Array(minmz, maxmz), Some(slice)))
+          if (filteredSlices.nonEmpty) {
+            val slice = filteredSlices.minBy { x => Math.abs(x.getHeader.getElutionTime - time) }
+            spectrumSourceMap += (ScanSelectorModes.NEAREST -> SpectrumDataSource(spectrumHeader, Array(minmz, maxmz), Some(slice)))
+          }
         }
       }
     }
