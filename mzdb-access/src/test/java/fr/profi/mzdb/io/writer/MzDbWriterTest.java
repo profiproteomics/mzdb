@@ -337,7 +337,6 @@ public class MzDbWriterTest {
 
         while (iterator.hasNext()) {
           Spectrum spectrum = iterator.next();
-          System.out.println(" READ Spectrum --- "+spectrum.getHeader().getSpectrumId());
           SpectrumData data = spectrum.getData();
           int s = data.getIntensityList().length;
           Assert.assertEquals(s, data.getMzList().length);
