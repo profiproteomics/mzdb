@@ -101,27 +101,6 @@ public class MzDbWriterTest {
         mzDbWriter.insertSpectrum(sp, smd, deBySpId.get(sh.getId()));
       }
 
-//      // read Spectrum
-//      int spectrumIndex = 0;
-//      try {
-//        Iterator<Spectrum> iterator = new SpectrumIterator(mzDb, mzDb.getConnection());
-//
-//        while (iterator.hasNext()) {
-//          Spectrum spectrum = iterator.next();
-//          System.out.println(" READ Spectrum --- "+spectrum.getHeader().getSpectrumId());
-//          SpectrumData data = spectrum.getData();
-//          int s = data.getIntensityList().length;
-//          Assert.assertEquals(s, data.getMzList().length);
-//          Assert.assertEquals(s, data.getLeftHwhmList().length);
-//          Assert.assertEquals(s, data.getRightHwhmList().length);
-//          spectrumIndex++;
-//        }
-//        Assert.assertEquals(expectedCycleCount_OVEMB150205_12, spectrumIndex);
-//      } catch (Exception e) {
-//        System.out.println(" ERROR on iteration "+spectrumIndex);
-//        e.printStackTrace();
-//      }
-//      System.out.print(".");
     } catch (SQLiteException | StreamCorruptedException e) {
       e.printStackTrace();
       Assert.fail("MzDB writer exception " + e.getMessage() );
@@ -153,139 +132,139 @@ public class MzDbWriterTest {
     Assert.assertNotNull("Reader cannot be created", mzDb);
     System.out.print(".");
 
-//    //Read SharedParamTree
-//    try {
-//      List<SharedParamTree> sharedParamTrees = mzDb.getSharedParamTreeList();
-//      Assert.assertEquals(1, sharedParamTrees.size());
-//
-//      List<CVParam> params = sharedParamTrees.get(0).getData().getCVParams();
-//      boolean found = false;
-//      String cvName ="";
-//      for(CVParam p : params){
-//        if (p.getAccession().equals(expectedSharedParam_CVMS1001742_ACCESSION)) {
-//          found = true;
-//          cvName = p.getName();
-//          break;
-//        }
-//      }
-//
-//      Assert.assertTrue(found);
-//      Assert.assertEquals(expectedSharedParam_CVMS1001742_NAME, cvName);
-//
-//    } catch (SQLiteException e) {
-//      Assert.fail("SharedParamTree exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    //Read CV data
-//    try {
-//      List<CV> cVs = mzDb.getCvList();
-//      Assert.assertEquals(1, cVs.size());
-//
-//      String id = cVs.get(0).getCvId();
-//      Assert.assertEquals(expectedCV_ID, id);
-//
-//
-//      List<CVUnit> units = mzDb.getCvUnitList();
-//      Assert.assertEquals(5, units.size());
-//
-//      String accession = units.get(3).getAccession();
-//      Assert.assertEquals(expectedCVUNIT_3_ACCESSION, accession);
-//      System.out.print(".");
-//    } catch (SQLiteException e) {
-//      Assert.fail("SharedParamTree exception " + e.getMessage() + " for " + filename);
-//    }
-//
-//    // Bounding boxes size
-//    try {
-//      BBSizes bbSizes = mzDb.getBBSizes();
-//      Assert.assertEquals("BBSize " + filename + " invalid", expectedBBSizes_OVEMB150205_12, bbSizes);
-//    } catch (SQLiteException e) {
-//      Assert.fail("BBSizes exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // Bounding boxes count
-//    try {
-//      int bbCount = mzDb.getBoundingBoxesCount();
-//      Assert.assertEquals("BBCount " + filename + " invalid", expectedBBCount_NEW_OVEMB150205_12, bbCount);
-//    } catch (SQLiteException e) {
-//      Assert.fail("BBCount exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // Cycle count
-//    try {
-//      int cycleCount = mzDb.getCyclesCount();
-//      Assert.assertEquals("CycleCount " + filename + " invalid", expectedCycleCount_OVEMB150205_12,
-//              cycleCount);
-//    } catch (SQLiteException e) {
-//      Assert.fail("CycleCount exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // Run Slice count
-//    try {
-//      int runSliceCount = mzDb.getRunSlicesCount();
-//      Assert.assertEquals("RunSliceCount " + filename + " invalid", expectedRunSliceCount_OVEMB150205_12, runSliceCount);
-//    } catch (SQLiteException e) {
-//      Assert.fail("RunSliceCount exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // Spectrum count
-//    try {
-//      int spectrumCount = mzDb.getSpectraCount();
-//      Assert.assertEquals("SpectrumCount " + filename + " invalid", expectedSpectrumCount_OVEMB150205_12, spectrumCount);
-//    } catch (SQLiteException e) {
-//      Assert.fail("SpectrumCount exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // Data Encoding count
-//    try {
-//      int dataEncodingCount = mzDb.getDataEncodingsCount();
-//      Assert.assertEquals("DataEncodingCount " + filename + " invalid",  expectedDataEncodingCount_NEW_OVEMB150205_12, dataEncodingCount);
-//    } catch (SQLiteException e) {
-//      Assert.fail("DataEncodingCount exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // Max MS Level
-//    try {
-//      int maxMSLevel = mzDb.getMaxMsLevel();
-//      Assert.assertEquals("MaxMSLevel " + filename + " invalid", expectedMaxMSLevel_OVEMB150205_12, maxMSLevel);
-//    } catch (SQLiteException e) {
-//      Assert.fail("MaxMSLevel exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // Max MS Level
-//    try {
-//      float lastRTTime = mzDb.getLastTime();
-//      Assert.assertEquals("lastRTTime " + filename + " invalid", expectedLastRTTime_OVEMB150205_12, lastRTTime, FLOAT_EPSILON);
-//    } catch (SQLiteException e) {
-//      Assert.fail("lastRTTime exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // read Model Version
-//    try {
-//      String modelVersion = mzDb.getModelVersion();
-//      Assert.assertEquals("ModelVersion " + filename + " invalid", expectedModelVersion, modelVersion);
-//    } catch (SQLiteException e) {
-//      Assert.fail("version exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
-//
-//    // read Acquisition Mode
-//    try {
-//      AcquisitionMode acquisitionMode = mzDb.getAcquisitionMode();
-//      Assert.assertEquals("AcquisitionMode " + filename + " invalid", expectedAcquisitionMode, acquisitionMode);
-//    } catch (SQLiteException e) {
-//      Assert.fail("version exception " + e.getMessage() + " for " + filename);
-//    }
-//    System.out.print(".");
+    //Read SharedParamTree
+    try {
+      List<SharedParamTree> sharedParamTrees = mzDb.getSharedParamTreeList();
+      Assert.assertEquals(1, sharedParamTrees.size());
+
+      List<CVParam> params = sharedParamTrees.get(0).getData().getCVParams();
+      boolean found = false;
+      String cvName ="";
+      for(CVParam p : params){
+        if (p.getAccession().equals(expectedSharedParam_CVMS1001742_ACCESSION)) {
+          found = true;
+          cvName = p.getName();
+          break;
+        }
+      }
+
+      Assert.assertTrue(found);
+      Assert.assertEquals(expectedSharedParam_CVMS1001742_NAME, cvName);
+
+    } catch (SQLiteException e) {
+      Assert.fail("SharedParamTree exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    //Read CV data
+    try {
+      List<CV> cVs = mzDb.getCvList();
+      Assert.assertEquals(1, cVs.size());
+
+      String id = cVs.get(0).getCvId();
+      Assert.assertEquals(expectedCV_ID, id);
+
+
+      List<CVUnit> units = mzDb.getCvUnitList();
+      Assert.assertEquals(5, units.size());
+
+      String accession = units.get(3).getAccession();
+      Assert.assertEquals(expectedCVUNIT_3_ACCESSION, accession);
+      System.out.print(".");
+    } catch (SQLiteException e) {
+      Assert.fail("SharedParamTree exception " + e.getMessage() + " for " + filename);
+    }
+
+    // Bounding boxes size
+    try {
+      BBSizes bbSizes = mzDb.getBBSizes();
+      Assert.assertEquals("BBSize " + filename + " invalid", expectedBBSizes_OVEMB150205_12, bbSizes);
+    } catch (SQLiteException e) {
+      Assert.fail("BBSizes exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // Bounding boxes count
+    try {
+      int bbCount = mzDb.getBoundingBoxesCount();
+      Assert.assertEquals("BBCount " + filename + " invalid", expectedBBCount_NEW_OVEMB150205_12, bbCount);
+    } catch (SQLiteException e) {
+      Assert.fail("BBCount exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // Cycle count
+    try {
+      int cycleCount = mzDb.getCyclesCount();
+      Assert.assertEquals("CycleCount " + filename + " invalid", expectedCycleCount_OVEMB150205_12,
+              cycleCount);
+    } catch (SQLiteException e) {
+      Assert.fail("CycleCount exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // Run Slice count
+    try {
+      int runSliceCount = mzDb.getRunSlicesCount();
+      Assert.assertEquals("RunSliceCount " + filename + " invalid", expectedRunSliceCount_OVEMB150205_12, runSliceCount);
+    } catch (SQLiteException e) {
+      Assert.fail("RunSliceCount exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // Spectrum count
+    try {
+      int spectrumCount = mzDb.getSpectraCount();
+      Assert.assertEquals("SpectrumCount " + filename + " invalid", expectedSpectrumCount_OVEMB150205_12, spectrumCount);
+    } catch (SQLiteException e) {
+      Assert.fail("SpectrumCount exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // Data Encoding count
+    try {
+      int dataEncodingCount = mzDb.getDataEncodingsCount();
+      Assert.assertEquals("DataEncodingCount " + filename + " invalid",  expectedDataEncodingCount_NEW_OVEMB150205_12, dataEncodingCount);
+    } catch (SQLiteException e) {
+      Assert.fail("DataEncodingCount exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // Max MS Level
+    try {
+      int maxMSLevel = mzDb.getMaxMsLevel();
+      Assert.assertEquals("MaxMSLevel " + filename + " invalid", expectedMaxMSLevel_OVEMB150205_12, maxMSLevel);
+    } catch (SQLiteException e) {
+      Assert.fail("MaxMSLevel exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // Max MS Level
+    try {
+      float lastRTTime = mzDb.getLastTime();
+      Assert.assertEquals("lastRTTime " + filename + " invalid", expectedLastRTTime_OVEMB150205_12, lastRTTime, FLOAT_EPSILON);
+    } catch (SQLiteException e) {
+      Assert.fail("lastRTTime exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // read Model Version
+    try {
+      String modelVersion = mzDb.getModelVersion();
+      Assert.assertEquals("ModelVersion " + filename + " invalid", expectedModelVersion, modelVersion);
+    } catch (SQLiteException e) {
+      Assert.fail("version exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
+
+    // read Acquisition Mode
+    try {
+      AcquisitionMode acquisitionMode = mzDb.getAcquisitionMode();
+      Assert.assertEquals("AcquisitionMode " + filename + " invalid", expectedAcquisitionMode, acquisitionMode);
+    } catch (SQLiteException e) {
+      Assert.fail("version exception " + e.getMessage() + " for " + filename);
+    }
+    System.out.print(".");
 
     // read DIA Isolation Window
     // FIXME: test has
@@ -304,52 +283,52 @@ public class MzDbWriterTest {
     // }
     // System.out.print(".");
 
-//    try {
-//      SpectrumSlice[] spectrumSlices = mzDb.getMsSpectrumSlices(minMz_OVEMB150205_12, maxMz_OVEMB150205_12,
-//              minRt_OVEMB150205_12, maxRt_OVEMB150205_12);
-//      Assert.assertNotNull(spectrumSlices);
-//      Assert.assertEquals(expectedSpectrumSlicesCount_OVEMB150205_12, spectrumSlices.length);
-//      int nbIntensities = 0;
-//      int nbPeaks = 0;
-//      double sumIntensities = 0;
-//      double sumMz = 0;
-//      for (SpectrumSlice spectrumSlice : spectrumSlices) {
-//        for (double intensity : spectrumSlice.getData().getIntensityList()) {
-//          sumIntensities += intensity;
-//        }
-//        for (double mz : spectrumSlice.getData().getMzList()) {
-//          sumMz += mz;
-//        }
-//        nbIntensities += spectrumSlice.getData().getIntensityList().length;
-//        nbIntensities += spectrumSlice.getData().getPeaksCount();
-//      }
-//      Assert.assertEquals(expectedSumIntensities, sumIntensities, 1);
-//      Assert.assertEquals(expectedSumMz, sumMz, 1E-2);
-//      Assert.assertEquals(expectedNbIntensities, nbIntensities);
-//      Assert.assertEquals(expectedNbPeaks, nbPeaks);
-//    } catch (StreamCorruptedException | SQLiteException e1) {
-//      Assert.fail("spectrum slices extraction throws exception " + e1.getMessage());
-//    }
-//    System.out.print(".");
+    try {
+      SpectrumSlice[] spectrumSlices = mzDb.getMsSpectrumSlices(minMz_OVEMB150205_12, maxMz_OVEMB150205_12,
+              minRt_OVEMB150205_12, maxRt_OVEMB150205_12);
+      Assert.assertNotNull(spectrumSlices);
+      Assert.assertEquals(expectedSpectrumSlicesCount_OVEMB150205_12, spectrumSlices.length);
+      int nbIntensities = 0;
+      int nbPeaks = 0;
+      double sumIntensities = 0;
+      double sumMz = 0;
+      for (SpectrumSlice spectrumSlice : spectrumSlices) {
+        for (double intensity : spectrumSlice.getData().getIntensityList()) {
+          sumIntensities += intensity;
+        }
+        for (double mz : spectrumSlice.getData().getMzList()) {
+          sumMz += mz;
+        }
+        nbIntensities += spectrumSlice.getData().getIntensityList().length;
+        nbIntensities += spectrumSlice.getData().getPeaksCount();
+      }
+      Assert.assertEquals(expectedSumIntensities, sumIntensities, 1);
+      Assert.assertEquals(expectedSumMz, sumMz, 1E-2);
+      Assert.assertEquals(expectedNbIntensities, nbIntensities);
+      Assert.assertEquals(expectedNbPeaks, nbPeaks);
+    } catch (StreamCorruptedException | SQLiteException e1) {
+      Assert.fail("spectrum slices extraction throws exception " + e1.getMessage());
+    }
+    System.out.print(".");
 
     // read Run & Sample
     try {
-//      List<Run> runs = mzDb.getRuns();
-//      Assert.assertEquals(1, runs.size());
-//      List<Sample> samples = mzDb.getSamples();
-//      Assert.assertEquals(1, samples.size());
-//      for (Run run : runs) {
-//        Assert.assertEquals("OVEMB150205_12", run.getName());
-//        Assert.assertEquals(1, run.getId());
-//        List<CVParam> cvParams = run.getCVParams();
-//        Assert.assertEquals(expectedCvParamsCount, cvParams.size());
-//        List<UserParam> userParams = run.getUserParams();
-//        Assert.assertEquals(0, userParams.size());
-//        List<UserText> userText = run.getUserTexts();
-//        Assert.assertEquals(0, userText.size());
-//      }
-//      Assert.assertEquals("UPS1 5fmol R1", samples.get(0).getName());
-//      System.out.print(".");
+      List<Run> runs = mzDb.getRuns();
+      Assert.assertEquals(1, runs.size());
+      List<Sample> samples = mzDb.getSamples();
+      Assert.assertEquals(1, samples.size());
+      for (Run run : runs) {
+        Assert.assertEquals("OVEMB150205_12", run.getName());
+        Assert.assertEquals(1, run.getId());
+        List<CVParam> cvParams = run.getCVParams();
+        Assert.assertEquals(expectedCvParamsCount, cvParams.size());
+        List<UserParam> userParams = run.getUserParams();
+        Assert.assertEquals(0, userParams.size());
+        List<UserText> userText = run.getUserTexts();
+        Assert.assertEquals(0, userText.size());
+      }
+      Assert.assertEquals("UPS1 5fmol R1", samples.get(0).getName());
+      System.out.print(".");
 
       // read Spectrum
       int spectrumIndex = 0;
