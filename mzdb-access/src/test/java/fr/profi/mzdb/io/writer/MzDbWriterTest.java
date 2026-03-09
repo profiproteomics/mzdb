@@ -333,7 +333,7 @@ public class MzDbWriterTest {
       // read Spectrum
       int spectrumIndex = 0;
       try {
-        Iterator<Spectrum> iterator = new SpectrumIterator(mzDb, mzDb.getConnection());
+        Iterator<Spectrum> iterator = new SpectrumIterator(mzDb, mzDb.getConnection(), 1);
 
         while (iterator.hasNext()) {
           Spectrum spectrum = iterator.next();
