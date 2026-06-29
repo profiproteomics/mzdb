@@ -85,6 +85,7 @@ object PeakelDbHelper {
     else None
   }
 
+
   def findMatchingPeakel(
       coelutingPeakels: Seq[Peakel],
       putativeFt: PutativeFeature,
@@ -95,10 +96,80 @@ object PeakelDbHelper {
       metric: Metric
   ): Option[(Peakel,Boolean)] = {
 
+    val filteredPeakelsOpt = selectMatchingPeakels(
+      coelutingPeakels,
+      putativeFt,
+      mappingMozTolPpm,
+      extractionMozTolPpm,
+      assignedMzDbPeakelIdSetOpt,
+      multiMatchedMzDbPeakelIdsOpt,
+      metric)
+
+      if (filteredPeakelsOpt.isDefined) {
+        selectMatchingPeakel(putativeFt, filteredPeakelsOpt.get, metric)
+      } else {
+        None
+      }
+  }
+
+   def selectMatchingPeakel(
+       putativeFt: PutativeFeature,
+       filteredPeakels: ArrayBuffer[(Peakel, Boolean)],
+       metric: Metric) = {
+
+    if (filteredPeakels.isEmpty) {
+      metric.incr("missing peakel: no peakel matching")
+      None
+    } else if (filteredPeakels.length == 1) {
+      metric.incr("missing peakel: only one peakel matching")
+      if (filteredPeakels.head._2) {
+        metric.incr("missing peakel: only one peakel matching which is reliable")
+      }
+      Some(filteredPeakels.head)
+    } else {
+
+      val peakelMz = putativeFt.mz
+      val avgTime = putativeFt.elutionTime
+
+      var reliablePeakels = filteredPeakels.filter(_._2)
+
+      if (reliablePeakels.isEmpty) {
+        metric.incr("no.reliable.peakel.found")
+        reliablePeakels = filteredPeakels
+      }
+      // sort reliablePeakels by mz distance to ensure minBy always returns the same value
+      reliablePeakels.sortWith { (p1, p2) => math.abs(peakelMz - p1._1.getApexMz) < math.abs(peakelMz - p2._1.getApexMz) }
+
+      val nearestPeakelInTime = reliablePeakels.minBy { case (peakel, isReliable) =>
+        math.abs(avgTime - peakel.calcWeightedAverageTime())
+      }
+
+      if (true) { // fake condition to isolate metrics computation
+        val nearestFilteredPeakelInTime = filteredPeakels.minBy { case (peakel, isReliable) =>
+          math.abs(avgTime - peakel.calcWeightedAverageTime())
+        }
+        if (nearestFilteredPeakelInTime != nearestPeakelInTime) {
+          metric.incr("nearestPeakelInTime.not.reliable")
+        }
+        metric.addValue("missing peakel: delta moz", MsUtils.DaToPPM(peakelMz, peakelMz - nearestPeakelInTime._1.getApexMz()))
+      }
+
+      Some(nearestPeakelInTime)
+    }
+  }
+
+   def selectMatchingPeakels(
+       coelutingPeakels: Seq[Peakel],
+       putativeFt: PutativeFeature,
+       mappingMozTolPpm: Float,
+       extractionMozTolPpm: Float,
+       assignedMzDbPeakelIdSetOpt: Option[Set[Int]],
+       multiMatchedMzDbPeakelIdsOpt: Option[Seq[Int]],
+       metric: Metric) : Option[ArrayBuffer[(Peakel, Boolean)]] = {
+
     val peakelMz = putativeFt.mz
     val charge = putativeFt.charge
     val minTime = putativeFt.elutionTime - putativeFt.elutionTimeTolerance
-    val avgTime = putativeFt.elutionTime
     val maxTime = putativeFt.elutionTime + putativeFt.elutionTimeTolerance
 
     val mozTolInDa = MsUtils.ppmToDa(peakelMz, mappingMozTolPpm)
@@ -115,8 +186,10 @@ object PeakelDbHelper {
     // Apply some filters to the found peakels: they must not be already assigned or included in a pool of peakels
     // that could be matched multiple times
     val matchingPeakels = if (multiMatchedMzDbPeakelIdsOpt.isDefined || assignedMzDbPeakelIdSetOpt.isDefined) {
-      foundPeakels.filter { foundPeakel => (multiMatchedMzDbPeakelIdsOpt.isDefined && multiMatchedMzDbPeakelIdsOpt.get.contains(foundPeakel.id)) ||
-        (!assignedMzDbPeakelIdSetOpt.isDefined || !assignedMzDbPeakelIdSetOpt.get.contains(foundPeakel.id)) }
+      foundPeakels.filter { foundPeakel =>
+        (multiMatchedMzDbPeakelIdsOpt.isDefined && multiMatchedMzDbPeakelIdsOpt.get.contains(foundPeakel.id)) ||
+          (!assignedMzDbPeakelIdSetOpt.isDefined || !assignedMzDbPeakelIdSetOpt.get.contains(foundPeakel.id))
+      }
     } else {
       foundPeakels
     }
@@ -133,37 +206,7 @@ object PeakelDbHelper {
       mozTolInDa
     )
 
-    if (filteredPeakels.isEmpty) {
-      metric.incr("missing peakel: no peakel matching")
-      None
-    } else if(filteredPeakels.length == 1) {
-      metric.incr("missing peakel: only one peakel matching")
-      if (filteredPeakels.head._2) { metric.incr("missing peakel: only one peakel matching which is reliable") }
-      Some(filteredPeakels.head)
-    } else {
-
-      var reliablePeakels = filteredPeakels.filter(_._2)
-      if (reliablePeakels.isEmpty) {
-        metric.incr("no.reliable.peakel.found")
-        reliablePeakels = filteredPeakels
-      }
-      // sort reliablePeakels by mz distance to ensure minBy always returns the same value
-      reliablePeakels.sortWith{ (p1,p2) =>  math.abs(peakelMz-p1._1.getApexMz) < math.abs(peakelMz-p2._1.getApexMz) }
-
-      val nearestPeakelInTime = reliablePeakels.minBy { case (peakel,isReliable) =>
-        math.abs(avgTime - peakel.calcWeightedAverageTime())
-      }
-
-      if (true) { // fake condition to isolate metrics computation
-        val nearestFilteredPeakelInTime = filteredPeakels.minBy { case (peakel,isReliable) =>
-          math.abs(avgTime - peakel.calcWeightedAverageTime())
-        }
-        if (nearestFilteredPeakelInTime != nearestPeakelInTime) { metric.incr("nearestPeakelInTime.not.reliable") }
-        metric.addValue("missing peakel: delta moz", MsUtils.DaToPPM( peakelMz, peakelMz-nearestPeakelInTime._1.getApexMz()))
-      }
-
-      Some(nearestPeakelInTime)
-    }
+    Some(filteredPeakels)
   }
 
   def findFeatureIsotopes(
