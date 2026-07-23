@@ -1,173 +1,193 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <artifactId>mzdb-parent</artifactId>
-    <groupId>fr.profi</groupId>
-    <version>1.5.0-SNAPSHOT</version>
-  </parent>
+    <parent>
+        <artifactId>mzdb-parent</artifactId>
+        <groupId>fr.profi</groupId>
+        <version>1.5.0-SNAPSHOT</version>
+    </parent>
 
-  <artifactId>mzdb-access_${scala.compat.version}</artifactId> <!-- scala version from profipom-->
+    <artifactId>mzdb-access</artifactId> <!-- scala version from profipom-->
 
-  <description>The mzDB access Java library</description>
+    <description>The mzDB access Java library</description>
 
-  <dependencies>
+    <dependencies>
 
-    <!-- Commons -->
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-    
-    <!-- Reactive streams -->
-    <dependency>
-      <groupId>io.reactivex</groupId>
-      <artifactId>rxjava</artifactId>
-    </dependency>
+        <!-- Commons -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>xml-apis</groupId>
-      <artifactId>xml-apis</artifactId>
-      <version>1.4.01</version>
-      <!-- Warning, version 2.xx is older than this one ! -->
-    </dependency>
+        <!-- Reactive streams -->
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>jakarta.xml.bind</groupId>
-      <artifactId>jakarta.xml.bind-api</artifactId>
-      <version>2.3.3</version>
-    </dependency>
+        <dependency>
+            <groupId>xml-apis</groupId>
+            <artifactId>xml-apis</artifactId>
+            <version>1.4.01</version>
+            <!-- Warning, version 2.xx is older than this one ! -->
+        </dependency>
 
-    <dependency>
-      <groupId>com.sun.xml.bind</groupId>
-      <artifactId>jaxb-impl</artifactId>
-      <version>2.3.3</version>
-      <scope>runtime</scope>
-    </dependency>
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+            <version>2.3.3</version>
+        </dependency>
 
-    <!-- XML parsing -->
-    <dependency>
-      <groupId>xerces</groupId>
-      <artifactId>xercesImpl</artifactId>
-      <version>2.12.2</version>
-    </dependency>
+        <dependency>
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-impl</artifactId>
+            <version>2.3.3</version>
+            <scope>runtime</scope>
+        </dependency>
 
-    <!-- Google Protobuf -->
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>3.25.1</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.xml.bind</groupId>
-      <artifactId>jaxb-api</artifactId>
-      <version>2.3.1</version>
-      <scope>compile</scope>
-    </dependency>
+        <!-- XML parsing -->
+        <dependency>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId>
+            <version>2.12.2</version>
+        </dependency>
+
+        <!-- Google Protobuf -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.25.1</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+            <scope>compile</scope>
+        </dependency>
 
 
-  </dependencies>
+    </dependencies>
 
-  <build>
+    <build>
 
-    <plugins>
+        <plugins>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/lib</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>copy</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>com.almworks.sqlite4java</groupId>
-                  <artifactId>sqlite4java-win32-x64</artifactId>
-                  <version>${sqlite4java.version}</version>
-                  <type>dll</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                </artifactItem>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.almworks.sqlite4java</groupId>
+                                    <artifactId>sqlite4java-win32-x64</artifactId>
+                                    <version>${sqlite4java.version}</version>
+                                    <type>dll</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                </artifactItem>
 
-                <artifactItem>
-                  <groupId>com.almworks.sqlite4java</groupId>
-                  <artifactId>libsqlite4java-linux-amd64</artifactId>
-                  <version>${sqlite4java.version}</version>
-                  <type>so</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                </artifactItem>
+                                <artifactItem>
+                                    <groupId>com.almworks.sqlite4java</groupId>
+                                    <artifactId>libsqlite4java-linux-amd64</artifactId>
+                                    <version>${sqlite4java.version}</version>
+                                    <type>so</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                                </artifactItem>
 
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <!-- Version inherited from ProFI-Pom -->
-        <configuration>
-          <systemProperties>
-            <property>
-              <name>sqlite4java.library.path</name>
-              <value>${project.build.directory}/lib</value>
-            </property>
-          </systemProperties>
-        </configuration>
-      </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>scala-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>${scala.compat.version}</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-      <plugin><groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <!--         <configuration>
-                  <compils>
-                   <arg>-Xlint:deprecation</arg>
-                    <arg>-Xlint:unchecked</arg>
-                    <arg>-deprecation</arg>
-          </compilerArgs>
-        </configuration>-->
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>appassembler-maven-plugin</artifactId>
-        <!-- Version inherited from ProFI-Pom -->
-        <executions>
-          <execution>
-            <id>assemble</id>
-            <phase>package</phase>
-            <goals>
-              <goal>assemble</goal>
-            </goals>
-            <configuration>
-              <programs>
-                <program>
-                  <mainClass>fr.profi.mzdb.cli.MzDbAccess</mainClass>
-                  <name>MzDbAccess</name>
-                </program>
-              </programs>
-              <extraJvmArguments>-Dsqlite4java.library.path=${project.build.directory}/lib</extraJvmArguments>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <!-- Version inherited from ProFI-Pom -->
+                <configuration>
+                    <systemProperties>
+                        <property>
+                            <name>sqlite4java.library.path</name>
+                            <value>${project.build.directory}/lib</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
 
-    </plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <!--         <configuration>
+                          <compils>
+                           <arg>-Xlint:deprecation</arg>
+                            <arg>-Xlint:unchecked</arg>
+                            <arg>-deprecation</arg>
+                  </compilerArgs>
+                </configuration>-->
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>appassembler-maven-plugin</artifactId>
+                <!-- Version inherited from ProFI-Pom -->
+                <executions>
+                    <execution>
+                        <id>assemble</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                        <configuration>
+                            <programs>
+                                <program>
+                                    <mainClass>fr.profi.mzdb.cli.MzDbAccess</mainClass>
+                                    <name>MzDbAccess</name>
+                                </program>
+                            </programs>
+                            <extraJvmArguments>-Dsqlite4java.library.path=${project.build.directory}/lib
+                            </extraJvmArguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-  </build>
+        </plugins>
+
+    </build>
 
 </project>

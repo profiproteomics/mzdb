@@ -44,8 +44,9 @@
     </dependency>
      <dependency>
          <groupId>fr.profi</groupId>
-         <artifactId>mzdb-processing_${scala.compat.version}</artifactId>
+         <artifactId>mzdb-processing</artifactId>
          <version>${project.version}</version>
+         <classifier>${scala.compat.version}</classifier>
      </dependency>
 
      <dependency>
