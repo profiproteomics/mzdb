@@ -446,7 +446,7 @@ class MgfBoostPrecursorExtractor(mzTolPPM: Float,
       val masterScanUP = spectrumHeader.getScanList.getScans.get(0).getUserParam("[Thermo Trailer Extra]Master Scan Number:")
       if (masterScanUP != null) {
         val masterScanIndex = masterScanUP.getValue.toInt
-        if (masterScanIndex >= 0) {
+        if (masterScanIndex > 0) {
           val masterScanHeader = reader.getSpectrumHeader(masterScanIndex)
           val spectrumSlices = reader.getMsSpectrumSlices(minmz - MZ_RANGE_MARGIN, maxmz + MZ_RANGE_MARGIN,masterScanHeader.getElutionTime, masterScanHeader.getElutionTime)
           targetedSlice = spectrumSlices.find(x => x.getSpectrumId == masterScanIndex)
