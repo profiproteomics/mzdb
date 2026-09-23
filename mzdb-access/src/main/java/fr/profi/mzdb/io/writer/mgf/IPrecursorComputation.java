@@ -6,6 +6,8 @@ import fr.profi.mzdb.model.SpectrumHeader;
 
 public interface IPrecursorComputation {
 
+	public boolean accept(MzDbReader mzDbReader);
+
 	public MgfPrecursor[] getMgfPrecursors(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException;
 
 	public String getMethodName();

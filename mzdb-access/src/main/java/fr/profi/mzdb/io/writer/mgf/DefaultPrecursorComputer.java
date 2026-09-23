@@ -7,6 +7,7 @@ import fr.profi.mzdb.db.model.params.Precursor;
 import fr.profi.mzdb.db.model.params.param.CVEntry;
 import fr.profi.mzdb.db.model.params.param.CVParam;
 import fr.profi.mzdb.db.model.params.param.UserParam;
+import fr.profi.mzdb.model.DataMode;
 import fr.profi.mzdb.model.Peak;
 import fr.profi.mzdb.model.SpectrumHeader;
 import fr.profi.mzdb.model.SpectrumSlice;
@@ -32,6 +33,18 @@ public class DefaultPrecursorComputer implements IPrecursorComputation {
 	public DefaultPrecursorComputer(PrecursorMzComputationEnum precComp, float mzTolPPM) {
 		this(mzTolPPM);
 		this.precComp = precComp;
+	}
+
+	@Override
+	public boolean accept(MzDbReader mzDbReader) {
+        try {
+			SpectrumHeader firstMS1Spectrum = mzDbReader.getMs1SpectrumHeaders()[0];
+			DataMode mode = mzDbReader.getSpectrumDataEncoding(firstMS1Spectrum.getSpectrumId()).getMode();
+			return (mode == DataMode.FITTED) || (mode == DataMode.CENTROID);
+		} catch (SQLiteException e) {
+			logger.error("Unable to read first MS1 spectrum encoding", e);
+		}
+		return false;
 	}
 
 	public MgfPrecursor[] getMgfPrecursors(MzDbReader mzDbReader, SpectrumHeader spectrumHeader) throws SQLiteException {

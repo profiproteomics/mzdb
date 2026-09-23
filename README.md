@@ -47,4 +47,4 @@ Changes from version 1.3.1
 - Improved error reporting by printing full file paths when a `FileNotFoundException` occurs.
 - Conducted general code cleanup and removed obsolete log traces from the repository.
 - Updated various dependency versions to address vulnerabilities and ensure compatibility with `profi-pom`.
-
+- Ignore Master Scan Index when index is 0 (means no Master Scan).
