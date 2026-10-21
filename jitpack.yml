@@ -1,0 +1,8 @@
+jdk:
+  - openjdk17
+before_install:
+  - git clone --depth 1 --branch develop https://github.com/profiproteomics/profi-commons.git /tmp/profi-commons
+  - mvn -q -f /tmp/profi-commons/profi_pom/pom.xml install
+  - mvn -q -f /tmp/profi-commons/pom.xml install -DskipTests
+install:
+  - mvn install -DskipTests
