@@ -1,7 +1,7 @@
 jdk:
   - openjdk17
 before_install:
-  - git clone --depth 1 --branch develop https://github.com/profiproteomics/profi-commons.git $HOME/profi-commons
+  - git clone --depth 1 --branch dev_scala_2.13 https://github.com/profiproteomics/profi-commons.git $HOME/profi-commons
   - (cd $HOME/profi-commons && mvn -q -f profi_pom/pom.xml install && mvn -q install -DskipTests)
   - curl -sSfL -o $HOME/sgfilter-1.2.jar https://repo.clojars.org/mr/go/sgfilter/sgfilter/1.2/sgfilter-1.2.jar
   - mvn -q install:install-file -Dfile=$HOME/sgfilter-1.2.jar -DgroupId=mr.go.sgfilter -DartifactId=sgfilter -Dversion=1.2 -Dpackaging=jar
