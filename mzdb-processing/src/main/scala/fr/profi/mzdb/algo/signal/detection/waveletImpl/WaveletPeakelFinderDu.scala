@@ -1,5 +1,7 @@
 package fr.profi.mzdb.algo.signal.detection.waveletImpl
 
+import fr.profi.mzdb.util.misc.FloatRange
+
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
@@ -14,13 +16,13 @@ import fr.profi.mzdb.util.math.wavelet.Ridge
 Improved peak detection in mass spectrum by incorporating
 continuous wavelet transform-based pattern matching
 */
-class WaveletDetectorDuMethod (peaks: Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
+class WaveletDetectorDuMethod (peaks: scala.collection.Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
   
   /**we performed the CWT at 33 scale levels (from 1 to 64 at an interval of 2) */
   def setCwtParametersParams() = {
     this.minScale = 1
     this.maxScale = 64
-    this.cwtParams = CwtParameters(scales=( minScale to maxScale by 2f ).toArray, wavelet=MexicanHat())
+    this.cwtParams = CwtParameters(scales=FloatRange.inclusive(minScale, maxScale, 2f), wavelet=MexicanHat())
   //  this.cwtParams = CwtParameters(scales=( BigDecimal(minScale).floatValue() to BigDecimal(maxScale).floatValue() by BigDecimal(2f).floatValue() ).toArray, wavelet=MexicanHat())
   }
   

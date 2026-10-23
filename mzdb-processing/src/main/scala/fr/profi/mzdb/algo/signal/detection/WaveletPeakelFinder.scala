@@ -2,7 +2,6 @@ package fr.profi.mzdb.algo.signal.detection
 
 import java.awt.Color
 
-import scala.Array.canBuildFrom
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 import scala.util.control.Breaks._
@@ -22,7 +21,7 @@ import fr.profi.mzdb.util.math.wavelet._
 
 
 /** Peak Width are ~= 2 * scale where scale is the maxima point on the ridge */
-abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDetectionMethod with LazyLogging {
+abstract class AbstractWaveletPeakelFinder(peaks: scala.collection.Seq[Peak]) extends IWaveletDetectionMethod with LazyLogging {
   
   require(peaks != null && !peaks.isEmpty, "provided peaks array is empty or null")
   //var ydata: Array[Double] = null
@@ -76,7 +75,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
         val (inf, sup) = (math.max(0, maxIdxToCoeffCloned - winsize / 2), math.min(coeffCloned.length, maxIdxToCoeffCloned + winsize / 2))
         coeffCloned = coeffCloned.diff(coeffCloned.slice(inf, sup))
       }
-      maximaIndexesPerScale(scale) = localMax toArray
+      maximaIndexesPerScale(scale) = localMax.toArray
     }
     maximaIndexesPerScale
   }
@@ -363,7 +362,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
     peakels.toArray
   }*/
   
-  protected def _filterOverlappingPeakels(peakels: Seq[CwtPeakel], mergePeakels: Boolean = false) : Array[CwtPeakel] = {
+  protected def _filterOverlappingPeakels(peakels: scala.collection.Seq[CwtPeakel], mergePeakels: Boolean = false) : Array[CwtPeakel] = {
     val overlappingPeakelsByMasterPeakel = new HashMap[CwtPeakel, ArrayBuffer[CwtPeakel]]
     for (i <- 0 until peakels.length ) {
       val peakel = peakels(i)
@@ -387,7 +386,7 @@ abstract class AbstractWaveletPeakelFinder(peaks: Seq[Peak]) extends IWaveletDet
   }
   
   /** to be used after filtering peakels */
-  protected def _mergeOverlappingPeakels(peakels: Seq[CwtPeakel] ) : Array[CwtPeakel] = {
+  protected def _mergeOverlappingPeakels(peakels: scala.collection.Seq[CwtPeakel] ) : Array[CwtPeakel] = {
     /** */
     def merge(p1: CwtPeakel, p2: CwtPeakel): CwtPeakel = {
       val minIdx = math.min(p1.minIdx, p2.minIdx)

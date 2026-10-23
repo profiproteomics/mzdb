@@ -112,8 +112,8 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
 
   def assessReliability(
     mozTolPPM: Float,
-    coelutingPeakels: Seq[Peakel],
-    matchingPeakels: Seq[Peakel],
+    coelutingPeakels: scala.collection.Seq[Peakel],
+    matchingPeakels: scala.collection.Seq[Peakel],
     charge: Int,
     mozTolInDa: Double
   ): ArrayBuffer[(Peakel, Boolean)] = {
@@ -129,7 +129,7 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
     filteredPeakels
   }
 
-  def buildSpectrumFromPeakels(coelutingPeakels: Seq[Peakel], peakel: Peakel): SpectrumData = {
+  def buildSpectrumFromPeakels(coelutingPeakels: scala.collection.Seq[Peakel], peakel: Peakel): SpectrumData = {
     val (mzList, intensityList) = this.slicePeakels(coelutingPeakels, peakel.getApexSpectrumId(), Settings.peakelsSlicingSpan)
     val spectrumData = new SpectrumData(mzList.toArray, intensityList.toArray)
     spectrumData
@@ -143,7 +143,7 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
    * @param matchingSpectrumId
    * @return
    */
-  def slicePeakels(coelutingPeakels: Seq[Peakel], matchingSpectrumId: Long, span: Int = 1): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
+  def slicePeakels(coelutingPeakels: scala.collection.Seq[Peakel], matchingSpectrumId: Long, span: Int = 1): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
     val coelutingPeakelsCount = coelutingPeakels.length
     
     val mzList = new ArrayBuffer[Double](coelutingPeakelsCount)
@@ -177,7 +177,7 @@ object PeakelsPatternPredictor extends IIsotopicPatternPredictor with LazyLoggin
   }
 
 
-  def slicePeakelsV1(coelutingPeakels: Seq[Peakel],matchingSpectrumId: Long): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
+  def slicePeakelsV1(coelutingPeakels: scala.collection.Seq[Peakel],matchingSpectrumId: Long): (ArrayBuffer[Double], ArrayBuffer[Float]) = {
     // Slice the obtained peakels to create a virtual spectrum
     val coelutingPeakelsCount = coelutingPeakels.length
 

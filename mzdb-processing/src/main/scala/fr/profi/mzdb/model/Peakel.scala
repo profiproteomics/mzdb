@@ -2,7 +2,7 @@ package fr.profi.mzdb.model
 
 import scala.beans.BeanProperty
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.ArrayBuilder
+import fr.profi.mzdb.util.misc.{DoubleArrayBuffer, FloatArrayBuffer, LongArrayBuffer}
 import scala.collection.mutable.LongMap
 import com.fasterxml.jackson.annotation.JsonFormat
 import fr.profi.mzdb.Settings
@@ -78,7 +78,7 @@ object Peakel extends InMemoryIdGen {
   
   private val kurtosisCalc = new org.apache.commons.math3.stat.descriptive.moment.Kurtosis()
   
-  def calcMeanAndCv( values: Seq[Float] ): (Float,Float) = {
+  def calcMeanAndCv( values: scala.collection.Seq[Float] ): (Float,Float) = {
     if( values == null ) return (0f,0f)
     
     val valuesAsDoubles = values.map(_.toDouble).toArray
@@ -607,19 +607,19 @@ case class PeakelCoordinates(
 // TODO: compare the relative performance of PeakelBuilder vs PeakelBuffer
 // If no difference => prefer PeakelBuffer because it is more convenient to use
 class PeakelBuilder(
-  @BeanProperty val spectrumIds: ArrayBuilder[Long] = new ArrayBuilder.ofLong,
-  @BeanProperty val elutionTimes: ArrayBuilder[Float] = new ArrayBuilder.ofFloat,
-  @BeanProperty val mzValues: ArrayBuilder[Double] = new ArrayBuilder.ofDouble,
-  @BeanProperty val intensityValues: ArrayBuilder[Float] = new ArrayBuilder.ofFloat,
-  @BeanProperty val leftHwhms: ArrayBuilder[Float] = new ArrayBuilder.ofFloat,
-  @BeanProperty val rightHwhms: ArrayBuilder[Float] = new ArrayBuilder.ofFloat
+  @BeanProperty val spectrumIds: LongArrayBuffer = new LongArrayBuffer(),
+  @BeanProperty val elutionTimes: FloatArrayBuffer = new FloatArrayBuffer(),
+  @BeanProperty val mzValues: DoubleArrayBuffer = new DoubleArrayBuffer(),
+  @BeanProperty val intensityValues: FloatArrayBuffer = new FloatArrayBuffer(),
+  @BeanProperty val leftHwhms: FloatArrayBuffer = new FloatArrayBuffer(),
+  @BeanProperty val rightHwhms: FloatArrayBuffer = new FloatArrayBuffer()
 ) extends IPeakelDataContainer {
   
-  private var peaksCount = spectrumIds.result.length
+  private def peaksCount: Int = spectrumIds.length
   
   def getElutionTimeIntensityPairs(): Array[(Float,Float)] = {
-    val elutionTimesArray = elutionTimes.result()
-    val intensityValuesArray = intensityValues.result()
+    val elutionTimesArray = elutionTimes.toArray
+    val intensityValuesArray = intensityValues.toArray
     val rtIntPairs = new ArrayBuffer[(Float,Float)](peaksCount)
     
     var i = 0
@@ -635,10 +635,10 @@ class PeakelBuilder(
   def getNewCursor(): PeakelDataMatrixCursor = new PeakelDataMatrixCursor(this.toPeakelDataMatrix())
   def toPeakelDataMatrix(): PeakelDataMatrix = {
     PeakelDataMatrix(
-      spectrumIds.result,
-      elutionTimes.result,
-      mzValues.result,
-      intensityValues.result
+      spectrumIds.toArray,
+      elutionTimes.toArray,
+      mzValues.toArray,
+      intensityValues.toArray
     )
   }
   
@@ -662,16 +662,15 @@ class PeakelBuilder(
     this ++= peaks
   }
   
-  def this( peakelDataMatrix: PeakelDataMatrix ) = {
+  // TODO: remove me (unused, and leftHwhms/rightHwhms are not filled, which breaks restrictToSpectrumIdRange)
+  /*def this( peakelDataMatrix: PeakelDataMatrix ) = {
     this( peakelDataMatrix.mzValues.length )
     
     this.spectrumIds ++= peakelDataMatrix.spectrumIds
     this.elutionTimes ++= peakelDataMatrix.elutionTimes
     this.mzValues ++= peakelDataMatrix.mzValues
     this.intensityValues ++= peakelDataMatrix.intensityValues
-    
-    peaksCount += peakelDataMatrix.peaksCount
-  }
+  }*/
   
   /*def this( peakelDataMatrix: PeakelDataMatrix, fromIdx: Int, toIdx: Int ) = {
     this( peakelDataMatrix.mzValues.length )
@@ -724,8 +723,6 @@ class PeakelBuilder(
     leftHwhms += leftHwhm
     rightHwhms += rightHwhm
     
-    peaksCount += 1
-    
     this
   }
   
@@ -737,8 +734,8 @@ class PeakelBuilder(
     assert(peaksCount == dataMatrix.intensityValues.length, "invalid peaksCount")
     val(intensity, area) = Peakel.integratePeakel(new PeakelDataMatrixCursor(dataMatrix))
     
-    val(leftHwhmMean,leftHwhmCv) = Peakel.calcMeanAndCv(leftHwhms.result)
-    val(rightHwhmMean,rightHwhmCv) =  Peakel.calcMeanAndCv(rightHwhms.result)
+    val(leftHwhmMean,leftHwhmCv) = Peakel.calcMeanAndCv(leftHwhms.toArray)
+    val(rightHwhmMean,rightHwhmCv) =  Peakel.calcMeanAndCv(rightHwhms.toArray)
     
     Peakel(
       id = id,
@@ -756,41 +753,44 @@ class PeakelBuilder(
   }
   
   /*def calcFwhms(): Array[Float] = {
-    val( lh, rh ) = ( this.leftHwhms.result, this.rightHwhms.result )
+    val( lh, rh ) = ( this.leftHwhms.toArray, this.rightHwhms.toArray )
     if( lh == null || rh == null ) return null
 
-    this.spectrumIds.result.indices.toArray.map(i => lh(i) + rh(i) )
+    this.spectrumIds.toArray.indices.toArray.map(i => lh(i) + rh(i) )
   }*/
   
   /** Restrict to is inclusive here **/
   def restrictToSpectrumIdRange( firstSpectrumId: Long, lastSpectrumId: Long ): Option[PeakelBuilder] = {
     
-    val spectrumIdsArray = spectrumIds.result()
-    val elutionTimesArray = elutionTimes.result()
-    val mzValuesArray = mzValues.result()
-    val intensityValuesArray = intensityValues.result()
-    val leftHwhmsArray = leftHwhms.result()
-    val rightHwhmsArray = rightHwhms.result()
+    val spectrumIdCount = spectrumIds.length
+    require(leftHwhms.length == spectrumIdCount, "invalid leftHwhms length")
+    require(rightHwhms.length == spectrumIdCount, "invalid rightHwhms length")
     
-    val spectrumIdCount = spectrumIdsArray.length
-    require(leftHwhmsArray.length == spectrumIdCount, "invalid leftHwhms length")
-    require(rightHwhmsArray.length == spectrumIdCount, "invalid rightHwhms length")
-    
-    val matchingSpectrumIdsWithIdx = spectrumIdsArray.zipWithIndex.filter { case (spectrumId,idx) =>
-      spectrumId >= firstSpectrumId && spectrumId <= lastSpectrumId
+    // Search the first and last indices of the spectrum ids matching the range
+    var firstIdx = -1
+    var lastIdx = -1
+    var matchingCount = 0
+    var i = 0
+    while (i < spectrumIdCount) {
+      val spectrumId = spectrumIds(i)
+      if (spectrumId >= firstSpectrumId && spectrumId <= lastSpectrumId) {
+        if (firstIdx == -1) firstIdx = i
+        lastIdx = i
+        matchingCount += 1
+      }
+      i += 1
     }
-    if( matchingSpectrumIdsWithIdx.length < 2 ) return None
+    if( matchingCount < 2 ) return None
     
-    val firstIdx = matchingSpectrumIdsWithIdx.head._2
-    val lastBoundary = matchingSpectrumIdsWithIdx.last._2 + 1
+    val lastBoundary = lastIdx + 1
     
     val newPeakelBuilder = new PeakelBuilder(
-      new ArrayBuilder.ofLong ++= spectrumIdsArray.slice(firstIdx, lastBoundary),
-      new ArrayBuilder.ofFloat ++= elutionTimesArray.slice(firstIdx, lastBoundary),
-      new ArrayBuilder.ofDouble ++= mzValuesArray.slice(firstIdx, lastBoundary),
-      new ArrayBuilder.ofFloat ++= intensityValuesArray.slice(firstIdx, lastBoundary),
-      new ArrayBuilder.ofFloat ++= leftHwhmsArray.slice(firstIdx, lastBoundary),
-      new ArrayBuilder.ofFloat ++= rightHwhmsArray.slice(firstIdx, lastBoundary)
+      spectrumIds.sliceBuffer(firstIdx, lastBoundary),
+      elutionTimes.sliceBuffer(firstIdx, lastBoundary),
+      mzValues.sliceBuffer(firstIdx, lastBoundary),
+      intensityValues.sliceBuffer(firstIdx, lastBoundary),
+      leftHwhms.sliceBuffer(firstIdx, lastBoundary),
+      rightHwhms.sliceBuffer(firstIdx, lastBoundary)
     )
     
     Some( newPeakelBuilder )

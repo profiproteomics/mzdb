@@ -1,5 +1,7 @@
 package fr.profi.mzdb
 
+import scala.collection.parallel.CollectionConverters._
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.LongMap
@@ -102,7 +104,7 @@ class MzDbFeatureExtractor(
 //    i+= 1
 //  })
   
-  def extractFeatures(rsdProvider: RunSliceDataProvider, putativeFeatures: Seq[PutativeFeature], mzTolPPM: Float): Seq[Feature] = {
+  def extractFeatures(rsdProvider: RunSliceDataProvider, putativeFeatures: scala.collection.Seq[PutativeFeature], mzTolPPM: Float): scala.collection.Seq[Feature] = {
     
     // FIXME: reset timings related vars
     

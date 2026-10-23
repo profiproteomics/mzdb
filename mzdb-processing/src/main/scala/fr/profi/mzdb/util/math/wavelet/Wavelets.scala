@@ -1,5 +1,7 @@
 package fr.profi.mzdb.util.math.wavelet
 
+import fr.profi.mzdb.util.misc.FloatRange
+
 trait IWaveletInterface[T] {
   def values(): Array[T]
 
@@ -10,7 +12,7 @@ abstract class MotherWavelet(val lowerBound: Int = -6,
                              val upperBound: Int = 6,
                              val nbPoints: Int = 256) extends IWaveletInterface[Float] {
 
-  val psiXval = (lowerBound.toFloat until upperBound.toFloat by ((upperBound - lowerBound) / nbPoints.toFloat)).toArray[Float]
+  val psiXval: Array[Float] = FloatRange.exclusive(lowerBound.toFloat, upperBound.toFloat, (upperBound - lowerBound) / nbPoints.toFloat)
   //println("psiXval length:"+ psiXval.length)
 
   def getPsiXval(): Array[Float] = {

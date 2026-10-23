@@ -1,5 +1,7 @@
 package fr.profi.mzdb.algo.signal.generation
 
+import fr.profi.mzdb.util.misc.FloatRange
+
 import scala.collection.mutable.ArrayBuffer
 import fr.profi.mzdb.model._
 import fr.profi.mzdb.util.math.pdf.GaussianModel
@@ -14,7 +16,7 @@ object PeakelGenerator {
     val gaussModel = new GaussianModel( time, intensity.toDouble, halfDuration, 0.5 )
     
     val peaks = new ArrayBuffer[Peak]
-    for( x <- ((time - halfDuration)) to ((time + halfDuration)) by samplingSize ) {
+    for( x <- FloatRange.inclusive(time - halfDuration, time + halfDuration, samplingSize) ) {
       val y = gaussModel.getYValue(x)
       peaks += new Peak( mz, y.toFloat, mzPeakHwhm, mzPeakHwhm, new FullLcContext(x.round,x) )
     }

@@ -1,5 +1,7 @@
 package fr.profi.mzdb
 
+import scala.collection.parallel.CollectionConverters._
+
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.api.progress._
 import fr.profi.ms.algo.IsotopePatternInterpolator

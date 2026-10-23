@@ -54,12 +54,12 @@ object Feature extends InMemoryIdGen {
         
   }*/
   
-  def ipsToIndexedPeakels(ips: Seq[IsotopicPatternLike]): Array[(Peakel,Int)] = {
+  def ipsToIndexedPeakels(ips: scala.collection.Seq[IsotopicPatternLike]): Array[(Peakel,Int)] = {
     for( (peakelBuilder,idx) <- this.ipsToIndexedPeakelBuilders(ips) )
       yield peakelBuilder.result() -> idx
   }
 
-  def ipsToIndexedPeakelBuilders(ips: Seq[IsotopicPatternLike]): Array[(PeakelBuilder,Int)] = {
+  def ipsToIndexedPeakelBuilders(ips: scala.collection.Seq[IsotopicPatternLike]): Array[(PeakelBuilder,Int)] = {
 
     // Determine the maximum number of peaks
     val maxNbPeaks = ips.map(_.peaks.length).max
@@ -80,7 +80,7 @@ object Feature extends InMemoryIdGen {
   }
 
   // TODO: return PeakelBuffer instead of PeakelBuilder ?
-  protected def _ipsToIndexedPeakelBuilders(ips: Seq[IsotopicPatternLike], peakelIdx: Int): Option[(PeakelBuilder,Int)] = {
+  protected def _ipsToIndexedPeakelBuilders(ips: scala.collection.Seq[IsotopicPatternLike], peakelIdx: Int): Option[(PeakelBuilder,Int)] = {
 
     val peaks = new ArrayBuffer[Peak]()
 

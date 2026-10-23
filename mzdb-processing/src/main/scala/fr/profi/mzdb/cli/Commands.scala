@@ -1,5 +1,7 @@
 package fr.profi.mzdb.cli
 
+import scala.collection.parallel.CollectionConverters._
+
 import com.typesafe.scalalogging.LazyLogging
 import fr.profi.mzdb._
 import fr.profi.mzdb.algo.feature.extraction.FeatureExtractorConfig

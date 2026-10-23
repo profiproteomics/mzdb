@@ -33,7 +33,7 @@ object PeakelDbHelper {
     minMz: Double,
     maxMz: Double,
     minTime: Float,
-    maxTime: Float): Seq[Int] = {
+    maxTime: Float): scala.collection.Seq[Int] = {
 
     // Retrieve peakel ids using the in-memory R*Tree
     val peakelIdIter = rTree.search(

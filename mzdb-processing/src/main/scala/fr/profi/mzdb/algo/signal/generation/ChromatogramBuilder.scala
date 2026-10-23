@@ -21,7 +21,7 @@ class ChromatogramBuilder() {
     peakelBuffer += peakel
   }
   
-  def addPeakels( peakels: Seq[Peakel] ): Unit = {
+  def addPeakels( peakels: scala.collection.Seq[Peakel] ): Unit = {
     peakelBuffer ++= peakels
   }
   
@@ -45,10 +45,10 @@ class ChromatogramBuilder() {
       if( peaksCount == 1 ) peaks.head
       else {        
         val peakelBuilder = new PeakelBuilder(peaks.toArray)
-        val mzValues = peakelBuilder.getMzValues().result()
-        val intensityValues = peakelBuilder.getIntensityValues().result()
-        val leftHwhms = peakelBuilder.getLeftHwhms().result()
-        val rightHwhms = peakelBuilder.getRightHwhms().result()
+        val mzValues = peakelBuilder.getMzValues().toArray
+        val intensityValues = peakelBuilder.getIntensityValues().toArray
+        val leftHwhms = peakelBuilder.getLeftHwhms().toArray
+        val rightHwhms = peakelBuilder.getRightHwhms().toArray
         
         new Peak(
           mzValues.sum / peaksCount,

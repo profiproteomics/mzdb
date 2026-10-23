@@ -1,5 +1,7 @@
 package fr.profi.mzdb.algo.feature.scoring
 
+import scala.collection.parallel.CollectionConverters._
+
 import scala.collection.mutable.LongMap
 import fr.profi.mzdb.model.Feature
 import fr.profi.mzdb.model.ILcContext

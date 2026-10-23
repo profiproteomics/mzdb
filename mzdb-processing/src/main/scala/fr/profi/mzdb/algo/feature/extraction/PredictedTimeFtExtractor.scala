@@ -289,7 +289,7 @@ class PredictedTimeFtExtractor(
     )
 
     val detectedFts = new ArrayBuffer[Feature](peakelIndices.length)
-    val spectrumIds = maxPeakelBuilder.getSpectrumIds().result()
+    val spectrumIds = maxPeakelBuilder.getSpectrumIds().toArray
       
     for ( (minIdx, maxIdx) <- peakelIndices ) {
       

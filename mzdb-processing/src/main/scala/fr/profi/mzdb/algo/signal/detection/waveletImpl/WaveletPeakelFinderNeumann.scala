@@ -1,5 +1,7 @@
 package fr.profi.mzdb.algo.signal.detection.waveletImpl
 
+import fr.profi.mzdb.util.misc.FloatRange
+
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.HashMap
 
@@ -11,7 +13,7 @@ import fr.profi.mzdb.model.Peak
 import fr.profi.mzdb.util.math.wavelet.MexicanHat
 import fr.profi.mzdb.util.math.wavelet.Ridge
 
-class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
+class WaveletPeakelFinderNeumann(val peaks: scala.collection.Seq[Peak]) extends AbstractWaveletPeakelFinder(peaks) {
   
   def setCwtParametersParams() = {
     val spectrumTimeDiff = peaks.map(_.getLcContext().getElutionTime())
@@ -36,7 +38,7 @@ class WaveletPeakelFinderNeumann(val peaks: Seq[Peak]) extends AbstractWaveletPe
     this.baseline = trimmedYdata.sum / trimmedYdata.length
     this.noise = new StandardDeviation().evaluate(trimmedYdata, 0, trimmedYdata.length)
       
-    this.cwtParams = CwtParameters(scales = ( minScale to maxScale by 2f ).toArray, wavelet =  MexicanHat() )
+    this.cwtParams = CwtParameters(scales = FloatRange.inclusive(minScale, maxScale, 2f), wavelet =  MexicanHat() )
   }
   
   

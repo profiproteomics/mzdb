@@ -176,12 +176,12 @@ class FeatureExtractor(
     // Keep only a single link with the feature having two peaks surrounding the MS2 event with the highest intensity
     ftsByMs2SpectrumId.foreach{ case (ms2SpectrumId, features) =>
       if (features.size > 1) {
-         val surrPeaksIntByFt = features.map{f => f -> _getIntensitySumOfSurroundingPeak(ms2SpectrumId, f)} toMap
+         val surrPeaksIntByFt = features.map{f => f -> _getIntensitySumOfSurroundingPeak(ms2SpectrumId, f)}.toMap
          val winningFt = surrPeaksIntByFt.maxBy(_._2)._1
          for (f <- features if f != winningFt) {
            val spectrumIds = f.ms2SpectrumIds.toBuffer
            spectrumIds -= ms2SpectrumId.toInt
-           f.ms2SpectrumIds = spectrumIds toArray
+           f.ms2SpectrumIds = spectrumIds.toArray
          }
       }
     }

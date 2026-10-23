@@ -197,7 +197,7 @@ object SetClusterer {
   // FIXME: current implementation in proline core returns an option => it should not
   def getAllKeysHavingRelatedValues[K,V](
     valuesByKey: Map[K, Set[V]],
-    keysByValue: Map[V, Seq[K]],
+    keysByValue: Map[V, scala.collection.Seq[K]],
     valuesToSearch: Set[V],
     searchedValues: collection.mutable.HashSet[V]
   ): List[K] = {

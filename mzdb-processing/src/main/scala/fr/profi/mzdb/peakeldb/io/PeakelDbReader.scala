@@ -24,7 +24,7 @@ object PeakelDbReader {
     minMz: Double,
     maxMz: Double,
     minTime: Float,
-    maxTime: Float): Seq[Int] = {
+    maxTime: Float): scala.collection.Seq[Int] = {
 
     // Retrieve peakel ids using the peakelDB R*Tree
     val peakelIdRtreeSqlQuery = "SELECT id, min_mz, max_mz FROM peakel_rtree WHERE min_mz >= ? AND max_mz <= ? AND min_time >= ? AND max_time <= ?"
@@ -126,7 +126,7 @@ object PeakelDbReader {
     fis.close()
   }
 
-  def _loadPeakelsForIds(sqliteConn: SQLiteConnection, peakelIds: Seq[Int]): ArrayBuffer[Peakel] = {
+  def _loadPeakelsForIds(sqliteConn: SQLiteConnection, peakelIds: scala.collection.Seq[Int]): ArrayBuffer[Peakel] = {
 
     val peakelPkSqlQuery = "SELECT id, peaks, left_hwhm_mean, left_hwhm_cv, " +
       s"right_hwhm_mean, right_hwhm_cv FROM peakel WHERE id IN (${peakelIds.mkString(",")});"

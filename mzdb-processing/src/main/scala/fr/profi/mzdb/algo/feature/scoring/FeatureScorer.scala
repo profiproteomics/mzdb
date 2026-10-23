@@ -29,7 +29,7 @@ object FeatureScorer {
    * **************************************************************
    */
   /**mean correlation */
-  def calcMeanPeakelCorrelation(peakels: Seq[Peakel]): Float = {
+  def calcMeanPeakelCorrelation(peakels: scala.collection.Seq[Peakel]): Float = {
     val peakelsCount = peakels.length
 
     if (peakelsCount < 2)
@@ -109,7 +109,7 @@ object FeatureScorer {
   }
 
   /** utility function */
-  def calcMeanOverlappingFactor(peakels: Seq[Tuple3[Peakel, Option[Peakel], Option[Peakel]]]): Float = {
+  def calcMeanOverlappingFactor(peakels: scala.collection.Seq[Tuple3[Peakel, Option[Peakel], Option[Peakel]]]): Float = {
     if (peakels.isEmpty)
       return 0f
     var m = 0f

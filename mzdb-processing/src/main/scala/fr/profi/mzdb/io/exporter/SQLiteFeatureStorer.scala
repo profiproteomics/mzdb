@@ -120,7 +120,7 @@ object SQLitePeakelStorer {
   val psgSmoother = new PartialSavitzkyGolaySmoother( SavitzkyGolaySmoothingConfig(iterationCount = 1))
   val xicBinner = new XicBinner( XicBinnerConfig(5) )
   val peakelFinder = new SmartPeakelFinder()
-  def storePeakels(peakels: Seq[Peakel], dbLocation: File ) {
+  def storePeakels(peakels: scala.collection.Seq[Peakel], dbLocation: File ) {
     
     println("nb peakels:"+peakels.length)
     
@@ -283,7 +283,7 @@ object SQLitePeakelStorer {
  */
 object SQLiteFeatureStorer {  
   
-  def storeFeatures(features: Seq[Feature], dbLocation: File ) {
+  def storeFeatures(features: scala.collection.Seq[Feature], dbLocation: File ) {
     
     val connection = new SQLiteConnection(dbLocation)
     if( dbLocation.exists ) {
@@ -362,7 +362,7 @@ object SQLiteFeatureStorer {
     
   }
   /*
-  def storeFeaturesAndComputations(features: Seq[Feature], dbLocation: File ) {
+  def storeFeaturesAndComputations(features: scala.collection.Seq[Feature], dbLocation: File ) {
     
     val connection = new SQLiteConnection(dbLocation)
     if( dbLocation.exists ) {
